@@ -25,7 +25,7 @@
     {% if prototype and may_make %}
         <div class="alert alert-warning d-flex align-items-center gap-3" data-testid="cms-site-component-prototype">
             <div class="me-auto">
-                {{ 'This component was prototyped from a page. Keep it for the whole site to offer it to the generator and on the content screen of every page.'|trans({}, 'theliacms') }}
+                {{ 'This component is a prototype, offered to nobody yet. Keep it for the whole site to offer it to the generator and on the content screen of every page.'|trans({}, 'theliacms') }}
             </div>
             <form method="post" action="{{ path('admin.cms.components.site.promote', { component: component.code }) }}" data-testid="cms-site-component-promote">
                 <input type="hidden" name="_token" value="{{ assignToken() }}">
@@ -56,6 +56,29 @@
                 </div>
             {% endif %}
             {% if may_make %}
+                {# A copy under a new code, to vary from this one without
+                   asking the generator for it from nothing. #}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <form method="post" action="{{ path('admin.cms.components.site.copy', { component: component.code }) }}" data-testid="cms-site-component-copy">
+                            <input type="hidden" name="_token" value="{{ assignToken() }}">
+                            <p class="fw-semibold mb-1">{{ 'Copy into a new component'|trans({}, 'theliacms') }}</p>
+                            <p class="text-muted small">{{ 'The same template, styles and props, as a prototype: change it, then keep it for the whole site.'|trans({}, 'theliacms') }}</p>
+                            <div class="mb-2">
+                                <label class="form-label small" for="cms-site-component-copy-code">{{ 'Code'|trans({}, 'theliacms') }}</label>
+                                <input class="form-control form-control-sm" id="cms-site-component-copy-code" name="code" required pattern="[A-Z][A-Za-z0-9]{1,39}" maxlength="40" placeholder="{{ component.code }}Dark" aria-describedby="cms-site-component-copy-code-help">
+                                <div class="form-text" id="cms-site-component-copy-code-help">{{ 'In PascalCase, such as PriceTableDark. It cannot be changed afterwards.'|trans({}, 'theliacms') }}</div>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small" for="cms-site-component-copy-label">{{ 'Label'|trans({}, 'theliacms') }}</label>
+                                <input class="form-control form-control-sm" id="cms-site-component-copy-label" name="label" required maxlength="120" value="{{ component.label }}">
+                            </div>
+                            <button class="btn btn-sm btn-outline-primary" type="submit">
+                                <i class="bi bi-copy me-1" aria-hidden="true"></i>{{ 'Copy'|trans({}, 'theliacms') }}
+                            </button>
+                        </form>
+                    </div>
+                </div>
                 <div class="card mb-3">
                     <div class="card-body">
                         {% if pages > 0 %}

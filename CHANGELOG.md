@@ -7,6 +7,15 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **A component of the site is copied into a new one.** On the screen of a
+  component, "Copy into a new component" takes a code and a label and copies
+  the template, stylesheet, props, sample and mark of provenance, without a
+  call to the generator. The copy is a prototype: it is changed by "Ask a
+  change", then kept for the whole site. It takes the right to make a
+  component.
+
 ### Upgrading to 2.7.0
 
 - The color of a tag is free. `cms_tag.color` holds the `#rrggbb` code of the

@@ -25,6 +25,7 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use TheliaCMS\Content\SectionAvailability;
 use TheliaCMS\Content\Site\InvalidSiteComponentException;
+use TheliaCMS\Content\Site\SiteComponent;
 use TheliaCMS\Content\Site\SiteComponentPermission;
 use TheliaCMS\Content\Site\SiteComponentRepository;
 use TheliaCMS\Content\Site\SiteComponentUsage;
@@ -283,6 +284,40 @@ final readonly class CmsSiteComponentController
         }
 
         return new RedirectResponse($this->urls->generate('admin.cms.components.site.show', ['component' => $component]));
+    }
+
+    /**
+     * A component copied under a new code, to vary from it: the same
+     * template, stylesheet, props, example and mark of provenance, without a
+     * call to the generator. The copy is a prototype, offered to nobody
+     * until it is changed and kept, or kept for the whole site: the
+     * generator is never offered two identical components.
+     */
+    #[Route('/{component}/copy', name: 'copy', requirements: ['component' => self::CODE], methods: ['POST'])]
+    public function copy(string $component, Request $request): Response
+    {
+        $this->denyUnlessMayMake();
+
+        $source = $this->components->find($component) ?? throw new NotFoundHttpException();
+        $code = trim((string) $request->request->get('code', ''));
+        $label = trim((string) $request->request->get('label', ''));
+
+        try {
+            $copy = $this->validator->validate(new SiteComponent($code, $label, $source->description, $source->props, $source->sample, $source->template, $source->css, $source->provenance));
+            $this->components->save($copy, SiteComponentRepository::STATUS_DRAFT);
+        } catch (InvalidSiteComponentException $exception) {
+            $this->flash($request, 'danger', implode(' ', $exception->problems));
+
+            return new RedirectResponse($this->urls->generate('admin.cms.components.site.show', ['component' => $source->code]));
+        }
+
+        $this->flash($request, 'success', $this->translator->trans(
+            '"%label%" is a copy of "%source%", kept as a prototype: ask it a change, then keep it for the whole site.',
+            ['%label%' => $copy->label, '%source%' => $source->label],
+            TheliaCMS::DOMAIN_NAME,
+        ));
+
+        return new RedirectResponse($this->urls->generate('admin.cms.components.site.show', ['component' => $copy->code]));
     }
 
     /**
