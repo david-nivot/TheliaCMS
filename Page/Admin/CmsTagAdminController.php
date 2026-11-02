@@ -87,10 +87,12 @@ final readonly class CmsTagAdminController
         $pageCounts = $this->tags->pageCountsByTag();
 
         foreach ($this->tags->all() as $tag) {
+            $color = PageTagColor::fromStored($tag->getColor(), $tag->getTextColor());
             $rows[] = [
                 'id' => (int) $tag->getId(),
                 'name' => (string) $tag->getName(),
-                'badge' => PageTagColor::badgeClassOf(PageTagColor::fromStored($tag->getColor())),
+                'badge' => PageTagColor::badgeClassOf($color),
+                'badge_style' => PageTagColor::badgeStyleOf($color),
                 'pages' => $pageCounts[(int) $tag->getId()] ?? 0,
             ];
         }
@@ -109,7 +111,7 @@ final readonly class CmsTagAdminController
     {
         $tag = $this->tagOrFail($id);
 
-        $form = $this->forms->create(PageTagType::class, ['name' => $tag->getName(), 'color' => PageTagColor::fromStored($tag->getColor())], [
+        $form = $this->forms->create(PageTagType::class, ['name' => $tag->getName(), 'color' => PageTagColor::fromStored($tag->getColor(), $tag->getTextColor())], [
             'action' => $this->urls->generate('admin.cms.tags.edit', ['id' => $id]),
         ]);
 

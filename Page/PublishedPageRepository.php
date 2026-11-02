@@ -73,7 +73,8 @@ final readonly class PublishedPageRepository
             nofollow: 1 === $page->getNofollow(),
             publishedAt: $content->getPublishedAt(),
             tag: $this->tagOf($page),
-            tagColor: $this->tagColorOf($page),
+            tagColor: $this->tagColorOf($page)?->background,
+            tagTextColor: $this->tagColorOf($page)?->textColor(),
             fields: $this->fields->valuesOf($page, $locale),
             provenance: $content->getPublishedProvenance(),
         );
@@ -144,7 +145,8 @@ final readonly class PublishedPageRepository
                 description: $this->nullIfBlank($page->getDescription()),
                 image: $this->imageOf($page, $locale),
                 tag: (string) $tag->getName(),
-                tagColor: PageTagColor::fromStored($tag->getColor())?->value,
+                tagColor: PageTagColor::fromStored($tag->getColor(), $tag->getTextColor())?->background,
+                tagTextColor: PageTagColor::fromStored($tag->getColor(), $tag->getTextColor())?->textColor(),
                 publishedAt: \is_string($publishedAt) ? new \DateTimeImmutable($publishedAt) : null,
                 fields: $this->fields->valuesOf($page, $locale, $definitions[$type]),
             );
@@ -232,7 +234,8 @@ final readonly class PublishedPageRepository
                 description: $this->nullIfBlank($page->getDescription()),
                 image: $this->imageOf($page, $locale),
                 tag: $this->tagOf($page),
-                tagColor: $this->tagColorOf($page),
+                tagColor: $this->tagColorOf($page)?->background,
+                tagTextColor: $this->tagColorOf($page)?->textColor(),
                 publishedAt: $row['published_at'],
                 fields: $row['values'],
             );
@@ -280,7 +283,8 @@ final readonly class PublishedPageRepository
             noindex: true,
             nofollow: true,
             tag: $this->tagOf($page),
-            tagColor: $this->tagColorOf($page),
+            tagColor: $this->tagColorOf($page)?->background,
+            tagTextColor: $this->tagColorOf($page)?->textColor(),
             fields: $this->fields->valuesOf($page, $locale),
             provenance: $content->getDraftProvenance(),
         );
@@ -362,16 +366,18 @@ final readonly class PublishedPageRepository
     }
 
     /**
-     * Only a name the palette has: a theme maps each name to its design and
-     * has no entry for any other.
+     * A code or a name of the former palette: anything else in the table reads
+     * as no color.
      */
-    private function tagColorOf(CmsPage $page): ?string
+    private function tagColorOf(CmsPage $page): ?PageTagColor
     {
         if (null === $page->getTagId()) {
             return null;
         }
 
-        return PageTagColor::fromStored($page->getCmsTag()?->getColor())?->value;
+        $tag = $page->getCmsTag();
+
+        return PageTagColor::fromStored($tag?->getColor(), $tag?->getTextColor());
     }
 
     private function nullIfBlank(?string $value): ?string

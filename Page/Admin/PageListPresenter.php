@@ -128,9 +128,11 @@ final readonly class PageListPresenter
         $tags = [];
 
         foreach ($this->tags->all() as $tag) {
+            $color = PageTagColor::fromStored($tag->getColor(), $tag->getTextColor());
             $tags[(int) $tag->getId()] = [
                 'name' => (string) $tag->getName(),
-                'badge' => PageTagColor::badgeClassOf(PageTagColor::fromStored($tag->getColor())),
+                'badge' => PageTagColor::badgeClassOf($color),
+                'badge_style' => PageTagColor::badgeStyleOf($color),
             ];
         }
 
@@ -173,6 +175,7 @@ final readonly class PageListPresenter
                 'ancestor_path' => $row->ancestorPath(),
                 'tag' => $tags[(int) $row->page->getTagId()]['name'] ?? null,
                 'tag_badge' => $tags[(int) $row->page->getTagId()]['badge'] ?? PageTagColor::NO_COLOR_BADGE,
+                'tag_badge_style' => $tags[(int) $row->page->getTagId()]['badge_style'] ?? '',
                 'toggle_url' => $row->hasChildren() ? $this->filterBar->toggleUrl($filters, $languageId, $id) : null,
                 'edit_url' => $this->route('admin.cms.pages.edit', $id, $languageId),
                 'builder_url' => $this->route('admin.cms.pages.content.edit', $id, $languageId),

@@ -89,16 +89,18 @@ final class PageTagTest extends CmsIntegrationTestCase
 
     public function testATagIsCreatedInItsColorAndOneTheSiteHasKeepsItsOwn(): void
     {
-        $tag = $this->tagWriter()->add('Recette', PageTagColor::Green);
+        $tag = $this->tagWriter()->add('Recette', PageTagColor::of('#007040', '#D8E480'));
 
-        self::assertSame('green', $tag->getColor());
-        self::assertSame('green', $this->tagWriter()->add('recette', PageTagColor::Red)->getColor(), 'Adding a name the site has changes nothing.');
+        self::assertSame('#007040', $tag->getColor());
+        self::assertSame('#d8e480', $tag->getTextColor());
+        self::assertSame('#007040', $this->tagWriter()->add('recette', PageTagColor::of('#d40e21'))->getColor(), 'Adding a name the site has changes nothing.');
         self::assertNull($this->tagWriter()->add('Actualité')->getColor());
+        self::assertNull($this->tagWriter()->add('Dessert', PageTagColor::of('#f9b000'))->getTextColor(), 'The text is left to the contrast.');
     }
 
     public function testRecoloringATagDropsItsPagesFromTheSharedCacheUnlessTheColorIsTheSame(): void
     {
-        $tag = $this->tagWriter()->add('Recette', PageTagColor::Green);
+        $tag = $this->tagWriter()->add('Recette', PageTagColor::of('#007040'));
         $page = $this->tagged('Gratin de pâtes', $tag);
         $purger = new class implements CachePurgerInterface {
             /** @var list<string> */
@@ -111,15 +113,16 @@ final class PageTagTest extends CmsIntegrationTestCase
         };
         $writer = $this->purgingWith(PageTagWriter::class, $purger);
 
-        $writer->recolor($tag, PageTagColor::Green);
+        $writer->recolor($tag, PageTagColor::of('#007040'));
         self::assertSame([], $purger->purged, 'The same color changes nothing.');
 
-        $writer->recolor($tag, PageTagColor::Red);
-        self::assertSame('red', $this->tags()->find((int) $tag->getId())?->getColor());
+        $writer->recolor($tag, PageTagColor::of('#007040', '#d8e480'));
+        self::assertSame('#d8e480', $this->tags()->find((int) $tag->getId())?->getTextColor(), 'A text of its own is a new color.');
         self::assertSame([CacheTags::partial(PageListPartial::NAME), CacheTags::page((int) $page->getId())], $purger->purged);
 
         $writer->recolor($tag, null);
         self::assertNull($this->tags()->find((int) $tag->getId())?->getColor());
+        self::assertNull($this->tags()->find((int) $tag->getId())?->getTextColor());
     }
 
     public function testDeletingATagDetachesItsPagesTheBinIncluded(): void
@@ -147,26 +150,42 @@ final class PageTagTest extends CmsIntegrationTestCase
         self::assertNull($this->published($this->createPage('Sans étiquette'))->tag);
     }
 
-    public function testThePageAndTheCardsCarryTheColorOfTheTagAsANameOfThePalette(): void
+    public function testThePageAndTheCardsCarryTheCodesOfTheColorsOfTheTag(): void
     {
-        $tag = $this->tagWriter()->add('Recette', PageTagColor::Cyan);
+        $tag = $this->tagWriter()->add('Recette', PageTagColor::of('#dc4a7b', '#ffffff'));
         $page = $this->tagged('Gratin de pâtes', $tag);
 
-        self::assertSame('cyan', $this->published($page)->tagColor);
-        self::assertSame('cyan', $this->published($page)->withHtml('<p>resolved</p>')->tagColor);
-        self::assertSame('cyan', $this->repository()->withTag('Recette', $this->locale())[0]->tagColor);
+        self::assertSame('#dc4a7b', $this->published($page)->tagColor);
+        self::assertSame('#ffffff', $this->published($page)->tagTextColor);
+        self::assertSame('#ffffff', $this->published($page)->withHtml('<p>resolved</p>')->tagTextColor);
+        self::assertSame('#dc4a7b', $this->repository()->withTag('Recette', $this->locale())[0]->tagColor);
+        self::assertSame('#ffffff', $this->repository()->withTag('Recette', $this->locale())[0]->tagTextColor);
         $ofType = array_values(array_filter(
             $this->repository()->ofType((string) $page->getPageType(), $this->locale()),
             static fn (PageCard $card): bool => $card->id === (int) $page->getId(),
         ));
-        self::assertSame('cyan', $ofType[0]->tagColor ?? null);
+        self::assertSame('#dc4a7b', $ofType[0]->tagColor ?? null);
+        self::assertSame('#ffffff', $ofType[0]->tagTextColor ?? null);
         self::assertNull($this->published($this->createPage('Sans étiquette'))->tagColor);
 
-        // A name written by hand in the table is not one a theme can map.
+        // The text left to the contrast reaches the theme as the black or white chosen.
+        $this->getPropelConnection()->exec(\sprintf('UPDATE cms_tag SET text_color = NULL WHERE id = %d', $tag->getId()));
+        CmsTagTableMap::clearInstancePool();
+        CmsPageTableMap::clearInstancePool();
+        self::assertSame('#000000', $this->published($page)->tagTextColor);
+
+        // A name of the former palette reads as the badge it gave.
+        $this->getPropelConnection()->exec(\sprintf("UPDATE cms_tag SET color = 'cyan' WHERE id = %d", $tag->getId()));
+        CmsTagTableMap::clearInstancePool();
+        CmsPageTableMap::clearInstancePool();
+        self::assertSame('#0dcaf0', $this->published($page)->tagColor);
+
+        // Anything else written by hand in the table reads as no color.
         $this->getPropelConnection()->exec(\sprintf("UPDATE cms_tag SET color = 'pink' WHERE id = %d", $tag->getId()));
         CmsTagTableMap::clearInstancePool();
         CmsPageTableMap::clearInstancePool();
         self::assertNull($this->published($page)->tagColor);
+        self::assertNull($this->published($page)->tagTextColor);
     }
 
     public function testThePagesOfATagAreTheOnesOnlineInTheLanguage(): void
@@ -272,36 +291,53 @@ final class PageTagTest extends CmsIntegrationTestCase
 
     public function testTheColorTravelsWithTheExportAndColorsTheTagsTheImportCreates(): void
     {
-        $page = $this->tagged('Gratin de pâtes', $this->tagWriter()->add('Recette', PageTagColor::Orange));
+        $page = $this->tagged('Gratin de pâtes', $this->tagWriter()->add('Recette', PageTagColor::of('#f9b000', '#9c0337')));
         $document = $this->exportedPage($page);
 
-        self::assertSame('orange', $document['pages'][0]['tag_color']);
+        self::assertSame('#f9b000', $document['pages'][0]['tag_color']);
+        self::assertSame('#9c0337', $document['pages'][0]['tag_text_color']);
 
         $document['pages'][0]['tag'] = 'Étiquette importée';
         $report = $this->getService(SiteImporter::class)->import(SiteDocument::fromArray($document), new ImportOptions(replace: true));
 
         self::assertSame([], $report->warnings());
-        self::assertSame('orange', $this->tags()->findByName('Étiquette importée')?->getColor());
+        self::assertSame('#f9b000', $this->tags()->findByName('Étiquette importée')?->getColor());
+        self::assertSame('#9c0337', $this->tags()->findByName('Étiquette importée')?->getTextColor());
     }
 
     public function testATagTheSiteHasKeepsItsColorOnImport(): void
     {
-        $page = $this->tagged('Gratin de pâtes', $this->tagWriter()->add('Recette', PageTagColor::Orange));
+        $page = $this->tagged('Gratin de pâtes', $this->tagWriter()->add('Recette', PageTagColor::of('#f9b000')));
         $document = $this->exportedPage($page);
-        $document['pages'][0]['tag_color'] = 'dark';
+        $document['pages'][0]['tag_color'] = '#212529';
 
         $this->getService(SiteImporter::class)->import(SiteDocument::fromArray($document), new ImportOptions(replace: true));
 
         CmsTagTableMap::clearInstancePool();
-        self::assertSame('orange', $this->tags()->findByName('Recette')?->getColor());
+        self::assertSame('#f9b000', $this->tags()->findByName('Recette')?->getColor());
     }
 
-    public function testAnImportedColorOutsideThePaletteIsDroppedWithAWarning(): void
+    public function testAFileOfTheFormerPaletteImportsTheBadgeItsNameGave(): void
     {
         $page = $this->createPage('Gratin de pâtes');
         $document = $this->exportedPage($page);
         $document['pages'][0]['tag'] = 'Étiquette importée';
-        $document['pages'][0]['tag_color'] = '#ff00ff';
+        $document['pages'][0]['tag_color'] = 'dark';
+        unset($document['pages'][0]['tag_text_color']);
+
+        $report = $this->getService(SiteImporter::class)->import(SiteDocument::fromArray($document), new ImportOptions(replace: true));
+
+        self::assertSame([], $report->warnings());
+        self::assertSame('#212529', $this->tags()->findByName('Étiquette importée')?->getColor());
+        self::assertSame('#ffffff', $this->tags()->findByName('Étiquette importée')?->getTextColor());
+    }
+
+    public function testAnImportedColorThatIsNotACodeIsDroppedWithAWarning(): void
+    {
+        $page = $this->createPage('Gratin de pâtes');
+        $document = $this->exportedPage($page);
+        $document['pages'][0]['tag'] = 'Étiquette importée';
+        $document['pages'][0]['tag_color'] = 'pink';
 
         $report = $this->getService(SiteImporter::class)->import(SiteDocument::fromArray($document), new ImportOptions(replace: true));
 

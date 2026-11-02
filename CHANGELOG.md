@@ -7,6 +7,29 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Upgrading to 2.7.0
+
+- The color of a tag is free. `cms_tag.color` holds the `#rrggbb` code of the
+  background, and the update adds `cms_tag.text_color`, the code of the text,
+  NULL to leave it to the contrast (`Config/update/2.7.0.sql`). A tag colored
+  with a name of the former palette takes the codes of the badge it gave.
+  Remove `var/propel/<env>` so the models are generated again.
+- `tagColor`, on `PublishedPage`, `PageCard` and the result of
+  `cms_pages_tagged()`, is now the code of the background instead of a name of
+  the palette, and `tagTextColor` gives the code of the text. A theme that
+  mapped the six names to its own design prints the codes instead, for
+  example `style="background-color: {{ cms_page.tagColor }}; color: {{
+  cms_page.tagTextColor }}"`.
+- `PageTagColor` is a value object, no longer an enum: `PageTagColor::of('#dc4a7b', '#ffffff')`
+  in place of `PageTagColor::Cyan`, `->background` in place of `->value`.
+
+### Changed
+
+- **A tag takes any color.** The tag screen gives a color picker for the
+  background, and a second one for the text, or black or white chosen by the
+  contrast. A site file keeps both, and a file written before still imports
+  its names of the palette.
+
 ### Upgrading to 2.6.0
 
 - The update adds `cms_page_document` and `cms_page_document_i18n`, and

@@ -184,7 +184,7 @@
                                             <span class="badge bg-primary ms-2">{{ 'Home page'|trans({}, 'theliacms') }}</span>
                                         {% endif %}
                                         {% if row.tag %}
-                                            <span class="badge {{ row.tag_badge }} ms-2" data-testid="cms-page-tag-{{ row.id }}">
+                                            <span class="badge {{ row.tag_badge }} ms-2"{% if row.tag_badge_style %} style="{{ row.tag_badge_style }}"{% endif %} data-testid="cms-page-tag-{{ row.id }}">
                                                 <i class="bi bi-tag me-1" aria-hidden="true"></i>{{ row.tag }}
                                             </span>
                                         {% endif %}

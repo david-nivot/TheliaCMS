@@ -1094,8 +1094,9 @@ final readonly class SiteImporter
      * The tag of an imported page, created here when the site lacks it: a tag
      * is a label of the content, so bringing one in takes no more than the
      * right to write the page, from a site file or from a saved template.
-     * Files written before 1.3.0 carry no tag, before 2.5.0 no color. The
-     * color goes to a tag created here: a tag the site has keeps its own.
+     * Files written before 1.3.0 carry no tag, before 2.5.0 no color, and
+     * before 2.7.0 a color that is a name of the former palette. The color
+     * goes to a tag created here: a tag the site has keeps its own.
      *
      * @param array<string, mixed> $page
      */
@@ -1129,10 +1130,11 @@ final readonly class SiteImporter
             return null;
         }
 
-        $color = \is_string($raw) ? PageTagColor::tryFrom($raw) : null;
+        $rawText = $page['tag_text_color'] ?? null;
+        $color = \is_string($raw) ? PageTagColor::fromStored($raw, \is_string($rawText) ? $rawText : null) : null;
 
         if (null === $color) {
-            $report->warn(\sprintf('The tag "%s" was imported without its color, which is not one of the palette.', $name));
+            $report->warn(\sprintf('The tag "%s" was imported without its color, which is not the code of a color.', $name));
         }
 
         return $color;

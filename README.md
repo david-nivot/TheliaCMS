@@ -1225,26 +1225,34 @@ tag is a name shown as it is in every language — "Recette", "Actualité" — a
 managing them takes the same right as editing pages. Deleting a tag leaves its
 pages without one; the screen says how many.
 
-A tag may have a color, one of a palette of six or none: the back office
-shows the tag in a badge of that color, grey without one. The palette is a
-closed list so that a theme can map each name to its own design:
+A tag may have a color or none. Its color is free: a background, as a
+`#rrggbb` code, and a text color, either chosen or left to the contrast, in
+which case the text is black or white, whichever reads better on the
+background (WCAG 2 relative luminance). The back office shows the tag in a
+badge of those colors, grey without one. The codes are checked before they
+are stored, so a theme may print them in a style attribute.
 
-| Name | Badge in the back office |
-|---|---|
-| `red` | `text-bg-danger` |
-| `orange` | `text-bg-primary` |
-| `yellow` | `text-bg-warning` |
-| `green` | `text-bg-success` |
-| `cyan` | `text-bg-info` |
-| `dark` | `text-bg-dark` |
+Up to 2.6, a tag took one of six names. The update to 2.7.0 turns each name
+into the codes of the badge it gave, and a site file written then imports the
+same way:
+
+| Former name | Background | Text |
+|---|---|---|
+| `red` | `#dc3545` | `#ffffff` |
+| `orange` | `#f26041` | `#000000` |
+| `yellow` | `#ffc107` | `#000000` |
+| `green` | `#198754` | `#ffffff` |
+| `cyan` | `#0dcaf0` | `#000000` |
+| `dark` | `#212529` | `#ffffff` |
 
 The tag is what gathers pages: a theme lists the pages of a tag with
 `cms_pages_tagged('Recette')`, which answers with the pages online in the
 language served, the most recently published first, each as `id`, `title`,
-`url`, `chapo`, `description`, `image`, `pageType`, `tag`, `tagColor` and
-`publishedAt`. The page being served reads its own tag as `cms_page.tag`, and
-the modules hooked on `cmspage.*` as `page.tag`; the color of the tag, as a
-name of the palette or null, is `tagColor` beside it. From PHP, the same list comes from
+`url`, `chapo`, `description`, `image`, `pageType`, `tag`, `tagColor`,
+`tagTextColor` and `publishedAt`. The page being served reads its own tag as `cms_page.tag`, and
+the modules hooked on `cmspage.*` as `page.tag`; the colors of the tag are
+`tagColor`, the code of its background, and `tagTextColor`, the code of its
+text, both null for a tag without a color. From PHP, the same list comes from
 `PublishedPageRepository::withTag($tag, $locale)`.
 
 ```twig
@@ -1258,7 +1266,8 @@ name of the palette or null, is `tagColor` beside it. From PHP, the same list co
 The tag follows a page when it is duplicated and travels with the site export,
 its color with it; an import creates the tags the site lacks, in the color of
 the file, and leaves the color of a tag the site has. The update to 1.3.0 adds
-the `cms_tag` table and `cms_page.tag_id`, the update to 2.5.0 `cms_tag.color`.
+the `cms_tag` table and `cms_page.tag_id`, the update to 2.5.0 `cms_tag.color`,
+the update to 2.7.0 `cms_tag.text_color`.
 
 ### Twig functions
 
