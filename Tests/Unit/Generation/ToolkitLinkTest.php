@@ -21,8 +21,9 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use TheliaCMS\Generation\Admin\ToolkitLink;
 
 /**
- * The link to the page of every section: there in debug with the Flexy
- * theme, nowhere otherwise, since the toolkit answers nowhere else.
+ * The link to the page of every section: there with the Flexy theme where the
+ * kernel runs in debug or the theme opens its toolkit (THEME_TOOLKIT),
+ * nowhere otherwise, since the toolkit answers nowhere else.
  */
 final class ToolkitLinkTest extends TestCase
 {
@@ -43,7 +44,23 @@ final class ToolkitLinkTest extends TestCase
         $urls = $this->createStub(UrlGeneratorInterface::class);
         $urls->method('generate')->willReturn('/toolkit/cms-all-sections');
 
-        self::assertNull((new ToolkitLink($urls, false))->url(), 'The toolkit answers 404 outside debug.');
+        self::assertNull((new ToolkitLink($urls, false, storiesAvailable: true, themeToolkit: false))->url(), 'The toolkit answers 404 outside debug unless the theme opens it.');
+    }
+
+    public function testLinksToThePageOfEverySectionWhereTheThemeOpensItsToolkit(): void
+    {
+        if (!interface_exists(StoryProviderInterface::class)) {
+            self::markTestSkipped('The theme has no toolkit: the section stories cannot load.');
+        }
+
+        $urls = $this->createStub(UrlGeneratorInterface::class);
+        $urls->method('generate')->willReturn('/toolkit/cms-all-sections');
+
+        self::assertSame(
+            '/toolkit/cms-all-sections',
+            (new ToolkitLink($urls, false, storiesAvailable: true, themeToolkit: true))->url(),
+            'THEME_TOOLKIT opens the toolkit outside debug.',
+        );
     }
 
     public function testLinksNowhereWithoutTheToolkit(): void

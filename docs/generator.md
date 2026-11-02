@@ -174,8 +174,8 @@ the signed preview link of the draft.
   components the theme opens in `config/theliacms.yaml` (with the sections of
   the module the theme puts away under `hidden`), then the sections and the
   partials of the module (`docs/creating-a-component.md`).
-- **See every section the generator can use**: a link, shown in debug with
-  the Flexy theme, to the page the module hangs in the toolkit
+- **See every section the generator can use**: a link, shown in debug or with
+  `THEME_TOOLKIT` on the Flexy theme, to the page the module hangs in the toolkit
   (`/toolkit/cms-all-sections`): every section with its sample, live content
   named and described. A brief that names a section asks for it.
 - **Write it from a brief**: what the page should say, its tone and audience.
