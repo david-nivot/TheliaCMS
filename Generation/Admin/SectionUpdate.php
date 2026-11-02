@@ -198,6 +198,41 @@ final readonly class SectionUpdate
         return [];
     }
 
+    /**
+     * A section duplicated by hand: the same component, props and
+     * appearance under an id no other section holds, put right after the
+     * original. Only the draft of the language edited changes. A section of
+     * a component the site put away is not copied, as it would not be added.
+     *
+     * @return list<string> what went wrong, empty when the draft is saved
+     */
+    public function duplicate(Request $request, ContentSubject $subject, Document $current, \Closure $save): array
+    {
+        $sectionId = (string) $request->request->get('section', '');
+        $section = '' === $sectionId ? null : $current->section($sectionId);
+
+        if (null === $section) {
+            return [$this->translator->trans('This section is no longer in the document: reload the screen.', [], TheliaCMS::DOMAIN_NAME)];
+        }
+
+        if (!$this->catalog->canBeDuplicated($section->component)) {
+            return [$this->translator->trans('This component is not offered on this site: reload the screen.', [], TheliaCMS::DOMAIN_NAME)];
+        }
+
+        $copy = new Section($current->freeSectionId($section->component), $section->component, $section->props, $section->appearance);
+        $document = $current->withSectionAfter($section->id, $copy);
+
+        try {
+            $save($document);
+        } catch (InvalidDocumentException $exception) {
+            return $exception->problems;
+        }
+
+        $this->log->recordManual($subject->target, $subject->locale, $document->toJson(), \sprintf('Section "%s" duplicated by hand as "%s".', $section->id, $copy->id));
+
+        return [];
+    }
+
     private static function postedSection(Request $request): ?string
     {
         foreach ($request->request->all() as $name => $fields) {

@@ -65,7 +65,7 @@ shows how to test an update, outside a transaction.
   on the old one (or miss a Twig error the browser shows). After a change to
   a template, move `var/cache/test/twig` aside before the tests.
 - **Module assets** served by `module_asset()` are copied once into
-  `public/assets/backOffice/default-twig/TheliaCMS/`. After a change to a
+  `public/assets/backOffice/default-twig/TheliaCMS/assets/`. After a change to a
   script or a stylesheet of `templates/backOffice/default-twig/assets/`, copy
   the file there again (or remove the published directory), and give the
   template an `assets_version` so the browser drops its copy too. The

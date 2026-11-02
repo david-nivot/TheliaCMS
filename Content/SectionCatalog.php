@@ -109,6 +109,23 @@ final class SectionCatalog implements ResetInterface
     }
 
     /**
+     * Whether a section of this component may be duplicated by hand: the
+     * site offers the component, or it is a prototype, which the pages
+     * holding it edit like any section. A component the site put away is
+     * not copied, as it is not added.
+     */
+    public function canBeDuplicated(string $name): bool
+    {
+        if (isset($this->offered()[$name])) {
+            return true;
+        }
+
+        $definition = $this->find($name);
+
+        return $definition instanceof Site\SiteComponentSection && $definition->prototype;
+    }
+
+    /**
      * @return array<string, SectionDefinitionInterface>
      */
     public function all(): array

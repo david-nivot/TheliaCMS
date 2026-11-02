@@ -256,8 +256,9 @@ way, so the next request to the generator starts from the corrected text. A
 word corrected by hand costs nothing and takes the right to change pages, not
 the generate right. The same right reorders the sections, dragged by their
 handle or moved one place up or down with the arrows (the way from the
-keyboard), and removes them; what is online changes when the draft is
-published. **Add a section**, in the preview right after the last section
+keyboard), duplicates them (the copy right after the original, with the same
+props and appearance), and removes them; what is online changes when the
+draft is published. **Add a section**, in the preview right after the last section
 (or on the screen of a page holding nothing yet), lists the components the site
 offers: the one picked is added at the end of the draft with the example
 props of its component, and its text is then edited by hand. A page holding
