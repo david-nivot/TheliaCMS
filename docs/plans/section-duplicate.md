@@ -2,7 +2,10 @@
 
 Status: steps 1 to 7 done on `feat/section-duplicate` (2026-11-02). Each new
 test was seen red by breaking the code it covers (nine breakages), then both
-suites green. To do: one pass in a real browser on the content screen.
+suites green. Checked in a browser on the content screen of a page: the copy
+shows second in the list and in the preview, without reloading the screen,
+and the console stays clean. Not checked: translating a page whose other
+language does not hold the copy.
 Read on `main` at 83b210e (2.7.1). The design questions are settled (see
 "Decisions taken").
 
