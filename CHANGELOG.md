@@ -7,6 +7,15 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **A section is duplicated by hand.** On the content screen of a page or of
+  a catalogue item, the button next to the arrows of a section puts a copy of
+  it right after it in the draft: same component, props and appearance, under
+  an id of its own. Only the draft of the language edited changes; it takes
+  the right to change pages, like moving a section. A section of a component
+  the site put away is not copied, as it would not be added.
+
 ### Upgrading to 2.7.0
 
 - The color of a tag is free. `cms_tag.color` holds the `#rrggbb` code of the

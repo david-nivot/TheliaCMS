@@ -264,6 +264,16 @@
                                                         </button>
                                                     </form>
                                                 {% endif %}
+                                                {# A component the site put away is not copied, as it is not added. #}
+                                                {% if section.duplicable %}
+                                                    <form method="post" action="{{ subject.url('duplicate') }}" class="cms-content__item-move-form" data-cms-duplicate data-testid="cms-section-duplicate-{{ section.id }}">
+                                                        <input type="hidden" name="_token" value="{{ assignToken() }}">
+                                                        <input type="hidden" name="section" value="{{ section.id }}">
+                                                        <button type="submit" class="btn btn-sm btn-link text-secondary p-0" title="{{ 'Duplicate this section'|trans({}, 'theliacms') }}" aria-label="{{ 'Duplicate section %rank%'|trans({ '%rank%': section.rank }, 'theliacms') }}">
+                                                            <i class="bi bi-copy" aria-hidden="true"></i>
+                                                        </button>
+                                                    </form>
+                                                {% endif %}
                                                 <form method="post" action="{{ subject.url('remove') }}" class="cms-content__item-remove-form" data-cms-remove data-testid="cms-section-remove-{{ section.id }}">
                                                     <input type="hidden" name="_token" value="{{ assignToken() }}">
                                                     <input type="hidden" name="section" value="{{ section.id }}">

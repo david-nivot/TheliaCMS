@@ -183,6 +183,12 @@ final readonly class ItemContentController
         return $this->byHand($request, $type, $id, 'move', 'The order of the sections is saved in the draft.');
     }
 
+    #[Route('/duplicate', name: 'duplicate', methods: ['POST'])]
+    public function duplicate(Request $request, string $type, int $id): Response
+    {
+        return $this->byHand($request, $type, $id, 'duplicate', 'The section is duplicated in the draft, right after the original.');
+    }
+
     #[Route('/add', name: 'add', methods: ['POST'])]
     public function add(Request $request, string $type, int $id): Response
     {
@@ -326,6 +332,7 @@ final readonly class ItemContentController
             'apply' => $this->sectionUpdate->apply($request, $subject, $current, $save),
             'remove' => $this->sectionUpdate->remove($request, $subject, $current, $save),
             'move' => $this->sectionUpdate->move($request, $subject, $current, $save),
+            'duplicate' => $this->sectionUpdate->duplicate($request, $subject, $current, $save),
         };
 
         return $this->afterHand($request, $item, $lang, $problems, $done);
@@ -369,7 +376,7 @@ final readonly class ItemContentController
         $parameters = ['type' => $item->type->value, 'id' => $item->id, EditLanguage::PARAMETER => $lang->getId()];
         $routes = ['screen' => $this->screenUrl($item, $lang)];
 
-        foreach (['generate', 'revise', 'section', 'update', 'remove', 'restore', 'move', 'add', 'translate', 'publish'] as $action) {
+        foreach (['generate', 'revise', 'section', 'update', 'remove', 'restore', 'move', 'duplicate', 'add', 'translate', 'publish'] as $action) {
             $routes[$action] = $this->urls->generate('admin.cms.catalogue.content.'.$action, $parameters);
         }
 

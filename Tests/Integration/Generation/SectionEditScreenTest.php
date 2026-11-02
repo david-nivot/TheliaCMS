@@ -24,6 +24,8 @@ use TheliaCMS\Content\Section;
 use TheliaCMS\Content\SectionAppearance;
 use TheliaCMS\Content\SectionAvailability;
 use TheliaCMS\Content\SectionCatalog;
+use TheliaCMS\Content\Site\SiteComponent;
+use TheliaCMS\Content\Site\SiteComponentRepository;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Model\CmsPageContentQuery;
 use TheliaCMS\Model\CmsPageGenerationQuery;
@@ -33,6 +35,7 @@ use TheliaCMS\Page\PageTypeWriter;
 use TheliaCMS\Preview\PreviewLink;
 use TheliaCMS\Security\CmsResources;
 use TheliaCMS\Tests\Integration\Security\AdminScreenTestCase;
+use TheliaCMS\Tests\Unit\Content\Site\PriceTable;
 use TheliaCMS\TheliaCMS;
 
 /**
@@ -462,6 +465,85 @@ final class SectionEditScreenTest extends AdminScreenTestCase
 
         self::assertSame(302, $this->send('POST', $form->getUri(), $values));
         self::assertSame(1, $this->screen($this->url($page))->filter('[data-testid="cms-builder-flash-danger"]')->count());
+    }
+
+    public function testASectionIsDuplicatedRightAfterItselfAndTheLedgerSaysSo(): void
+    {
+        $page = $this->pageWith([
+            new Section('intro', 'cms:richtext', ['html' => '<h2>Services</h2><p>Ce que nous faisons.</p>'], new SectionAppearance(background: '#f8d7d7')),
+            new Section('faq', 'cms:richtext', ['html' => '<h2>Questions</h2><p>Combien ? Sur devis.</p>']),
+        ]);
+
+        $form = $this->screen($this->url($page))->filter('[data-testid="cms-section-duplicate-intro"]')->form();
+        self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()));
+
+        $content = CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($this->locale())->findOne();
+        $document = Document::fromJson($content?->getDraftDocument());
+
+        self::assertSame(['intro', 'richtext', 'faq'], array_map(static fn (Section $section): string => $section->id, $document?->sections ?? []), 'The copy takes an id no other section holds, right after the original.');
+        self::assertSame($document?->section('intro')?->props, $document?->section('richtext')?->props);
+        self::assertSame(['background' => '#f8d7d7'], $document?->section('richtext')?->appearance->toArray(), 'The copy keeps the appearance of the original.');
+        self::assertStringContainsString('data-cms-section="richtext"', (string) $content?->getDraftHtml(), 'The draft is rendered again with the copy, which the preview points at by its own id.');
+        self::assertNull($content?->getPublishedHtml(), 'What is online does not change until the draft is published.');
+
+        $row = CmsPageGenerationQuery::create()->filterByTargetId($page->getId())->orderById(\Propel\Runtime\ActiveQuery\Criteria::DESC)->findOne();
+        self::assertSame('manual', $row?->getKind());
+        self::assertStringContainsString('duplicated by hand as "richtext"', (string) $row?->getPrompt());
+
+        $screen = $this->screen($this->url($page));
+        self::assertSame(1, $screen->filter('[data-testid="cms-builder-flash-success"]')->count());
+        self::assertSame(['intro', 'richtext', 'faq'], $screen->filter('[data-testid="cms-content-sections"] li[data-section]')->each(static fn (Crawler $item): string => (string) $item->attr('data-section')));
+    }
+
+    public function testASectionOfAComponentTheSitePutAwayIsNotDuplicated(): void
+    {
+        $page = $this->pageWith([
+            new Section('intro', 'cms:richtext', ['html' => '<h1>Avant</h1>']),
+            new Section('contact', 'Partial:cms-form', ['form' => 1]),
+        ]);
+        $form = $this->screen($this->url($page))->filter('[data-testid="cms-section-duplicate-contact"]')->form();
+
+        $this->getService(SectionAvailability::class)->setOffered('Partial:cms-form', false);
+
+        self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()));
+
+        $content = CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($this->locale())->findOne();
+        self::assertSame(['intro', 'contact'], array_map(static fn (Section $section): string => $section->id, Document::fromJson($content?->getDraftDocument())?->sections ?? []), 'Nothing was copied.');
+
+        $screen = $this->screen($this->url($page));
+        self::assertSame(1, $screen->filter('[data-testid="cms-builder-flash-danger"]')->count());
+        self::assertSame(0, $screen->filter('[data-testid="cms-section-duplicate-contact"]')->count(), 'The section no longer offers to be duplicated.');
+        self::assertSame(1, $screen->filter('[data-testid="cms-section-duplicate-intro"]')->count());
+    }
+
+    public function testASectionOfAPrototypeIsDuplicatedInThePageHoldingIt(): void
+    {
+        $component = PriceTable::component();
+        $this->getService(SiteComponentRepository::class)->save(new SiteComponent('PriceGrid', $component->label, $component->description, $component->props, $component->sample, $component->template), SiteComponentRepository::STATUS_DRAFT);
+        $page = $this->pageWith([
+            new Section('plans', 'Site:PriceGrid', ['title' => 'Nos formules', 'plans' => [['name' => 'Studio', 'price' => '40 €', 'details' => '<p>Une heure</p>']]]),
+        ]);
+
+        $form = $this->screen($this->url($page))->filter('[data-testid="cms-section-duplicate-plans"]')->form();
+        self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()));
+
+        $content = CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($this->locale())->findOne();
+        self::assertSame(['plans', 'pricegrid'], array_map(static fn (Section $section): string => $section->id, Document::fromJson($content?->getDraftDocument())?->sections ?? []), 'A prototype is offered to nobody else, but the page holding it copies it like it edits it.');
+    }
+
+    public function testDuplicatingASectionThatIsNoLongerThereIsRefused(): void
+    {
+        $page = $this->pageWith([new Section('intro', 'cms:richtext', ['html' => '<h1>Avant</h1>'])]);
+
+        $form = $this->screen($this->url($page))->filter('[data-testid="cms-section-duplicate-intro"]')->form();
+        $values = $form->getPhpValues();
+        $values['section'] = 'gone';
+
+        self::assertSame(302, $this->send('POST', $form->getUri(), $values));
+        self::assertSame(1, $this->screen($this->url($page))->filter('[data-testid="cms-builder-flash-danger"]')->count());
+
+        $content = CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($this->locale())->findOne();
+        self::assertSame(['intro'], array_map(static fn (Section $section): string => $section->id, Document::fromJson($content?->getDraftDocument())?->sections ?? []));
     }
 
     public function testRowsOfAListAreAddedAndRemoved(): void

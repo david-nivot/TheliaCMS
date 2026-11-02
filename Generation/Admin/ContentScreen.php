@@ -198,6 +198,7 @@ final readonly class ContentScreen
                 'component' => $section->component,
                 'label' => $this->sectionChoices->label($section->component, $definition?->label() ?? $section->component),
                 'excerpt' => self::excerpt($section),
+                'duplicable' => $this->catalog->canBeDuplicated($section->component),
                 // Changing a word by hand costs nothing: the right to change
                 // the page is enough, where the generator takes its own.
                 'edit' => $mayEdit && null !== $definition ? $this->sectionForms->build($definition, $section, $subject->url('update'))->createView() : null,

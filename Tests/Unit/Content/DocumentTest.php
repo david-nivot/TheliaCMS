@@ -88,6 +88,21 @@ final class DocumentTest extends TestCase
         self::assertSame($document, $document->withSectionAt('gone', 0));
     }
 
+    public function testASectionPutAfterAnotherTakesThePlaceRightBehindIt(): void
+    {
+        $document = new Document([
+            new Section('a', RichTextSection::NAME, []),
+            new Section('b', RichTextSection::NAME, []),
+            new Section('c', RichTextSection::NAME, []),
+        ]);
+        $copy = new Section('a-2', RichTextSection::NAME, []);
+        $ids = static fn (Document $changed): array => array_map(static fn (Section $section): string => $section->id, $changed->sections);
+
+        self::assertSame(['a', 'a-2', 'b', 'c'], $ids($document->withSectionAfter('a', $copy)));
+        self::assertSame(['a', 'b', 'c', 'a-2'], $ids($document->withSectionAfter('c', $copy)), 'After the last one is last.');
+        self::assertSame($document, $document->withSectionAfter('gone', $copy));
+    }
+
     public function testAnAddedSectionIsGivenAnIdNoOtherHolds(): void
     {
         $document = new Document([
