@@ -25,6 +25,7 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Fixed
 
+- The button to the toolkit on the components screen also shows where the theme opens its toolkit with `THEME_TOOLKIT`, as the toolkit itself does, and no longer only in debug.
 - The color fields of a tag no longer read "optional": the color inputs always hold a color, the box says whether the tag has one, and its help sits under it.
 
 ### Changed

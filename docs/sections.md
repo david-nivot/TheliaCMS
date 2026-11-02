@@ -251,4 +251,4 @@ again by `thelia_cms:render`, then published.
 `cms_section(name, props)` renders a section anywhere in a theme, with its
 sample props when none are given: `{{ cms_section('cms:richtext', {html: '…'}) }}`.
 An unknown section renders nothing. It is also how the page of the toolkit of
-the Flexy theme (`/toolkit/cms-all-sections`, in debug) shows every section.
+the Flexy theme (`/toolkit/cms-all-sections`, in debug or with `THEME_TOOLKIT`) shows every section.

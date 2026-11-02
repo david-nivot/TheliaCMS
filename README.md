@@ -466,7 +466,7 @@ the pages using it keep rendering it, its sections stay editable by hand, and
 a revision or a translation of such a page may keep it. Free text cannot be
 switched off. The screen takes the settings right; the choice is stored in
 `module_config` under `disabled_sections`. Where the toolkit answers (debug
-mode, Flexy theme), a button opens it on the page that renders every
+mode or `THEME_TOOLKIT`, Flexy theme), a button opens it on the page that renders every
 component offered.
 
 ## Documents of a page

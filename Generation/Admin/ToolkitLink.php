@@ -22,9 +22,10 @@ use TheliaCMS\Content\Section\SectionStories;
 
 /**
  * Where to see every section the generator can use: the page the module
- * hangs in the toolkit of the Flexy theme. The toolkit answers only where
- * the kernel runs in debug, and only when the theme is there; elsewhere
- * there is nothing to link to.
+ * hangs in the toolkit of the Flexy theme. The toolkit answers where the
+ * kernel runs in debug or where the theme opens it (THEME_TOOLKIT, the same
+ * rule as the controller of the toolkit), and only when the theme is there;
+ * elsewhere there is nothing to link to.
  *
  * The page is a story of the toolkit (SectionStories), declared only when
  * the theme brings the stories of Flexy. A theme with a toolkit of its own
@@ -41,13 +42,15 @@ final readonly class ToolkitLink
         #[Autowire('%kernel.debug%')]
         private bool $debug,
         ?bool $storiesAvailable = null,
+        #[Autowire('%env(bool:default::THEME_TOOLKIT)%')]
+        private bool $themeToolkit = false,
     ) {
         $this->storiesAvailable = $storiesAvailable ?? interface_exists(StoryProviderInterface::class);
     }
 
     public function url(): ?string
     {
-        if (!$this->debug || !$this->storiesAvailable) {
+        if (!($this->debug || $this->themeToolkit) || !$this->storiesAvailable) {
             return null;
         }
 
