@@ -39,7 +39,7 @@
                                     <span class="fw-medium">{{ row.name }}</span>
                                 {% endif %}
                             </td>
-                            <td><span class="badge {{ row.badge }}" data-testid="cms-tag-badge-{{ row.id }}"><i class="bi bi-tag me-1" aria-hidden="true"></i>{{ row.name }}</span></td>
+                            <td><span class="badge {{ row.badge }}"{% if row.badge_style %} style="{{ row.badge_style }}"{% endif %} data-testid="cms-tag-badge-{{ row.id }}"><i class="bi bi-tag me-1" aria-hidden="true"></i>{{ row.name }}</span></td>
                             <td data-testid="cms-tag-pages-{{ row.id }}">{{ row.pages }}</td>
                             <td class="text-end">
                                 {% if may_delete %}

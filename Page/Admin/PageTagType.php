@@ -15,14 +15,12 @@ declare(strict_types=1);
 namespace TheliaCMS\Page\Admin;
 
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\EnumType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Contracts\Translation\TranslatorInterface;
-use TheliaCMS\Page\PageTagColor;
 use TheliaCMS\Page\PageTagName;
 use TheliaCMS\TheliaCMS;
 
@@ -30,8 +28,7 @@ use TheliaCMS\TheliaCMS;
  * The fields of a tag, used to add one and to edit one.
  *
  * The messages of the constraints are translated here: the validator looks
- * them up in the `validators` domain, where the module has no catalogue. So
- * are the colors, each shown as the badge it gives: their labels are HTML.
+ * them up in the `validators` domain, where the module has no catalogue.
  */
 final class PageTagType extends AbstractType
 {
@@ -51,27 +48,15 @@ final class PageTagType extends AbstractType
             'help' => 'Shown as it is on every page that carries it, in every language.',
         ]);
 
-        $builder->add('color', EnumType::class, [
-            'class' => PageTagColor::class,
+        $builder->add('color', PageTagColorType::class, [
             'label' => 'Color',
-            'expanded' => true,
-            'required' => false,
-            'placeholder' => $this->badge(null, $this->translate('No color')),
-            'choice_label' => fn (PageTagColor $color): string => $this->badge($color, $this->translate($color->label())),
-            'choice_translation_domain' => false,
-            'label_html' => true,
-            'help' => 'The color of the badge of the tag in the back office. A theme may show it on the site.',
+            'help' => 'The badge of the tag in the back office. A theme may show it on the site.',
         ]);
     }
 
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults(['translation_domain' => TheliaCMS::DOMAIN_NAME]);
-    }
-
-    private function badge(?PageTagColor $color, string $label): string
-    {
-        return \sprintf('<span class="badge %s">%s</span>', PageTagColor::badgeClassOf($color), htmlspecialchars($label, \ENT_QUOTES));
     }
 
     private function translate(string $message): string

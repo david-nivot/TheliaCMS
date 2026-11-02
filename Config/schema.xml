@@ -556,13 +556,15 @@
         The tags of the site. A tag is a name shown as it is, in every
         language, and a page carries at most one of them (`cms_page.tag_id`).
         The name is unique under the collation of the column, so two spellings
-        of the same word cannot both exist. The color is the name of an entry
-        of the palette (TheliaCMS\Page\PageTagColor), NULL for none.
+        of the same word cannot both exist. The color is the `#rrggbb` code of
+        the background of the tag, NULL for none, and the text color the code of
+        its text, NULL to leave it to the contrast (TheliaCMS\Page\PageTagColor).
     -->
     <table name="cms_tag" namespace="TheliaCMS\Model">
         <column autoIncrement="true" name="id" primaryKey="true" required="true" type="INTEGER"/>
         <column name="name" required="true" size="100" type="VARCHAR"/>
         <column name="color" required="false" size="16" type="VARCHAR"/>
+        <column name="text_color" required="false" size="16" type="VARCHAR"/>
 
         <unique name="unq_cms_tag_name">
             <unique-column name="name"/>

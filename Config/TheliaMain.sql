@@ -488,6 +488,7 @@ CREATE TABLE `cms_tag`
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(100) NOT NULL,
     `color` VARCHAR(16),
+    `text_color` VARCHAR(16),
     `created_at` TIMESTAMP NULL,
     `updated_at` TIMESTAMP NULL,
     PRIMARY KEY (`id`),

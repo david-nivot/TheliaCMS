@@ -22,6 +22,7 @@ use TheliaCMS\Model\CmsTag;
 use TheliaCMS\Model\CmsTagQuery;
 use TheliaCMS\Model\Map\CmsPageTableMap;
 use TheliaCMS\Model\Map\CmsTagTableMap;
+use TheliaCMS\Page\PageTagColor;
 use TheliaCMS\Security\CmsResources;
 use TheliaCMS\Tests\Integration\Security\AdminScreenTestCase;
 
@@ -80,17 +81,23 @@ final class TagScreenTest extends AdminScreenTestCase
         self::assertSame('Recettes', CmsTagQuery::create()->findPk($tag->getId())?->getName());
     }
 
-    public function testATagIsAddedInAColorOfThePalette(): void
+    public function testATagIsAddedInAColorOfItsOwnWithTheTextChosen(): void
     {
         $form = $this->screen(self::SCREEN)->filter('[data-testid="cms-tag-add"]')->form();
         $form['page_tag[name]'] = 'Recette';
-        $form['page_tag[color]']->select('green');
+        $form['page_tag[color][colored]']->tick();
+        $form['page_tag[color][background]'] = '#DC4A7B';
+        $form['page_tag[color][automatic_text]']->untick();
+        $form['page_tag[color][text]'] = '#ffffff';
 
         self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()));
 
         $tag = $this->tagNamed('Recette');
-        self::assertSame('green', $tag?->getColor());
-        self::assertStringContainsString('text-bg-success', (string) $this->screen(self::SCREEN)->filter(\sprintf('[data-testid="cms-tag-badge-%d"]', $tag->getId()))->attr('class'));
+        self::assertSame('#dc4a7b', $tag?->getColor());
+        self::assertSame('#ffffff', $tag?->getTextColor());
+        $badge = $this->screen(self::SCREEN)->filter(\sprintf('[data-testid="cms-tag-badge-%d"]', $tag->getId()));
+        self::assertSame('background-color: #dc4a7b; color: #ffffff;', $badge->attr('style'));
+        self::assertStringNotContainsString(PageTagColor::NO_COLOR_BADGE, (string) $badge->attr('class'));
     }
 
     public function testATagIsRecoloredThenLosesItsColor(): void
@@ -100,34 +107,33 @@ final class TagScreenTest extends AdminScreenTestCase
         $page->setTagId($tag->getId())->save();
         $url = \sprintf('%s/%d', self::SCREEN, $tag->getId());
 
-        $screen = $this->screen($url);
-        self::assertSame(7, $screen->filter('input[name="page_tag[color]"] + label > .badge')->count(), 'Each choice shows as the badge it gives, "No color" included.');
-        self::assertSame(1, $screen->filter('input[name="page_tag[color]"][value="red"] + label > .badge.text-bg-danger')->count());
-
-        $form = $screen->filter('[data-testid="cms-tag-rename"]')->form();
-        self::assertSame('', $form['page_tag[color]']->getValue(), 'A tag without a color has "No color" checked.');
-        $form['page_tag[color]']->select('red');
+        $form = $this->screen($url)->filter('[data-testid="cms-tag-rename"]')->form();
+        self::assertFalse($form['page_tag[color][colored]']->hasValue(), 'A tag without a color has the box unticked.');
+        $form['page_tag[color][colored]']->tick();
+        $form['page_tag[color][background]'] = '#007040';
 
         self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()));
-        self::assertSame('red', $this->tagNamed('Recette')?->getColor());
-        self::assertStringContainsString('text-bg-danger', (string) $this->screen('/admin/cms/pages?q=Gratin')->filter(\sprintf('[data-testid="cms-page-tag-%d"]', $page->getId()))->attr('class'));
+        self::assertSame('#007040', $this->tagNamed('Recette')?->getColor());
+        self::assertNull($this->tagNamed('Recette')?->getTextColor(), 'The text is left to the contrast.');
+        self::assertSame('background-color: #007040; color: #ffffff;', $this->screen('/admin/cms/pages?q=Gratin')->filter(\sprintf('[data-testid="cms-page-tag-%d"]', $page->getId()))->attr('style'));
 
         $form = $this->screen($url)->filter('[data-testid="cms-tag-rename"]')->form();
-        self::assertSame('red', $form['page_tag[color]']->getValue(), 'The screen shows the color the tag has.');
-        $form['page_tag[color]']->select('');
+        self::assertTrue($form['page_tag[color][colored]']->hasValue(), 'The screen shows the color the tag has.');
+        self::assertSame('#007040', $form['page_tag[color][background]']->getValue());
+        $form['page_tag[color][colored]']->untick();
 
         self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()));
         self::assertNull($this->tagNamed('Recette')?->getColor());
-        self::assertStringContainsString('text-bg-secondary', (string) $this->screen('/admin/cms/pages?q=Gratin')->filter(\sprintf('[data-testid="cms-page-tag-%d"]', $page->getId()))->attr('class'));
+        self::assertStringContainsString(PageTagColor::NO_COLOR_BADGE, (string) $this->screen('/admin/cms/pages?q=Gratin')->filter(\sprintf('[data-testid="cms-page-tag-%d"]', $page->getId()))->attr('class'));
     }
 
-    public function testAColorOutsideThePaletteIsRefused(): void
+    public function testACodeThatIsNotAColorIsRefused(): void
     {
         $tag = $this->givenTag('Recette');
         $url = \sprintf('%s/%d', self::SCREEN, $tag->getId());
         $form = $this->screen($url)->filter('[data-testid="cms-tag-rename"]')->form();
         $values = $form->getPhpValues();
-        $values['page_tag']['color'] = '#ff00ff';
+        $values['page_tag']['color'] = ['colored' => '1', 'background' => '#ff00ff;x:y', 'automatic_text' => '1', 'text' => '#ffffff'];
 
         self::assertSame(200, $this->send('POST', $form->getUri(), $values));
         self::assertNull($this->tagNamed('Recette')?->getColor());

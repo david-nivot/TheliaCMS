@@ -56,7 +56,7 @@ final readonly class PageTagWriter
             return $existing;
         }
 
-        $tag = (new CmsTag())->setName($name)->setColor($color?->value);
+        $tag = (new CmsTag())->setName($name)->setColor($color?->background)->setTextColor($color?->text);
         $tag->save($connection);
         $this->activityLog->record('CREATE', (int) $tag->getId(), \sprintf('Tag "%s" added', $name));
 
@@ -90,16 +90,16 @@ final readonly class PageTagWriter
 
     public function recolor(CmsTag $tag, ?PageTagColor $color): void
     {
-        $former = PageTagColor::fromStored($tag->getColor());
+        $former = PageTagColor::fromStored($tag->getColor(), $tag->getTextColor());
 
-        if ($former === $color) {
+        if (null === $color ? null === $former : $color->equals($former)) {
             return;
         }
 
-        $tag->setColor($color?->value)->save();
+        $tag->setColor($color?->background)->setTextColor($color?->text)->save();
 
         $this->purgePagesOf($tag);
-        $this->activityLog->record('UPDATE', (int) $tag->getId(), \sprintf('Tag "%s" recolored from %s to %s', (string) $tag->getName(), $former->value ?? 'none', $color->value ?? 'none'));
+        $this->activityLog->record('UPDATE', (int) $tag->getId(), \sprintf('Tag "%s" recolored from %s to %s', (string) $tag->getName(), $former?->describe() ?? 'none', $color?->describe() ?? 'none'));
     }
 
     /**
