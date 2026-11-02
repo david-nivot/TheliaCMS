@@ -36,7 +36,7 @@ final class PageTagMigrationTest extends CmsIntegrationTestCase
 {
     protected bool $useTransaction = false;
 
-    /** @var list<array{id: int, name: string, color: string|null}> */
+    /** @var list<array{id: int, name: string, color: string|null, text_color: string|null}> */
     private array $tagsBefore = [];
 
     /** @var array<int, int> */
@@ -46,7 +46,7 @@ final class PageTagMigrationTest extends CmsIntegrationTestCase
     {
         parent::setUp();
 
-        $this->tagsBefore = $this->rows('SELECT id, name, color FROM cms_tag');
+        $this->tagsBefore = $this->rows('SELECT id, name, color, text_color FROM cms_tag');
         $this->pageTagsBefore = array_column($this->rows('SELECT id, tag_id FROM cms_page WHERE tag_id IS NOT NULL'), 'tag_id', 'id');
     }
 
@@ -57,9 +57,10 @@ final class PageTagMigrationTest extends CmsIntegrationTestCase
         $module = new TheliaCMS();
         $module->update('1.2.0', '1.3.0', $connection);
         $module->update('2.4.0', '2.5.0', $connection);
+        $module->update('2.6.3', '2.7.0', $connection);
 
         foreach ($this->tagsBefore as $tag) {
-            $connection->prepare('INSERT IGNORE INTO cms_tag (id, name, color, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())')->execute([$tag['id'], $tag['name'], $tag['color']]);
+            $connection->prepare('INSERT IGNORE INTO cms_tag (id, name, color, text_color, created_at, updated_at) VALUES (?, ?, ?, ?, NOW(), NOW())')->execute([$tag['id'], $tag['name'], $tag['color'], $tag['text_color']]);
         }
 
         foreach ($this->pageTagsBefore as $pageId => $tagId) {
