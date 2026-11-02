@@ -279,6 +279,18 @@ takes the same rights as **CMS > Components > New component**: the settings
 and the custom code resources. An export carries the status of every
 component, and an import keeps it.
 
+A component is also **copied into a new one**, to vary from it (a dark
+price table next to the light one). On the screen of a component,
+**Copy into a new component** takes a code and a label: the copy holds the
+template, the stylesheet, the props, the sample and the mark of provenance
+of its source, and nothing calls the generator. It is a prototype, offered to
+nobody until it is changed by **Ask a change** and kept, or kept for the
+whole site. Its stylesheet is scoped to the class of its own code
+(`cms-site--price-table-dark`), so changing one never changes the other. Its
+history starts empty. Copying takes the same rights as making a component.
+A component of the theme is not copied this way: it is rendered outside the
+sandbox, and a component of the site made from it would be a new generation.
+
 What the generator writes, and what the site checks
 (`Content/Site/SiteComponentValidator.php`) before showing it:
 

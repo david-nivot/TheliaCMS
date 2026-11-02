@@ -21,8 +21,10 @@ use Thelia\Domain\Ai\AiGatewayInterface;
 use Thelia\Test\FixtureFactory;
 use TheliaCMS\Content\Document;
 use TheliaCMS\Content\Section;
+use TheliaCMS\Content\SectionCatalog;
 use TheliaCMS\Content\Site\SiteComponent;
 use TheliaCMS\Content\Site\SiteComponentRepository;
+use TheliaCMS\Content\Site\SiteComponentValidator;
 use TheliaCMS\Generation\Component\ComponentPrompt;
 use TheliaCMS\Model\CmsComponentQuery;
 use TheliaCMS\Model\CmsPageContentQuery;
@@ -185,6 +187,66 @@ final class SiteComponentScreenTest extends AdminScreenTestCase
         self::assertSame(302, $this->send('POST', $delete->getUri(), $delete->getPhpValues()));
         self::assertNull($repository->find('PriceTable'));
         self::assertStringEndsWith('/admin/cms/components', (string) $this->client->getResponse()->headers->get('Location'));
+    }
+
+    public function testACopyIsAPrototypeHoldingWhatItsSourceHolds(): void
+    {
+        $repository = $this->getService(SiteComponentRepository::class);
+        // Kept the way a component is kept: through the validator, which fills
+        // the example with the defaults of its props.
+        $source = (new SiteComponentValidator())->validate(PriceTable::component(css: '.plan { color: var(--cms-color-text); }')->withProvenance('{"generator":"thelia-ai"}'));
+        $repository->save($source, SiteComponentRepository::STATUS_READY);
+
+        $form = $this->screen('/admin/cms/components/site/PriceTable')->filter('form[data-testid="cms-site-component-copy"]')->form();
+        self::assertSame($source->label, $form['label']->getValue(), 'The label of the source is the one to start from.');
+        $form['code'] = 'PriceTableDark';
+        $form['label'] = 'Tarifs, version sombre';
+
+        self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()));
+        self::assertStringEndsWith('/admin/cms/components/site/PriceTableDark', (string) $this->client->getResponse()->headers->get('Location'));
+
+        $copy = $repository->find('PriceTableDark');
+        self::assertNotNull($copy);
+        self::assertSame('Tarifs, version sombre', $copy->label);
+        self::assertSame([$source->description, $source->props, $source->sample, $source->template, $source->css], [$copy->description, $copy->props, $copy->sample, $copy->template, $copy->css]);
+        self::assertSame('{"generator":"thelia-ai"}', $copy->provenance, 'A copy of a generated component is still generated content.');
+        self::assertSame(SiteComponentRepository::STATUS_DRAFT, $repository->status('PriceTableDark'), 'A prototype: the generator is not offered two identical components.');
+        self::assertSame(SiteComponentRepository::STATUS_READY, $repository->status('PriceTable'), 'The source is left as it is.');
+
+        $screen = $this->screen('/admin/cms/components/site/PriceTableDark');
+        self::assertSame(1, $screen->filter('[data-testid="bo-flash-success"]')->count());
+        self::assertSame(1, $screen->filter('[data-testid="cms-site-component-prototype"]')->count());
+        self::assertArrayNotHasKey('Site:PriceTableDark', $this->getService(SectionCatalog::class)->offered(), 'Offered to nobody until it is kept for the whole site.');
+    }
+
+    public function testACopyUnderACodeTakenOrMalformedLeavesNothingBehind(): void
+    {
+        $repository = $this->getService(SiteComponentRepository::class);
+        $repository->save(PriceTable::component(), SiteComponentRepository::STATUS_READY);
+        $form = $this->screen('/admin/cms/components/site/PriceTable')->filter('form[data-testid="cms-site-component-copy"]')->form();
+
+        foreach (['PriceTable', 'price-table', ''] as $code) {
+            $form['code'] = $code;
+            self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()), $code);
+            self::assertStringEndsWith('/admin/cms/components/site/PriceTable', (string) $this->client->getResponse()->headers->get('Location'), 'Back on the source.');
+            self::assertSame(1, $this->screen('/admin/cms/components/site/PriceTable')->filter('[data-testid="bo-flash-danger"]')->count(), \sprintf('"%s" is refused, and the editor is told why.', $code));
+        }
+
+        self::assertSame(1, CmsComponentQuery::create()->count(), 'Nothing was saved.');
+    }
+
+    public function testCopyingAComponentTakesTheRightToMakeOne(): void
+    {
+        $this->getService(SiteComponentRepository::class)->save(PriceTable::component(), SiteComponentRepository::STATUS_READY);
+        $token = $this->tokenOfTheScripts($this->screen('/admin/cms/components/site/PriceTable'));
+
+        $this->logInAs((new FixtureFactory($this->getPropelConnection()))->restrictedAdmin([
+            CmsResources::SETTINGS => [AccessManager::VIEW, AccessManager::UPDATE],
+        ]));
+
+        self::assertSame(0, $this->screen('/admin/cms/components/site/PriceTable')->filter('form[data-testid="cms-site-component-copy"]')->count());
+        self::assertSame(403, $this->send('POST', '/admin/cms/components/site/PriceTable/copy', ['_token' => $token, 'code' => 'PriceTableDark', 'label' => 'Sombre']));
+        self::assertSame(1, CmsComponentQuery::create()->count());
     }
 
     public function testTheScriptOfTheScreenFollowsTheCallAsItRunsThenGoesToTheCandidate(): void
