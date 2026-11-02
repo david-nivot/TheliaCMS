@@ -108,6 +108,24 @@ final class ItemContentScreenTest extends AdminScreenTestCase
         self::assertNull($row->getPublishedAt(), 'Taken offline from the tab.');
     }
 
+    public function testASectionOfTheItemIsDuplicatedRightAfterItself(): void
+    {
+        $content = $this->content();
+
+        $add = $this->screen($this->url($content))->filter('[data-testid="cms-content-add-cms:richtext"]')->form();
+        self::assertSame(302, $this->send('POST', $add->getUri(), $add->getPhpValues()));
+
+        $duplicate = $this->screen($this->url($content))->filter('[data-testid="cms-section-duplicate-richtext"]')->form();
+        self::assertSame(302, $this->send('POST', $duplicate->getUri(), $duplicate->getPhpValues()));
+
+        $row = CmsItemContentQuery::create()->filterByItemType('content')->filterByItemId($content->getId())->filterByLocale($this->locale())->findOne();
+        $document = Document::fromJson($row?->getDraftDocument());
+
+        self::assertSame(['richtext', 'richtext-2'], array_map(static fn (Section $section): string => $section->id, $document?->sections ?? []), 'The item takes the same duplication as a page.');
+        self::assertSame($document?->section('richtext')?->props, $document?->section('richtext-2')?->props);
+        self::assertSame(1, $this->screen($this->url($content))->filter('[data-testid="cms-builder-flash-success"]')->count());
+    }
+
     public function testADraftTheValidatorRefusesIsReportedRatherThanPublished(): void
     {
         $content = $this->content();

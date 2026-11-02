@@ -127,6 +127,25 @@ final readonly class Document
     }
 
     /**
+     * The section put right after the one carrying `$id`, the others kept
+     * in their order. A document that does not hold `$id` is returned as it
+     * is.
+     */
+    public function withSectionAfter(string $id, Section $section): self
+    {
+        $index = $this->indexOf($id);
+
+        if (null === $index) {
+            return $this;
+        }
+
+        $sections = $this->sections;
+        array_splice($sections, $index + 1, 0, [$section]);
+
+        return new self($sections);
+    }
+
+    /**
      * An id no section of the document holds yet, read from the component:
      * `Layouts:CrossSelling:Base` gives `crossselling`, then `crossselling-2`.
      * The family in front and the `Base` variant behind say nothing of what

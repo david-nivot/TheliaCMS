@@ -264,6 +264,42 @@ final readonly class CmsPageContentController
     }
 
     /**
+     * A section duplicated by hand, the copy right after the original: like
+     * a change by hand, it takes the right to change pages.
+     */
+    #[Route('/duplicate', name: 'duplicate', methods: ['POST'])]
+    public function duplicate(Request $request, int $id): Response
+    {
+        $page = $this->livePageOrFail($id);
+        $lang = $this->languages->resolve($request);
+        $this->denyUnlessMayPublish();
+
+        $current = $this->documentOrFail($request, $page, $lang);
+
+        if (!$current instanceof Document) {
+            return $this->back($page, $lang);
+        }
+
+        $locale = $lang->getLocale();
+        $problems = $this->sectionUpdate->duplicate(
+            $request,
+            $this->subject($page, $lang),
+            $current,
+            fn (Document $document) => $this->writer->saveContent($page, $locale, $document),
+        );
+
+        if ([] === $problems) {
+            $this->flash($request, 'success', $this->translate('The section is duplicated in the draft, right after the original.'));
+        }
+
+        foreach ($problems as $problem) {
+            $this->flash($request, 'danger', $problem);
+        }
+
+        return $this->back($page, $lang);
+    }
+
+    /**
      * A section added by hand at the end of the draft: like a change by hand,
      * it takes the right to change pages. A page holding nothing yet starts
      * its draft with it.
@@ -467,6 +503,7 @@ final readonly class CmsPageContentController
                 'remove' => $this->urls->generate('admin.cms.pages.content.remove', $parameters),
                 'restore' => $this->urls->generate('admin.cms.pages.content.restore', $parameters),
                 'move' => $this->urls->generate('admin.cms.pages.content.move', $parameters),
+                'duplicate' => $this->urls->generate('admin.cms.pages.content.duplicate', $parameters),
                 'add' => $this->urls->generate('admin.cms.pages.content.add', $parameters),
                 'translate' => $this->urls->generate('admin.cms.pages.content.translate', $parameters),
                 'publish' => $this->urls->generate('admin.cms.pages.content.publish', $parameters),

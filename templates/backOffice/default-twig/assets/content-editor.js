@@ -1033,7 +1033,7 @@
         // A section saved by hand comes back with the screen the server
         // redirects to, drawn in place like the end of a generation. When
         // the answer cannot be read, the form is sent the plain way.
-        root.querySelectorAll("form[data-cms-section-form], form[data-cms-remove], form[data-cms-restore], form[data-cms-move], form[data-cms-add], form[data-cms-keep]").forEach(function (form) {
+        root.querySelectorAll("form[data-cms-section-form], form[data-cms-remove], form[data-cms-restore], form[data-cms-move], form[data-cms-duplicate], form[data-cms-add], form[data-cms-keep]").forEach(function (form) {
             form.addEventListener("submit", function (event) {
                 if (form.hasAttribute("data-cms-remove") && !window.confirm(labels.remove)) {
                     event.preventDefault();

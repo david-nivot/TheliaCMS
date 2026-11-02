@@ -9,6 +9,12 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Added
 
+- **A section is duplicated by hand.** On the content screen of a page or of
+  a catalogue item, the button next to the arrows of a section puts a copy of
+  it right after it in the draft: same component, props and appearance, under
+  an id of its own. Only the draft of the language edited changes; it takes
+  the right to change pages, like moving a section. A section of a component
+  the site put away is not copied, as it would not be added.
 - **A component of the site is copied into a new one.** On the screen of a
   component, "Copy into a new component" takes a code and a label and copies
   the template, stylesheet, props, sample and mark of provenance, without a
