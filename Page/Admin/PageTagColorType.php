@@ -41,10 +41,12 @@ final class PageTagColorType extends AbstractType implements DataMapperInterface
             ->add('colored', CheckboxType::class, [
                 'label' => 'Give the tag a color',
                 'required' => false,
+                'help' => 'The badge of the tag in the back office. A theme may show it on the site.',
             ])
             ->add('background', ColorType::class, [
                 'label' => 'Background',
                 'html5' => true,
+                'required' => true,
             ])
             ->add('automatic_text', CheckboxType::class, [
                 'label' => 'Text in black or white, whichever reads best on the background',
@@ -53,6 +55,7 @@ final class PageTagColorType extends AbstractType implements DataMapperInterface
             ->add('text', ColorType::class, [
                 'label' => 'Text',
                 'html5' => true,
+                'required' => true,
                 'help' => 'Used when the box above is unticked.',
             ])
             ->setDataMapper($this);
@@ -63,7 +66,10 @@ final class PageTagColorType extends AbstractType implements DataMapperInterface
         $resolver->setDefaults([
             'data_class' => null,
             'empty_data' => null,
-            'required' => false,
+            // Required so the color inputs, which always hold a color, are not marked optional; the
+            // boxes say whether the tag has a color.
+            'required' => true,
+            'label' => false,
             'translation_domain' => TheliaCMS::DOMAIN_NAME,
         ]);
     }
