@@ -23,6 +23,10 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 - `PageTagColor` is a value object, no longer an enum: `PageTagColor::of('#dc4a7b', '#ffffff')`
   in place of `PageTagColor::Cyan`, `->background` in place of `->value`.
 
+### Fixed
+
+- The color fields of a tag no longer read "optional": the color inputs always hold a color, the box says whether the tag has one, and its help sits under it.
+
 ### Changed
 
 - **A tag takes any color.** The tag screen gives a color picker for the

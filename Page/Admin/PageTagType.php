@@ -48,10 +48,7 @@ final class PageTagType extends AbstractType
             'help' => 'Shown as it is on every page that carries it, in every language.',
         ]);
 
-        $builder->add('color', PageTagColorType::class, [
-            'label' => 'Color',
-            'help' => 'The badge of the tag in the back office. A theme may show it on the site.',
-        ]);
+        $builder->add('color', PageTagColorType::class);
     }
 
     public function configureOptions(OptionsResolver $resolver): void
