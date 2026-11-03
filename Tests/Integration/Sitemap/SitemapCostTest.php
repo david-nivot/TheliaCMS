@@ -118,7 +118,8 @@ final class SitemapCostTest extends CmsIntegrationTestCase
     public function testPublishingAgainChangesTheDateOfTheKeptSitemap(): void
     {
         $page = $this->createPage('Page republiée', $this->languages[0]);
-        $yesterday = new \DateTimeImmutable('-1 day');
+        // To the second: MySQL rounds a fraction of a second where MariaDB cuts it.
+        $yesterday = new \DateTimeImmutable(date('Y-m-d H:i:s', strtotime('-1 day')));
         CmsPageContentQuery::create()->filterByPageId($page->getId())->update(['PublishedAt' => $yesterday]);
         $this->emptyTheCache();
         self::assertStringContainsString('<lastmod>'.$yesterday->format('c').'</lastmod>', $this->render($this->languages[0]));
