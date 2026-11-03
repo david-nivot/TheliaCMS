@@ -3,3 +3,6 @@
 /assets/node_modules/
 /.phpunit.cache/
 /.php-cs-fixer.cache
+# Personal settings and session notes of the coding assistant
+/.claude/settings.local.json
+/.claude/plans/
