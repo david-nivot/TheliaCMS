@@ -16,7 +16,9 @@ namespace TheliaCMS\Tests\Integration\Media;
 
 use Propel\Runtime\ActiveQuery\Criteria;
 use Symfony\Component\DomCrawler\Crawler;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Thelia\Model\LangQuery;
+use TheliaCMS\Media\Admin\CmsMediaType;
 use TheliaCMS\Media\CmsMediaLibrary;
 use TheliaCMS\Tests\Integration\Security\AdminScreenTestCase;
 use TheliaCMS\Tests\Support\CeilingImages;
@@ -91,6 +93,10 @@ final class MediaSheetScreenTest extends AdminScreenTestCase
 
     public function testAReplacingFileAboveTheCeilingIsRefusedInFrench(): void
     {
+        if (UploadedFile::getMaxFilesize() <= CmsMediaType::MAX_IMAGE_BYTES) {
+            self::markTestSkipped('upload_max_filesize is below the ceiling of an image: PHP refuses the heavy file first.');
+        }
+
         $french = LangQuery::create()->findOneByLocale('fr_FR');
         self::assertNotNull($french);
         $image = $this->image('À remplacer');

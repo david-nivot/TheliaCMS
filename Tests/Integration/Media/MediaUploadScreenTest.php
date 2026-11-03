@@ -73,6 +73,10 @@ final class MediaUploadScreenTest extends AdminScreenTestCase
 
     public function testAnImageAboveTheCeilingIsRefusedWithItsReasonAndTheOthersAreStored(): void
     {
+        if (UploadedFile::getMaxFilesize() <= CmsMediaType::MAX_IMAGE_BYTES) {
+            self::markTestSkipped('upload_max_filesize is below the ceiling of an image: PHP refuses the heavy file first.');
+        }
+
         $this->upload([CeilingImages::small('petite.png'), CeilingImages::declaringTooManyPixels('immense.png'), CeilingImages::heavy('lourde.png')], json: true);
         $answer = json_decode((string) $this->client->getResponse()->getContent(), true);
         $translator = $this->getService(TranslatorInterface::class);
