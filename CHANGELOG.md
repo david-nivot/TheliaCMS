@@ -7,6 +7,26 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **The document of a product or a category shows on Flexy.** The module prints
+  it on the `product.content` hook of the theme, after the description of a
+  product and before the products related to it (a Flexy with that hook), and
+  on `category.bottom` at the bottom of a category. A document written and
+  published in the back office showed nowhere on a theme that never calls
+  `cms_item_content()`, and Flexy does not. On by default; a theme that prints
+  the document itself turns `item_content_hook` off, or shows it twice. A
+  content, a folder and a store have no hook in Flexy: their theme still prints
+  their document.
+
+### Fixed
+
+- **The free text of a section reads as a document on Flexy.** Its headings
+  came out the size of body text, its paragraphs touching and its lists without
+  a bullet: the reset of the theme undid them, and the stylesheet of the module
+  styled only a page written without sections. A richtext section now gets the
+  heading scale of the theme, the space between its paragraphs and its bullets.
+
 ### Security
 
 - **The previews of a page, an item and a component send no referrer.** They

@@ -55,3 +55,22 @@ Brands and stores carry none: no site asked for it.
   document of an item is rendered again when it is published.
 - The theme decides where the document goes on the page of the item; Flexy
   ships no call, a child theme adds it.
+
+## Amendment of 2026-11-03
+
+On a theme that fires them, the module prints the document of a product on
+`product.content` and the one of a category on `category.bottom`
+(`ItemContentThemeHook`). A shop on Flexy wrote and published a document
+that showed nowhere: Flexy fires the hooks and never calls
+`cms_item_content()`.
+
+- On by default, unlike the footer menu: a document is written for its page,
+  and one online that does not show looks like a fault. A theme that prints
+  it itself turns `item_content_hook` off, or shows it twice; nothing in a
+  template tells the module whether it does.
+- After what the theme shows of the item: the document adds to its page. On
+  a product, before the products related to it rather than at the very
+  bottom: Flexy fires `product.content` there for it (the hook came with
+  this amendment), and a Flexy without it shows no document on a product.
+- A content, a folder and a store get no hook from Flexy, so their theme
+  still prints their document with `cms_item_content()`.
