@@ -133,7 +133,7 @@ final readonly class FormCatalog
     {
         $pageId = (int) $form->getPrivacyPolicyPageId();
 
-        if ($pageId <= 0 || null === $this->pages->find($pageId, $locale)) {
+        if ($pageId <= 0 || !$this->pages->isReachable($pageId, $locale)) {
             return null;
         }
 

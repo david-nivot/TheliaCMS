@@ -30,6 +30,10 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   addresses in one go.** A list of recipes asked the database for the
   translation and the address of each page one at a time; the cost no longer
   grows with the number of pages.
+- **The checks that a page is online no longer read the page.** The language
+  switcher, the hreflang tags, the menus, the home page and the privacy link of
+  a form only need to know that the page opens; they no longer read its
+  content, its image, its sharing image and its tag to find out.
 
 ## [2.8.4] - 2026-11-03
 

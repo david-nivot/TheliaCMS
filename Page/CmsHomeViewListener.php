@@ -61,7 +61,7 @@ final readonly class CmsHomeViewListener
 
         $locale = $this->langService->getLang()?->getLocale() ?? Lang::getDefaultLanguage()->getLocale();
 
-        if (null === $this->pages->find($homePageId, $locale)) {
+        if (!$this->pages->isReachable($homePageId, $locale)) {
             return;
         }
 
