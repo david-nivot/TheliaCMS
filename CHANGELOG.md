@@ -7,6 +7,8 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+## [2.8.4] - 2026-11-03
+
 ### Fixed
 
 - **The search engine and sharing settings of a page reach its head.** The
@@ -1853,7 +1855,8 @@ the published pages.
 - The breadcrumb of a page filed under a draft one offered a link to that page,
   which answers 404, both to the reader and in the `BreadcrumbList`.
 
-[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.8.3...HEAD
+[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.8.4...HEAD
+[2.8.4]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.8.4
 [2.8.3]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.8.3
 [2.8.2]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.8.2
 [2.8.1]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.8.1
