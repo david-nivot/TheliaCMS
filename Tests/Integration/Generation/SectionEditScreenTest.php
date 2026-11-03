@@ -338,6 +338,7 @@ final class SectionEditScreenTest extends AdminScreenTestCase
 
         $this->client->request('GET', $frame);
         $whole = (string) $this->client->getResponse()->getContent();
+        self::assertSame('no-referrer', $this->client->getResponse()->headers->get('Referrer-Policy'), 'The signed address of the whole page does not leak through the Referer.');
         $this->client->request('GET', (string) $modes->eq(1)->attr('data-url'));
         $alone = (string) $this->client->getResponse()->getContent();
 
@@ -346,6 +347,7 @@ final class SectionEditScreenTest extends AdminScreenTestCase
         self::assertSame(1, (new Crawler($whole))->filter('h1')->count(), 'The whole page draws its title.');
         self::assertSame(0, (new Crawler($alone))->filter('h1')->count(), 'The content alone does not.');
         self::assertSame('noindex, nofollow', $this->client->getResponse()->headers->get('X-Robots-Tag'), 'A draft stays out of the indexes.');
+        self::assertSame('no-referrer', $this->client->getResponse()->headers->get('Referrer-Policy'), 'Nor does the address of the content alone.');
     }
 
     public function testThePropsOfAThemeComponentReadInTheLanguageOfTheBackOffice(): void

@@ -84,7 +84,7 @@ final readonly class CmsMediaAdminController
             'tags' => $this->library->tagCounts(),
             'has_library' => $tally->total > 0,
             'accepted_mime_types' => implode(',', CmsMediaType::ACCEPTED_MIME_TYPES),
-            'max_upload_size' => (int) UploadedFile::getMaxFilesize(),
+            'max_upload_size' => min(CmsMediaType::MAX_IMAGE_BYTES, (int) UploadedFile::getMaxFilesize()),
             'assets_version' => substr(hash('xxh3', (string) @filemtime(__DIR__.'/../../templates/backOffice/default-twig/assets/media-upload.js').(string) @filemtime(__DIR__.'/../../templates/backOffice/default-twig/assets/media-list.js')), 0, 12),
             'edit_locale' => $lang->getLocale(),
             'edit_language_id' => $lang->getId(),

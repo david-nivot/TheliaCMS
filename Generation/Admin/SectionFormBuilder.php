@@ -29,7 +29,7 @@ use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Symfony\Component\Validator\Constraints\Image;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\SecurityContext;
 use TheliaCMS\Content\Prop;
@@ -88,6 +88,7 @@ final readonly class SectionFormBuilder
         private CmsMediaWriter $media,
         private SecurityContext $securityContext,
         private UrlGeneratorInterface $urls,
+        private TranslatorInterface $translator,
     ) {
     }
 
@@ -412,7 +413,7 @@ final readonly class SectionFormBuilder
                 'label' => 'Replace with a file',
                 'required' => false,
                 'translation_domain' => 'theliacms',
-                'constraints' => [new Image(mimeTypes: CmsMediaType::ACCEPTED_MIME_TYPES, mimeTypesMessage: 'Only JPEG, PNG and WebP images can be uploaded.')],
+                'constraints' => [CmsMediaType::imageConstraint($this->translator)],
                 'help' => 'The file joins the media library and takes the place of the picture. Describe it there afterwards.',
                 'attr' => ['accept' => implode(',', CmsMediaType::ACCEPTED_MIME_TYPES), 'data-cms-image-file' => ''],
             ]);

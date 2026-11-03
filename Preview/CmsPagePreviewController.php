@@ -63,6 +63,7 @@ final readonly class CmsPagePreviewController
         // A draft must leave no trace: not in a search index, not in a shared
         // cache, not in the browser's history cache either.
         $response->headers->set('X-Robots-Tag', 'noindex, nofollow');
+        $response->headers->set('Referrer-Policy', 'no-referrer');
         $response->headers->set('Cache-Control', 'private, no-store, max-age=0');
 
         return $response;

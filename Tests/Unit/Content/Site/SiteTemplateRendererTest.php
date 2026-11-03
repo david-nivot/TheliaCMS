@@ -53,12 +53,38 @@ final class SiteTemplateRendererTest extends TestCase
         yield 'a template it extends, trimming spaces' => ['{%~ extends "base.html.twig" %}'];
         yield 'a range without a bound' => ['{% for i in range(1, 100000000) %}{% endfor %}'];
         yield 'a range written as dots' => ['{% for i in 1..100000000 %}{% endfor %}'];
+        yield 'three loops inside each other' => ['{% for a in props.a %}{% for b in props.b %}{% for c in props.c %}x{% endfor %}{% endfor %}{% endfor %}'];
+        yield 'three loops with a test between the second and the third' => ['{% for a in props.a %}{% for b in props.b %}{% if b %}{% for c in props.c %}x{% endfor %}{% endif %}{% endfor %}{% endfor %}'];
     }
 
     #[DataProvider('refused')]
     public function testWhatTheSandboxRefusesIsAProblemBeforeAnyRendering(string $template): void
     {
         self::assertNotSame([], (new SiteTemplateRenderer())->problems($template));
+    }
+
+    public function testTheCapIsOnTheDepthOfTheLoopsAndNotOnTheirCount(): void
+    {
+        $renderer = new SiteTemplateRenderer();
+
+        self::assertSame([], $renderer->problems('{% for a in props.a %}{% for b in props.b %}x{% endfor %}{% endfor %}'));
+        self::assertSame([], $renderer->problems('{% for a in props.a %}x{% endfor %}{% for b in props.b %}x{% endfor %}{% for c in props.c %}x{% endfor %}'));
+        self::assertSame([], $renderer->problems('{% for a in props.a %}{% for b in props.b %}x{% endfor %}{% for c in props.c %}x{% endfor %}{% endfor %}'));
+    }
+
+    public function testTheWordForInATextOrAStringDoesNotCountAsALoop(): void
+    {
+        $template = '{# {% for a in x %}{% for b in x %}{% for c in x %} #}{% for a in props.a %}{% for b in props.b %}{{ "{% for c in props.c %}" }}{% endfor %}{% endfor %}';
+
+        self::assertSame([], (new SiteTemplateRenderer())->problems($template));
+    }
+
+    public function testTheMessageNamesTheLineOfTheThirdLoop(): void
+    {
+        $problems = (new SiteTemplateRenderer())->problems("{% for a in props.a %}\n{% for b in props.b %}\n{% for c in props.c %}x{% endfor %}\n{% endfor %}\n{% endfor %}");
+
+        self::assertCount(1, $problems);
+        self::assertStringContainsString('line 3', $problems[0]);
     }
 
     public function testARefusedTemplateIsNeverRendered(): void

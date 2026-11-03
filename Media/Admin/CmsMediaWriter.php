@@ -130,7 +130,19 @@ final readonly class CmsMediaWriter
                 : MediaUploadRefusal::Failed;
         }
 
-        return \in_array($file->getMimeType(), CmsMediaType::ACCEPTED_MIME_TYPES, true) ? null : MediaUploadRefusal::Format;
+        if (!\in_array($file->getMimeType(), CmsMediaType::ACCEPTED_MIME_TYPES, true)) {
+            return MediaUploadRefusal::Format;
+        }
+
+        if ($file->getSize() > CmsMediaType::MAX_IMAGE_BYTES) {
+            return MediaUploadRefusal::TooHeavy;
+        }
+
+        // The header says how large the picture is without decoding it; a file
+        // whose header cannot be read is left to the library, which refuses it.
+        $dimensions = @getimagesize($file->getPathname());
+
+        return false !== $dimensions && $dimensions[0] * $dimensions[1] > CmsMediaType::MAX_IMAGE_PIXELS ? MediaUploadRefusal::TooManyPixels : null;
     }
 
     /**

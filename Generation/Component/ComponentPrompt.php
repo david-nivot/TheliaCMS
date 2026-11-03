@@ -194,6 +194,7 @@ final readonly class ComponentPrompt
             'Twig in a sandbox. The template receives `props` and nothing else (`props.title`, `item.text` in a loop).',
             '',
             \sprintf('- Tags: %s. Filters: %s. Tests: %s. Functions: %s. Nothing else: no include, no macro, no block, no `raw`.', implode(', ', SiteTemplateRenderer::TAGS), implode(', ', SiteTemplateRenderer::FILTERS), implode(', ', SiteTemplateRenderer::TESTS), implode(', ', SiteTemplateRenderer::FUNCTIONS)),
+            \sprintf('- At most %d `for` inside each other: loop over a list, and over the list of an item, never deeper.', SiteTemplateRenderer::MAX_LOOP_DEPTH),
             '- Text is escaped when printed; an `html` prop is printed as it is.',
             '- No text of its own outside what it prints: the template writes markup and props, nothing else.',
             '- No `script`, `style`, `iframe`, `object`, `embed`, `form`, `link`, `meta`, no `on…` attribute, no `javascript:`.',

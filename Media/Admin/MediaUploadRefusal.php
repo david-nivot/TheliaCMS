@@ -21,6 +21,8 @@ enum MediaUploadRefusal: string
 {
     case Format = 'format';
     case TooLarge = 'too-large';
+    case TooHeavy = 'too-heavy';
+    case TooManyPixels = 'too-many-pixels';
     case Unreadable = 'unreadable';
     case Failed = 'failed';
 
@@ -30,6 +32,8 @@ enum MediaUploadRefusal: string
         return match ($this) {
             self::Format => 'Only JPEG, PNG and WebP images can be uploaded.',
             self::TooLarge => 'The file is larger than the server accepts.',
+            self::TooHeavy => 'The image is heavier than 10 MB.',
+            self::TooManyPixels => 'The image has more than 25 million pixels.',
             self::Unreadable => 'The file is not a readable image.',
             self::Failed => 'The file did not arrive whole. Send it again.',
         };

@@ -26,6 +26,8 @@ use Symfony\Component\Form\FormEvents;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\Image;
 use Symfony\Component\Validator\Constraints\Length;
+use Symfony\Contracts\Translation\TranslatorInterface;
+use TheliaCMS\TheliaCMS;
 
 final class CmsMediaType extends AbstractType
 {
@@ -34,6 +36,46 @@ final class CmsMediaType extends AbstractType
      * an uploaded one becomes stored cross-site scripting.
      */
     public const array ACCEPTED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+    /**
+     * The ceiling of an uploaded image, in bytes (10 MB, binary: 1024 × 1024 bytes a MB, as `MediaItem` counts) and in pixels
+     * (25 megapixels): its header is read on upload, but it is decoded whole
+     * every time a variant is drawn, at about eight bytes a pixel.
+     */
+    public const int MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+
+    public const int MAX_IMAGE_PIXELS = 25_000_000;
+
+    /**
+     * Optional: the form is also built without a container.
+     */
+    public function __construct(
+        private readonly ?TranslatorInterface $translator = null,
+    ) {
+    }
+
+    /**
+     * The one constraint of every image the module takes in a form: its
+     * formats and its ceiling.
+     *
+     * The messages are translated here: the validator looks them up in the
+     * `validators` domain, where the module has no catalogue. Its `{{ … }}`
+     * placeholders are filled in afterwards.
+     */
+    public static function imageConstraint(?TranslatorInterface $translator = null): Image
+    {
+        $translate = static fn (string $message): string => null === $translator ? $message : $translator->trans($message, [], TheliaCMS::DOMAIN_NAME);
+
+        return new Image(
+            maxSize: self::MAX_IMAGE_BYTES,
+            binaryFormat: true,
+            maxSizeMessage: $translate('The image is too heavy ({{ size }} {{ suffix }}). It may weigh {{ limit }} {{ suffix }} at most.'),
+            mimeTypes: self::ACCEPTED_MIME_TYPES,
+            mimeTypesMessage: $translate('Only JPEG, PNG and WebP images can be uploaded.'),
+            maxPixels: self::MAX_IMAGE_PIXELS,
+            maxPixelsMessage: $translate('The image has too many pixels ({{ pixels }}). It may have {{ max_pixels }} at most.'),
+        );
+    }
 
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
@@ -72,10 +114,7 @@ final class CmsMediaType extends AbstractType
             ->add('file', FileType::class, [
                 'label' => 'Replace the file',
                 'required' => false,
-                'constraints' => [new Image(
-                    mimeTypes: self::ACCEPTED_MIME_TYPES,
-                    mimeTypesMessage: 'Only JPEG, PNG and WebP images can be uploaded.',
-                )],
+                'constraints' => [self::imageConstraint($this->translator)],
                 'help' => 'The new file keeps the same address, so the pages using this image show it right away.',
             ])
             ->addEventListener(FormEvents::SUBMIT, self::requireAltUnlessDecorative());

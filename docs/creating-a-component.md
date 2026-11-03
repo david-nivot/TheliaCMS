@@ -302,8 +302,8 @@ What the generator writes, and what the site checks
 - **A Twig template** rendered in a Twig of its own with the sandbox on
   (`Content/Site/SiteTemplateRenderer.php`): `if`, `for`, `set`, a few
   filters that shape text, `cycle`, `min`, `max`; no `range` (its loops go
-  over its props), no include, extends or use, no macro, nothing of the
-  site. It receives `props` alone. It holds no text of its own, so a
+  over its props), no more than two `for` inside each other, no include,
+  extends or use, no macro, nothing of the site. It receives `props` alone. It holds no text of its own, so a
   component serves every language of the site, and no `script`, `style`,
   `iframe`, `form`, `on…` attribute or `javascript:`. What it draws is
   filtered like a page that goes online, wherever it is drawn: a draft, the

@@ -20,6 +20,7 @@ use Symfony\Component\Form\Extension\Core\Type\FormType;
 use Symfony\Component\Form\Forms;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\SecurityContext;
 use TheliaCMS\Content\Prop;
 use TheliaCMS\Content\PropSchema;
@@ -85,6 +86,7 @@ final class SectionFormItemsTest extends TestCase
             (new \ReflectionClass(CmsMediaWriter::class))->newInstanceWithoutConstructor(),
             (new \ReflectionClass(SecurityContext::class))->newInstanceWithoutConstructor(),
             $this->createStub(UrlGeneratorInterface::class),
+            $this->createStub(TranslatorInterface::class),
         );
     }
 

@@ -28,7 +28,6 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\UrlType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-use Symfony\Component\Validator\Constraints\Image;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -194,10 +193,7 @@ final class CmsPageType extends AbstractType
         $builder->add('imageUpload', FileType::class, [
             'label' => 'Or upload a new image',
             'required' => false,
-            'constraints' => [new Image(
-                mimeTypes: CmsMediaType::ACCEPTED_MIME_TYPES,
-                mimeTypesMessage: 'Only JPEG, PNG and WebP images can be uploaded.',
-            )],
+            'constraints' => [CmsMediaType::imageConstraint($this->translator)],
             'help' => 'It is added to the CMS media library. Describe it there so the page can say what it shows.',
         ]);
     }

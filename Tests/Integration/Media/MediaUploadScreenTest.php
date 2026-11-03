@@ -15,8 +15,13 @@ declare(strict_types=1);
 namespace TheliaCMS\Tests\Integration\Media;
 
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Contracts\Translation\TranslatorInterface;
+use TheliaCMS\Media\Admin\CmsMediaType;
+use TheliaCMS\Media\Admin\MediaUploadRefusal;
 use TheliaCMS\Media\CmsMediaLibrary;
 use TheliaCMS\Tests\Integration\Security\AdminScreenTestCase;
+use TheliaCMS\Tests\Support\CeilingImages;
+use TheliaCMS\TheliaCMS;
 use TheliaLibrary\Model\LibraryImage;
 use TheliaLibrary\TheliaLibrary;
 
@@ -64,6 +69,27 @@ final class MediaUploadScreenTest extends AdminScreenTestCase
         self::assertStringContainsString('anime.gif', $queue, 'The screen says which files were not added.');
         self::assertStringContainsString('faux.jpg', $queue);
         self::assertStringContainsString('tronque.jpg', $queue, 'A file the library itself refuses is said too.');
+    }
+
+    public function testAnImageAboveTheCeilingIsRefusedWithItsReasonAndTheOthersAreStored(): void
+    {
+        $this->upload([CeilingImages::small('petite.png'), CeilingImages::declaringTooManyPixels('immense.png'), CeilingImages::heavy('lourde.png')], json: true);
+        $answer = json_decode((string) $this->client->getResponse()->getContent(), true);
+        $translator = $this->getService(TranslatorInterface::class);
+
+        self::assertSame(['petite.png'], $this->titles($this->getService(CmsMediaLibrary::class)->images()), 'Only the small image is stored.');
+        self::assertCount(1, $answer['stored']);
+        self::assertSame(
+            ['immense.png' => $translator->trans(MediaUploadRefusal::TooManyPixels->message(), [], TheliaCMS::DOMAIN_NAME), 'lourde.png' => $translator->trans(MediaUploadRefusal::TooHeavy->message(), [], TheliaCMS::DOMAIN_NAME)],
+            array_column($answer['refused'], 'reason', 'name'),
+        );
+    }
+
+    public function testTheListAnnouncesTheSmallerOfTheCeilingAndTheServerLimit(): void
+    {
+        $announced = (int) $this->screen(self::LIST)->filter('form[data-cms-media-upload]')->attr('data-max-size');
+
+        self::assertSame(min(CmsMediaType::MAX_IMAGE_BYTES, (int) UploadedFile::getMaxFilesize()), $announced);
     }
 
     public function testTheQueueOfASendingHoldsTheImagesOfThatSendingOnly(): void
