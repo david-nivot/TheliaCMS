@@ -111,6 +111,11 @@ shows how to test an update, outside a transaction.
   then reads the sitemap must empty `SitemapCache::invalidate()` itself, in
   `setUp()` and after the direct write, as `SitemapThemeHookTest` does; through
   the writer, `PageInvalidator` does it.
+- A test that counts statements (`Tests/Integration/CountsStatements.php`)
+  calls `forgetWhatWasRead()` before each measure. Propel keeps the objects it
+  has read, with their translations, and the core keeps the addresses it has
+  resolved: a page made by `createPage()` costs nothing to read again, and a
+  query asked once per page does not show.
 - A test is seen red once, by breaking the code it covers, before it is kept.
   For a template, that means `touch` and `var/cache/test` removed before and
   after the sabotage (see above).
