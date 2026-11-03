@@ -19,31 +19,6 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   content, a folder and a store have no hook in Flexy: their theme still prints
   their document.
 
-### Fixed
-
-- **The free text of a section reads as a document on Flexy.** Its headings
-  came out the size of body text, its paragraphs touching and its lists without
-  a bullet: the reset of the theme undid them, and the stylesheet of the module
-  styled only a page written without sections. A richtext section now gets the
-  heading scale of the theme, the space between its paragraphs and its bullets.
-
-### Security
-
-- **The previews of a page, an item and a component send no referrer.** They
-  answer with `Referrer-Policy: no-referrer`: their address, which carries the
-  signature, no longer reaches the sites they load or link to.
-- **After a form is sent, the visitor goes back to a path of the site only.** A
-  Referer whose path started with two slashes or a backslash took them to
-  another site.
-- **A component of the site puts at most two loops inside each other.** A
-  third one only multiplied a list by itself and could hold a page for
-  seconds; the template is refused, the generator is told, and a stored
-  component that holds three is no longer drawn.
-- **An uploaded image is refused above 10 MiB or 25 million pixels.** In the
-  library, on a page and in a section: a small file declaring a huge picture
-  was accepted and decoded whole on every thumbnail. An image already stored
-  stays as it is.
-
 ### Changed
 
 - **A list of the pages of a type or of a tag reads their titles and their
@@ -61,12 +36,34 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Fixed
 
+- **The free text of a section reads as a document on Flexy.** Its headings
+  came out the size of body text, its paragraphs touching and its lists without
+  a bullet: the reset of the theme undid them, and the stylesheet of the module
+  styled only a page written without sections. A richtext section now gets the
+  heading scale of the theme, the space between its paragraphs and its bullets.
 - **The sitemap lists only pages that can be opened.** A page with a
   publication date but no content to show (what an import can leave) was listed
   and answered "not found" to the search engine that followed it.
 - **The sitemap points only to the languages of the site that are active.** A
   page also published in a language since switched off still named it as an
   alternate version of itself.
+
+### Security
+
+- **The previews of a page, an item and a component send no referrer.** They
+  answer with `Referrer-Policy: no-referrer`: their address, which carries the
+  signature, no longer reaches the sites they load or link to.
+- **After a form is sent, the visitor goes back to a path of the site only.** A
+  Referer whose path started with two slashes or a backslash took them to
+  another site.
+- **A component of the site puts at most two loops inside each other.** A
+  third one only multiplied a list by itself and could hold a page for
+  seconds; the template is refused, the generator is told, and a stored
+  component that holds three is no longer drawn.
+- **An uploaded image is refused above 10 MiB or 25 million pixels.** In the
+  library, on a page and in a section: a small file declaring a huge picture
+  was accepted and decoded whole on every thumbnail. An image already stored
+  stays as it is.
 
 ## [2.8.4] - 2026-11-03
 
