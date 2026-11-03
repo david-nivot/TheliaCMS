@@ -52,14 +52,20 @@ jobs:
     # thelia/thelia on main with the themes on their development branch, the
     # module checked out in local/modules/TheliaCMS. Its two PHPUnit
     # configurations bootstrap from that place (../../../vendor/autoload.php and
-    # ../../../tests/bootstrap.php).
-    name: Tests (PHP ${{ matrix.php }})
+    # ../../../tests/bootstrap.php). One more run uses the lowest release of
+    # Thelia composer.json accepts, with the themes that release requires.
+    name: Tests (PHP ${{ matrix.php }}, Thelia ${{ matrix.thelia }})
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         php: [ '8.3', '8.4', '8.5' ]
+        thelia: [ 'main' ]
+        include:
+          # The floor of "thelia/core": "^3.3" in composer.json.
+          - php: '8.3'
+            thelia: '3.3.0'
     timeout-minutes: 30
     env:
       # Without a token, Flex skips the thelia/thelia-recipes endpoint in silence
@@ -70,7 +76,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: thelia/thelia
-          ref: main
+          ref: ${{ matrix.thelia }}
 
       - name: Check out the module
         uses: actions/checkout@v4
@@ -116,11 +122,14 @@ jobs:
             echo $removed ? "thelia/cms-module removed from the requirements of Thelia" : "Thelia does not require thelia/cms-module", PHP_EOL;
           '
 
-      - name: Require the themes from their development branch and the dependencies of the module
-        # Same theme pins as the CI of thelia/thelia. The module sits in
-        # local/modules rather than being required, so Composer never reads its
-        # composer.json: its own dependencies are required from it here, every
-        # package but PHP, the core (the checkout above) and the installer.
+      - name: Require the dependencies of the module, and on main the themes from their development branch
+        # Same theme pins as the CI of thelia/thelia; a release of Thelia keeps
+        # the themes it requires. The module sits in local/modules rather than
+        # being required, so Composer never reads its composer.json: its own
+        # dependencies are required from it here, every package but PHP, the
+        # core (the checkout above) and the installer.
+        env:
+          THELIA_REF: ${{ matrix.thelia }}
         run: |
           # shellcheck disable=SC2016
           requirements=$(php -r '
@@ -134,12 +143,16 @@ jobs:
           ')
           mapfile -t deps <<< "$requirements"
           printf '%s\n' "${deps[@]}"
-          composer require --no-update --no-scripts --no-audit \
-            "thelia/flexy:dev-main as 1.99.0" \
-            "thelia/backoffice-default-twig-template:dev-main as 1.99.0" \
-            "thelia/email-default-template:dev-main as 1.99.0" \
-            "thelia/pdf-default-template:dev-main as 1.99.0" \
-            "${deps[@]}"
+          themes=()
+          if [ "$THELIA_REF" = main ]; then
+            themes=(
+              "thelia/flexy:dev-main as 1.99.0"
+              "thelia/backoffice-default-twig-template:dev-main as 1.99.0"
+              "thelia/email-default-template:dev-main as 1.99.0"
+              "thelia/pdf-default-template:dev-main as 1.99.0"
+            )
+          fi
+          composer require --no-update --no-scripts --no-audit "${themes[@]}" "${deps[@]}"
 
       - name: Locate the Composer download cache
         id: composer-cache
@@ -198,5 +211,5 @@ jobs:
         # Once: the analysis reads the code for PHP 8.3, the lowest version the
         # module supports, whatever PHP runs it. It needs the Propel models
         # test-prepare built under var/propel/test.
-        if: ${{ !cancelled() && matrix.php == '8.3' }}
+        if: ${{ !cancelled() && matrix.php == '8.3' && matrix.thelia == 'main' }}
         run: vendor/bin/phpstan analyse -c local/modules/TheliaCMS/phpstan.dist.neon --memory-limit=-1 --no-progress --error-format=github
