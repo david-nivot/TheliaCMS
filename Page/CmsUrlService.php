@@ -16,6 +16,7 @@ namespace TheliaCMS\Page;
 
 use Propel\Runtime\ActiveQuery\Criteria;
 use Thelia\Model\RewritingUrlQuery;
+use TheliaCMS\Locale\TranslatableText;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Model\CmsPageQuery;
 use TheliaCMS\TheliaCMS;
@@ -98,7 +99,7 @@ final class CmsUrlService
      * when it is given; a page whose slug and title both come out empty is
      * named after its id.
      *
-     * @throws \InvalidArgumentException when the slug would shadow a reserved path
+     * @throws ReservedSlugException when the slug would shadow a reserved path
      */
     public function propose(int $pageId, int $parentId, string $locale, string $title, ?string $requestedSlug = null): AddressProposal
     {
@@ -342,17 +343,17 @@ final class CmsUrlService
         }
 
         if (1 === preg_match('#[\s?\#\\\\]|//#u', $address)) {
-            throw new FixedAddressException(\sprintf('"%s" is not an address: no space, "?", "#", backslash or empty segment.', $address));
+            throw FixedAddressException::because('"%s" is not an address: no space, "?", "#", backslash or empty segment.', $address);
         }
 
         if (\strlen($address) > PageSlugSource::MAX_URL_BYTES) {
-            throw new FixedAddressException(\sprintf('"%s" is longer than %d bytes.', $address, PageSlugSource::MAX_URL_BYTES));
+            throw FixedAddressException::because('"%s" is longer than %d bytes.', $address, PageSlugSource::MAX_URL_BYTES);
         }
 
         $first = strtolower(explode('/', $address)[0]);
 
         if (\in_array($first, self::RESERVED_PREFIXES, true)) {
-            throw new FixedAddressException(\sprintf('"%s" is a reserved path and cannot start the address of a page.', $first));
+            throw FixedAddressException::because('"%s" is a reserved path and cannot start the address of a page.', $first);
         }
 
         return $address;
@@ -394,11 +395,11 @@ final class CmsUrlService
             return;
         }
 
-        throw new FixedAddressException(\sprintf('"%s" is already the address of %s #%s.', $address, $existing->getView(), $existing->getViewId()));
+        throw FixedAddressException::because('"%s" is already the address of %s #%s.', $address, (string) $existing->getView(), (string) $existing->getViewId());
     }
 
     /**
-     * @throws \InvalidArgumentException when the slug would shadow a reserved path
+     * @throws ReservedSlugException when the slug would shadow a reserved path
      */
     public function normalizeSegment(string $raw): string
     {
@@ -406,7 +407,7 @@ final class CmsUrlService
 
         foreach ([strtolower(trim($raw)), $segment] as $candidate) {
             if (\in_array($candidate, self::RESERVED_PREFIXES, true)) {
-                throw new \InvalidArgumentException(\sprintf('"%s" is a reserved path and cannot be used as a page slug.', $candidate));
+                throw new ReservedSlugException(TranslatableText::of('"%s" is a reserved path and cannot be used as a page slug.', $candidate));
             }
         }
 

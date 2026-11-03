@@ -207,7 +207,7 @@ final readonly class PageTypeAdminController
 
                 return $this->backToEdit($code, $lang);
             } catch (InvalidFieldsException $exception) {
-                foreach ($exception->problems as $problem) {
+                foreach ($exception->translated($this->translator) as $problem) {
                     $form->addError(new FormError($problem));
                 }
             }

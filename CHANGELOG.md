@@ -18,6 +18,13 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   the description of an image. The validator looks a constraint message up in
   the `validators` domain and the form theme prints a form error as it is;
   each form now translates its own messages.
+- **The reasons a page or a page type is refused read in the language of the
+  back office too.** A fixed address or a slug that cannot be used, and a
+  field of a page type or a value of a field that is not right, were shown in
+  English: their sentence was built with its values before reaching the
+  screen, and matched no translation. The sentence now travels with its values
+  apart, and the screen translates it; the generator still reads it in
+  English.
 
 ## [2.9.0] - 2026-11-03
 

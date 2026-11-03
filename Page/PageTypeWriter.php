@@ -18,6 +18,7 @@ use Propel\Runtime\Connection\ConnectionInterface;
 use Propel\Runtime\Propel;
 use Thelia\Model\RewritingUrlQuery;
 use TheliaCMS\Generation\Brief;
+use TheliaCMS\Locale\TranslatableText;
 use TheliaCMS\Model\CmsPageQuery;
 use TheliaCMS\Model\CmsPageTypeDefinitionQuery;
 use TheliaCMS\Page\Admin\CmsActivityLog;
@@ -183,7 +184,7 @@ final readonly class PageTypeWriter
         if (null === $index) {
             foreach ($fields as $existing) {
                 if ($existing['code'] === $definition['code']) {
-                    throw InvalidFieldsException::because([\sprintf('The type has a field "%s" already.', $definition['code'])]);
+                    throw InvalidFieldsException::because([TranslatableText::of('The type has a field "%s" already.', (string) $definition['code'])]);
                 }
             }
 

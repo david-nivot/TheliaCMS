@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Page\Field;
 
+use TheliaCMS\Locale\TranslatableText;
+
 /**
  * The fields of a page type, in the order an editor sees them.
  *
@@ -57,13 +59,13 @@ final readonly class FieldDefinitions implements \IteratorAggregate, \Countable
             try {
                 $definition = FieldDefinition::fromArray($field);
             } catch (InvalidFieldsException $exception) {
-                array_push($problems, ...$exception->problems);
+                array_push($problems, ...$exception->texts);
 
                 continue;
             }
 
             if (isset($read[$definition->code])) {
-                $problems[] = \sprintf('Two fields share the code "%s".', $definition->code);
+                $problems[] = TranslatableText::of('Two fields share the code "%s".', $definition->code);
 
                 continue;
             }
@@ -72,7 +74,7 @@ final readonly class FieldDefinitions implements \IteratorAggregate, \Countable
         }
 
         if (\count($read) > self::MAX_FIELDS) {
-            $problems[] = \sprintf('A page type has %d fields at most.', self::MAX_FIELDS);
+            $problems[] = TranslatableText::of('A page type has %d fields at most.', self::MAX_FIELDS);
         }
 
         if ([] !== $problems) {
@@ -173,7 +175,7 @@ final readonly class FieldDefinitions implements \IteratorAggregate, \Countable
             try {
                 $normalized[$field->code] = $field->normalize($value);
             } catch (\InvalidArgumentException $exception) {
-                $problems[] = \sprintf('%s: %s', $field->label($locale), $exception->getMessage());
+                $problems[] = TranslatableText::of('%s: %s', $field->label($locale), $exception instanceof InvalidFieldValueException ? $exception->text : $exception->getMessage());
             }
         }
 

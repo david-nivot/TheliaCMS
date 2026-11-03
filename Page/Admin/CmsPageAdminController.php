@@ -43,6 +43,7 @@ use TheliaCMS\Page\Field\PageFields;
 use TheliaCMS\Page\FixedAddressException;
 use TheliaCMS\Page\PageTagRepository;
 use TheliaCMS\Page\PageTypeRepository;
+use TheliaCMS\Page\ReservedSlugException;
 use TheliaCMS\Security\CmsResources;
 use TheliaCMS\TheliaCMS;
 use Twig\Environment;
@@ -205,7 +206,7 @@ final readonly class CmsPageAdminController
         try {
             $address = $this->addresses->checkFixedAddress((string) $request->request->get('address', ''), $pageId, $this->editLang($request)->getLocale());
         } catch (FixedAddressException $exception) {
-            return new JsonResponse(['error' => $exception->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return new JsonResponse(['error' => $exception->text->trans($this->translator)], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         return new JsonResponse(['address' => $address]);
@@ -378,13 +379,14 @@ final readonly class CmsPageAdminController
 
                 return $this->backToEdit((int) $page->getId(), $lang);
             } catch (InvalidFieldsException $exception) {
-                foreach ($exception->problems as $problem) {
+                foreach ($exception->translated($this->translator) as $problem) {
                     $form->addError(new FormError($problem));
                 }
             } catch (FixedAddressException $exception) {
-                $form->get('fixedUrl')->addError(new FormError($exception->getMessage()));
+                $form->get('fixedUrl')->addError(new FormError($exception->text->trans($this->translator)));
+            } catch (ReservedSlugException $exception) {
+                $form->get('slug')->addError(new FormError($exception->text->trans($this->translator)));
             } catch (\InvalidArgumentException $exception) {
-                // A slug that would shadow a reserved path (`admin`, `api`...).
                 $form->get('slug')->addError(new FormError($exception->getMessage()));
             }
         }

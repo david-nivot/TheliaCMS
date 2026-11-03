@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Page\Field;
 
+use TheliaCMS\Locale\TranslatableText;
+
 /**
  * One field the pages of a type carry: "servings", a whole number; "cooking
  * time", a duration. Its code is what a template and a list read it by, its
@@ -62,13 +64,13 @@ final readonly class FieldDefinition
         $code = \is_string($field['code'] ?? null) ? trim($field['code']) : '';
 
         if (!self::isValidCode($code)) {
-            $problems[] = \sprintf('"%s" is not a field code: lowercase letters, digits and underscores, starting with a letter, %d characters at most.', $code, self::CODE_MAX_LENGTH);
+            $problems[] = TranslatableText::of('"%s" is not a field code: lowercase letters, digits and underscores, starting with a letter, %d characters at most.', $code, self::CODE_MAX_LENGTH);
         }
 
         $kind = FieldKind::tryFrom(\is_string($field['kind'] ?? null) ? $field['kind'] : '');
 
         if (null === $kind) {
-            $problems[] = \sprintf('Field "%s": "%s" is not a kind of field.', $code, \is_scalar($field['kind'] ?? null) ? (string) $field['kind'] : '');
+            $problems[] = TranslatableText::of('Field "%s": "%s" is not a kind of field.', $code, \is_scalar($field['kind'] ?? null) ? (string) $field['kind'] : '');
         }
 
         $labels = [];
@@ -92,20 +94,20 @@ final readonly class FieldDefinition
         $choices = array_values(array_unique($choices));
 
         if (FieldKind::Choice === $kind && [] === $choices) {
-            $problems[] = \sprintf('Field "%s": a choice field lists the words it takes.', $code);
+            $problems[] = TranslatableText::of('Field "%s": a choice field lists the words it takes.', $code);
         }
 
         $translated = (bool) ($field['translated'] ?? false);
 
         if ($translated && null !== $kind && !$kind->mayBeTranslated()) {
-            $problems[] = \sprintf('Field "%s": only a text is written again for each language.', $code);
+            $problems[] = TranslatableText::of('Field "%s": only a text is written again for each language.', $code);
         }
 
         $min = self::bound($field['min'] ?? null);
         $max = self::bound($field['max'] ?? null);
 
         if (null !== $min && null !== $max && $min > $max) {
-            $problems[] = \sprintf('Field "%s": the minimum is above the maximum.', $code);
+            $problems[] = TranslatableText::of('Field "%s": the minimum is above the maximum.', $code);
         }
 
         if ([] !== $problems) {
@@ -198,7 +200,7 @@ final readonly class FieldDefinition
             return (int) trim($value);
         }
 
-        throw new \InvalidArgumentException(FieldKind::Duration === $this->kind ? 'The value is not a number of minutes.' : 'The value is not a whole number.');
+        throw InvalidFieldValueException::because(FieldKind::Duration === $this->kind ? 'The value is not a number of minutes.' : 'The value is not a whole number.');
     }
 
     private function number(mixed $value): float
@@ -212,21 +214,21 @@ final readonly class FieldDefinition
             return (float) str_replace(',', '.', trim($value));
         }
 
-        throw new \InvalidArgumentException('The value is not a number.');
+        throw InvalidFieldValueException::because('The value is not a number.');
     }
 
     private function bounded(int|float $value): int|float
     {
         if (null !== $this->min && $value < $this->min) {
-            throw new \InvalidArgumentException(\sprintf('The value is below %s.', $this->min));
+            throw InvalidFieldValueException::because('The value is below %s.', $this->min);
         }
 
         if (null !== $this->max && $value > $this->max) {
-            throw new \InvalidArgumentException(\sprintf('The value is above %s.', $this->max));
+            throw InvalidFieldValueException::because('The value is above %s.', $this->max);
         }
 
         if (FieldKind::Duration === $this->kind && $value < 0) {
-            throw new \InvalidArgumentException('A duration is not negative.');
+            throw InvalidFieldValueException::because('A duration is not negative.');
         }
 
         return $value;
@@ -240,7 +242,7 @@ final readonly class FieldDefinition
     private function text(mixed $value, int $defaultMax, bool $singleLine): string
     {
         if (!\is_scalar($value)) {
-            throw new \InvalidArgumentException('The value is not a text.');
+            throw InvalidFieldValueException::because('The value is not a text.');
         }
 
         $text = html_entity_decode(strip_tags((string) $value), \ENT_QUOTES | \ENT_HTML5);
@@ -250,7 +252,7 @@ final readonly class FieldDefinition
         $max = null === $this->max ? $defaultMax : min((int) $this->max, $defaultMax);
 
         if (mb_strlen($text) > $max) {
-            throw new \InvalidArgumentException(\sprintf('The text is longer than %d characters.', $max));
+            throw InvalidFieldValueException::because('The text is longer than %d characters.', $max);
         }
 
         return $text;
@@ -265,7 +267,7 @@ final readonly class FieldDefinition
         return match (\is_scalar($value) ? strtolower(trim((string) $value)) : null) {
             '1', 'true', 'yes', 'on' => true,
             '0', 'false', 'no', 'off' => false,
-            default => throw new \InvalidArgumentException('The value is not yes or no.'),
+            default => throw InvalidFieldValueException::because('The value is not yes or no.'),
         };
     }
 
@@ -274,7 +276,7 @@ final readonly class FieldDefinition
         $word = \is_scalar($value) ? trim((string) $value) : '';
 
         if (!\in_array($word, $this->choices, true)) {
-            throw new \InvalidArgumentException(\sprintf('"%s" is not one of: %s.', $word, implode(', ', $this->choices)));
+            throw InvalidFieldValueException::because('"%s" is not one of: %s.', $word, implode(', ', $this->choices));
         }
 
         return $word;
@@ -290,7 +292,7 @@ final readonly class FieldDefinition
         $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $text);
 
         if (false === $date || $date->format('Y-m-d') !== $text) {
-            throw new \InvalidArgumentException('The value is not a date written YYYY-MM-DD.');
+            throw InvalidFieldValueException::because('The value is not a date written YYYY-MM-DD.');
         }
 
         return $text;

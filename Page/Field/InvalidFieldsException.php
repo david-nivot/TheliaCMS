@@ -14,27 +14,45 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Page\Field;
 
+use Symfony\Contracts\Translation\TranslatorInterface;
+use TheliaCMS\Locale\TranslatableText;
+
 /**
  * A definition of fields, or values for them, the site cannot store. Every
  * problem is listed, each one a sentence an editor or the generator can act
- * on.
+ * on: in English for the generator, in the language of the back office for
+ * an editor.
  */
 final class InvalidFieldsException extends \InvalidArgumentException
 {
+    /** @var list<string> */
+    public readonly array $problems;
+
     /**
-     * @param list<string> $problems
+     * @param list<TranslatableText> $texts
      */
     private function __construct(
-        public readonly array $problems,
+        public readonly array $texts,
     ) {
-        parent::__construct(implode(' ', $problems));
+        $this->problems = array_map(static fn (TranslatableText $text): string => (string) $text, $texts);
+
+        parent::__construct(implode(' ', $this->problems));
     }
 
     /**
-     * @param list<string> $problems
+     * @param list<string|TranslatableText> $problems a string is a sentence
+     *                                                without values
      */
     public static function because(array $problems): self
     {
-        return new self($problems);
+        return new self(array_map(static fn (string|TranslatableText $problem): TranslatableText => $problem instanceof TranslatableText ? $problem : TranslatableText::of($problem), $problems));
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function translated(TranslatorInterface $translator): array
+    {
+        return array_map(static fn (TranslatableText $text): string => $text->trans($translator), $this->texts);
     }
 }

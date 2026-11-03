@@ -18,6 +18,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\HttpFoundation\Session\Session;
 use Thelia\Model\Lang;
 use Thelia\Model\LangQuery;
@@ -30,14 +31,20 @@ use TheliaCMS\Media\Admin\CmsMediaType;
 use TheliaCMS\Media\Admin\MediaDescriptionType;
 use TheliaCMS\Menu\Admin\CmsMenuItemType;
 use TheliaCMS\Menu\Admin\CmsMenuType;
+use TheliaCMS\Page\CmsUrlService;
+use TheliaCMS\Page\Field\FieldDefinitions;
+use TheliaCMS\Page\Field\InvalidFieldsException;
+use TheliaCMS\Page\FixedAddressException;
+use TheliaCMS\Page\ReservedSlugException;
 use TheliaCMS\Script\Admin\CmsScriptType;
 use TheliaCMS\Script\Admin\ConsentSettingsType;
 use TheliaCMS\Settings\Admin\CmsSettingsType;
+use TheliaCMS\Settings\Admin\PageTypeFieldType;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
 
 /**
- * A message the module gives a form is read in the language of the back
- * office. Neither the validator, which looks a constraint message up in the
+ * A message the module gives a form, or the reason an exception gives a
+ * screen, is read in the language of the back office. Neither the validator, which looks a constraint message up in the
  * `validators` domain, nor the form theme, which prints a form error as it is,
  * looks in the domain of the module.
  */
@@ -78,7 +85,7 @@ final class FrenchFormMessagesTest extends CmsIntegrationTestCase
         $form = $this->getService(FormFactoryInterface::class)->create($type, null, ['csrf_protection' => false] + $options);
         $form->submit($submitted);
 
-        $errors = $this->errorsOf($form->get($field));
+        $errors = $this->errorsOf('' === $field ? $form : $form->get($field));
 
         self::assertContains($french, $errors, 'Read instead: '.implode(' | ', $errors));
     }
@@ -110,6 +117,60 @@ final class FrenchFormMessagesTest extends CmsIntegrationTestCase
         yield 'maintenance allowlist' => [CmsSettingsType::class, [], ['maintenanceAllowlist' => '10.0.0.1, pas-une-ip'], 'maintenanceAllowlist', 'Ceci n’est pas une adresse IP ni une plage : pas-une-ip'];
         yield 'library image without a description' => [CmsMediaType::class, [], ['alt' => '', 'decorative' => false], 'alt', 'Décrivez l\'image, ou cochez « Cette image est décorative ».'];
         yield 'image description without a description' => [MediaDescriptionType::class, [], ['alt' => '', 'decorative' => false], 'alt', 'Décrivez l\'image, ou cochez « Cette image est décorative ».'];
+        yield 'page type field without its choices' => [PageTypeFieldType::class, [], ['label' => 'Taille', 'code' => 'taille', 'kind' => 'choice', 'choices' => ''], '', 'Champ « x » : un champ à choix liste les mots qu’il accepte.'];
+    }
+
+    public function testARefusedFixedAddressIsReadInFrench(): void
+    {
+        try {
+            $this->getService(CmsUrlService::class)->normalizeFixedAddress('mon adresse');
+            self::fail('An address with a space is refused.');
+        } catch (FixedAddressException $exception) {
+            self::assertSame('« mon adresse » n’est pas une adresse : ni espace, ni « ? », ni « # », ni barre oblique inverse, ni segment vide.', $exception->text->trans($this->translator()));
+        }
+    }
+
+    public function testAReservedSlugIsReadInFrench(): void
+    {
+        try {
+            $this->getService(CmsUrlService::class)->normalizeSegment('admin');
+            self::fail('A reserved path is refused as a slug.');
+        } catch (ReservedSlugException $exception) {
+            self::assertSame('« admin » est un chemin réservé : il ne peut pas servir d’adresse à une page.', $exception->text->trans($this->translator()));
+        }
+    }
+
+    /**
+     * The generator reads the same problems: they stay in English for it.
+     */
+    public function testAFieldDefinitionRefusedIsReadInFrenchAndKeptInEnglishForTheGenerator(): void
+    {
+        try {
+            FieldDefinitions::fromArray([['code' => 'Taille', 'kind' => 'text'], 'not a field']);
+            self::fail('A code with a capital is refused.');
+        } catch (InvalidFieldsException $exception) {
+            self::assertSame([
+                '« Taille » n’est pas un code de champ : des minuscules, des chiffres et des tirets bas, en commençant par une lettre, 40 caractères au plus.',
+                'Un champ n’est pas un objet.',
+            ], $exception->translated($this->translator()));
+            self::assertSame([
+                '"Taille" is not a field code: lowercase letters, digits and underscores, starting with a letter, 40 characters at most.',
+                'A field is not an object.',
+            ], $exception->problems);
+        }
+    }
+
+    public function testAFieldValueRefusedIsReadInFrench(): void
+    {
+        $fields = FieldDefinitions::fromArray([['code' => 'guests', 'kind' => 'integer', 'labels' => ['fr_FR' => 'Convives'], 'max' => 12]]);
+
+        try {
+            $fields->normalize(['guests' => 14], 'fr_FR');
+            self::fail('A value above the maximum is refused.');
+        } catch (InvalidFieldsException $exception) {
+            self::assertSame(['Convives : La valeur est supérieure à 12.'], $exception->translated($this->translator()));
+            self::assertSame(['Convives: The value is above 12.'], $exception->problems);
+        }
     }
 
     /**
@@ -124,6 +185,11 @@ final class FrenchFormMessagesTest extends CmsIntegrationTestCase
         }
 
         return $messages;
+    }
+
+    private function translator(): TranslatorInterface
+    {
+        return $this->getService(TranslatorInterface::class);
     }
 
     private function session(): Session
