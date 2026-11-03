@@ -25,6 +25,9 @@
     // Set when a section is added: the preview drawn next is scrolled to the
     // last section, the one just added, rather than left at the top.
     var revealLast = false;
+    // Set when the screen is drawn again: where the preview stood, so the
+    // preview drawn next shows the same place rather than the top of the page.
+    var keptPosition = null;
 
     // The colour of the back office, for what the screen writes into the
     // preview: the theme of the site has its own.
@@ -125,13 +128,18 @@
      * what the reader had: the panels they opened, the scroll of the side
      * panel. The outcome of the call takes the focus, so it is read out.
      */
-    function swap(html) {
+    function swap(html, target) {
         var next = new DOMParser().parseFromString(html, "text/html").querySelector("[data-cms-content]");
         var current = document.querySelector("[data-cms-content]");
 
         if (!next || !current) {
             throw new Error("no screen in the answer");
         }
+
+        // The frame is drawn again with the screen and loads at the top: what
+        // it showed is read now, and given back once the new one has loaded.
+        // A section just added is shown by revealLastSection() instead.
+        keptPosition = revealLast ? null : previewPosition(current, target);
 
         var opened = [];
         current.querySelectorAll("details[open]").forEach(function (panel) {
@@ -162,6 +170,107 @@
             outcome.setAttribute("tabindex", "-1");
             outcome.focus();
         }
+    }
+
+    function frameDocument(frame) {
+        try {
+            var inner = frame && frame.contentDocument;
+
+            return inner && inner.body && inner.defaultView ? inner : null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    /**
+     * Where the preview of `root` stands: the sections on show, each with its
+     * distance to the top of the frame, the one the call is about first, and
+     * the scroll of the frame for when none of them is drawn again. A section
+     * out of sight is not one to keep in place: the call then keeps what the
+     * reader was looking at.
+     */
+    function previewPosition(root, target) {
+        var inner = frameDocument(root.querySelector("[data-cms-frame]"));
+
+        if (!inner) {
+            return null;
+        }
+
+        var height = inner.defaultView.innerHeight;
+        var anchors = [];
+
+        inner.querySelectorAll("[data-cms-section]").forEach(function (section) {
+            var box = section.getBoundingClientRect();
+
+            if (box.bottom <= 0 || box.top >= height) {
+                return;
+            }
+
+            var anchor = { id: section.getAttribute("data-cms-section"), top: box.top };
+
+            if (anchor.id === target) {
+                anchors.unshift(anchor);
+            } else {
+                anchors.push(anchor);
+            }
+        });
+
+        return { anchors: anchors, scroll: inner.defaultView.scrollY };
+    }
+
+    /**
+     * Scrolls the preview so that the first section of `position` still drawn
+     * stands where it stood: a section changed by hand keeps its top under
+     * the eye, whatever its new height, and a section removed hands over to
+     * the next one on show.
+     *
+     * The page of the theme moves once scrolled (a header that shrinks when
+     * it sticks, an image that loads): the section is put back in place each
+     * time the page changes size for a moment, until the reader scrolls.
+     */
+    function restorePreviewPosition(frame, position) {
+        var inner = frameDocument(frame);
+
+        if (!inner) {
+            return;
+        }
+
+        var view = inner.defaultView;
+        var anchor = null;
+        var section = null;
+
+        for (var index = 0; index < position.anchors.length && !section; index++) {
+            anchor = position.anchors[index];
+            section = inner.querySelector('[data-cms-section="' + CSS.escape(anchor.id) + '"]');
+        }
+
+        if (!section) {
+            view.scrollTo({ top: position.scroll, behavior: "instant" });
+
+            return;
+        }
+
+        function place() {
+            view.scrollTo({ top: view.scrollY + section.getBoundingClientRect().top - anchor.top, behavior: "instant" });
+        }
+
+        place();
+
+        if (!view.ResizeObserver) {
+            return;
+        }
+
+        var watcher = new view.ResizeObserver(place);
+        var events = ["wheel", "touchstart", "keydown", "mousedown"];
+
+        function stop() {
+            watcher.disconnect();
+            events.forEach(function (name) { view.removeEventListener(name, stop); });
+        }
+
+        watcher.observe(inner.body);
+        events.forEach(function (name) { view.addEventListener(name, stop, { passive: true }); });
+        view.setTimeout(stop, 1500);
     }
 
     // A panel is told apart by its section and its rank in it, which a
@@ -652,7 +761,9 @@
                     }
 
                     return response.text();
-                }).then(swap).catch(function () {
+                }).then(function (html) {
+                    swap(html, item.getAttribute("data-section"));
+                }).catch(function () {
                     save.disabled = false;
                     notify("danger", labels.network);
                 });
@@ -896,6 +1007,14 @@
             frame.addEventListener("load", markPreview);
             frame.addEventListener("load", addSlot);
             frame.addEventListener("load", revealLastSection);
+            frame.addEventListener("load", function () {
+                var position = keptPosition;
+                keptPosition = null;
+
+                if (position) {
+                    restorePreviewPosition(frame, position);
+                }
+            });
             markPreview();
             addSlot();
         }
@@ -1022,7 +1141,9 @@
                     }
 
                     return response.text();
-                }).then(swap).catch(function () {
+                }).then(function (html) {
+                    swap(html, item.getAttribute("data-section"));
+                }).catch(function () {
                     window.location.reload();
                 });
             });
@@ -1081,7 +1202,14 @@
                     }
 
                     return response.text();
-                }).then(swap).catch(function () {
+                }).then(function (html) {
+                    // The section the form is about, when it is one of the
+                    // list: its edit dialog, its buttons to move, duplicate
+                    // or remove it.
+                    var item = form.closest("[data-cms-section-item]");
+
+                    swap(html, item ? item.getAttribute("data-section") : null);
+                }).catch(function () {
                     form.submit();
                 });
             });
