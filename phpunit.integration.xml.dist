@@ -19,7 +19,7 @@
          colors="true"
          failOnWarning="true"
          failOnRisky="true"
-         cacheDirectory=".phpunit.cache"
+         cacheDirectory=".phpunit.cache/integration"
          displayDetailsOnTestsThatTriggerWarnings="true"
          displayDetailsOnTestsThatTriggerDeprecations="true">
     <php>

@@ -23,7 +23,7 @@ use TheliaCMS\Model\CmsPageDocument;
 final readonly class PageDocumentUpload
 {
     /**
-     * @param list<CmsPageDocument>                                    $stored
+     * @param list<CmsPageDocument>                                  $stored
      * @param list<array{name: string, reason: PageDocumentRefusal}> $refused
      */
     public function __construct(

@@ -65,7 +65,7 @@ final class PageDocumentControllerTest extends TestCase
     public function testTheAddressNamesTheRowAndTheStoredName(): void
     {
         $routes = new RouteCollection();
-        $routes->add(PageDocumentUrl::ROUTE, (new \Symfony\Component\Routing\Route('/cms/documents/{id}/{file}')));
+        $routes->add(PageDocumentUrl::ROUTE, new \Symfony\Component\Routing\Route('/cms/documents/{id}/{file}'));
 
         $url = (new PageDocumentUrl(new UrlGenerator($routes, new RequestContext('', 'GET', 'shop.test', 'https'))))->forDocument(12, 'notice-0123abcd.pdf');
 

@@ -1,17 +1,52 @@
 name: CI
 
+# Every branch of the repository is checked on push; a pull request runs the
+# checks again only when it comes from a fork, which pushes nothing here.
 on:
   push:
-    branches: [ main ]
+    branches: [ '**' ]
   pull_request:
-    branches: [ main ]
 
-# A new push to a pull request makes its previous run pointless.
+# A new push to a branch makes its previous run pointless, except on main,
+# where each merge keeps its own run.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
+  quality:
+    # Needs nothing but the module: its manifest, its code style, and the
+    # advisories against the packages a shop installing it would get.
+    name: Manifest, code style, advisories
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the module
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          # The version thelia/thelia pins, so the module and the core agree.
+          tools: composer, php-cs-fixer:3.95.27
+
+      - name: Validate composer.json
+        run: composer validate --strict
+
+      - name: Check the code style
+        run: php-cs-fixer fix --dry-run --diff --using-cache=no
+
+      - name: Audit the dependencies
+        # The module ships no lock file: resolve its requirements alone, as a
+        # shop requiring it would, and audit that resolution.
+        if: ${{ !cancelled() }}
+        run: |
+          composer update --no-install --no-scripts --no-plugins --no-interaction --no-progress
+          composer audit --locked --abandoned=report
+
   tests:
     # The module is tested inside the tip of Thelia, where it is meant to run:
     # thelia/thelia on main with the themes on their development branch, the
@@ -19,6 +54,7 @@ jobs:
     # configurations bootstrap from that place (../../../vendor/autoload.php and
     # ../../../tests/bootstrap.php).
     name: Tests (PHP ${{ matrix.php }})
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -157,3 +193,10 @@ jobs:
       - name: Integration tests
         if: ${{ !cancelled() }}
         run: vendor/bin/phpunit -c local/modules/TheliaCMS/phpunit.integration.xml.dist
+
+      - name: Static analysis
+        # Once: the analysis reads the code for PHP 8.3, the lowest version the
+        # module supports, whatever PHP runs it. It needs the Propel models
+        # test-prepare built under var/propel/test.
+        if: ${{ !cancelled() && matrix.php == '8.3' }}
+        run: vendor/bin/phpstan analyse -c local/modules/TheliaCMS/phpstan.dist.neon --memory-limit=-1 --no-progress --error-format=github

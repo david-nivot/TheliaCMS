@@ -194,7 +194,7 @@ final class ThemeComponentSectionTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $example
+     * @param array<string, mixed>      $example
      * @param array<string, mixed>|null $received the props the component is drawn with
      */
     private function bannerWith(array $example, ?array &$received): ThemeComponentSection

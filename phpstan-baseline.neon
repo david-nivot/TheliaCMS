@@ -1,0 +1,979 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Call to an undefined method Symfony\\Component\\HttpFoundation\\Session\\SessionInterface\:\:getFlashBag\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Catalogue/Admin/ItemContentController.php
+
+		-
+			message: '#^Match expression does not handle remaining value\: string$#'
+			identifier: match.unhandled
+			count: 1
+			path: Catalogue/Admin/ItemContentController.php
+
+		-
+			message: '#^Parameter \#1 \$active of method Thelia\\Model\\Base\\LangQuery\:\:filterByActive\(\) expects bool\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Catalogue/Admin/ItemContentTabHook.php
+
+		-
+			message: '#^Match arm comparison between TheliaCMS\\Catalogue\\CatalogueItemType\:\:Folder and TheliaCMS\\Catalogue\\CatalogueItemType\:\:Folder is always true\.$#'
+			identifier: match.alwaysTrue
+			count: 1
+			path: Catalogue/CatalogueItems.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<mixed\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: Content/Site/SitePropReader.php
+
+		-
+			message: '#^Call to an undefined method Twig\\Template\:\:checkSecurity\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Content/Site/SiteTemplateRenderer.php
+
+		-
+			message: '#^Offset 1 on array\{non\-falsy\-string, '''', non\-empty\-string\}\|array\{non\-falsy\-string, non\-empty\-string\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: Content/Theme/ComponentPropsReader.php
+
+		-
+			message: '#^Call to an undefined method iterable\<TheliaCMS\\Model\\CmsPage\>&Propel\\Runtime\\ActiveQuery\\ModelCriteria\:\:joinWithI18n\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Dashboard/ShowcaseStats.php
+
+		-
+			message: '#^Parameter \#1 \$active of method Thelia\\Model\\Base\\LangQuery\:\:filterByActive\(\) expects bool\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Dashboard/ShowcaseStats.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between null and Thelia\\Tools\\URL will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: Form/FormCatalog.php
+
+		-
+			message: '#^Call to an undefined method Symfony\\Component\\HttpFoundation\\Session\\SessionInterface\:\:getFlashBag\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Generation/Admin/CmsPageComponentController.php
+
+		-
+			message: '#^Call to an undefined method Symfony\\Component\\HttpFoundation\\Session\\SessionInterface\:\:getFlashBag\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Generation/Admin/CmsPageContentController.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: Generation/Admin/ContentScreen.php
+
+		-
+			message: '#^Call to an undefined method Symfony\\Component\\HttpFoundation\\Session\\SessionInterface\:\:getFlashBag\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Generation/Admin/GenerationRunner.php
+
+		-
+			message: '#^Instanceof between TheliaLibrary\\Model\\LibraryImage and TheliaLibrary\\Model\\LibraryImage will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: Generation/Admin/SectionFormBuilder.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: Generation/Admin/SectionUpdate.php
+
+		-
+			message: '#^Parameter \#1 \$active of method Thelia\\Model\\Base\\LangQuery\:\:filterByActive\(\) expects bool\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Generation/Admin/TranslationSources.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<mixed\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: Generation/GenerationLog.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: Generation/PageGenerator.php
+
+		-
+			message: '#^Parameter \#1 \$active of method Thelia\\Model\\Base\\LangQuery\:\:filterByActive\(\) expects bool\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Generation/Text/Admin/TextBriefController.php
+
+		-
+			message: '#^Call to an undefined method Propel\\Runtime\\ActiveQuery\\Criteria\|Propel\\Runtime\\Util\\PropelConditionalProxy\:\:filterById\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Generation/Tool/SearchPagesTool.php
+
+		-
+			message: '#^Parameter \#1 \$active of method Thelia\\Model\\Base\\LangQuery\:\:filterByActive\(\) expects bool\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Hook/CmsDashboardHook.php
+
+		-
+			message: '#^Property TheliaCMS\\Http\\ConsoleRequest\:\:\$url is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: Http/ConsoleRequest.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<string\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: ImportExport/ExportFormat.php
+
+		-
+			message: '#^Parameter \#1 \$active of method Thelia\\Model\\Base\\LangQuery\:\:filterByActive\(\) expects bool\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: ImportExport/SiteExporter.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<string\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: ImportExport/SiteExporter.php
+
+		-
+			message: '#^Parameter \#1 \$active of method Thelia\\Model\\Base\\LangQuery\:\:filterByActive\(\) expects bool\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Install/LegalPagesSeeder.php
+
+		-
+			message: '#^Parameter \#1 \$active of method Thelia\\Model\\Base\\LangQuery\:\:filterByActive\(\) expects bool\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Install/MenuSeeder.php
+
+		-
+			message: '#^Parameter \#1 \$active of method Thelia\\Model\\Base\\LangQuery\:\:filterByActive\(\) expects bool\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Locale/AlternateUrls.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<mixed\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: Locale/AlternateUrls.php
+
+		-
+			message: '#^Parameter \#2 \$defaultValue of static method Thelia\\Module\\BaseModule\:\:getConfigValue\(\) expects string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Locale/AlternateUrls.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between null and Thelia\\Tools\\URL will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: Locale/AlternateUrls.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>title" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: Media/Admin/CmsMediaAdminController.php
+
+		-
+			message: '#^Parameter \#1 \$active of method Thelia\\Model\\Base\\LangQuery\:\:filterByActive\(\) expects bool\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Media/Admin/MediaCatalog.php
+
+		-
+			message: '#^Parameter \#1 \$active of method Thelia\\Model\\Base\\LangQuery\:\:filterByActive\(\) expects bool\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Media/CatalogueImageImporter.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<mixed\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: Media/CatalogueImageImporter.php
+
+		-
+			message: '#^Offset ''mime'' on array\{0\: int\<0, max\>, 1\: int\<0, max\>, 2\: int, 3\: string, mime\: string, channels\?\: int, bits\?\: int\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: Media/CmsMediaLibrary.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<mixed\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: Media/CmsMediaLibrary.php
+
+		-
+			message: '#^Parameter \#1 \$array \(non\-empty\-list\<string\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: Media/ImportCatalogueImagesCommand.php
+
+		-
+			message: '#^Parameter \#1 \$active of method Thelia\\Model\\Base\\LangQuery\:\:filterByActive\(\) expects bool\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Menu/Admin/CmsMenuRepository.php
+
+		-
+			message: '#^Parameter \#1 \$active of method Thelia\\Model\\Base\\LangQuery\:\:filterByActive\(\) expects bool\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Menu/Admin/CmsMenuWriter.php
+
+		-
+			message: '#^Parameter \#1 \$defaultCategory of method Thelia\\Model\\Base\\ProductCategoryQuery\:\:filterByDefaultCategory\(\) expects bool\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Menu/Admin/MenuTargetChoices.php
+
+		-
+			message: '#^Parameter \#2 \$defaultValue of static method Thelia\\Module\\BaseModule\:\:getConfigValue\(\) expects string\|null, false given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Menu/FooterMenuThemeHook.php
+
+		-
+			message: '#^Parameter \#2 \$defaultValue of static method Thelia\\Module\\BaseModule\:\:getConfigValue\(\) expects string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Menu/MenuTargetResolver.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between null and Thelia\\Tools\\URL will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: Menu/MenuTargetResolver.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<TheliaCMS\\Menu\\MenuPlacement\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: Menu/MenuTree.php
+
+		-
+			message: '#^Call to an undefined method Symfony\\Component\\HttpFoundation\\Session\\SessionInterface\:\:getFlashBag\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Page/Admin/CmsPageAdminController.php
+
+		-
+			message: '#^Parameter \#2 \$defaultValue of static method Thelia\\Module\\BaseModule\:\:getConfigValue\(\) expects string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Page/Admin/CmsPageAdminController.php
+
+		-
+			message: '#^Parameter \#1 \$active of method Thelia\\Model\\Base\\LangQuery\:\:filterByActive\(\) expects bool\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Page/Admin/CmsPageWriter.php
+
+		-
+			message: '#^Parameter \#1 \$active of method Thelia\\Model\\Base\\LangQuery\:\:filterByActive\(\) expects bool\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Page/Admin/EditLanguage.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<mixed\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: Page/Admin/EditLanguage.php
+
+		-
+			message: '#^Parameter \#2 \$defaultValue of static method Thelia\\Module\\BaseModule\:\:getConfigValue\(\) expects string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Page/Admin/PageListPresenter.php
+
+		-
+			message: '#^Parameter \#2 \$defaultValue of static method Thelia\\Module\\BaseModule\:\:getConfigValue\(\) expects string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Page/CmsHomeViewListener.php
+
+		-
+			message: '#^Parameter \#2 \$defaultValue of static method Thelia\\Module\\BaseModule\:\:getConfigValue\(\) expects string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Page/CmsPageViewListener.php
+
+		-
+			message: '#^Cannot cast TheliaCMS\\Model\\CmsPageDocument to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Page/Document/PageDocumentRepository.php
+
+		-
+			message: '#^Call to function is_string\(\) with TheliaCMS\\Model\\CmsPageTypeDefinition\|null will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: Page/PageTypeRepository.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<mixed\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: Page/PublishPagesCommand.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<mixed\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: Page/RenderPagesCommand.php
+
+		-
+			message: '#^Method TheliaCMS\\Partial\\Definition\\PageListPartial\:\:cacheTtl\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: Partial/Definition/PageListPartial.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type TheliaCMS\\Model\\CmsItemContent\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: Preview/ItemPreviewController.php
+
+		-
+			message: '#^Call to an undefined method Symfony\\Component\\HttpFoundation\\Session\\SessionInterface\:\:getFlashBag\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Script/Admin/CmsScriptAdminController.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between null and Thelia\\Tools\\URL will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: Search/Front/CmsSearchController.php
+
+		-
+			message: '#^Offset 0 on non\-empty\-list\<string\> on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: Security/CmsAdminGuard.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Thelia\\Tools\\URL\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: Seo/CmsPageSeoElement.php
+
+		-
+			message: '#^Parameter \#1 \$active of method Thelia\\Model\\Base\\LangQuery\:\:filterByActive\(\) expects bool\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Settings/EditorProfileSeeder.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<string\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: Settings/SiteFonts.php
+
+		-
+			message: '#^Parameter \#1 \$active of method Thelia\\Model\\Base\\LangQuery\:\:filterByActive\(\) expects bool\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Sitemap/SitemapThemeHook.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between null and Thelia\\Tools\\URL will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: Sitemap/SitemapThemeHook.php
+
+		-
+			message: '#^Offset 1 on array\{non\-falsy\-string, '''', non\-falsy\-string&numeric\-string\}\|array\{non\-falsy\-string, non\-falsy\-string\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: Storage/SupplementaryCharacters.php
+
+		-
+			message: '#^Call to an undefined method Propel\\Runtime\\Collection\\Collection\:\:delete\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Tests/Integration/BackOffice/LocaleMenuScreenTest.php
+
+		-
+			message: '#^Parameter \#1 \$active of method Thelia\\Model\\Base\\LangQuery\:\:filterByActive\(\) expects bool\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Tests/Integration/BackOffice/LocaleMenuScreenTest.php
+
+		-
+			message: '#^Call to method getId\(\) on an unknown class Dealer\\Model\\Dealer\.$#'
+			identifier: class.notFound
+			count: 4
+			path: Tests/Integration/Catalogue/DealerStoreContentTest.php
+
+		-
+			message: '#^Call to method setDealer\(\) on an unknown class Dealer\\Event\\DealerEvent\.$#'
+			identifier: class.notFound
+			count: 1
+			path: Tests/Integration/Catalogue/DealerStoreContentTest.php
+
+		-
+			message: '#^Call to method setDealerId\(\) on an unknown class Dealer\\Model\\DealerMetaSeo\.$#'
+			identifier: class.notFound
+			count: 1
+			path: Tests/Integration/Catalogue/DealerStoreContentTest.php
+
+		-
+			message: '#^Call to method setLocale\(\) on an unknown class Dealer\\Model\\Dealer\.$#'
+			identifier: class.notFound
+			count: 1
+			path: Tests/Integration/Catalogue/DealerStoreContentTest.php
+
+		-
+			message: '#^Instantiated class Dealer\\Event\\DealerEvent not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: Tests/Integration/Catalogue/DealerStoreContentTest.php
+
+		-
+			message: '#^Instantiated class Dealer\\Model\\Dealer not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: Tests/Integration/Catalogue/DealerStoreContentTest.php
+
+		-
+			message: '#^Instantiated class Dealer\\Model\\DealerMetaSeo not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: Tests/Integration/Catalogue/DealerStoreContentTest.php
+
+		-
+			message: '#^Method TheliaCMS\\Tests\\Integration\\Catalogue\\DealerStoreContentTest\:\:store\(\) has invalid return type Dealer\\Model\\Dealer\.$#'
+			identifier: class.notFound
+			count: 1
+			path: Tests/Integration/Catalogue/DealerStoreContentTest.php
+
+		-
+			message: '#^Call to method setLocale\(\) on an unknown class Dealer\\Model\\Dealer\.$#'
+			identifier: class.notFound
+			count: 1
+			path: Tests/Integration/Catalogue/DealerStoreScreenTest.php
+
+		-
+			message: '#^Instantiated class Dealer\\Model\\Dealer not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: Tests/Integration/Catalogue/DealerStoreScreenTest.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type TheliaCMS\\Model\\CmsItemContent\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 6
+			path: Tests/Integration/Catalogue/ItemContentRoundTripTest.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>sections" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: Tests/Integration/Catalogue/ItemContentScreenTest.php
+
+		-
+			message: '#^Parameter \#1 \$active of method Thelia\\Model\\Base\\LangQuery\:\:filterByActive\(\) expects bool\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Tests/Integration/CmsIntegrationTestCase.php
+
+		-
+			message: '#^Call to function assert\(\) with true will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 6
+			path: Tests/Integration/Content/ComponentScreenTest.php
+
+		-
+			message: '#^Instanceof between TheliaCMS\\Content\\DocumentRenderer and TheliaCMS\\Content\\DocumentRenderer will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: Tests/Integration/Content/ComponentScreenTest.php
+
+		-
+			message: '#^Instanceof between TheliaCMS\\Content\\DocumentSchema and TheliaCMS\\Content\\DocumentSchema will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: Tests/Integration/Content/ComponentScreenTest.php
+
+		-
+			message: '#^Instanceof between TheliaCMS\\Content\\SectionCatalog and TheliaCMS\\Content\\SectionCatalog will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: Tests/Integration/Content/ComponentScreenTest.php
+
+		-
+			message: '#^Instanceof between TheliaCMS\\Generation\\Admin\\ToolkitLink and TheliaCMS\\Generation\\Admin\\ToolkitLink will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: Tests/Integration/Content/ComponentScreenTest.php
+
+		-
+			message: '#^Instanceof between TheliaCMS\\Generation\\CatalogSheet and TheliaCMS\\Generation\\CatalogSheet will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: Tests/Integration/Content/ComponentScreenTest.php
+
+		-
+			message: '#^Instanceof between TheliaCMS\\Generation\\Tool\\ReadSectionTool and TheliaCMS\\Generation\\Tool\\ReadSectionTool will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: Tests/Integration/Content/ComponentScreenTest.php
+
+		-
+			message: '#^Using nullsafe property access on non\-nullable type TheliaCMS\\Content\\Site\\SiteComponent\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: Tests/Integration/Content/SiteComponentScreenTest.php
+
+		-
+			message: '#^Call to an undefined method DOMNode\:\:getAttribute\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Tests/Integration/Documentation/DocumentationScreenTest.php
+
+		-
+			message: '#^Call to an undefined method DOMNode\:\:getElementsByTagName\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Tests/Integration/Documentation/DocumentationScreenTest.php
+
+		-
+			message: '#^Call to function assert\(\) with true will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: Tests/Integration/Front/PageDocumentDownloadTest.php
+
+		-
+			message: '#^Instanceof between TheliaCMS\\Page\\Admin\\CmsPageWriter and TheliaCMS\\Page\\Admin\\CmsPageWriter will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: Tests/Integration/Front/PageDocumentDownloadTest.php
+
+		-
+			message: '#^Parameter \#1 \$active of method Thelia\\Model\\Base\\LangQuery\:\:filterByActive\(\) expects bool\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Tests/Integration/Generation/ContentScreenTest.php
+
+		-
+			message: '#^Parameter \#1 \$sections of static method TheliaCMS\\Tests\\Integration\\Generation\\ContentScreenTest\:\:document\(\) expects list\<array\{id\: string, component\: string, props\: array\<string, mixed\>\}\>, array\{array\{id\: ''content'', component\: ''cms\:richtext'', props\: array\{html\: ''\<h1\>Partners\</h1\>\<p…''\}\}, array\{id\: ''logos'', component\: ''cms\:columns'', props\: non\-empty\-string\}\} given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Tests/Integration/Generation/ContentScreenTest.php
+
+		-
+			message: '#^Parameter \#1 \$sections of static method TheliaCMS\\Tests\\Integration\\Generation\\ContentScreenTest\:\:document\(\) expects list\<array\{id\: string, component\: string, props\: array\<string, mixed\>\}\>, array\{array\{id\: ''content'', component\: ''cms\:richtext'', props\: array\{html\: ''\<h2\>Apple pie\</h2\>…''\}\}, array\{id\: ''photo'', component\: ''cms\:image'', props\: non\-empty\-string\}\} given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Tests/Integration/Generation/ContentScreenTest.php
+
+		-
+			message: '#^Using nullsafe property access on non\-nullable type TheliaCMS\\Content\\Section\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: Tests/Integration/Generation/ContentScreenTest.php
+
+		-
+			message: '#^Using nullsafe property access on non\-nullable type Thelia\\Domain\\Ai\\AiOutputSchema\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: Tests/Integration/Generation/PageGeneratorTest.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type TheliaCMS\\Content\\Document\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: Tests/Integration/Generation/SectionEditScreenTest.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type TheliaCMS\\Model\\CmsPageGeneration\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 7
+			path: Tests/Integration/Generation/SectionEditScreenTest.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>sections" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 10
+			path: Tests/Integration/Generation/SectionEditScreenTest.php
+
+		-
+			message: '#^PHPDoc tag @return with type array\<string, mixed\> is incompatible with native type Thelia\\Domain\\Ai\\AiResponse\.$#'
+			identifier: return.phpDocType
+			count: 1
+			path: Tests/Integration/Generation/TypedPageGenerationTest.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type TheliaCMS\\Model\\CmsForm\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: Tests/Integration/ImportExport/HostileImportTest.php
+
+		-
+			message: '#^Using nullsafe property access on non\-nullable type TheliaCMS\\Content\\Site\\SiteComponent\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: Tests/Integration/ImportExport/SiteComponentImportTest.php
+
+		-
+			message: '#^Parameter \#1 \$active of method Thelia\\Model\\Base\\LangQuery\:\:filterByActive\(\) expects bool\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Tests/Integration/Media/MediaListScreenTest.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<int\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: Tests/Integration/Media/MediaListScreenTest.php
+
+		-
+			message: '#^Parameter \#1 \$active of method Thelia\\Model\\Base\\LangQuery\:\:filterByActive\(\) expects bool\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Tests/Integration/Media/MediaSheetScreenTest.php
+
+		-
+			message: '#^Cannot call method select\(\) on array\<array\<Symfony\\Component\\DomCrawler\\Field\\FormField\>\|Symfony\\Component\\DomCrawler\\Field\\FormField\>\|Symfony\\Component\\DomCrawler\\Field\\FormField\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: Tests/Integration/Menu/CatalogueMenuEntryScreenTest.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type TheliaCMS\\Model\\CmsMenuItem\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: Tests/Integration/Menu/CatalogueMenuEntryScreenTest.php
+
+		-
+			message: '#^Call to an undefined method Propel\\Runtime\\Collection\\Collection\:\:delete\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Tests/Integration/Menu/CatalogueMenuTargetTest.php
+
+		-
+			message: '#^Call to an undefined method Propel\\Runtime\\Collection\\Collection\:\:delete\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Tests/Integration/Menu/CmsContentSlotResolverTest.php
+
+		-
+			message: '#^Call to an undefined method Propel\\Runtime\\Collection\\Collection\:\:delete\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Tests/Integration/Menu/FooterMenuThemeHookTest.php
+
+		-
+			message: '#^Parameter \#1 \$active of method Thelia\\Model\\Base\\LangQuery\:\:filterByActive\(\) expects bool\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Tests/Integration/Menu/LocaleMenuTest.php
+
+		-
+			message: '#^Call to an undefined method Propel\\Runtime\\Collection\\Collection\:\:delete\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Tests/Integration/Menu/NativeContentMenuCacheTest.php
+
+		-
+			message: '#^Parameter \#1 \$viewId of method Thelia\\Model\\Base\\RewritingUrlQuery\:\:filterByViewId\(\) expects array\<string\>\|string\|null, list\<int\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Tests/Integration/Module/ModuleLifecycleTest.php
+
+		-
+			message: '#^Offset 0 does not exist on array\{\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 4
+			path: Tests/Integration/Module/PageTypeMigrationTest.php
+
+		-
+			message: '#^Call to an undefined method Propel\\Runtime\\Collection\\Collection\:\:delete\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Tests/Integration/Notice/NativeContentNoticeTest.php
+
+		-
+			message: '#^Call to function assert\(\) with true will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: Tests/Integration/Page/ModelPageSettingsScreenTest.php
+
+		-
+			message: '#^Instanceof between TheliaCMS\\Page\\Admin\\CmsPageWriter and TheliaCMS\\Page\\Admin\\CmsPageWriter will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: Tests/Integration/Page/ModelPageSettingsScreenTest.php
+
+		-
+			message: '#^Call to static method PHPUnit\\Framework\\Assert\:\:assertNotNull\(\) with TheliaCMS\\Model\\CmsPage will always evaluate to true\.$#'
+			identifier: staticMethod.alreadyNarrowedType
+			count: 1
+			path: Tests/Integration/Page/PageAddressTest.php
+
+		-
+			message: '#^Parameter \#1 \$active of method Thelia\\Model\\Base\\LangQuery\:\:filterByActive\(\) expects bool\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Tests/Integration/Page/PageAddressTest.php
+
+		-
+			message: '#^Call to an undefined method Propel\\Runtime\\Collection\\Collection\:\:delete\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Tests/Integration/Page/PageInvalidationTest.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type TheliaCMS\\Model\\CmsTag\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: Tests/Integration/Page/PageTagTest.php
+
+		-
+			message: '#^Parameter \#1 \$active of method Thelia\\Model\\Base\\LangQuery\:\:filterByActive\(\) expects bool\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Tests/Integration/Page/PageTemplateTest.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type TheliaCMS\\Page\\PublishedPage\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: Tests/Integration/Page/PageTemplateTest.php
+
+		-
+			message: '#^Using nullsafe property access on non\-nullable type TheliaCMS\\Generation\\Brief\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: Tests/Integration/Page/PageTemplateTest.php
+
+		-
+			message: '#^Using nullsafe property access on non\-nullable type TheliaCMS\\Page\\Field\\FieldDefinition\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: Tests/Integration/Page/PageTemplateTest.php
+
+		-
+			message: '#^Parameter \#1 \$viewId of method Thelia\\Model\\Base\\RewritingUrlQuery\:\:filterByViewId\(\) expects array\<string\>\|string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Tests/Integration/Page/PublishPipelineTest.php
+
+		-
+			message: '#^Cannot call method tick\(\) on array\<array\<Symfony\\Component\\DomCrawler\\Field\\FormField\>\|Symfony\\Component\\DomCrawler\\Field\\FormField\>\|Symfony\\Component\\DomCrawler\\Field\\FormField\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: Tests/Integration/Page/TagScreenTest.php
+
+		-
+			message: '#^Cannot call method untick\(\) on array\<array\<Symfony\\Component\\DomCrawler\\Field\\FormField\>\|Symfony\\Component\\DomCrawler\\Field\\FormField\>\|Symfony\\Component\\DomCrawler\\Field\\FormField\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: Tests/Integration/Page/TagScreenTest.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type TheliaCMS\\Model\\CmsTag\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: Tests/Integration/Page/TagScreenTest.php
+
+		-
+			message: '#^Call to function assert\(\) with true will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: Tests/Integration/Security/AdminScreenTestCase.php
+
+		-
+			message: '#^Instanceof between Symfony\\Component\\EventDispatcher\\EventDispatcherInterface and Symfony\\Component\\EventDispatcher\\EventDispatcherInterface will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: Tests/Integration/Security/AdminScreenTestCase.php
+
+		-
+			message: '#^Instanceof between TheliaCMS\\Page\\Admin\\CmsPageWriter and TheliaCMS\\Page\\Admin\\CmsPageWriter will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: Tests/Integration/Security/AdminScreenTestCase.php
+
+		-
+			message: '#^Method TheliaCMS\\Tests\\Integration\\Security\\WriteNeedsTheTokenTest\:\:draftHtmlOf\(\) is unused\.$#'
+			identifier: method.unused
+			count: 1
+			path: Tests/Integration/Security/WriteNeedsTheTokenTest.php
+
+		-
+			message: '#^Call to method getRouteCollection\(\) on an unknown class router\.$#'
+			identifier: class.notFound
+			count: 1
+			path: Tests/Integration/Security/WriteRoutesTest.php
+
+		-
+			message: '#^Parameter \#1 \$id of method Thelia\\Test\\WebIntegrationTestCase\:\:getService\(\) expects class\-string\<router\>, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Tests/Integration/Security/WriteRoutesTest.php
+
+		-
+			message: '#^Call to static method PHPUnit\\Framework\\Assert\:\:assertNotNull\(\) with TheliaCMS\\Model\\CmsPage will always evaluate to true\.$#'
+			identifier: staticMethod.alreadyNarrowedType
+			count: 1
+			path: Tests/Integration/Seo/CmsPageBreadcrumbTest.php
+
+		-
+			message: '#^Call to function assert\(\) with true will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: Tests/Integration/Settings/GeneratorSettingsScreenTest.php
+
+		-
+			message: '#^Cannot call method tick\(\) on array\<array\<Symfony\\Component\\DomCrawler\\Field\\FormField\>\|Symfony\\Component\\DomCrawler\\Field\\FormField\>\|Symfony\\Component\\DomCrawler\\Field\\FormField\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: Tests/Integration/Settings/GeneratorSettingsScreenTest.php
+
+		-
+			message: '#^Cannot call method untick\(\) on array\<array\<Symfony\\Component\\DomCrawler\\Field\\FormField\>\|Symfony\\Component\\DomCrawler\\Field\\FormField\>\|Symfony\\Component\\DomCrawler\\Field\\FormField\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Tests/Integration/Settings/GeneratorSettingsScreenTest.php
+
+		-
+			message: '#^Instanceof between TheliaCMS\\Generation\\GeneratorSettings and TheliaCMS\\Generation\\GeneratorSettings will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: Tests/Integration/Settings/GeneratorSettingsScreenTest.php
+
+		-
+			message: '#^Cannot call method tick\(\) on array\<array\<Symfony\\Component\\DomCrawler\\Field\\FormField\>\|Symfony\\Component\\DomCrawler\\Field\\FormField\>\|Symfony\\Component\\DomCrawler\\Field\\FormField\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: Tests/Integration/Settings/PageTemplateScreenTest.php
+
+		-
+			message: '#^Using nullsafe property access on non\-nullable type TheliaCMS\\Generation\\Brief\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: Tests/Integration/Settings/PageTemplateScreenTest.php
+
+		-
+			message: '#^Using nullsafe property access on non\-nullable type TheliaCMS\\Skill\\Skill\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: Tests/Integration/Skill/SkillRepositoryTest.php
+
+		-
+			message: '#^Call to function assert\(\) with true will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: Tests/Integration/Skill/SkillScreenTest.php
+
+		-
+			message: '#^Cannot call method untick\(\) on array\<array\<Symfony\\Component\\DomCrawler\\Field\\FormField\>\|Symfony\\Component\\DomCrawler\\Field\\FormField\>\|Symfony\\Component\\DomCrawler\\Field\\FormField\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Tests/Integration/Skill/SkillScreenTest.php
+
+		-
+			message: '#^Instanceof between TheliaCMS\\Skill\\SkillRepository and TheliaCMS\\Skill\\SkillRepository will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: Tests/Integration/Skill/SkillScreenTest.php
+
+		-
+			message: '#^Call to function assert\(\) with true will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: Tests/Integration/Twig/CmsExtensionTest.php
+
+		-
+			message: '#^Instanceof between Twig\\Environment and Twig\\Environment will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: Tests/Integration/Twig/CmsExtensionTest.php
+
+		-
+			message: '#^Instanceof between Twig\\TwigFunction and Twig\\TwigFunction will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: Tests/Integration/Twig/CmsExtensionTest.php
+
+		-
+			message: '#^Call to function assert\(\) with true will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: Tests/Integration/Twig/ItemContentExtensionTest.php
+
+		-
+			message: '#^Call to static method PHPUnit\\Framework\\Assert\:\:assertNotNull\(\) with TheliaCMS\\Twig\\ItemContentExtension will always evaluate to true\.$#'
+			identifier: staticMethod.alreadyNarrowedType
+			count: 1
+			path: Tests/Integration/Twig/ItemContentExtensionTest.php
+
+		-
+			message: '#^Instanceof between Twig\\Environment and Twig\\Environment will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: Tests/Integration/Twig/ItemContentExtensionTest.php
+
+		-
+			message: '#^Call to an undefined method Thelia\\Core\\Template\\ParserInterface\:\:getTwig\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: Tests/Integration/Twig/PageDocumentsBlockTest.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type TheliaCMS\\Content\\Document\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: Tests/Unit/Content/DocumentTest.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type TheliaCMS\\Content\\Section\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: Tests/Unit/Content/DocumentTest.php
+
+		-
+			message: '#^Call to static method PHPUnit\\Framework\\Assert\:\:assertContainsOnlyInstancesOf\(\) with ''Thelia\\\\Domain\\\\Ai\\\\AiToolDefinition'' and list\<Thelia\\Domain\\Ai\\AiToolDefinition\> will always evaluate to true\.$#'
+			identifier: staticMethod.alreadyNarrowedType
+			count: 1
+			path: Tests/Unit/Generation/Ai/GeneratorToolDefinitionsTest.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type TheliaCMS\\Page\\PageTagColor\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: Tests/Unit/Page/PageTagColorTest.php
+
+		-
+			message: '#^Parameter \#2 \$defaultValue of static method Thelia\\Module\\BaseModule\:\:getConfigValue\(\) expects string\|null, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Twig/CmsExtension.php

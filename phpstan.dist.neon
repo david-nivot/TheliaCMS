@@ -1,0 +1,40 @@
+# Static analysis of the module, run from the root of the Thelia install the
+# module sits in (local/modules/TheliaCMS), after the Propel models are built
+# (php bin/test-prepare):
+#
+#     vendor/bin/phpstan analyse -c local/modules/TheliaCMS/phpstan.dist.neon
+#
+# Errors already present when the analysis was introduced are listed in
+# phpstan-baseline.neon. Fix one, then regenerate the baseline with
+# --generate-baseline=local/modules/TheliaCMS/phpstan-baseline.neon; never add
+# a new error to it by hand.
+
+includes:
+    - phpstan-baseline.neon
+
+parameters:
+    level: 5
+    # The analysis reads the Thelia install the module sits in: the CI one
+    # follows thelia/thelia main and may lack the optional modules some tests
+    # use (Dealer, TntSearch). An entry of the baseline that no longer matches
+    # there is not an error.
+    reportUnmatchedIgnoredErrors: false
+    phpVersion: 80300
+    tmpDir: ../../../var/cache/phpstan-theliacms
+    bootstrapFiles:
+        - phpstan-bootstrap.php
+    paths:
+        - .
+    excludePaths:
+        analyseAndScan:
+            - Model/Base/*
+            - Model/Map/*
+            - assets/*
+            - docs/*
+            - skills/*
+            - templates/*
+            - phpstan-bootstrap.php
+        # Extends a class of TntSearch, an optional module absent from the CI
+        # install: a class whose parent is unknown cannot go in the baseline.
+        analyse:
+            - Search/Tnt/*

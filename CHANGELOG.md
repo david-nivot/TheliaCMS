@@ -65,6 +65,14 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   contrast. A site file keeps both, and a file written before still imports
   its names of the palette.
 
+- **Every branch is checked, by static analysis and code style too.** The CI
+  runs on a push to any branch, and on a pull request from a fork. Beside the
+  tests, it validates `composer.json`, checks the code style against the rules
+  of the core (`.php-cs-fixer.dist.php`), audits the dependencies the module
+  would install, and runs PHPStan at level 5 (`phpstan.dist.neon`, with a
+  baseline of the errors already there). The unit and integration suites keep
+  their PHPUnit caches apart. How to run them: `docs/developing.md`.
+
 ### Upgrading to 2.6.0
 
 - The update adds `cms_page_document` and `cms_page_document_i18n`, and

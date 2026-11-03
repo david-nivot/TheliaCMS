@@ -153,9 +153,7 @@ final readonly class CmsMenuWriter
             try {
                 $detached->save($connection);
             } catch (\Throwable $throwable) {
-                throw UniqueViolation::caused($throwable)
-                    ? new \DomainException('This language already has a menu of its own.', 0, $throwable)
-                    : $throwable;
+                throw UniqueViolation::caused($throwable) ? new \DomainException('This language already has a menu of its own.', 0, $throwable) : $throwable;
             }
 
             $this->copyEntries($shared, $detached, $connection);
@@ -183,9 +181,7 @@ final readonly class CmsMenuWriter
             throw new \DomainException('A menu cannot be realigned on itself.');
         }
 
-        $target = CmsMenuQuery::findForLocale($code, $targetLocale) ?? throw new \DomainException(
-            CmsMenuQuery::SHARED === $targetLocale ? 'There is no menu with this code.' : 'This language has no menu of its own: detach it first.'
-        );
+        $target = CmsMenuQuery::findForLocale($code, $targetLocale) ?? throw new \DomainException(CmsMenuQuery::SHARED === $targetLocale ? 'There is no menu with this code.' : 'This language has no menu of its own: detach it first.');
         $source = CmsMenuQuery::findForLocale($code, $sourceLocale) ?? throw new \DomainException('The menu to copy from does not exist.');
 
         $this->transactional(function (ConnectionInterface $connection) use ($source, $target): void {

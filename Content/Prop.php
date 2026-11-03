@@ -30,7 +30,7 @@ final readonly class Prop
      *
      * With `scalarItems`, the list is stored, and handed to the component, as a
      * list of scalars (`["one", "two"]`): its single item prop, named `value`,
-     * is the field of a row of the form, and the row is not part of the value.
+     * is the field of a row of the form, and the row is not part of the value
      */
     public function __construct(
         public string $name,
