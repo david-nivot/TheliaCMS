@@ -131,18 +131,7 @@ final readonly class CmsFormSubmitController
      */
     private function backTo(Request $request, FormDefinition $definition): RedirectResponse
     {
-        $referer = (string) $request->headers->get('referer');
-        $path = '/';
-
-        if ('' !== $referer) {
-            $host = parse_url($referer, \PHP_URL_HOST);
-
-            if (null === $host || false === $host || $host === $request->getHost()) {
-                $path = (string) (parse_url($referer, \PHP_URL_PATH) ?: '/');
-                $query = (string) parse_url($referer, \PHP_URL_QUERY);
-                $path .= '' === $query ? '' : '?'.$query;
-            }
-        }
+        $path = ReturnPath::of((string) $request->headers->get('referer'), $request->getHost());
 
         return new RedirectResponse($path.'#'.$definition->anchor());
     }

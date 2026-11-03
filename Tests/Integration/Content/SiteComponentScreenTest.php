@@ -77,6 +77,7 @@ final class SiteComponentScreenTest extends AdminScreenTestCase
         self::assertStringContainsString('class="cms-site cms-site--price-table"', $page, 'The sample is drawn in the theme.');
         self::assertStringContainsString('.cms-site--price-table .plan--featured', $page, 'Its stylesheet is printed scoped.');
         self::assertSame('noindex, nofollow', $this->client->getResponse()->headers->get('X-Robots-Tag'));
+        self::assertSame('no-referrer', $this->client->getResponse()->headers->get('Referrer-Policy'), 'The signed address does not leak through the Referer.');
 
         $alone = (string) $screen->filter('[data-testid="cms-site-component-preview-modes"] input[value="content"]')->attr('data-url');
         self::assertSame($preview.'?content=1', $alone, 'The preview offers the component alone, as the content screen does.');

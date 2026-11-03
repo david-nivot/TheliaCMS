@@ -92,7 +92,9 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '${{ matrix.php }}'
-          ini-values: post_max_size=20M
+          # Above the 10 MiB ceiling of an image: below it, PHP refuses the heavy
+          # file of the media tests before the module sees it.
+          ini-values: post_max_size=20M, upload_max_filesize=20M
           extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, mysql, gd, zip
           coverage: none
           tools: composer

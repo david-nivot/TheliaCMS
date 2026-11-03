@@ -202,6 +202,7 @@ final class ItemContentScreenTest extends AdminScreenTestCase
         $preview = $this->screen($url);
         self::assertStringContainsString('Pas encore en ligne.', $preview->filter('.cms-page-content')->text());
         self::assertSame('noindex, nofollow', $this->client->getResponse()->headers->get('X-Robots-Tag'));
+        self::assertSame('no-referrer', $this->client->getResponse()->headers->get('Referrer-Policy'), 'The signed address does not leak through the Referer.');
 
         $this->client->request('GET', substr($url, 0, -1).('0' === substr($url, -1) ? '1' : '0'));
         self::assertSame(404, $this->client->getResponse()->getStatusCode());

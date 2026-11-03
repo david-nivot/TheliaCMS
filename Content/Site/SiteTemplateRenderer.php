@@ -20,8 +20,11 @@ use Twig\Error\SyntaxError;
 use Twig\Extension\SandboxExtension;
 use Twig\Loader\ArrayLoader;
 use Twig\Markup;
+use Twig\Node\ForNode;
+use Twig\Node\Node;
 use Twig\Sandbox\SecurityError;
 use Twig\Sandbox\SecurityPolicy;
+use Twig\Source;
 
 /**
  * Renders the template of a component of the site, written by a model and
@@ -56,6 +59,12 @@ final class SiteTemplateRenderer
 
     public const int MAX_LENGTH = 20000;
 
+    /**
+     * A list prop holds 24 items and an item holds no list: two loops inside
+     * each other cover any props, a third one only multiplies a list by itself.
+     */
+    public const int MAX_LOOP_DEPTH = 2;
+
     private ?Environment $twig = null;
 
     /**
@@ -89,12 +98,20 @@ final class SiteTemplateRenderer
             // The sandbox checks a template when it is displayed, not when it
             // is compiled: the check is run here, without rendering anything.
             $this->twig()->createTemplate($template)->unwrap($this->twig())->checkSecurity();
+
+            // Read in the tree, not by pattern: a comment, a `verbatim` or a
+            // string holding the word `for` is not a loop.
+            $loopLine = self::lineOfTooDeepLoop($this->twig()->parse($this->twig()->tokenize(new Source($template, 'component'))));
         } catch (SecurityError $exception) {
             return [\sprintf('The template uses what a component may not (%s). Allowed tags: %s; filters: %s; tests: %s; functions: %s.', $exception->getRawMessage(), implode(', ', self::TAGS), implode(', ', self::FILTERS), implode(', ', self::TESTS), implode(', ', self::FUNCTIONS))];
         } catch (SyntaxError $exception) {
             return [\sprintf('The template does not compile, line %d: %s', $exception->getTemplateLine(), $exception->getRawMessage())];
         } catch (Error $exception) {
             return ['The template does not compile: '.$exception->getRawMessage()];
+        }
+
+        if (null !== $loopLine) {
+            return [\sprintf('The template puts loops more than %d deep, line %d: a component loops over a list, and over the list of an item at most.', self::MAX_LOOP_DEPTH, $loopLine)];
         }
 
         return [];
@@ -112,6 +129,21 @@ final class SiteTemplateRenderer
         }
 
         return $this->twig()->createTemplate($template)->render(['props' => $props]);
+    }
+
+    private static function lineOfTooDeepLoop(Node $node, int $depth = 0): ?int
+    {
+        if ($node instanceof ForNode && ++$depth > self::MAX_LOOP_DEPTH) {
+            return $node->getTemplateLine();
+        }
+
+        foreach ($node as $child) {
+            if (null !== $line = self::lineOfTooDeepLoop($child, $depth)) {
+                return $line;
+            }
+        }
+
+        return null;
     }
 
     private function twig(): Environment

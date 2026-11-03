@@ -16,9 +16,12 @@ namespace TheliaCMS\Tests\Integration\Media;
 
 use Propel\Runtime\ActiveQuery\Criteria;
 use Symfony\Component\DomCrawler\Crawler;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Thelia\Model\LangQuery;
+use TheliaCMS\Media\Admin\CmsMediaType;
 use TheliaCMS\Media\CmsMediaLibrary;
 use TheliaCMS\Tests\Integration\Security\AdminScreenTestCase;
+use TheliaCMS\Tests\Support\CeilingImages;
 use TheliaLibrary\Model\LibraryImage;
 
 /**
@@ -86,6 +89,24 @@ final class MediaSheetScreenTest extends AdminScreenTestCase
 
         self::assertSame(1, $screen->filter('input[type="file"][data-cms-media-replace]')->count());
         self::assertSame(1, $screen->filter('[data-cms-media-replace-preview] img')->count());
+    }
+
+    public function testAReplacingFileAboveTheCeilingIsRefusedInFrench(): void
+    {
+        if (UploadedFile::getMaxFilesize() <= CmsMediaType::MAX_IMAGE_BYTES) {
+            self::markTestSkipped('upload_max_filesize is below the ceiling of an image: PHP refuses the heavy file first.');
+        }
+
+        $french = LangQuery::create()->findOneByLocale('fr_FR');
+        self::assertNotNull($french);
+        $image = $this->image('À remplacer');
+        $url = $this->sheet($image).'?lang=fr_FR&edit_language_id='.$french->getId();
+
+        $token = (string) $this->screen($url)->filter('form:not([data-cms-media-delete]) input[name="_token"]')->first()->attr('value');
+        $this->client->request('POST', $url, ['_token' => $token, 'cms_media' => ['decorative' => '1']], ['cms_media' => ['file' => CeilingImages::heavy()]], self::SAME_SITE);
+
+        self::assertSame(200, $this->client->getResponse()->getStatusCode(), 'The sheet is shown again, not saved.');
+        self::assertStringContainsString('L’image est trop lourde', (string) $this->client->getResponse()->getContent(), 'The refusal is said in the language of the editor.');
     }
 
     /**

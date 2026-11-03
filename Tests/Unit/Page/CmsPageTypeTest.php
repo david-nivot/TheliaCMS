@@ -18,9 +18,11 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\Form\Extension\Validator\ValidatorExtension;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Form\Forms;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Validator\Validation;
 use TheliaCMS\Page\Admin\CmsPageType;
 use TheliaCMS\Page\Field\FieldDefinitions;
+use TheliaCMS\Tests\Support\CeilingImages;
 
 /**
  * The page form is built on every screen that edits a page: building it must not
@@ -107,6 +109,15 @@ final class CmsPageTypeTest extends TestCase
     {
         self::assertFalse($this->createForm()->has('imageUpload'));
         self::assertTrue($this->createForm(['allow_image_upload' => true])->has('imageUpload'));
+    }
+
+    public function testTheImageOfAPageIsHeldUnderTheCeilingOfTheModule(): void
+    {
+        $error = static fn (UploadedFile $file): string => CeilingImages::errorOf(CmsPageType::class, 'imageUpload', $file, ['allow_image_upload' => true], ['title' => 'Page']);
+
+        self::assertSame('', $error(CeilingImages::small()));
+        self::assertStringContainsString('too many pixels', $error(CeilingImages::declaringTooManyPixels()));
+        self::assertStringContainsString('too heavy', $error(CeilingImages::heavy()));
     }
 
     public function testAFileSentWithoutTheRightToUploadIsAnInvalidForm(): void

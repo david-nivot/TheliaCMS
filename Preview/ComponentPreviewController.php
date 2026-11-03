@@ -96,6 +96,7 @@ final readonly class ComponentPreviewController
             ? $this->pages->renderContent($page)
             : $this->pages->render($page));
         $response->headers->set('X-Robots-Tag', 'noindex, nofollow');
+        $response->headers->set('Referrer-Policy', 'no-referrer');
         $response->headers->set('Cache-Control', 'private, no-store, max-age=0');
 
         return $response;
