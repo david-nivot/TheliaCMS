@@ -16,13 +16,10 @@ namespace TheliaCMS\Hook;
 
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Thelia\Core\Event\Hook\HookRenderEvent;
 use Thelia\Core\Hook\BaseHook;
-use Thelia\Core\Security\AccessManager;
-use Thelia\Core\Security\SecurityContext;
 use Thelia\Core\Template\Parser\ParserResolver;
-use TheliaCMS\Security\CmsResources;
+use TheliaCMS\Documentation\DocumentationLink;
 use TheliaCMS\TheliaCMS;
 use Twig\Environment;
 
@@ -37,27 +34,28 @@ use Twig\Environment;
 class CmsDocumentationLinkHook extends BaseHook
 {
     /**
-     * The section explaining each screen, by the start of its route name; the
-     * longest start that matches wins. The ids are shared by every language
-     * of the documentation.
+     * The part of the documentation explaining each screen, by the start of
+     * its route name; the longest start that matches wins. The ids are shared
+     * by every language of the documentation: a `<section id>` or an
+     * `<h3 id>`, both reached by the same fragment.
      */
     private const array SECTIONS = [
         'admin.cms.pages.content.' => 'content',
         'admin.cms.pages.' => 'pages',
+        'admin.cms.pages.trash' => 'trash',
         'admin.cms.catalogue.' => 'catalogue',
         'admin.cms.tags.' => 'tags',
         'admin.cms.settings.page_types.' => 'page-templates',
         'admin.cms.settings.' => 'settings',
         'admin.cms.components.' => 'components',
         'admin.cms.skills.' => 'skills',
-        'admin.cms.menus.' => 'menus-forms-media',
-        'admin.cms.forms.' => 'menus-forms-media',
-        'admin.cms.media.' => 'menus-forms-media',
+        'admin.cms.menus.' => 'menus',
+        'admin.cms.forms.' => 'forms',
+        'admin.cms.media.' => 'media',
     ];
 
     public function __construct(
-        private readonly SecurityContext $securityContext,
-        private readonly UrlGeneratorInterface $urls,
+        private readonly DocumentationLink $documentation,
         // Read on every rendering: BaseHook keeps the first request it is
         // given, and a worker serving several would link them all to its section.
         private readonly RequestStack $requests,
@@ -79,21 +77,14 @@ class CmsDocumentationLinkHook extends BaseHook
 
     public function onMainBeforeContent(HookRenderEvent $event): void
     {
-        $route = (string) $this->requests->getMainRequest()?->attributes->get('_route');
+        $url = $this->documentation->forRoute((string) $this->requests->getMainRequest()?->attributes->get('_route'));
 
-        if (!str_starts_with($route, 'admin.cms.') || 'admin.cms.documentation' === $route) {
+        if (null === $url) {
             return;
         }
-
-        // The documentation takes the right to see the pages: no link to a 403.
-        if (!$this->securityContext->isGranted(['ADMIN'], [CmsResources::PAGE], [], [AccessManager::VIEW])) {
-            return;
-        }
-
-        $section = self::sectionOf($route);
 
         $event->add($this->twig->render('@TheliaCMSModule/backOffice/default-twig/documentation/_link.html.twig', [
-            'url' => $this->urls->generate('admin.cms.documentation').(null === $section ? '' : '#'.$section),
+            'url' => $url,
             'label' => $this->trans('Help on this screen', [], TheliaCMS::DOMAIN_NAME),
         ]));
     }

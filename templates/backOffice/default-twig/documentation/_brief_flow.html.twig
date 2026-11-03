@@ -1,0 +1,74 @@
+{#
+    What happens between "Write the draft" and the draft on show, in four
+    lanes: the editor, the module, the AI layer of Thelia and the provider.
+    The geometry is drawn once here; each language of the documentation gives
+    its words: `title`, `summary` (what a screen reader reads instead), four
+    `lanes`, eight `steps` (each a list of up to three short lines) and three
+    `notes` written along the loops. The colours are those of the back office,
+    so the drawing follows its light and dark themes.
+
+    Steps, by lane (x of the lane: 0, 200, 400, 600) and row (y of the box):
+    1 editor 50, 2 module 130, 3 AI layer 210, 4 provider 290, 5 module 370
+    (the tools), 6 module 450 (the check), 7 module 530, 8 editor 610.
+#}
+{% set boxes = [
+    { x: 10, y: 50 }, { x: 210, y: 130 }, { x: 410, y: 210 }, { x: 610, y: 290 },
+    { x: 210, y: 370 }, { x: 210, y: 450 }, { x: 210, y: 530 }, { x: 10, y: 610 },
+] %}
+<figure class="figure d-block my-3">
+    <svg class="cms-flow" viewBox="0 0 800 690" width="100%" role="img" aria-labelledby="cms-flow-title-{{ lang }} cms-flow-desc-{{ lang }}" style="max-width: 800px; height: auto;">
+        <title id="cms-flow-title-{{ lang }}">{{ title }}</title>
+        <desc id="cms-flow-desc-{{ lang }}">{{ summary }}</desc>
+        <style>
+            .cms-flow .lane { fill: var(--bs-tertiary-bg); }
+            .cms-flow .lane-alt { fill: var(--bs-body-bg); }
+            .cms-flow .lane-name { fill: var(--bs-emphasis-color); font: 600 13px system-ui, sans-serif; text-anchor: middle; }
+            .cms-flow .box { fill: var(--bs-body-bg); stroke: var(--bs-border-color); stroke-width: 1.5; }
+            .cms-flow .box-you { stroke: var(--bs-primary); }
+            .cms-flow .rank { fill: var(--bs-primary); }
+            .cms-flow .rank-text { fill: #fff; font: 600 11px system-ui, sans-serif; text-anchor: middle; }
+            .cms-flow .step { fill: var(--bs-body-color); font: 12px system-ui, sans-serif; }
+            .cms-flow .note { fill: var(--bs-secondary-color); font: italic 11px system-ui, sans-serif; }
+            .cms-flow .arrow { fill: none; stroke: var(--bs-secondary-color); stroke-width: 1.5; }
+            .cms-flow .loop { stroke-dasharray: 5 4; }
+            .cms-flow .head { fill: var(--bs-secondary-color); }
+        </style>
+        <defs>
+            <marker id="cms-flow-head-{{ lang }}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path class="head" d="M0,0 L10,5 L0,10 z"/>
+            </marker>
+        </defs>
+
+        {% for lane in lanes %}
+            <rect class="{{ loop.index is odd ? 'lane' : 'lane-alt' }}" x="{{ loop.index0 * 200 }}" y="0" width="200" height="690"/>
+            <text class="lane-name" x="{{ loop.index0 * 200 + 100 }}" y="28">{{ lane }}</text>
+        {% endfor %}
+
+        {% set head = 'url(#cms-flow-head-' ~ lang ~ ')' %}
+        {# The path from one step to the next, then the two loops. #}
+        <path class="arrow" marker-end="{{ head }}" d="M100 106 V118 H300 V128"/>
+        <path class="arrow" marker-end="{{ head }}" d="M300 186 V198 H500 V208"/>
+        <path class="arrow" marker-end="{{ head }}" d="M500 266 V278 H700 V288"/>
+        <path class="arrow" marker-end="{{ head }}" d="M630 346 V384 H392"/>
+        <path class="arrow loop" marker-end="{{ head }}" d="M390 412 H650 V348"/>
+        <path class="arrow" marker-end="{{ head }}" d="M700 346 V436 H300 V448"/>
+        <path class="arrow loop" marker-end="{{ head }}" d="M390 478 H760 V348"/>
+        <path class="arrow" marker-end="{{ head }}" d="M300 506 V528"/>
+        <path class="arrow" marker-end="{{ head }}" d="M300 586 V598 H100 V608"/>
+
+        <text class="note" x="400" y="378">{{ notes[0] }}</text>
+        <text class="note" x="400" y="428">{{ notes[1] }}</text>
+        <text class="note" x="400" y="496">{{ notes[2] }}</text>
+
+        {% for box in boxes %}
+            {% set lines = steps[loop.index0] %}
+            <rect class="box{{ box.x == 10 ? ' box-you' }}" x="{{ box.x }}" y="{{ box.y }}" width="180" height="56" rx="6"/>
+            <circle class="rank" cx="{{ box.x }}" cy="{{ box.y }}" r="10"/>
+            <text class="rank-text" x="{{ box.x }}" y="{{ box.y + 4 }}">{{ loop.index }}</text>
+            <text class="step" x="{{ box.x + 14 }}" y="{{ box.y + 18 + (3 - lines|length) * 7.5 }}">
+                {% for line in lines %}<tspan x="{{ box.x + 14 }}" dy="{{ loop.first ? 0 : 15 }}">{{ line }}</tspan>{% endfor %}
+            </text>
+        {% endfor %}
+    </svg>
+    <figcaption class="figure-caption">{{ caption }}</figcaption>
+</figure>

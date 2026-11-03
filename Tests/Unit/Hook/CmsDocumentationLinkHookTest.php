@@ -31,7 +31,7 @@ final class CmsDocumentationLinkHookTest extends TestCase
     public static function screens(): iterable
     {
         yield 'page list' => ['admin.cms.pages.list', 'pages'];
-        yield 'bin' => ['admin.cms.pages.trash', 'pages'];
+        yield 'bin' => ['admin.cms.pages.trash', 'trash'];
         yield 'content of a page' => ['admin.cms.pages.content.edit', 'content'];
         yield 'content of a catalogue item' => ['admin.cms.catalogue.content.edit', 'catalogue'];
         yield 'page templates' => ['admin.cms.settings.page_types.list', 'page-templates'];
@@ -41,9 +41,9 @@ final class CmsDocumentationLinkHookTest extends TestCase
         yield 'components' => ['admin.cms.components.list', 'components'];
         yield 'new component' => ['admin.cms.components.site.new', 'components'];
         yield 'skills' => ['admin.cms.skills.edit', 'skills'];
-        yield 'menus' => ['admin.cms.menus.edit', 'menus-forms-media'];
-        yield 'answers of a form' => ['admin.cms.forms.submissions', 'menus-forms-media'];
-        yield 'media' => ['admin.cms.media.list', 'menus-forms-media'];
+        yield 'menus' => ['admin.cms.menus.edit', 'menus'];
+        yield 'answers of a form' => ['admin.cms.forms.submissions', 'forms'];
+        yield 'media' => ['admin.cms.media.list', 'media'];
     }
 
     #[DataProvider('screens')]
@@ -58,14 +58,14 @@ final class CmsDocumentationLinkHookTest extends TestCase
     }
 
     /**
-     * A section renamed or removed in one language would leave links landing
+     * A section or sub-part renamed or removed in one language would leave links landing
      * at the top of the page.
      */
     #[DataProvider('screens')]
     public function testEveryLanguageOfTheDocumentationHasTheSection(string $route, string $section): void
     {
         foreach (['_fr_FR.html.twig', '_en_US.html.twig'] as $text) {
-            self::assertStringContainsString(\sprintf('<section id="%s">', $section), (string) file_get_contents(self::TEXTS.$text), $text);
+            self::assertStringContainsString(\sprintf(' id="%s">', $section), (string) file_get_contents(self::TEXTS.$text), $text);
         }
     }
 }

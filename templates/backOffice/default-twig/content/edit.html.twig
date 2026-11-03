@@ -123,6 +123,16 @@
 
         <div class="cms-content__stage">
             <aside class="cms-content__panel" aria-label="{{ 'Writing the content'|trans({}, 'theliacms') }}">
+                {# The link every other screen gets above its content, which this
+                   screen replaces; in a new tab, so the draft stays on show
+                   while the help is read. #}
+                {% if help_url %}
+                    <p class="text-end small mb-2">
+                        <a href="{{ help_url }}" class="link-secondary" target="_blank" rel="noopener" data-testid="cms-documentation-link">
+                            <i class="bi bi-question-circle me-1" aria-hidden="true"></i>{{ 'Help on this screen'|trans({}, 'theliacms') }}
+                        </a>
+                    </p>
+                {% endif %}
                 {% if not may_generate %}
                     <div class="alert alert-secondary small" role="status" data-testid="cms-content-no-right">
                         {{ 'Your profile may read this screen and publish, not ask the generator to write.'|trans({}, 'theliacms') }}

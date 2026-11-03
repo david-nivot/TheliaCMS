@@ -43,8 +43,22 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 - The preview of the content screen keeps its place when a section is changed, moved, duplicated or removed by hand: the section stays where it stood instead of the preview going back to the top of the page.
 - The button to the toolkit on the components screen also shows where the theme opens its toolkit with `THEME_TOOLKIT`, as the toolkit itself does, and no longer only in debug.
 - The color fields of a tag no longer read "optional": the color inputs always hold a color, the box says whether the tag has one, and its help sits under it.
+- The button that opens a component of the site, on the components screen, reads "Modifier" in French instead of "Ouvert", the word the forms screen uses for a form that takes answers.
 
 ### Changed
+
+- **The documentation of the back office covers the whole module.** It opens
+  with the first steps from an empty page to a page in a menu, and ends with
+  what to do when something does not work and a glossary. It now explains the
+  duplication of a section, the copy, keeping and deletion of a component of
+  the site, menus of their own per language, writing a language from another,
+  unpublishing, the colors of a tag and the search of a showcase site, with a
+  screenshot of four screens in French and in English, and a diagram of what
+  happens between "Write the draft" and the draft on show: the module, the AI
+  layer of Thelia, the provider, the tools and the corrections. "Help on this
+  screen" opens the part on menus, forms, media or the bin rather than the
+  section they share, and the content screen has the link too, at the top of
+  its panel.
 
 - **A tag takes any color.** The tag screen gives a color picker for the
   background, and a second one for the text, or black or white chosen by the
