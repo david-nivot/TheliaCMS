@@ -52,9 +52,12 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   duplication of a section, the copy, keeping and deletion of a component of
   the site, menus of their own per language, writing a language from another,
   unpublishing, the colors of a tag and the search of a showcase site, with a
-  screenshot of four screens in French and in English. "Help on this screen"
-  opens the part on menus, forms, media or the bin rather than the section
-  they share.
+  screenshot of four screens in French and in English, and a diagram of what
+  happens between "Write the draft" and the draft on show: the module, the AI
+  layer of Thelia, the provider, the tools and the corrections. "Help on this
+  screen" opens the part on menus, forms, media or the bin rather than the
+  section they share, and the content screen has the link too, at the top of
+  its panel.
 
 - **A tag takes any color.** The tag screen gives a color picker for the
   background, and a second one for the text, or black or white chosen by the

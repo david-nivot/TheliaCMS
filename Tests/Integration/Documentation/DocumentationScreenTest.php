@@ -82,6 +82,16 @@ final class DocumentationScreenTest extends AdminScreenTestCase
         self::assertSame(0, $this->screen(self::SCREEN)->filter('[data-testid="cms-documentation-link"]')->count(), 'The documentation does not link to itself.');
     }
 
+    public function testTheContentScreenLinksToItsHelpAtTheTopOfItsPanel(): void
+    {
+        $page = $this->createPage('Nos services', published: false);
+
+        $link = $this->screen(\sprintf('/admin/cms/pages/%d/content', $page->getId()))->filter('.cms-content__panel [data-testid="cms-documentation-link"]');
+
+        self::assertSame(1, $link->count(), 'The content screen replaces the layout the hook draws in: its panel carries the link.');
+        self::assertSame(self::SCREEN.'#content', parse_url((string) $link->attr('href'), \PHP_URL_PATH).'#'.parse_url((string) $link->attr('href'), \PHP_URL_FRAGMENT));
+    }
+
     public function testAnEditorWhoMaySeeThePagesReadsIt(): void
     {
         $this->logInAs((new FixtureFactory($this->getPropelConnection()))->restrictedAdmin([

@@ -102,6 +102,37 @@
         <li>Using the generator takes a right of its own, because each call is billed.</li>
     </ul>
 
+    <h3 id="brief-flow">What happens after <em>Write the draft</em></h3>
+    <p>The diagram follows a request, from the click to the draft. Meanwhile, the screen shows each step as it happens. You may close the tab: the request goes to its end and stays in the history.</p>
+    {{ include('@TheliaCMSModule/backOffice/default-twig/documentation/_brief_flow.html.twig', {
+        lang: 'en_US',
+        title: 'The way of a brief, from the click to the draft',
+        summary: 'You write the brief; TheliaCMS prepares the request; the AI layer of Thelia checks it and sends it to the provider; the model writes the page and may ask TheliaCMS for tools; TheliaCMS checks the document, sends it back to be fixed when needed, then saves the draft; you read it and publish.',
+        lanes: ['You', 'TheliaCMS', 'Thelia AI layer', 'AI provider'],
+        steps: [
+            ['You write the brief,', 'then click', 'Write the draft'],
+            ['Prepares the request:', 'skills, offered sections,', 'site, page and brief'],
+            ['Checks the usage, picks', 'the model, reserves', 'the budget'],
+            ['The model writes', 'the page as sections'],
+            ['Tools: products, pages,', 'images, forms,', 'addresses of the brief'],
+            ['Checks the document:', 'catalogue sections,', 'template fields'],
+            ['Saves the draft, keeps', 'the former one, logs', 'the cost in the history'],
+            ['You read the preview,', 'change it, then publish'],
+        ],
+        notes: ['a tool is asked for', 'the result goes back to the model (12 turns at most)', 'refused: sent back to be fixed (twice at most)'],
+        caption: 'Full arrows follow the request, dotted ones the round trips with the model.',
+    }) }}
+    <ol>
+        <li><strong>You</strong> write the brief, and its tone and audience if needed. On a page already written, the button reads <em>Replace the draft</em> and asks for a confirmation.</li>
+        <li><strong>TheliaCMS prepares the request.</strong> It puts in the skills of the site, the list of the sections the generator may use, the name, language and currency of the site, the title, template and summary of the page, the instructions and fields of the template, then your brief. The web addresses a brief cites are read only when the setting <em>Read the web pages a brief cites</em> is on.</li>
+        <li><strong>The AI layer of Thelia</strong> checks that the usage is active, picks the connection and model set in its settings, checks the number of requests and reserves the budget. A spent budget stops the request here, with a message.</li>
+        <li><strong>The AI provider</strong> has the model write the page, section by section.</li>
+        <li><strong>The tools.</strong> To write accurately, the model may ask TheliaCMS to search products, categories, pages, images of the library or forms, to read the sheet of a component or a skill, to read an address of the brief, or to make a component of the site when the setting <em>Let a brief make a component of the site</em> is on and your profile allows it. The result goes back to the model, 12 turns at most.</li>
+        <li><strong>TheliaCMS checks the document.</strong> Each section has to come from the catalogue, each field of the template has to be filled as it should. A refused document goes back to the model with the list of its problems, twice at most; then the request fails and nothing is changed.</li>
+        <li><strong>TheliaCMS saves the draft.</strong> The HTML is cleaned, the draft keeps the AI provenance mark when the AI settings of Thelia set it, the former draft goes to <em>Previous drafts</em>, and the history notes the duration, the turns and the cost.</li>
+        <li><strong>You</strong> see the preview reloaded and a message that sums up the request, with what the brief asked for and the page could not cover. Nothing is online until you click <em>Publish</em>.</li>
+    </ol>
+
     <h3 id="translate">Writing another language from one already written</h3>
     <p>When a page has no content yet in the chosen language but has some in another, the preview offers a button, <em>Write it in this language from the</em> source language <em>version</em> (with a list of languages when there are several). The generator keeps the sections and writes their texts for the new reader. The result arrives as a draft, to be read before you publish. It takes the right to use the generator. The items of the catalogue (products, categories, contents, folders) work the same way.</p>
 

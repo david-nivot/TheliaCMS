@@ -102,6 +102,37 @@
         <li>Utiliser le générateur demande un droit à part, parce que chaque appel est facturé.</li>
     </ul>
 
+    <h3 id="brief-flow">Ce qui se passe après <em>Écrire le brouillon</em></h3>
+    <p>Le schéma suit une demande, du clic jusqu’au brouillon. Pendant ce temps, l’écran affiche chaque étape au fur et à mesure. Vous pouvez fermer l’onglet : la demande va jusqu’au bout et reste dans l’historique.</p>
+    {{ include('@TheliaCMSModule/backOffice/default-twig/documentation/_brief_flow.html.twig', {
+        lang: 'fr_FR',
+        title: 'Le trajet d’un brief, du clic au brouillon',
+        summary: 'Vous écrivez le brief ; TheliaCMS prépare la demande ; la couche IA de Thelia la vérifie et l’envoie au fournisseur ; le modèle écrit la page et peut demander des outils à TheliaCMS ; TheliaCMS contrôle le document, le renvoie pour correction si besoin, puis enregistre le brouillon ; vous relisez et publiez.',
+        lanes: ['Vous', 'TheliaCMS', 'Couche IA de Thelia', 'Fournisseur d’IA'],
+        steps: [
+            ['Vous écrivez le brief,', 'puis cliquez sur', 'Écrire le brouillon'],
+            ['Prépare la demande :', 'skills, sections offertes,', 'site, page et brief'],
+            ['Vérifie l’usage, choisit', 'le modèle, réserve', 'le budget'],
+            ['Le modèle écrit', 'la page en sections'],
+            ['Outils : produits, pages,', 'images, formulaires,', 'adresses du brief'],
+            ['Contrôle le document :', 'sections du catalogue,', 'champs du gabarit'],
+            ['Enregistre le brouillon,', 'garde l’ancien, note', 'le coût à l’historique'],
+            ['Vous relisez l’aperçu,', 'modifiez, puis publiez'],
+        ],
+        notes: ['un outil est demandé', 'le résultat repart au modèle (12 tours au plus)', 'refusé : renvoyé pour correction (2 fois au plus)'],
+        caption: 'Les flèches pleines suivent la demande, les pointillés les allers-retours avec le modèle.',
+    }) }}
+    <ol>
+        <li><strong>Vous</strong> écrivez le brief, et si besoin son ton et son public. Sur une page déjà écrite, le bouton devient <em>Remplacer le brouillon</em> et demande une confirmation.</li>
+        <li><strong>TheliaCMS prépare la demande.</strong> Il y met les skills du site, la liste des sections que le générateur peut utiliser, le nom, la langue et la devise du site, le titre, le gabarit et le résumé de la page, les consignes et les champs du gabarit, puis votre brief. Les adresses web citées dans le brief ne sont lues que si le réglage <em>Lire les pages web citées dans le brief</em> est actif.</li>
+        <li><strong>La couche IA de Thelia</strong> vérifie que l’usage est actif, choisit la connexion et le modèle définis dans ses réglages, contrôle le nombre de demandes et réserve le budget. Un budget épuisé arrête la demande ici, avec un message.</li>
+        <li><strong>Le fournisseur d’IA</strong> fait écrire la page par le modèle, section par section.</li>
+        <li><strong>Les outils.</strong> Pour écrire juste, le modèle peut demander à TheliaCMS de chercher des produits, des catégories, des pages, des images de la médiathèque ou des formulaires, de lire la fiche d’un composant ou un skill, de lire une adresse du brief, ou de créer un composant du site si le réglage <em>Laisser un brief créer un composant du site</em> est actif et que votre profil le permet. Le résultat repart au modèle, 12 tours au plus.</li>
+        <li><strong>TheliaCMS contrôle le document.</strong> Chaque section doit venir du catalogue, chaque champ du gabarit doit être rempli comme il faut. Un document refusé repart au modèle avec la liste des problèmes, deux fois au plus ; ensuite la demande échoue et rien n’est changé.</li>
+        <li><strong>TheliaCMS enregistre le brouillon.</strong> Le HTML est nettoyé, le brouillon garde la marque de provenance IA quand les réglages IA de Thelia la posent, l’ancien brouillon passe dans <em>Brouillons précédents</em>, et l’historique note la durée, les tours et le coût.</li>
+        <li><strong>Vous</strong> voyez l’aperçu rechargé et un message qui résume la demande, avec ce que le brief demandait et que la page n’a pas pu couvrir. Rien n’est en ligne tant que vous n’avez pas cliqué sur <em>Publier</em>.</li>
+    </ol>
+
     <h3 id="translate">Écrire une autre langue à partir d’une langue déjà écrite</h3>
     <p>Quand une page n’a pas encore de contenu dans la langue choisie mais en a dans une autre, l’aperçu propose <em>L’écrire dans cette langue à partir de la version en</em> suivi de la langue source (une liste de langues quand il y en a plusieurs). Le générateur garde les sections et écrit leurs textes pour le nouveau lecteur. Le résultat arrive en brouillon, à relire avant de publier. Cela demande le droit d’utiliser le générateur. Les fiches du catalogue (produits, catégories, contenus, dossiers) fonctionnent de la même façon.</p>
 

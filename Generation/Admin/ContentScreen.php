@@ -25,6 +25,7 @@ use TheliaCMS\Content\Section;
 use TheliaCMS\Content\SectionCatalog;
 use TheliaCMS\Content\Site\SiteComponentPermission;
 use TheliaCMS\Content\Site\SitePropRows;
+use TheliaCMS\Documentation\DocumentationLink;
 use TheliaCMS\Generation\Component\ComponentCandidates;
 use TheliaCMS\Generation\GenerationLog;
 use TheliaCMS\Generation\GenerationRequest;
@@ -63,6 +64,7 @@ final readonly class ContentScreen
         private ComponentPreviewLink $componentPreviews,
         private SiteComponentPermission $componentPermission,
         private SitePropRows $propRows,
+        private DocumentationLink $documentation,
     ) {
     }
 
@@ -85,6 +87,9 @@ final readonly class ContentScreen
             'may_generate' => $mayGenerate,
             'may_publish' => $mayPublish,
             'toolkit_url' => $this->toolkit->url(),
+            // The screen replaces the layout the link of every other screen
+            // is drawn in: it carries its own, at the top of its panel.
+            'help_url' => $this->documentation->forRoute((string) $request->attributes->get('_route')),
             'preview_widths' => $this->previewWidths->widths(),
             'addable' => $mayPublish ? $this->sectionChoices->groups() : [],
             // Prototyping a component from the page: the right to generate

@@ -16,13 +16,10 @@ namespace TheliaCMS\Hook;
 
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Thelia\Core\Event\Hook\HookRenderEvent;
 use Thelia\Core\Hook\BaseHook;
-use Thelia\Core\Security\AccessManager;
-use Thelia\Core\Security\SecurityContext;
 use Thelia\Core\Template\Parser\ParserResolver;
-use TheliaCMS\Security\CmsResources;
+use TheliaCMS\Documentation\DocumentationLink;
 use TheliaCMS\TheliaCMS;
 use Twig\Environment;
 
@@ -58,8 +55,7 @@ class CmsDocumentationLinkHook extends BaseHook
     ];
 
     public function __construct(
-        private readonly SecurityContext $securityContext,
-        private readonly UrlGeneratorInterface $urls,
+        private readonly DocumentationLink $documentation,
         // Read on every rendering: BaseHook keeps the first request it is
         // given, and a worker serving several would link them all to its section.
         private readonly RequestStack $requests,
@@ -81,21 +77,14 @@ class CmsDocumentationLinkHook extends BaseHook
 
     public function onMainBeforeContent(HookRenderEvent $event): void
     {
-        $route = (string) $this->requests->getMainRequest()?->attributes->get('_route');
+        $url = $this->documentation->forRoute((string) $this->requests->getMainRequest()?->attributes->get('_route'));
 
-        if (!str_starts_with($route, 'admin.cms.') || 'admin.cms.documentation' === $route) {
+        if (null === $url) {
             return;
         }
-
-        // The documentation takes the right to see the pages: no link to a 403.
-        if (!$this->securityContext->isGranted(['ADMIN'], [CmsResources::PAGE], [], [AccessManager::VIEW])) {
-            return;
-        }
-
-        $section = self::sectionOf($route);
 
         $event->add($this->twig->render('@TheliaCMSModule/backOffice/default-twig/documentation/_link.html.twig', [
-            'url' => $this->urls->generate('admin.cms.documentation').(null === $section ? '' : '#'.$section),
+            'url' => $url,
             'label' => $this->trans('Help on this screen', [], TheliaCMS::DOMAIN_NAME),
         ]));
     }
