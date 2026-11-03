@@ -86,6 +86,18 @@ final class BlockStylesTest extends TestCase
         }
     }
 
+    public function testTheFreeTextOfASectionGetsHeadingsParagraphsAndListsOfItsOwn(): void
+    {
+        $css = $this->css();
+
+        // The reset of a theme leaves what the author typed the size of body
+        // text, glued together, its lists without a bullet: a heading of a
+        // richtext section read as a line of text on Flexy.
+        self::assertMatchesRegularExpression('/\.cms-richtext h2 \{[^}]*font-size:/', $css, 'A heading of free text is the size of body text.');
+        self::assertMatchesRegularExpression('/\.cms-richtext > \* \+ \* \{[^}]*margin-top:/', $css, 'The paragraphs of free text touch.');
+        self::assertMatchesRegularExpression('/\.cms-richtext ul \{[^}]*list-style: disc/', $css, 'A list of free text has no bullet.');
+    }
+
     public function testTheSocleSitsInACascadeLayerSoAThemeKeepsTheUpperHand(): void
     {
         // Without the layer, the socle would win or lose depending on which

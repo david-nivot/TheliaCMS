@@ -392,7 +392,15 @@ preview of the document alone, not of its whole page. Its document follows it
 from one site to another by the slug of its SEO record. The theme prints it on
 the page of the store with `{{ cms_item_content('dealer', dealer.id) }}`.
 
-The theme prints the published document where it wants it:
+On a theme that fires `product.content` and `category.bottom`, as Flexy does,
+the module prints the document of a product or a category there itself: on a
+product, after its description and before the products related to it; on a
+category, at the bottom of the page. A Flexy older than `product.content` shows
+no document on a product. A theme that prints it on its own turns
+`item_content_hook` off, or the document shows twice.
+
+A content, a folder and a store have no such hook in Flexy: the theme prints
+their document, as it may print any document where it wants it:
 
 ```twig
 {{ cms_item_content('product', product.id) }}
@@ -930,6 +938,7 @@ Most of them are edited under **CMS > Settings**.
 | `axeptio_consent_map` | the two Google products | JSON: vendor to the Consent Mode signals it grants. |
 | `cache_ttl` | `3600` | Seconds a resolved menu is cached for. It is also dropped on every change that affects it, the changes made to contents, folders, categories and products from the screens of the shop included. |
 | `footer_menu_hook` | off | Renders the `footer` menu into the `layout.footer.top` hook of the theme. For a theme that does not call `cms_menu('footer')` itself: without it, a CMS page is reachable only by its address. Leave it off on a theme that already renders the menu, or it appears twice. |
+| `item_content_hook` | on | Prints the document of a product on the `product.content` hook of the theme, and the one of a category on `category.bottom`. Turn it off on a theme that calls `cms_item_content()` for them itself, or the document appears twice. |
 | `heading_check_mode` | `warn` | `warn` reports heading problems and publishes anyway; `block` refuses to publish. Checked wherever a page goes online: the content screen, the settings screen, `thelia_cms:publish`. |
 | `native_content_notice_dismissed` | `0` | `1` once the notice about existing contents has been closed on the Pages screen. |
 | `generator_effort` | `high` | How hard the model thinks: `low`, `medium`, `high`, `xhigh` or `max`. Anything else falls back to the default. It is passed to the model as its reasoning effort, which only Anthropic models read: on another provider it has no effect. |

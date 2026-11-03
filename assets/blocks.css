@@ -123,6 +123,58 @@
     width: var(--cms-block-inline);
   }
 
+  /* What the author typed in that free text carries no class: the reset of a
+     theme left its headings the size of body text, its paragraphs touching and
+     its lists without a bullet, on Flexy among others. The scale of plain prose
+     above, and the rhythm of a document. */
+  .cms-richtext > * + * {
+    margin-top: 1rem;
+  }
+
+  .cms-richtext > * + :is(h2, h3) {
+    margin-top: 2rem;
+  }
+
+  .cms-richtext :is(h1, h2, h3) {
+    font-weight: var(--font-weight-h2, 600);
+    line-height: 1.2;
+  }
+
+  .cms-richtext h1 {
+    font-size: var(--font-size-h1-d, 2.5rem);
+  }
+
+  .cms-richtext h2 {
+    font-size: var(--font-size-h2-d, 1.75rem);
+  }
+
+  .cms-richtext h3 {
+    font-size: var(--font-size-h3-d, 1.375rem);
+  }
+
+  .cms-richtext :is(ul, ol) {
+    padding-inline-start: 1.5rem;
+  }
+
+  .cms-richtext ul {
+    list-style: disc;
+  }
+
+  .cms-richtext ol {
+    list-style: decimal;
+  }
+
+  .cms-richtext li + li {
+    margin-top: 0.25rem;
+  }
+
+  /* The document of a product or a category, printed by the module on a hook
+     of the theme between two of its sections: the space the theme puts between
+     its own. */
+  .cms-item-hook {
+    margin-block: 3rem;
+  }
+
   /* `:where()` on purpose: these are defaults, and a block setting a colour of
      its own (a title on a dark call to action, for instance) has to win without
      having to out-specify the page. Written with a plain descendant selector,
