@@ -14,13 +14,13 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Tests\Integration\Page;
 
-use Propel\Runtime\Connection\ConnectionWrapper;
 use Thelia\Model\Lang;
 use Thelia\Model\LangQuery;
 use TheliaCMS\Page\Admin\CmsPageAdminRepository;
 use TheliaCMS\Page\Admin\PageFilters;
 use TheliaCMS\Page\Admin\PageListPresenter;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
+use TheliaCMS\Tests\Integration\CountsStatements;
 
 /**
  * What the page listing costs, counted rather than assumed.
@@ -31,12 +31,11 @@ use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
  * is that the number does not depend on how many pages the site has. So the same
  * read is measured on a small tree and on one four times the size, and the two have
  * to come out equal.
- *
- * The counting comes from Propel itself: a connection put in debug mode counts the
- * statements it runs.
  */
 final class PageListingCostTest extends CmsIntegrationTestCase
 {
+    use CountsStatements;
+
     public function testReadingTheTreeCostsTheSameOnASmallSiteAndOnABigOne(): void
     {
         $repository = $this->getService(CmsPageAdminRepository::class);
@@ -206,30 +205,5 @@ final class PageListingCostTest extends CmsIntegrationTestCase
         }
 
         return $ids;
-    }
-
-    /**
-     * How many statements the given read sends to the database.
-     */
-    private function statementsFor(callable $read): int
-    {
-        $connection = $this->getPropelConnection();
-
-        if (!$connection instanceof ConnectionWrapper) {
-            self::markTestSkipped('this connection cannot count what it runs');
-        }
-
-        $wasDebugging = $connection->isInDebugMode();
-        $connection->useDebug(true);
-        $before = $connection->getQueryCount();
-
-        try {
-            $read();
-        } finally {
-            $after = $connection->getQueryCount();
-            $connection->useDebug($wasDebugging);
-        }
-
-        return $after - $before;
     }
 }
