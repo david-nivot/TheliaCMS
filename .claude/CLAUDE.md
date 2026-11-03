@@ -78,3 +78,7 @@ Liste complète et parades dans `docs/developing.md`.
 | Assets back-office copiés une fois dans `public/assets/backOffice/default-twig/TheliaCMS/` | Recopier, et monter `assets_version` |
 | URL d'une image de la médiathèque (`publicUrl()`, `PageImage::url`) : un chemin, pas une adresse | `absolute_url()` dans tout ce qu'un tiers va chercher (`og:image`, flux, courriel) |
 | `composer cs:fix` lancé dans le clone de l'hôte : la correction reste dans l'hôte | Recopier les fichiers corrigés vers ce dépôt (`cmp` fichier par fichier) avant de committer |
+| La CI garde le `upload_max_filesize` par défaut de PHP (2 Mo) : un fichier de test plus lourd est refusé par PHP avant le module | `ini-values` de `setup-php` dans `ci.yml` ; un test qui en dépend se saute, avec sa raison, sous la limite |
+| Après une montée de Flexy dans l'hôte (`composer update thelia/flexy`), tout le front répond 500 (asset `@hotwired/stimulus` absent) | `php Thelia importmap:install`, puis `cache:clear` |
+| Un écran qui refuse un fichier côté navigateur (`data-max-size`) donne la raison que le gabarit lui passe | Lui passer le message de la limite qui joue : plafond du module ou limite de PHP |
+| SEOne : la CI refuse une PR sans montée de version (job « Version bump ») ; Flexy (thelia-templates/flexy) fusionne par une file de fusion | Monter `<version>` et le titre du CHANGELOG dans la PR SEOne ; compter environ 15 min pour la file de Flexy |
