@@ -21,11 +21,33 @@
     "autoload": {
         "psr-4": {
             "TheliaCMS\\": ""
+        },
+        "exclude-from-classmap": [
+            "/Tests/"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "TheliaCMS\\Tests\\": "Tests/"
         }
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
     "extra": {
         "installer-name": "TheliaCMS"
+    },
+    "scripts": {
+        "test": "../../../vendor/bin/phpunit -c phpunit.xml.dist",
+        "test:integration": "../../../vendor/bin/phpunit -c phpunit.integration.xml.dist",
+        "stan": "../../../vendor/bin/phpstan analyse -c phpstan.dist.neon --memory-limit=-1",
+        "cs": "../../../vendor/bin/php-cs-fixer fix --dry-run --diff",
+        "cs:fix": "../../../vendor/bin/php-cs-fixer fix"
+    },
+    "scripts-descriptions": {
+        "test": "Unit tests, with the tools of the Thelia install the module sits in (local/modules/TheliaCMS).",
+        "test:integration": "Integration tests, after php bin/test-prepare in the Thelia install; under DDEV, unset DATABASE_NAME first.",
+        "stan": "PHPStan at level 5 against the baseline; needs the Propel models built by php bin/test-prepare.",
+        "cs": "Checks the code style against the rules of the Thelia core.",
+        "cs:fix": "Applies the code style of the Thelia core."
     }
 }

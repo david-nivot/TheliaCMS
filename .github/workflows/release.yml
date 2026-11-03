@@ -4,4 +4,10 @@ on:
     branches: [ master, main ]
 jobs:
   release:
-    uses: thelia-modules/ReusableWorkflow/.github/workflows/auto_release.yml@main
+    # Tagging and releasing write to the repository: the reusable workflow
+    # asks the calling job for this permission.
+    permissions:
+      contents: write
+    # Pinned to a commit: a change to the shared workflow reaches the releases
+    # of the module only when this line moves. 7a1e1ac is its main on 20 October 2026.
+    uses: thelia-modules/ReusableWorkflow/.github/workflows/auto_release.yml@7a1e1ac15f525b9cd3cf5777126d6a327d7a5868

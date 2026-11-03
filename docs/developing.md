@@ -75,6 +75,10 @@ shows how to test an update, outside a transaction.
 
 ## Static analysis and code style
 
+- From the module directory, `composer test`, `composer test:integration`,
+  `composer stan`, `composer cs` and `composer cs:fix` run the tools of the
+  install the module sits in (`../../../vendor/bin`). The commands below are
+  the same, from the root of the install.
 - PHPStan reads the Thelia install the module sits in, and the Propel models
   `php bin/test-prepare` builds under `var/propel/test` (`var/propel/dev`
   otherwise). From the root of the install:

@@ -7,42 +7,28 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
-### Added
+### Changed
 
-- **A section is duplicated by hand.** On the content screen of a page or of
-  a catalogue item, the button next to the arrows of a section puts a copy of
-  it right after it in the draft: same component, props and appearance, under
-  an id of its own. Only the draft of the language edited changes; it takes
-  the right to change pages, like moving a section. A section of a component
-  the site put away is not copied, as it would not be added.
-- **A component of the site is copied into a new one.** On the screen of a
-  component, "Copy into a new component" takes a code and a label and copies
-  the template, stylesheet, props, sample and mark of provenance, without a
-  call to the generator. The copy is a prototype: it is changed by "Ask a
-  change", then kept for the whole site. It takes the right to make a
-  component.
+- **Every branch is checked, by static analysis and code style too.** The CI
+  runs on a push to any branch, and on a pull request from a fork. Beside the
+  tests, it validates `composer.json`, checks the code style against the rules
+  of the core (`.php-cs-fixer.dist.php`), audits the dependencies the module
+  would install, and runs PHPStan at level 5 (`phpstan.dist.neon`, with a
+  baseline of the errors already there). The unit and integration suites keep
+  their PHPUnit caches apart. How to run them: `docs/developing.md`.
+- **The archive of a release holds what runs, and the CI tries the oldest
+  Thelia accepted.** Tests, contributor documentation and the configurations
+  of the checks are left out of the archive Composer installs
+  (`.gitattributes`). The tests run once more on Thelia 3.3.0, the floor of
+  `thelia/core ^3.3`. `composer test`, `stan` and `cs` run the checks from the
+  module directory. The release workflow is pinned to a commit of the shared
+  one, and the changelog has a section per tagged version.
 
-### Upgrading to 2.7.0
-
-- The color of a tag is free. `cms_tag.color` holds the `#rrggbb` code of the
-  background, and the update adds `cms_tag.text_color`, the code of the text,
-  NULL to leave it to the contrast (`Config/update/2.7.0.sql`). A tag colored
-  with a name of the former palette takes the codes of the badge it gave.
-  Remove `var/propel/<env>` so the models are generated again.
-- `tagColor`, on `PublishedPage`, `PageCard` and the result of
-  `cms_pages_tagged()`, is now the code of the background instead of a name of
-  the palette, and `tagTextColor` gives the code of the text. A theme that
-  mapped the six names to its own design prints the codes instead, for
-  example `style="background-color: {{ cms_page.tagColor }}; color: {{
-  cms_page.tagTextColor }}"`.
-- `PageTagColor` is a value object, no longer an enum: `PageTagColor::of('#dc4a7b', '#ffffff')`
-  in place of `PageTagColor::Cyan`, `->background` in place of `->value`.
+## [2.8.2] - 2026-11-03
 
 ### Fixed
 
 - The preview of the content screen keeps its place when a section is changed, moved, duplicated or removed by hand: the section stays where it stood instead of the preview going back to the top of the page.
-- The button to the toolkit on the components screen also shows where the theme opens its toolkit with `THEME_TOOLKIT`, as the toolkit itself does, and no longer only in debug.
-- The color fields of a tag no longer read "optional": the color inputs always hold a color, the box says whether the tag has one, and its help sits under it.
 - The button that opens a component of the site, on the components screen, reads "Modifier" in French instead of "Ouvert", the word the forms screen uses for a form that takes answers.
 
 ### Changed
@@ -60,18 +46,120 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   section they share, and the content screen has the link too, at the top of
   its panel.
 
+## [2.8.1] - 2026-11-02
+
+### Fixed
+
+- The button to the toolkit on the components screen also shows where the theme opens its toolkit with `THEME_TOOLKIT`, as the toolkit itself does, and no longer only in debug.
+
+## [2.8.0] - 2026-11-02
+
+### Added
+
+- **A section is duplicated by hand.** On the content screen of a page or of
+  a catalogue item, the button next to the arrows of a section puts a copy of
+  it right after it in the draft: same component, props and appearance, under
+  an id of its own. Only the draft of the language edited changes; it takes
+  the right to change pages, like moving a section. A section of a component
+  the site put away is not copied, as it would not be added.
+- **A component of the site is copied into a new one.** On the screen of a
+  component, "Copy into a new component" takes a code and a label and copies
+  the template, stylesheet, props, sample and mark of provenance, without a
+  call to the generator. The copy is a prototype: it is changed by "Ask a
+  change", then kept for the whole site. It takes the right to make a
+  component.
+
+## [2.7.1] - 2026-11-02
+
+### Fixed
+
+- The color fields of a tag no longer read "optional": the color inputs always hold a color, the box says whether the tag has one, and its help sits under it.
+
+## [2.7.0] - 2026-11-02
+
+### Upgrading to 2.7.0
+
+- The color of a tag is free. `cms_tag.color` holds the `#rrggbb` code of the
+  background, and the update adds `cms_tag.text_color`, the code of the text,
+  NULL to leave it to the contrast (`Config/update/2.7.0.sql`). A tag colored
+  with a name of the former palette takes the codes of the badge it gave.
+  Remove `var/propel/<env>` so the models are generated again.
+- `tagColor`, on `PublishedPage`, `PageCard` and the result of
+  `cms_pages_tagged()`, is now the code of the background instead of a name of
+  the palette, and `tagTextColor` gives the code of the text. A theme that
+  mapped the six names to its own design prints the codes instead, for
+  example `style="background-color: {{ cms_page.tagColor }}; color: {{
+  cms_page.tagTextColor }}"`.
+- `PageTagColor` is a value object, no longer an enum: `PageTagColor::of('#dc4a7b', '#ffffff')`
+  in place of `PageTagColor::Cyan`, `->background` in place of `->value`.
+
+### Changed
+
 - **A tag takes any color.** The tag screen gives a color picker for the
   background, and a second one for the text, or black or white chosen by the
   contrast. A site file keeps both, and a file written before still imports
   its names of the palette.
 
-- **Every branch is checked, by static analysis and code style too.** The CI
-  runs on a push to any branch, and on a pull request from a fork. Beside the
-  tests, it validates `composer.json`, checks the code style against the rules
-  of the core (`.php-cs-fixer.dist.php`), audits the dependencies the module
-  would install, and runs PHPStan at level 5 (`phpstan.dist.neon`, with a
-  baseline of the errors already there). The unit and integration suites keep
-  their PHPUnit caches apart. How to run them: `docs/developing.md`.
+## [2.6.3] - 2026-10-30
+
+### Fixed
+
+- **A row field spelled in camelCase keeps its value.** A theme writes
+  `imageAlt` or `buttonLabel` in a row; the form stored them as `image_alt`,
+  `button_label` and dropped the values already written under the template's
+  spelling, and the component read nothing back. A row is now read under
+  either spelling, stored in snake case, and handed to the component under the
+  names its template uses.
+- **The rows of a list stay compact in the section form.** The fields of a row
+  share a line (a name, a quantity and a picture), their labels show on the
+  first row only, a row of one value takes the line, and a row holding a text
+  of paragraphs folds under its first words. A form with a list opens wider.
+
+## [2.6.2] - 2026-10-30
+
+### Added
+
+- **A list a theme component documents is drawn as rows of fields.**
+  `{# @prop ingredients list<{name: string, quantity: string, image:
+  image|null}> … #}` (or `array<{…}>`) gives the editor one row per item, to
+  add, remove and fill, with the picker of the media library for an `image`
+  field, in place of a JSON text area; `|null` makes a field optional. `list<string>`,
+  `list<html>`, `string[]` and `html[]` give rows of one field and are still
+  stored, and handed to the component, as a list of strings. Up to 50 rows.
+  A row that holds a list or a record (`product`…) leaves the prop a JSON
+  one, as `array`, `list`, `object` and `iterable` do. The generator is told
+  such a list is an array of strings.
+- **The picture of a row is drawn from its address**, as a picture prop of its
+  own is, and an example of the theme written as a path of the theme
+  (`images/…`) inside a row resolves the same way.
+- **An image prop accepts the address the media library serves a picture
+  from** (`/image-library/17/full/max/0/default.webp`) and stores the id of the
+  picture.
+
+## [2.6.1] - 2026-10-30
+
+### Added
+
+- **A theme shows pictures in its examples.** A picture prop of an entry of
+  `sections.examples` may be the path of a file of the theme, as `asset()`
+  takes it (`images/illustrations/banner.webp`). The toolkit draws it from the
+  address the theme serves it from; the generator and a section added by hand
+  never see it, `sample()` keeps the prop empty, and the format of the
+  documents does not change.
+
+### Fixed
+
+- **The svg icons of the theme components survive the publication filter.**
+  A page filter took out every `<svg>`: the arrow of a button, the arrows of a
+  carousel, the chevrons of an accordion came out empty on a published page.
+  Shapes (`svg`, `g`, `path`, `circle`, `ellipse`, `rect`, `line`, `polyline`,
+  `polygon`) and the attributes that place and colour them are kept; `use`,
+  `image`, `foreignObject`, `a`, `style`, `animate*`, event handlers, `href`
+  and a `url(…)` in `fill` or `stroke` are not. The markup of a page is stored
+  when it is saved or published, so a page gets its icons back when it is
+  rendered and published again (`thelia_cms:render --all`, then publish).
+
+## [2.6.0] - 2026-10-30
 
 ### Upgrading to 2.6.0
 
@@ -98,22 +186,6 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Added
 
-- **A list a theme component documents is drawn as rows of fields.**
-  `{# @prop ingredients list<{name: string, quantity: string, image:
-  image|null}> … #}` (or `array<{…}>`) gives the editor one row per item, to
-  add, remove and fill, with the picker of the media library for an `image`
-  field, in place of a JSON text area; `|null` makes a field optional. `list<string>`,
-  `list<html>`, `string[]` and `html[]` give rows of one field and are still
-  stored, and handed to the component, as a list of strings. Up to 50 rows.
-  A row that holds a list or a record (`product`…) leaves the prop a JSON
-  one, as `array`, `list`, `object` and `iterable` do. The generator is told
-  such a list is an array of strings.
-- **The picture of a row is drawn from its address**, as a picture prop of its
-  own is, and an example of the theme written as a path of the theme
-  (`images/…`) inside a row resolves the same way.
-- **An image prop accepts the address the media library serves a picture
-  from** (`/image-library/17/full/max/0/default.webp`) and stores the id of the
-  picture.
 - **`cms_page_documents_block(page, locale)` draws the documents of a page.**
   It answers the markup of the list (heading, title, type and size of each
   file, the browser opening a pdf or a txt and saving the rest), or an empty
@@ -122,53 +194,6 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   the one variable `cms_page_documents_block` (`documents`, `page`,
   `heading`), in the language of the page when a page is given. The page templates of the module
   call it after the content of the page.
-- **A component is prototyped from the content screen of a page.** **Add a
-  section > A new component** asks the generator of components in a few
-  words; the answer is drawn in the preview in place of the draft, changed by
-  asking again, discarded or kept. Kept, it is a prototype of the site:
-  status `draft` in `cms_component`, shown and edited on the pages that hold
-  it, offered to nobody else until **CMS > Components** keeps it for the
-  whole site (**Keep for the whole site**). The same rights as **CMS >
-  Components > New component** are needed.
-- **A brief may make a component of the site**, when the new generator
-  setting "Let a brief make a component of the site" is on (off by default)
-  and the editor may make components: the generator writing a page calls the
-  generator of components (`make_component`, twice per page at most, each
-  call a row of its own in the ledger) when none of the catalogue shows what
-  the brief asks, and names the prototype in the page.
-- **The dialogs of the content screen are drawers** over the left panel
-  (edit a section, rewrite, brief, add a section), the preview staying in
-  sight; full width on a phone. The form of a section puts two fields on a
-  line once the drawer is wide enough, a long text, a picture, a list of
-  rows or a folded part on a line of its own; the help of a field is a
-  tooltip on a "?" beside its label, so the labels and the fields of a line
-  are level whatever the wording.
-- **An export carries the status of every component of the site** (`draft`
-  or `ready`), and an import keeps it: a prototype stays a prototype on the
-  site it is imported into.
-- **A component of the site may move.** Its stylesheet may hold `@keyframes`,
-  named after the component when it is served (`cms-site--<code>--<name>`),
-  as is every `animation` of the stylesheet that uses it, so two components
-  may both call an animation `pan`. A rule that sets an animation sits in
-  `@media (prefers-reduced-motion: no-preference)`, or the component is
-  refused, and so is an animation set in a `style` attribute of the template.
-- **A skill on motion** (`skills/motion/SKILL.md`, the eighth shipped): how
-  a component moves or reacts with its stylesheet alone (a picture that
-  scrolls, folds, cards that slide, hover effects) and what it leaves to a
-  component of the theme. The generator of components reads it beside the
-  skill on accessibility, which now says that what moves on its own can be
-  paused and that nothing moves for a visitor who asks for less motion. A
-  test holds the recipe of the skill to the validator, and the elements the
-  prompt names as taken out to the filter of the page.
-- **A tag may have a color**, picked on its screen under **CMS > Tags** among
-  six (`red`, `orange`, `yellow`, `green`, `cyan`, `dark`) or none. The list
-  of tags and the list of pages show each tag in its color; a tag without one
-  stays grey. A theme reads the name of the color as `tagColor`, beside `tag`,
-  on the cards of `cms_pages_tagged()`, on `cms_page` and on the page handed
-  to the `cmspage.*` hooks. The export carries it per page (`tag_color`); an
-  import gives it to the tags it creates, and drops a name the palette does
-  not have with a warning. The update to 2.5.0 adds `cms_tag.color`, empty
-  for the tags a site has already.
 - **A page offers files to download.** The **Documents** tab of the edit
   screen of a page takes several files per page (pdf, doc, docx, xls, xlsx,
   ppt, pptx, odt, zip, txt; the extension and the detected type must agree,
@@ -226,36 +251,90 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   without it holds shared menus. The format is version 3: a module of an
   earlier version refuses the file rather than write the menu of a language
   over the shared one.
-- **A theme shows pictures in its examples.** A picture prop of an entry of
-  `sections.examples` may be the path of a file of the theme, as `asset()`
-  takes it (`images/illustrations/banner.webp`). The toolkit draws it from the
-  address the theme serves it from; the generator and a section added by hand
-  never see it, `sample()` keeps the prop empty, and the format of the
-  documents does not change.
 
 ### Fixed
 
-- **A row field spelled in camelCase keeps its value.** A theme writes
-  `imageAlt` or `buttonLabel` in a row; the form stored them as `image_alt`,
-  `button_label` and dropped the values already written under the template's
-  spelling, and the component read nothing back. A row is now read under
-  either spelling, stored in snake case, and handed to the component under the
-  names its template uses.
-- **The rows of a list stay compact in the section form.** The fields of a row
-  share a line (a name, a quantity and a picture), their labels show on the
-  first row only, a row of one value takes the line, and a row holding a text
-  of paragraphs folds under its first words. A form with a list opens wider.
-- **The svg icons of the theme components survive the publication filter.**
-  A page filter took out every `<svg>`: the arrow of a button, the arrows of a
-  carousel, the chevrons of an accordion came out empty on a published page.
-  Shapes (`svg`, `g`, `path`, `circle`, `ellipse`, `rect`, `line`, `polyline`,
-  `polygon`) and the attributes that place and colour them are kept; `use`,
-  `image`, `foreignObject`, `a`, `style`, `animate*`, event handlers, `href`
-  and a `url(…)` in `fill` or `stroke` are not. The markup of a page is stored
-  when it is saved or published, so a page gets its icons back when it is
-  rendered and published again (`thelia_cms:render --all`, then publish).
 - **`ToolkitLinkTest` is skipped when the theme has no toolkit**, instead of
   failing on section stories that cannot load.
+
+## [2.5.0] - 2026-10-30
+
+### Added
+
+- **A tag may have a color**, picked on its screen under **CMS > Tags** among
+  six (`red`, `orange`, `yellow`, `green`, `cyan`, `dark`) or none. The list
+  of tags and the list of pages show each tag in its color; a tag without one
+  stays grey. A theme reads the name of the color as `tagColor`, beside `tag`,
+  on the cards of `cms_pages_tagged()`, on `cms_page` and on the page handed
+  to the `cmspage.*` hooks. The export carries it per page (`tag_color`); an
+  import gives it to the tags it creates, and drops a name the palette does
+  not have with a warning. The update to 2.5.0 adds `cms_tag.color`, empty
+  for the tags a site has already.
+
+## [2.4.0] - 2026-10-29
+
+The first tag of the 2.x line. It ships 2.0.0 to 2.3.1, never tagged on their own: their entries carry their version in the heading.
+
+### Added
+
+- **A component is prototyped from the content screen of a page.** **Add a
+  section > A new component** asks the generator of components in a few
+  words; the answer is drawn in the preview in place of the draft, changed by
+  asking again, discarded or kept. Kept, it is a prototype of the site:
+  status `draft` in `cms_component`, shown and edited on the pages that hold
+  it, offered to nobody else until **CMS > Components** keeps it for the
+  whole site (**Keep for the whole site**). The same rights as **CMS >
+  Components > New component** are needed.
+- **A brief may make a component of the site**, when the new generator
+  setting "Let a brief make a component of the site" is on (off by default)
+  and the editor may make components: the generator writing a page calls the
+  generator of components (`make_component`, twice per page at most, each
+  call a row of its own in the ledger) when none of the catalogue shows what
+  the brief asks, and names the prototype in the page.
+- **The dialogs of the content screen are drawers** over the left panel
+  (edit a section, rewrite, brief, add a section), the preview staying in
+  sight; full width on a phone. The form of a section puts two fields on a
+  line once the drawer is wide enough, a long text, a picture, a list of
+  rows or a folded part on a line of its own; the help of a field is a
+  tooltip on a "?" beside its label, so the labels and the fields of a line
+  are level whatever the wording.
+- **An export carries the status of every component of the site** (`draft`
+  or `ready`), and an import keeps it: a prototype stays a prototype on the
+  site it is imported into.
+- **A component of the site may move.** Its stylesheet may hold `@keyframes`,
+  named after the component when it is served (`cms-site--<code>--<name>`),
+  as is every `animation` of the stylesheet that uses it, so two components
+  may both call an animation `pan`. A rule that sets an animation sits in
+  `@media (prefers-reduced-motion: no-preference)`, or the component is
+  refused, and so is an animation set in a `style` attribute of the template.
+- **A skill on motion** (`skills/motion/SKILL.md`, the eighth shipped): how
+  a component moves or reacts with its stylesheet alone (a picture that
+  scrolls, folds, cards that slide, hover effects) and what it leaves to a
+  component of the theme. The generator of components reads it beside the
+  skill on accessibility, which now says that what moves on its own can be
+  paused and that nothing moves for a visitor who asks for less motion. A
+  test holds the recipe of the skill to the validator, and the elements the
+  prompt names as taken out to the filter of the page.
+- **Generated content is marked** (article 50(2) of the AI Act). A page or the
+  document of a catalogue item written by the generator keeps the mark of the
+  core with its draft, its publication and its revisions, and through the
+  export and the import of the site. The public page prints it as
+  `data-ai-*` attributes on the content and as a sentence after it, in the
+  language of the page; `cms_item_content()` wraps a generated document the
+  same way. A text written beside a field carries no public mark: it stays in
+  the AI log of Thelia, which records the usage, the model and the cost of the
+  call.
+- The history of a page points at the row of the usage log of the core that
+  holds the cost of the call (`cms_page_generation.log_id`), and the requests of
+  one call share a correlation id there.
+- The prompts the ledger keeps are emptied by `maintenance:purge` when the core
+  empties its own, so the module adds no retention of its own.
+- When the AI layer refuses a call (budget spent, rate limit, jurisdiction,
+  usage turned off, key unreadable, provider down, safety check), the editor
+  reads one sentence, in French or English, that says what to change.
+
+### Fixed
+
 - **The generator of components leaves out a skill the site switched off**
   under CMS > Skills, as the generator of pages and `read_skill` do: it read
   the skill on accessibility whether it was on or not. Its heading is no
@@ -334,8 +413,6 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   menus, forms and settings, and dropped only the menus kept by the module.
 - **Renaming or deleting a tag drops the lists of pages**, which show the tag
   of each page and list the pages of a tag.
-- **No more `Vary: Accept-Language`.** The language of a page comes from its
-  address, never from that header: it only multiplied the copies of a page.
 
 ### Upgrading to 2.4.0
 
@@ -356,27 +433,7 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   content, and prints `ai_provenance_label(cms_page.provenance, cms_page.locale)`
   after it, or its pages lose the mark.
 
-### Added (2.4.0)
-
-- **Generated content is marked** (article 50(2) of the AI Act). A page or the
-  document of a catalogue item written by the generator keeps the mark of the
-  core with its draft, its publication and its revisions, and through the
-  export and the import of the site. The public page prints it as
-  `data-ai-*` attributes on the content and as a sentence after it, in the
-  language of the page; `cms_item_content()` wraps a generated document the
-  same way. A text written beside a field carries no public mark: it stays in
-  the AI log of Thelia, which records the usage, the model and the cost of the
-  call.
-- The history of a page points at the row of the usage log of the core that
-  holds the cost of the call (`cms_page_generation.log_id`), and the requests of
-  one call share a correlation id there.
-- The prompts the ledger keeps are emptied by `maintenance:purge` when the core
-  empties its own, so the module adds no retention of its own.
-- When the AI layer refuses a call (budget spent, rate limit, jurisdiction,
-  usage turned off, key unreadable, provider down, safety check), the editor
-  reads one sentence, in French or English, that says what to change.
-
-### Changed (2.4.0)
+### Changed
 
 - The generator, the texts written beside a field and the components made in the
   back office go through the AI gateway of Thelia: the provider, the key, the
@@ -392,7 +449,7 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 - The messages of a conversation that never answers (too many turns) are
   translated.
 
-### Removed (2.4.0)
+### Removed
 
 - The Claude API SDK (`anthropic-ai/sdk`), `nyholm/psr7`, the price list and
   `ClaudeClientProviderInterface`.
@@ -413,18 +470,6 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   loses the recipients that are not email addresses, and gets a retention the
   screen accepts: a negative one kept the answers forever. The report names
   each of them. Tests import a hostile file and check what was stored.
-- **The guard of the back office reads the path the way the router does.**
-  It compared the prefix `/admin/cms` with the path as the client wrote it,
-  while the router decodes the path before it matches a route: with one
-  letter percent-encoded (`/admin/c%6Ds/forms`), a request reached the screens
-  of the module without logging in, including the export of the submissions
-  of a form, skipped the token checked on a write, and was granted the right
-  of the pages whatever its section. A proxy that normalises the path in front
-  of the site hid it; one that passes the path as it came did not. The guard now
-  compares the decoded path (`RequestPath::decoded()` of the core), and so
-  does the showcase mode for the paths it closes (`/cart`, `/order`, `/checkout`). Tests send encoded
-  addresses anonymously, with a profile limited to the pages, and to a hidden
-  screen.
 - **A `style` attribute is filtered like a stylesheet.** The published
   content and every drawing of a component made for the site kept `style`
   attributes as they were: a component whose template prints a text prop in
@@ -646,11 +691,6 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   document. The command reports the page under "Refused", and the editor
   buttons name the problems. The CMS content of a product, a category, a
   content or a folder is validated the same way before it goes online.
-- **The menus follow a content or a folder published on schedule.** The core
-  dispatches `CONTENT_UPDATE_PUBLICATION` and `FOLDER_UPDATE_PUBLICATION` when
-  a content or a folder is published, scheduled or taken offline, and the
-  menus did not listen to them: an entry pointing at such a content kept its
-  former state until the cache of the menus expired (one hour by default).
 - **A long page goes online whole.** The published content went through the
   sanitizer of Symfony with its default limit of 20 000 bytes, and whatever
   came after was dropped without a warning: terms of sale, a long FAQ, or a
@@ -1169,12 +1209,50 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   `HeadingChecker`, `EmptyContentChecker`, `PlaceholderContentChecker`,
   `ImageRewriter`, `PublishedContentSanitizer`, `PageContentNormalizer`.
 
-### Added (1.6.0)
+## [1.6.2] - 2026-10-28
+
+### Fixed
+
+- **No more `Vary: Accept-Language`.** The language of a page comes from its
+  address, never from that header: it only multiplied the copies of a page.
+
+## [1.6.1] - 2026-10-28
+
+### Security
+
+- **The guard of the back office reads the path the way the router does.**
+  It compared the prefix `/admin/cms` with the path as the client wrote it,
+  while the router decodes the path before it matches a route: with one
+  letter percent-encoded (`/admin/c%6Ds/forms`), a request reached the screens
+  of the module without logging in, including the export of the submissions
+  of a form, skipped the token checked on a write, and was granted the right
+  of the pages whatever its section. A proxy that normalises the path in front
+  of the site hid it; one that passes the path as it came did not. The guard now
+  compares the decoded path (`RequestPath::decoded()` of the core), and so
+  does the showcase mode for the paths it closes (`/cart`, `/order`, `/checkout`). Tests send encoded
+  addresses anonymously, with a profile limited to the pages, and to a hidden
+  screen.
+
+### Fixed
+
+- **The menus follow a content or a folder published on schedule.** The core
+  dispatches `CONTENT_UPDATE_PUBLICATION` and `FOLDER_UPDATE_PUBLICATION` when
+  a content or a folder is published, scheduled or taken offline, and the
+  menus did not listen to them: an entry pointing at such a content kept its
+  former state until the cache of the menus expired (one hour by default).
+
+## [1.6.0] - 2026-10-27
+
+### Added
 
 - Twig function `cms_is_home(id)`: tells whether a page is the one the module
   shows as the home page.
 
-### Added (1.5.0)
+## [1.5.0] - 2026-10-20
+
+Ships 1.1.0 to 1.4.0, never tagged on their own: their entries carry their version in the heading.
+
+### Added
 
 - On a Thelia core that brings the shared cache of the public pages
   (`shared_cache_mode`), the pages of the module are shared like the
@@ -1191,6 +1269,53 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   nothing changes: the module keeps its own headers and `http_cache_ttl`.
   Publishing a page purges `cms` like before, which on a shop that shares
   means every page.
+
+- A page has a type, which picks the template it is displayed with:
+  `cmspage-{type}.html.twig` from the theme, then from this module, before the
+  usual `cmspage.html.twig`. The types are listed, added and deleted under
+  **CMS > Settings > Page types**, which says for each one the template it
+  gets. A type is a code and nothing else; the three former layouts become the
+  types `default`, `full-width` and `landing`, and each page keeps its own. A
+  type a page has, the bin included, cannot be deleted. Themes read the code as
+  `cms_page.pageType`, the modules hooked on `cmspage.*` as `page.pageType`.
+  The type follows a page when it is duplicated, travels with the site export
+  and with saved templates. An import of a site creates the types the site
+  lacks; a page started from a saved template whose type the site no longer
+  has gets the default type, since starting a page needs no right on the
+  settings. Files and templates written before 1.2.0 are read through their
+  `layout`.
+- A page carries a summary and a detailed description per language, the same
+  pair as a core content, typed under its address in the "General" tab with
+  the back-office rich text editor when Tiptap is installed. They are not the
+  body of the page, which the builder owns, and nothing renders them on their
+  own: a theme reads them as `cms_page.chapo` and `cms_page.description`, and
+  the modules hooked on `cmspage.*` as `page.chapo` and `page.description`.
+  Both are HTML filtered on save like the content of the page: no script, and
+  no iframe without the custom code right; an imported file gets no iframe
+  either. Both follow the page when it is duplicated and travel with the site
+  export.
+  The update to 1.1.0 adds the two columns to `cms_page_i18n`.
+- An "Image" tab gives a page one image, the same in every language, chosen
+  from the CMS media library or uploaded into it, and saved with the rest of
+  the page. Uploading takes the right to create media, as on the media screen:
+  without it the tab only offers the images already in the library. A theme reads it as `cms_page.image` (`url`, `alt`, `width`,
+  `height`); an image deleted from the library leaves the page without one.
+  It follows the page when it is duplicated, travels with the site export
+  like the images of the content, and counts as a use on the media screen, so
+  the image of a page cannot be deleted from under it. The update to 1.1.0
+  adds `image_id` to `cms_page`.
+- **CMS > Settings** lists every block the editor can offer, group by group as
+  the panel shows them — the basic, layout and advanced blocks of the editor
+  itself, the page blocks of the catalogue, the live content — and lets an
+  administrator untick the ones a site has no use for. Until now every block
+  was offered to every editor, so a theme that styles no gallery still had a
+  gallery in the panel, and the "Video" and "Map" blocks of the editor sat next
+  to the facades that replace them. A block is offered until it is unticked,
+  which is why the setting stores the blocks that are off: one a module or the
+  editor adds later shows up on its own. Unticking changes the panel and
+  nothing else: a page that already holds the block keeps it, previewed and
+  editable in the editor, rendered on the front. The list travels with the
+  site export as `disabled_blocks`.
 
 ### Upgrading to 1.4.0
 
@@ -1275,54 +1400,34 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   DROP TABLE `cms_page_type`;
   ```
 
+### Changed
+
+- The constructor of `PublishedPage` takes `string $pageType` where it took
+  `PageLayout $layout`. The module is the only one meant to build that object;
+  a hook reading `$layout` keeps working.
+- Saving the settings of a page drops it from the shared cache. Its type, its
+  title and its SEO fields are live as soon as they are saved, and a cached copy
+  kept showing the previous ones until it expired.
+
+### Deprecated
+
+- `CmsPageRenderer::THEME_TEMPLATE` and `MODULE_TEMPLATE`: the template of a
+  page now depends on its type, which `PageTemplateResolver` resolves. Both go
+  in 2.0.0.
+- `PublishedPage::$layout` and the `PageLayout` enum, replaced by
+  `PublishedPage::$pageType`. `layout` is still filled for the hooks written
+  against 1.x, from the type: `full-width` and `landing` read as before, any
+  other type as `Default`. Both go in 2.0.0.
+
+### Fixed
+
+- The media screen counted a page once per language using an image, so an
+  image on a page in French and English read "Used in 2 page(s)".
+
+## [1.0.0] - 2026-10-02
+
 ### Added
 
-- A page has a type, which picks the template it is displayed with:
-  `cmspage-{type}.html.twig` from the theme, then from this module, before the
-  usual `cmspage.html.twig`. The types are listed, added and deleted under
-  **CMS > Settings > Page types**, which says for each one the template it
-  gets. A type is a code and nothing else; the three former layouts become the
-  types `default`, `full-width` and `landing`, and each page keeps its own. A
-  type a page has, the bin included, cannot be deleted. Themes read the code as
-  `cms_page.pageType`, the modules hooked on `cmspage.*` as `page.pageType`.
-  The type follows a page when it is duplicated, travels with the site export
-  and with saved templates. An import of a site creates the types the site
-  lacks; a page started from a saved template whose type the site no longer
-  has gets the default type, since starting a page needs no right on the
-  settings. Files and templates written before 1.2.0 are read through their
-  `layout`.
-- A page carries a summary and a detailed description per language, the same
-  pair as a core content, typed under its address in the "General" tab with
-  the back-office rich text editor when Tiptap is installed. They are not the
-  body of the page, which the builder owns, and nothing renders them on their
-  own: a theme reads them as `cms_page.chapo` and `cms_page.description`, and
-  the modules hooked on `cmspage.*` as `page.chapo` and `page.description`.
-  Both are HTML filtered on save like the content of the page: no script, and
-  no iframe without the custom code right; an imported file gets no iframe
-  either. Both follow the page when it is duplicated and travel with the site
-  export.
-  The update to 1.1.0 adds the two columns to `cms_page_i18n`.
-- An "Image" tab gives a page one image, the same in every language, chosen
-  from the CMS media library or uploaded into it, and saved with the rest of
-  the page. Uploading takes the right to create media, as on the media screen:
-  without it the tab only offers the images already in the library. A theme reads it as `cms_page.image` (`url`, `alt`, `width`,
-  `height`); an image deleted from the library leaves the page without one.
-  It follows the page when it is duplicated, travels with the site export
-  like the images of the content, and counts as a use on the media screen, so
-  the image of a page cannot be deleted from under it. The update to 1.1.0
-  adds `image_id` to `cms_page`.
-- **CMS > Settings** lists every block the editor can offer, group by group as
-  the panel shows them — the basic, layout and advanced blocks of the editor
-  itself, the page blocks of the catalogue, the live content — and lets an
-  administrator untick the ones a site has no use for. Until now every block
-  was offered to every editor, so a theme that styles no gallery still had a
-  gallery in the panel, and the "Video" and "Map" blocks of the editor sat next
-  to the facades that replace them. A block is offered until it is unticked,
-  which is why the setting stores the blocks that are off: one a module or the
-  editor adds later shows up on its own. Unticking changes the panel and
-  nothing else: a page that already holds the block keeps it, previewed and
-  editable in the editor, rendered on the front. The list travels with the
-  site export as `disabled_blocks`.
 - A theme declares the canvas of the editor in `config/theliacms.yaml`: the
   stylesheets it loads, written the way its templates pass them to `asset()`,
   and the classes of `<html>`, `<body>` and of the container around the page
@@ -1397,12 +1502,6 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Changed
 
-- The constructor of `PublishedPage` takes `string $pageType` where it took
-  `PageLayout $layout`. The module is the only one meant to build that object;
-  a hook reading `$layout` keeps working.
-- Saving the settings of a page drops it from the shared cache. Its type, its
-  title and its SEO fields are live as soon as they are saved, and a cached copy
-  kept showing the previous ones until it expired.
 - Every write of the back office under `/admin/cms` requires the back-office
   token, in the `_token` field of the body or in the `X-CSRF-Token` header. A
   script of your own that posts to these routes now gets a 403 until it sends
@@ -1418,20 +1517,8 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 - A site of fewer than forty pages opens whole, so nothing changes for a site that
   never needed folding.
 
-### Deprecated
-
-- `CmsPageRenderer::THEME_TEMPLATE` and `MODULE_TEMPLATE`: the template of a
-  page now depends on its type, which `PageTemplateResolver` resolves. Both go
-  in 2.0.0.
-- `PublishedPage::$layout` and the `PageLayout` enum, replaced by
-  `PublishedPage::$pageType`. `layout` is still filled for the hooks written
-  against 1.x, from the type: `full-width` and `landing` read as before, any
-  other type as `Default`. Both go in 2.0.0.
-
 ### Fixed
 
-- The media screen counted a page once per language using an image, so an
-  image on a page in French and English read "Used in 2 page(s)".
 - The page form no longer raises a Symfony deprecation each time it is built.
   Its canonical URL field left the default scheme unset; a canonical address
   typed without its scheme is now read as `https://`, as in SEOne.
@@ -1747,4 +1834,21 @@ the published pages.
 - The breadcrumb of a page filed under a draft one offered a link to that page,
   which answers 404, both to the reader and in the `BreadcrumbList`.
 
+[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.8.2...HEAD
+[2.8.2]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.8.2
+[2.8.1]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.8.1
+[2.8.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.8.0
+[2.7.1]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.7.1
+[2.7.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.7.0
+[2.6.3]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.6.3
+[2.6.2]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.6.2
+[2.6.1]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.6.1
+[2.6.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.6.0
+[2.5.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.5.0
+[2.4.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.4.0
+[1.6.2]: https://github.com/thelia-modules/TheliaCMS/releases/tag/1.6.2
+[1.6.1]: https://github.com/thelia-modules/TheliaCMS/releases/tag/1.6.1
+[1.6.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/1.6.0
+[1.5.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/1.5.0
+[1.0.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/1.0.0
 [1.0.0-alpha.1]: https://github.com/thelia-modules/TheliaCMS/releases/tag/1.0.0-alpha.1
