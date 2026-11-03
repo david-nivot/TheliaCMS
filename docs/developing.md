@@ -59,6 +59,12 @@ shows how to test an update, outside a transaction.
   `cacheTtl()` says (a day for a map). A theme template added or changed
   for a partial shows up when that fragment expires, or after
   `php Thelia cache:pool:clear cache.app`.
+- **The next scheduled change** of the site (`ScheduledChanges::next()`) is
+  kept in `cache.app` until it passes, up to an hour, and outlives the rolled
+  back transaction of a test. A test that dates a page with `save()`, or that
+  reads cache headers with a TTL set, calls `ScheduledChanges::forget()` in
+  its `setUp()` and `tearDown()`; a write through `CmsPageWriter` forgets it
+  already.
 - **The Twig cache of the test environment does not reload**: a template
   edited after a test compiled it is still rendered from the compiled copy
   in `var/cache/test/twig`, and a test asserting on the new markup can pass

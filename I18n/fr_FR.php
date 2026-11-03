@@ -406,7 +406,7 @@ return [
     'One or several email addresses, separated by commas. Leave empty to only store the answers.' => 'Une ou plusieurs adresses e-mail, séparées par des virgules. Laissez vide pour seulement conserver les réponses.',
     'One per line, in the language being edited.' => 'Une par ligne, dans la langue en cours d’édition.',
     'Online' => 'En ligne',
-    'Only applies to a visitor with no session, and only if a proxy or a CDN sits in front of the site. Set 0 if there is none.' => 'Ne s’applique qu’à un visiteur sans session, et seulement si un proxy ou un CDN est placé devant le site. Indiquez 0 s’il n’y en a pas.',
+    'Only applies to a visitor with no session, and only if a proxy or a CDN sits in front of the site. Set 0 if there is none. Shorter when a page goes online or offline sooner, and nothing is kept while the site is closed.' => 'Ne s’applique qu’à un visiteur sans session, et seulement si un proxy ou un CDN est placé devant le site. Indiquez 0 s’il n’y en a pas. Plus court quand une page doit être mise en ligne ou retirée plus tôt ; rien n’est gardé pendant la fermeture du site.',
     'Only fill this in to point search engines at another page.' => 'À renseigner uniquement pour désigner une autre page aux moteurs de recherche.',
     'Only JPEG, PNG and WebP images can be uploaded.' => 'Seules les images JPEG, PNG et WebP peuvent être envoyées.',
     'Only shown here, to tell your menus apart.' => 'Affiché ici seulement, pour distinguer vos menus.',

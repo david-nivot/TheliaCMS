@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Tests\Integration\Http;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
@@ -24,7 +25,9 @@ use Thelia\Model\ConfigQuery;
 use TheliaCMS\Http\CacheTags;
 use TheliaCMS\Http\PageCacheListener;
 use TheliaCMS\Http\PageCachePolicy;
+use TheliaCMS\Page\ScheduledChanges;
 use TheliaCMS\Partial\Definition\PageListPartial;
+use TheliaCMS\Settings\CmsSettings;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
 use TheliaCMS\TheliaCMS;
 use TheliaCMS\Twig\CmsExtension;
@@ -42,10 +45,13 @@ final class PageCacheHeadersTest extends CmsIntegrationTestCase
         if (class_exists(SharedCacheMode::class)) {
             ConfigQuery::write(SharedCacheMode::CONFIG_KEY, SharedCacheMode::DISABLED->value);
         }
+
+        $this->getService(ScheduledChanges::class)->forget();
     }
 
     protected function tearDown(): void
     {
+        $this->getService(ScheduledChanges::class)->forget();
         ConfigQuery::resetCache();
 
         parent::tearDown();
@@ -90,6 +96,72 @@ final class PageCacheHeadersTest extends CmsIntegrationTestCase
         self::assertNotContains('Accept-Language', $response->getVary());
     }
 
+    /**
+     * A proxy keeps a page until its `s-maxage` runs out, whatever happens to
+     * the page meanwhile: a page leaving in two minutes is kept two minutes.
+     */
+    public function testAPageIsSharedNoLongerThanUntilItGoesOffline(): void
+    {
+        $page = $this->createPage('Page qui part bientôt');
+        $page->setUnpublishAt($this->secondsFromNow(120))->save();
+
+        $sharedMaxAge = $this->sharedMaxAgeWithATtlOf(600, CacheTags::forPage((int) $page->getId()));
+
+        self::assertNotNull($sharedMaxAge, 'The page was not shared: the test proves nothing.');
+        self::assertLessThanOrEqual(120, $sharedMaxAge);
+        self::assertGreaterThan(100, $sharedMaxAge);
+    }
+
+    /**
+     * The menus, the lists and the breadcrumb of a page show only the pages
+     * online: any page of the site that arrives or leaves changes it.
+     */
+    public function testAPageIsSharedNoLongerThanUntilAnotherPageArrives(): void
+    {
+        $this->createPage('Page qui arrive bientôt')->setPublishAt($this->secondsFromNow(120))->save();
+
+        $sharedMaxAge = $this->sharedMaxAgeWithATtlOf(600, CacheTags::forPage(12));
+
+        self::assertNotNull($sharedMaxAge, 'The page was not shared: the test proves nothing.');
+        self::assertLessThanOrEqual(120, $sharedMaxAge);
+    }
+
+    /**
+     * An address on the allow list sees the real site without a session: a
+     * proxy would keep that page and serve it to everyone, past the closed
+     * site. A page of the shop too.
+     *
+     * @param list<string>|null $tags
+     */
+    #[DataProvider('pagesServedDuringMaintenance')]
+    public function testNothingIsSharedWhileTheSiteIsUnderMaintenance(?array $tags): void
+    {
+        $ttl = TheliaCMS::getConfigValue(PageCachePolicy::TTL_SETTING, '0');
+        $maintenance = TheliaCMS::getConfigValue(CmsSettings::MAINTENANCE_ACTIVE, '0');
+        TheliaCMS::setConfigValue(PageCachePolicy::TTL_SETTING, '600');
+        TheliaCMS::setConfigValue(CmsSettings::MAINTENANCE_ACTIVE, '1');
+
+        try {
+            $response = $this->respond($tags);
+        } finally {
+            TheliaCMS::setConfigValue(PageCachePolicy::TTL_SETTING, (string) $ttl);
+            TheliaCMS::setConfigValue(CmsSettings::MAINTENANCE_ACTIVE, (string) $maintenance);
+        }
+
+        self::assertTrue($response->headers->hasCacheControlDirective('no-store'));
+        self::assertTrue($response->headers->hasCacheControlDirective('private'));
+        self::assertFalse($response->headers->hasCacheControlDirective('s-maxage'));
+    }
+
+    /**
+     * @return iterable<string, array{list<string>|null}>
+     */
+    public static function pagesServedDuringMaintenance(): iterable
+    {
+        yield 'a page of the module' => [CacheTags::forPage(12)];
+        yield 'a page of the shop' => [null];
+    }
+
     public function testAListReadFromATemplateFilesThePageUnderIt(): void
     {
         // The kernel of the suite may already hold a main request: the tags
@@ -114,6 +186,34 @@ final class PageCacheHeadersTest extends CmsIntegrationTestCase
         }
 
         self::assertSame([CacheTags::partial(PageListPartial::NAME)], $request->attributes->get(PageCacheListener::SHOWN_TAGS_ATTRIBUTE));
+    }
+
+    /**
+     * @param list<string> $tags
+     */
+    private function sharedMaxAgeWithATtlOf(int $seconds, array $tags): ?int
+    {
+        $ttl = TheliaCMS::getConfigValue(PageCachePolicy::TTL_SETTING, '0');
+        TheliaCMS::setConfigValue(PageCachePolicy::TTL_SETTING, (string) $seconds);
+
+        try {
+            $response = $this->respond($tags);
+        } finally {
+            TheliaCMS::setConfigValue(PageCachePolicy::TTL_SETTING, (string) $ttl);
+        }
+
+        $sharedMaxAge = $response->headers->getCacheControlDirective('s-maxage');
+
+        return null === $sharedMaxAge ? null : (int) $sharedMaxAge;
+    }
+
+    /**
+     * To the second: the column keeps no fraction, and MySQL rounds one where
+     * MariaDB cuts it.
+     */
+    private function secondsFromNow(int $seconds): \DateTimeImmutable
+    {
+        return new \DateTimeImmutable(date('Y-m-d H:i:s', time() + $seconds));
     }
 
     /**

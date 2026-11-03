@@ -65,6 +65,7 @@ use TheliaCMS\Model\CmsPageSearchQuery;
 use TheliaCMS\Page\CmsUrlService;
 use TheliaCMS\Page\Field\FieldDefinitions;
 use TheliaCMS\Page\Field\InvalidFieldsException;
+use TheliaCMS\Page\PageInvalidator;
 use TheliaCMS\Page\PageTagColor;
 use TheliaCMS\Page\PageTagName;
 use TheliaCMS\Page\PageTagWriter;
@@ -72,7 +73,6 @@ use TheliaCMS\Page\PageTypeCode;
 use TheliaCMS\Page\PageTypeRepository;
 use TheliaCMS\Page\PageTypeWriter;
 use TheliaCMS\Partial\Definition\FormPartial;
-use TheliaCMS\Partial\Definition\PageListPartial;
 use TheliaCMS\Partial\PartialCache;
 use TheliaCMS\Search\SearchTextExtractor;
 use TheliaCMS\Settings\CmsSettings;
@@ -108,6 +108,7 @@ final readonly class SiteImporter
         private SectionCatalog $catalog,
         private PartialCache $partials,
         private CachePurger $httpCache,
+        private PageInvalidator $pages,
         private ?SiteComponentRepository $components = null,
         private SiteComponentValidator $componentValidator = new SiteComponentValidator(),
         private CatalogueItemKeys $itemKeys = new CatalogueItemKeys(),
@@ -166,8 +167,9 @@ final readonly class SiteImporter
 
         // Pages, menus, forms, settings: an import may change any page of the
         // site, the one case where the whole of it is dropped.
+        // The lists of pages, the sitemap and the next scheduled change.
         $this->menuCache->invalidate();
-        $this->partials->invalidate(PageListPartial::NAME);
+        $this->pages->listsChanged();
         $this->partials->invalidate(FormPartial::NAME);
         $this->httpCache->purge([CacheTags::SITE]);
 

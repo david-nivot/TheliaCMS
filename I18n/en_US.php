@@ -406,7 +406,7 @@ return [
     'One or several email addresses, separated by commas. Leave empty to only store the answers.' => 'One or several email addresses, separated by commas. Leave empty to only store the answers.',
     'One per line, in the language being edited.' => 'One per line, in the language being edited.',
     'Online' => 'Online',
-    'Only applies to a visitor with no session, and only if a proxy or a CDN sits in front of the site. Set 0 if there is none.' => 'Only applies to a visitor with no session, and only if a proxy or a CDN sits in front of the site. Set 0 if there is none.',
+    'Only applies to a visitor with no session, and only if a proxy or a CDN sits in front of the site. Set 0 if there is none. Shorter when a page goes online or offline sooner, and nothing is kept while the site is closed.' => 'Only applies to a visitor with no session, and only if a proxy or a CDN sits in front of the site. Set 0 if there is none. Shorter when a page goes online or offline sooner, and nothing is kept while the site is closed.',
     'Only fill this in to point search engines at another page.' => 'Only fill this in to point search engines at another page.',
     'Only JPEG, PNG and WebP images can be uploaded.' => 'Only JPEG, PNG and WebP images can be uploaded.',
     'Only shown here, to tell your menus apart.' => 'Only shown here, to tell your menus apart.',

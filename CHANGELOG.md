@@ -25,6 +25,16 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   screen, and matched no translation. The sentence now travels with its values
   apart, and the screen translates it; the generator still reads it in
   English.
+- **A shared cache lets a page go on time.** A page was shared for the whole
+  TTL even when it, or any page it shows in a menu or a list, was scheduled to
+  go online or offline sooner: a page unpublished in five minutes stayed in the
+  proxy for the rest of the hour. `s-maxage` now stops at the next scheduled
+  date of a page of the site, the TTL of the shared cache of the core included.
+- **Nothing is shared while the site is closed for maintenance.** An address
+  on the allow list, without a session, was served the real site as `public`:
+  a proxy kept it and served it to everybody in place of the closed site.
+- **An import empties the kept sitemap.** It stayed as it was before the import
+  until it expired.
 
 ## [2.9.0] - 2026-11-03
 

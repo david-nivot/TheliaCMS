@@ -74,7 +74,7 @@ final class CmsSettingsType extends AbstractType
                 'label' => 'Seconds a shared cache may keep a page',
                 'required' => false,
                 'attr' => ['min' => 0, 'max' => PageCachePolicy::MAX_TTL],
-                'help' => 'Only applies to a visitor with no session, and only if a proxy or a CDN sits in front of the site. Set 0 if there is none.',
+                'help' => 'Only applies to a visitor with no session, and only if a proxy or a CDN sits in front of the site. Set 0 if there is none. Shorter when a page goes online or offline sooner, and nothing is kept while the site is closed.',
             ])
             ->add('maintenanceActive', CheckboxType::class, [
                 'label' => 'Close the site for maintenance',
