@@ -40,6 +40,7 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Fixed
 
+- The preview of the content screen keeps its place when a section is changed, moved, duplicated or removed by hand: the section stays where it stood instead of the preview going back to the top of the page.
 - The button to the toolkit on the components screen also shows where the theme opens its toolkit with `THEME_TOOLKIT`, as the toolkit itself does, and no longer only in debug.
 - The color fields of a tag no longer read "optional": the color inputs always hold a color, the box says whether the tag has one, and its help sits under it.
 
