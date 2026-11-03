@@ -96,6 +96,14 @@ final class MediaUploadScreenTest extends AdminScreenTestCase
         self::assertSame(min(CmsMediaType::MAX_IMAGE_BYTES, (int) UploadedFile::getMaxFilesize()), $announced);
     }
 
+    public function testAFileTheScreenRefusesBeforeSendingIsToldTheLimitThatStopsIt(): void
+    {
+        $messages = json_decode((string) $this->screen(self::LIST)->filter('form[data-cms-media-upload]')->attr('data-messages'), true, flags: \JSON_THROW_ON_ERROR);
+        $refusal = CmsMediaType::MAX_IMAGE_BYTES <= (int) UploadedFile::getMaxFilesize() ? MediaUploadRefusal::TooHeavy : MediaUploadRefusal::TooLarge;
+
+        self::assertSame($this->getService(TranslatorInterface::class)->trans($refusal->message(), [], TheliaCMS::DOMAIN_NAME), $messages['tooLarge']);
+    }
+
     public function testTheQueueOfASendingHoldsTheImagesOfThatSendingOnly(): void
     {
         $older = (new LibraryImage())->setFileName('plus-ancienne.jpg');

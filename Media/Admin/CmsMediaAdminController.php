@@ -85,6 +85,9 @@ final readonly class CmsMediaAdminController
             'has_library' => $tally->total > 0,
             'accepted_mime_types' => implode(',', CmsMediaType::ACCEPTED_MIME_TYPES),
             'max_upload_size' => min(CmsMediaType::MAX_IMAGE_BYTES, (int) UploadedFile::getMaxFilesize()),
+            // The screen refuses a file above that size before sending it: it
+            // names the limit that stops it, the ceiling of the module or PHP's.
+            'max_upload_refusal' => (CmsMediaType::MAX_IMAGE_BYTES <= (int) UploadedFile::getMaxFilesize() ? MediaUploadRefusal::TooHeavy : MediaUploadRefusal::TooLarge)->message(),
             'assets_version' => substr(hash('xxh3', (string) @filemtime(__DIR__.'/../../templates/backOffice/default-twig/assets/media-upload.js').(string) @filemtime(__DIR__.'/../../templates/backOffice/default-twig/assets/media-list.js')), 0, 12),
             'edit_locale' => $lang->getLocale(),
             'edit_language_id' => $lang->getId(),
