@@ -135,7 +135,7 @@ final class PageTypeFieldType extends AbstractType
         try {
             FieldDefinition::fromArray(self::definition((array) $event->getData(), 'x'));
         } catch (InvalidFieldsException $exception) {
-            foreach ($exception->problems as $problem) {
+            foreach ($exception->translated($this->translator) as $problem) {
                 $form->addError(new FormError($problem));
             }
         }

@@ -53,7 +53,8 @@ jobs:
     # module checked out in local/modules/TheliaCMS. Its two PHPUnit
     # configurations bootstrap from that place (../../../vendor/autoload.php and
     # ../../../tests/bootstrap.php). One more run uses the lowest release of
-    # Thelia composer.json accepts, with the themes that release requires.
+    # Thelia composer.json accepts, with the themes that release requires, and
+    # one follows the newest release line (see "Resolve the version of Thelia").
     name: Tests (PHP ${{ matrix.php }}, Thelia ${{ matrix.thelia }})
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
@@ -66,17 +67,43 @@ jobs:
           # The floor of "thelia/core": "^3.3" in composer.json.
           - php: '8.3'
             thelia: '3.3.0'
+          # The newest release line: its newest tag once it has one, else its
+          # maintenance branch, else main, which carries it until it is cut.
+          # Move it to the next line when main moves on.
+          - php: '8.3'
+            thelia: '3.4'
     timeout-minutes: 30
     env:
       # Without a token, Flex skips the thelia/thelia-recipes endpoint in silence
       # and the GitHub archives of the theme branches are rate limited.
       COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ github.token }}"}}'
     steps:
+      - name: Resolve the version of Thelia
+        id: thelia
+        env:
+          THELIA_VERSION: ${{ matrix.thelia }}
+        run: |
+          ref="$THELIA_VERSION"
+          if [[ "$THELIA_VERSION" =~ ^[0-9]+\.[0-9]+$ ]]; then
+            remote=https://github.com/thelia/thelia.git
+            tag=$(git ls-remote --tags --refs "$remote" "refs/tags/$THELIA_VERSION.*" \
+              | awk -F/ '{print $3}' | grep -E "^${THELIA_VERSION//./\\.}\.[0-9]+$" | sort -V | tail -n 1 || true)
+            if [ -n "$tag" ]; then
+              ref="$tag"
+            elif git ls-remote --exit-code --heads "$remote" "$THELIA_VERSION" > /dev/null; then
+              ref="$THELIA_VERSION"
+            else
+              ref=main
+            fi
+          fi
+          echo "Thelia $THELIA_VERSION runs on $ref"
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
       - name: Check out Thelia
         uses: actions/checkout@v4
         with:
           repository: thelia/thelia
-          ref: ${{ matrix.thelia }}
+          ref: ${{ steps.thelia.outputs.ref }}
 
       - name: Check out the module
         uses: actions/checkout@v4
@@ -131,7 +158,7 @@ jobs:
         # dependencies are required from it here, every package but PHP, the
         # core (the checkout above) and the installer.
         env:
-          THELIA_REF: ${{ matrix.thelia }}
+          THELIA_REF: ${{ steps.thelia.outputs.ref }}
         run: |
           # shellcheck disable=SC2016
           requirements=$(php -r '

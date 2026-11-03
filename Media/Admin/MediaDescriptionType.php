@@ -21,6 +21,7 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormEvents;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\Length;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * What the describe queue asks of an image: what it shows, or that it shows
@@ -28,6 +29,11 @@ use Symfony\Component\Validator\Constraints\Length;
  */
 final class MediaDescriptionType extends AbstractType
 {
+    public function __construct(
+        private readonly TranslatorInterface $translator,
+    ) {
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
@@ -42,7 +48,7 @@ final class MediaDescriptionType extends AbstractType
                 'label' => 'This image is decorative',
                 'required' => false,
             ])
-            ->addEventListener(FormEvents::SUBMIT, CmsMediaType::requireAltUnlessDecorative());
+            ->addEventListener(FormEvents::SUBMIT, CmsMediaType::requireAltUnlessDecorative($this->translator));
     }
 
     public function configureOptions(OptionsResolver $resolver): void

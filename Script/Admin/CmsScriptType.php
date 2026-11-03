@@ -23,16 +23,27 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use TheliaCMS\Script\ScriptPlacement;
+use TheliaCMS\TheliaCMS;
 
+/**
+ * The messages of the constraints are translated here: the validator looks
+ * them up in the `validators` domain, where the module has no catalogue.
+ */
 final class CmsScriptType extends AbstractType
 {
+    public function __construct(
+        private readonly TranslatorInterface $translator,
+    ) {
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
             ->add('title', TextType::class, [
                 'label' => 'Name',
-                'constraints' => [new NotBlank(message: 'Give this snippet a name you will recognise in six months.'), new Length(max: 100)],
+                'constraints' => [new NotBlank(message: $this->translate('Give this snippet a name you will recognise in six months.')), new Length(max: 100)],
                 'help' => 'Only shown here. "Analytics", "Live chat", "Ads pixel".',
             ])
             ->add('placement', ChoiceType::class, [
@@ -68,5 +79,10 @@ final class CmsScriptType extends AbstractType
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults(['translation_domain' => 'theliacms']);
+    }
+
+    private function translate(string $message): string
+    {
+        return $this->translator->trans($message, [], TheliaCMS::DOMAIN_NAME);
     }
 }

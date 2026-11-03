@@ -14,10 +14,22 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Page;
 
+use TheliaCMS\Locale\TranslatableText;
+
 /**
  * The fixed address typed for a page cannot be one: malformed, reserved, or
  * the address of another object of the site.
  */
 final class FixedAddressException extends \InvalidArgumentException
 {
+    public function __construct(
+        public readonly TranslatableText $text,
+    ) {
+        parent::__construct((string) $text);
+    }
+
+    public static function because(string $template, string|int|float ...$values): self
+    {
+        return new self(TranslatableText::of($template, ...$values));
+    }
 }

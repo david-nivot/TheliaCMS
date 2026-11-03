@@ -21,9 +21,20 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Validator\Constraints\Regex;
+use Symfony\Contracts\Translation\TranslatorInterface;
+use TheliaCMS\TheliaCMS;
 
+/**
+ * The messages of the constraints are translated here: the validator looks
+ * them up in the `validators` domain, where the module has no catalogue.
+ */
 final class CmsMenuType extends AbstractType
 {
+    public function __construct(
+        private readonly TranslatorInterface $translator,
+    ) {
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
@@ -41,7 +52,7 @@ final class CmsMenuType extends AbstractType
                 'constraints' => [
                     new NotBlank(),
                     new Length(max: 50),
-                    new Regex(pattern: '/^[a-z0-9][a-z0-9-]*$/', message: 'Use lowercase letters, digits and dashes only.'),
+                    new Regex(pattern: '/^[a-z0-9][a-z0-9-]*$/', message: $this->translate('Use lowercase letters, digits and dashes only.')),
                 ],
             ]);
     }
@@ -50,5 +61,10 @@ final class CmsMenuType extends AbstractType
     {
         $resolver->setDefaults(['translation_domain' => 'theliacms', 'code_locked' => false]);
         $resolver->setAllowedTypes('code_locked', 'bool');
+    }
+
+    private function translate(string $message): string
+    {
+        return $this->translator->trans($message, [], TheliaCMS::DOMAIN_NAME);
     }
 }
