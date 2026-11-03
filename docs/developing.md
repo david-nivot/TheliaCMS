@@ -106,6 +106,11 @@ shows how to test an update, outside a transaction.
   (`local/library/images/`), the test database being separate but not the
   disk: remove what it left behind, or the directory shows files no row
   names.
+- The cache pool of the test environment lives outside the transaction that takes
+  the rows back. A test that writes pages without the writer (`->save()`) and
+  then reads the sitemap must empty `SitemapCache::invalidate()` itself, in
+  `setUp()` and after the direct write, as `SitemapThemeHookTest` does; through
+  the writer, `PageInvalidator` does it.
 - A test is seen red once, by breaking the code it covers, before it is kept.
   For a template, that means `touch` and `var/cache/test` removed before and
   after the sabotage (see above).
