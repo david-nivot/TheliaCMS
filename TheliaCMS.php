@@ -47,6 +47,7 @@ use TheliaCMS\Security\CmsAdminResourcesCompiler;
 use TheliaCMS\Security\CmsResources;
 use TheliaCMS\Seo\CmsPageHreflangListener;
 use TheliaCMS\Seo\CmsPageSeoElement;
+use TheliaCMS\Seo\PageCanonicalListener;
 use TheliaCMS\Seo\StandInPageCanonicalListener;
 // The class CmsPageIndex extends. Importing it costs nothing when TntSearch is
 // absent, and without the import the guard below would name TheliaCMS\BaseIndex.
@@ -67,6 +68,13 @@ class TheliaCMS extends BaseModule
      * is how those readers are told the two do not agree.
      */
     public const string STAND_IN_PAGE_ATTRIBUTE = '_cms_stand_in_page_id';
+
+    /**
+     * The canonical address the editor typed for the page a response renders,
+     * set before it is rendered: the head of the theme asks SEOne for it
+     * halfway through the rendering, and PageCanonicalListener answers.
+     */
+    public const string PAGE_CANONICAL_ATTRIBUTE = '_cms_page_canonical';
 
     public function preActivation(?ConnectionInterface $con = null): bool
     {
@@ -417,6 +425,10 @@ class TheliaCMS extends BaseModule
                 ->autoconfigure(true);
 
             $servicesConfigurator->set(StandInPageCanonicalListener::class)
+                ->autowire(true)
+                ->autoconfigure(true);
+
+            $servicesConfigurator->set(PageCanonicalListener::class)
                 ->autowire(true)
                 ->autoconfigure(true);
         }
