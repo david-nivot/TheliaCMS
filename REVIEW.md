@@ -20,6 +20,7 @@
 - `json_decode()` / `json_encode()` always use `JSON_THROW_ON_ERROR`
 - Back-office forms and actions carry a CSRF token
 - New translatable strings exist in every locale of `I18n/` (en_US, fr_FR)
+- A message given to a constraint (`message:`) or to a `FormError` is translated in the domain of the module first (`TheliaCMS::DOMAIN_NAME`): the validator looks the first up in `validators`, the form theme prints the second as it is
 - A visible change adds its entry under `[Unreleased]` in `CHANGELOG.md`
 
 ## Style

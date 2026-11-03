@@ -134,6 +134,10 @@ shows how to test an update, outside a transaction.
   nobody. `AiGatewayInterface` and `ReadUrlTool` are public for that. A service is
   replaced once per kernel: install a delegating fake in `setUp()` and change
   what it delegates to.
+- The translator of Thelia takes its language from the session, not from its
+  own locale: `setLocale()` changes nothing. A test that reads a message in
+  French sets the language of the session of the test request
+  (`FrenchFormMessagesTest`).
 - The parser of Thelia sets the `app` global of Twig at the first render of
   the process, with the request of that moment. A screen test that renders a
   section through the writer before it asks for a screen leaves `app.request`

@@ -23,10 +23,21 @@ use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\Length;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use TheliaCMS\Consent\ConsentSettings;
+use TheliaCMS\TheliaCMS;
 
+/**
+ * The messages of the form errors are translated here: the form theme
+ * prints them as they are.
+ */
 final class ConsentSettingsType extends AbstractType
 {
+    public function __construct(
+        private readonly TranslatorInterface $translator,
+    ) {
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
@@ -73,7 +84,7 @@ final class ConsentSettingsType extends AbstractType
         $decoded = json_decode($raw, true);
 
         if (!\is_array($decoded)) {
-            $event->getForm()->get('consentMap')->addError(new FormError('This is not valid JSON.'));
+            $event->getForm()->get('consentMap')->addError(new FormError($this->translate('This is not valid JSON.')));
 
             return;
         }
@@ -90,10 +101,15 @@ final class ConsentSettingsType extends AbstractType
 
         if ([] !== $unknown) {
             $event->getForm()->get('consentMap')->addError(new FormError(\sprintf(
-                'Not a Consent Mode signal: %s. Use %s.',
+                $this->translate('Not a Consent Mode signal: %s. Use %s.'),
                 implode(', ', $unknown),
                 implode(', ', ConsentSettings::CONSENT_MODE_SIGNALS),
             )));
         }
+    }
+
+    private function translate(string $message): string
+    {
+        return $this->translator->trans($message, [], TheliaCMS::DOMAIN_NAME);
     }
 }

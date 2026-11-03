@@ -25,14 +25,21 @@ use Symfony\Component\Form\FormEvents;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\Length;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use TheliaCMS\Menu\MenuAddress;
 use TheliaCMS\Menu\MenuTargetType;
 use TheliaCMS\Menu\MenuTree;
+use TheliaCMS\TheliaCMS;
 
+/**
+ * The messages of the form errors are translated here: the form theme
+ * prints them as they are.
+ */
 final class CmsMenuItemType extends AbstractType
 {
     public function __construct(
         private readonly MenuAddress $addresses,
+        private readonly TranslatorInterface $translator,
     ) {
     }
 
@@ -171,7 +178,7 @@ final class CmsMenuItemType extends AbstractType
     private function requireField(FormInterface $form, string $field, array $data, string $message): void
     {
         if ('' === trim((string) ($data[$field] ?? ''))) {
-            $form->get($field)->addError(new FormError($message));
+            $form->get($field)->addError(new FormError($this->translate($message)));
         }
     }
 
@@ -183,13 +190,18 @@ final class CmsMenuItemType extends AbstractType
         $address = trim((string) ($data['url'] ?? ''));
 
         if ('' === $address) {
-            $form->get('url')->addError(new FormError('Type the address this entry points at.'));
+            $form->get('url')->addError(new FormError($this->translate('Type the address this entry points at.')));
 
             return;
         }
 
         if (null === $this->addresses->normalize($address)) {
-            $form->get('url')->addError(new FormError('This address cannot be used. Start it with https://, with / for a page of this site, or with # for an anchor.'));
+            $form->get('url')->addError(new FormError($this->translate('This address cannot be used. Start it with https://, with / for a page of this site, or with # for an anchor.')));
         }
+    }
+
+    private function translate(string $message): string
+    {
+        return $this->translator->trans($message, [], TheliaCMS::DOMAIN_NAME);
     }
 }

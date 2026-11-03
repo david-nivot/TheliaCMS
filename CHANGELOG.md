@@ -7,6 +7,18 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Fixed
+
+- **The messages of the back-office forms read in the language of the back
+  office.** Twenty messages stayed in English on a French screen though their
+  translation was there: the brief, a change asked of a document, the language
+  to translate from, the name of a snippet, the codes of a menu, a form and a
+  field, the answers of a drop-down, the recipients of a form, the target and
+  the address of a menu entry, the consent map, the maintenance allowlist and
+  the description of an image. The validator looks a constraint message up in
+  the `validators` domain and the form theme prints a form error as it is;
+  each form now translates its own messages.
+
 ## [2.9.0] - 2026-11-03
 
 ### Added

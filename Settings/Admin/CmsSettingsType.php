@@ -24,16 +24,23 @@ use Symfony\Component\Form\FormError;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use TheliaCMS\Generation\GeneratorSettings;
 use TheliaCMS\Http\PageCachePolicy;
 use TheliaCMS\Page\TrashRetention;
 use TheliaCMS\Settings\IpAllowlist;
 use TheliaCMS\Settings\SiteMode;
+use TheliaCMS\TheliaCMS;
 
+/**
+ * The messages of the form errors are translated here: the form theme
+ * prints them as they are.
+ */
 final class CmsSettingsType extends AbstractType
 {
     public function __construct(
         private readonly IpAllowlist $allowlist,
+        private readonly TranslatorInterface $translator,
     ) {
     }
 
@@ -162,8 +169,13 @@ final class CmsSettingsType extends AbstractType
 
         if ([] !== $rejected) {
             $event->getForm()->get('maintenanceAllowlist')->addError(new FormError(
-                \sprintf('This is not an IP address or a range: %s', implode(', ', $rejected))
+                \sprintf($this->translate('This is not an IP address or a range: %s'), implode(', ', $rejected))
             ));
         }
+    }
+
+    private function translate(string $message): string
+    {
+        return $this->translator->trans($message, [], TheliaCMS::DOMAIN_NAME);
     }
 }

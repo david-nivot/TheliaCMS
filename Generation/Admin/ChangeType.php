@@ -21,13 +21,23 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
+use Symfony\Contracts\Translation\TranslatorInterface;
+use TheliaCMS\TheliaCMS;
 
 /**
  * A change asked on the document the target holds: on the whole of it, or
  * on one section when the form names one.
+ *
+ * The messages of the constraints are translated here: the validator looks
+ * them up in the `validators` domain, where the module has no catalogue.
  */
 final class ChangeType extends AbstractType
 {
+    public function __construct(
+        private readonly TranslatorInterface $translator,
+    ) {
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder->add('text', TextareaType::class, [
@@ -36,7 +46,7 @@ final class ChangeType extends AbstractType
                 'rows' => $options['section'] ? 2 : 4,
                 'placeholder' => $options['section'] ? 'Shorter, warmer, with the opening hours…' : 'Make the opening shorter, add a question about delivery, swap the figures for…',
             ],
-            'constraints' => [new NotBlank(message: 'Say what should change.'), new Length(max: 5000)],
+            'constraints' => [new NotBlank(message: $this->translate('Say what should change.')), new Length(max: 5000)],
         ]);
 
         if ($options['section']) {
@@ -60,5 +70,10 @@ final class ChangeType extends AbstractType
     public function getBlockPrefix(): string
     {
         return 'cms_change';
+    }
+
+    private function translate(string $message): string
+    {
+        return $this->translator->trans($message, [], TheliaCMS::DOMAIN_NAME);
     }
 }

@@ -29,8 +29,10 @@ use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Validator\Constraints\Range;
 use Symfony\Component\Validator\Constraints\Regex;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use TheliaCMS\Form\FieldChoices;
 use TheliaCMS\Form\FieldType;
+use TheliaCMS\TheliaCMS;
 
 /**
  * One field of a form.
@@ -39,9 +41,19 @@ use TheliaCMS\Form\FieldType;
  * select" is not something HTML validation can express — it would block on the
  * fields that do not apply. The form is posted without it and the server says
  * what is missing, field by field.
+ *
+ * The messages of the constraints and of the form errors are translated
+ * here: the validator looks the first up in the `validators` domain, where
+ * the module has no catalogue, and the form theme prints the second as they
+ * are.
  */
 final class CmsFormFieldType extends AbstractType
 {
+    public function __construct(
+        private readonly TranslatorInterface $translator,
+    ) {
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $types = [];
@@ -67,7 +79,7 @@ final class CmsFormFieldType extends AbstractType
                 'constraints' => [
                     new NotBlank(),
                     new Length(max: 50),
-                    new Regex(pattern: '/^[a-z][a-z0-9_]*$/', message: 'Start with a letter, then lowercase letters, digits and underscores.'),
+                    new Regex(pattern: '/^[a-z][a-z0-9_]*$/', message: $this->translate('Start with a letter, then lowercase letters, digits and underscores.')),
                 ],
             ])
             ->add('required', CheckboxType::class, [
@@ -128,7 +140,12 @@ final class CmsFormFieldType extends AbstractType
         }
 
         if ([] === FieldChoices::parse($data['choices'] ?? null)) {
-            $event->getForm()->get('choices')->addError(new FormError('Write at least one answer, one per line.'));
+            $event->getForm()->get('choices')->addError(new FormError($this->translate('Write at least one answer, one per line.')));
         }
+    }
+
+    private function translate(string $message): string
+    {
+        return $this->translator->trans($message, [], TheliaCMS::DOMAIN_NAME);
     }
 }

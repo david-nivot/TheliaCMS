@@ -117,7 +117,7 @@ final class CmsMediaType extends AbstractType
                 'constraints' => [self::imageConstraint($this->translator)],
                 'help' => 'The new file keeps the same address, so the pages using this image show it right away.',
             ])
-            ->addEventListener(FormEvents::SUBMIT, self::requireAltUnlessDecorative());
+            ->addEventListener(FormEvents::SUBMIT, self::requireAltUnlessDecorative($this->translator));
     }
 
     public function configureOptions(OptionsResolver $resolver): void
@@ -128,11 +128,12 @@ final class CmsMediaType extends AbstractType
     /**
      * Alternative text is mandatory unless the image is declared decorative —
      * and that declaration arrives in the same submission, so the rule cannot
-     * be a constraint on the field.
+     * be a constraint on the field. Its message is translated here: the form
+     * theme prints a form error as it is.
      */
-    public static function requireAltUnlessDecorative(): \Closure
+    public static function requireAltUnlessDecorative(?TranslatorInterface $translator = null): \Closure
     {
-        return static function (FormEvent $event): void {
+        return static function (FormEvent $event) use ($translator): void {
             $data = $event->getData();
 
             if (true === ($data['decorative'] ?? false)) {
@@ -143,8 +144,9 @@ final class CmsMediaType extends AbstractType
             }
 
             if ('' === trim((string) ($data['alt'] ?? ''))) {
+                $message = 'Describe the image, or tick "This image is decorative".';
                 $event->getForm()->get('alt')->addError(new FormError(
-                    'Describe the image, or tick "This image is decorative".'
+                    null === $translator ? $message : $translator->trans($message, [], TheliaCMS::DOMAIN_NAME),
                 ));
             }
         };
