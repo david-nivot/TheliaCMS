@@ -33,6 +33,9 @@ use TheliaLibrary\Model\LibraryImageQuery;
  */
 final readonly class PublishedPageRepository
 {
+    /** The cards of the page form, the ones X and the networks reading its tags know. */
+    public const array TWITTER_CARDS = ['summary', 'summary_large_image'];
+
     public function __construct(
         private CmsMediaLibrary $library,
         private PageFields $fields,
@@ -77,6 +80,11 @@ final readonly class PublishedPageRepository
             tagTextColor: $this->tagColorOf($page)?->textColor(),
             fields: $this->fields->valuesOf($page, $locale),
             provenance: $content->getPublishedProvenance(),
+            ogTitle: $this->nullIfBlank($page->getOgTitle()),
+            ogDescription: $this->nullIfBlank($page->getOgDescription()),
+            ogImage: $this->libraryImage($page->getOgImageId(), $locale),
+            twitterCard: $this->twitterCardOf($page),
+            canonical: $this->nullIfBlank($page->getCanonical()),
         );
     }
 
@@ -287,6 +295,11 @@ final readonly class PublishedPageRepository
             tagTextColor: $this->tagColorOf($page)?->textColor(),
             fields: $this->fields->valuesOf($page, $locale),
             provenance: $content->getDraftProvenance(),
+            ogTitle: $this->nullIfBlank($page->getOgTitle()),
+            ogDescription: $this->nullIfBlank($page->getOgDescription()),
+            ogImage: $this->libraryImage($page->getOgImageId(), $locale),
+            twitterCard: $this->twitterCardOf($page),
+            canonical: $this->nullIfBlank($page->getCanonical()),
         );
     }
 
@@ -391,8 +404,22 @@ final readonly class PublishedPageRepository
      */
     private function imageOf(CmsPage $page, string $locale): ?PageImage
     {
-        $imageId = $page->getImageId();
+        return $this->libraryImage($page->getImageId(), $locale);
+    }
 
+    /**
+     * The card a share shows, when the page names one the networks know: a
+     * value an import or an older version left in the row is no choice.
+     */
+    private function twitterCardOf(CmsPage $page): ?string
+    {
+        $card = $page->getTwitterCard();
+
+        return \in_array($card, self::TWITTER_CARDS, true) ? $card : null;
+    }
+
+    private function libraryImage(?int $imageId, string $locale): ?PageImage
+    {
         if (null === $imageId) {
             return null;
         }

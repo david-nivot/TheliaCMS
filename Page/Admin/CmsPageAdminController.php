@@ -453,6 +453,7 @@ final readonly class CmsPageAdminController
             'metaDescription' => $page->isNew() ? null : $page->getMetaDescription(),
             'ogTitle' => $page->isNew() ? null : $page->getOgTitle(),
             'ogDescription' => $page->isNew() ? null : $page->getOgDescription(),
+            'ogImage' => $page->isNew() ? null : $page->getOgImageId(),
             'twitterCard' => $page->isNew() ? null : $page->getTwitterCard(),
             'canonical' => $page->isNew() ? null : $page->getCanonical(),
             'noindex' => $page->isNew() ? 0 : $page->getNoindex(),
@@ -498,6 +499,7 @@ final readonly class CmsPageAdminController
             ->setMetaDescription($data['metaDescription'])
             ->setOgTitle($data['ogTitle'])
             ->setOgDescription($data['ogDescription'])
+            ->setOgImageId($this->ownedImage($data['ogImage'] ?? null))
             ->setTwitterCard($data['twitterCard'])
             ->setCanonical($data['canonical'])
             ->setNoindex((int) $data['noindex'])
@@ -523,8 +525,15 @@ final readonly class CmsPageAdminController
             }
         }
 
-        // An id the screen sent is an image of the library of the CMS, or none.
-        $id = (int) ($data['image'] ?? 0);
+        return $this->ownedImage($data['image'] ?? null);
+    }
+
+    /**
+     * An id the screen sent is an image of the library of the CMS, or none.
+     */
+    private function ownedImage(mixed $id): ?int
+    {
+        $id = (int) $id;
 
         return $id > 0 && null !== $this->library->ownedImage($id) ? $id : null;
     }

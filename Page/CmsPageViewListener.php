@@ -82,6 +82,10 @@ final readonly class CmsPageViewListener
             throw new NotFoundHttpException();
         }
 
+        if (null !== $page->canonical) {
+            $request->attributes->set(TheliaCMS::PAGE_CANONICAL_ATTRIBUTE, $page->canonical);
+        }
+
         $response = new Response($this->renderer->render($page));
 
         if ($page->noindex) {

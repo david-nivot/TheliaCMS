@@ -7,6 +7,23 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Fixed
+
+- **The search engine and sharing settings of a page reach its head.** The
+  canonical address typed in the tab is the one the page names, in
+  `link rel="canonical"` and `og:url` (with SEOne). The tab gets a social
+  image, picked in the media library or sent from the disk; a share shows it,
+  else the image of the page, else the logo of the theme. The social title,
+  the social description and the Twitter card are handed to the theme in the
+  `og_title`, `og_description` and `twitter_card` blocks: they show once
+  Flexy passes these blocks to the head and SEOne prints them; until then the
+  title, the meta description and the card of the theme stay. A card other
+  than `summary` or `summary_large_image` left in a row is ignored.
+- **The image of a share is a full address.** `og:image` and `twitter:image`
+  named the image of the page by its path, which a network fetching it from
+  elsewhere cannot follow.
+- The help under the image of a page is translated.
+
 ## [2.8.3] - 2026-11-03
 
 ### Changed

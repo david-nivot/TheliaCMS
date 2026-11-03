@@ -21,7 +21,18 @@
     {% endif %}
 {% endblock %}
 
-{% block og_image %}{{ cms_page.image ? cms_page.image.url : parent() }}{% endblock %}
+{# What a share of the page shows, from its SEO tab. The image of the page
+   stands in for a social image left empty, the logo of the theme for both.
+   The title, the description and the card are read by a Flexy that hands
+   them to the head (`og_title`, `og_description`, `twitter_card`); an older
+   one ignores these blocks and keeps the title, the meta description and its
+   own card. They never call parent(): an older Flexy has no such block.
+   The library serves a path; a network fetches the image from elsewhere and
+   needs the full address. #}
+{% block og_image %}{{ cms_page.ogImage ? absolute_url(cms_page.ogImage.url) : (cms_page.image ? absolute_url(cms_page.image.url) : parent()) }}{% endblock %}
+{% block og_title %}{{ cms_page.ogTitle|default('') }}{% endblock %}
+{% block og_description %}{{ cms_page.ogDescription|default('') }}{% endblock %}
+{% block twitter_card %}{{ cms_page.twitterCard|default('') }}{% endblock %}
 {% block og_type %}article{% endblock %}
 
 {% block body_class %}cms-page cms-page--{{ cms_page.pageType }}{% endblock %}

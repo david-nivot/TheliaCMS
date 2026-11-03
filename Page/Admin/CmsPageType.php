@@ -131,11 +131,25 @@ final class CmsPageType extends AbstractType
             ->add('metaDescription', TextareaType::class, ['label' => 'Meta description', 'required' => false, 'attr' => ['rows' => 3]])
             ->add('ogTitle', TextType::class, ['label' => 'Social title', 'required' => false])
             ->add('ogDescription', TextareaType::class, ['label' => 'Social description', 'required' => false, 'attr' => ['rows' => 3]])
+            // An id of the media library, picked there by the screen like the
+            // image of the page; the controller keeps it only for an image the
+            // CMS owns.
+            ->add('ogImage', IntegerType::class, [
+                'label' => 'Social image',
+                'required' => false,
+                'help' => 'Shown when the page is shared. Without one, the image of the page.',
+                'attr' => array_filter([
+                    'min' => 0,
+                    'data-cms-image-picker' => $options['image_picker_url'],
+                    'data-cms-image-upload' => $options['allow_image_upload'] ? $options['image_upload_url'] : null,
+                ]),
+            ])
             ->add('twitterCard', ChoiceType::class, [
                 'label' => 'Twitter card',
                 'required' => false,
                 'placeholder' => 'Default',
                 'choices' => ['Summary' => 'summary', 'Summary with large image' => 'summary_large_image'],
+                'help' => 'Without a choice, the one of the theme.',
             ])
             ->add('canonical', UrlType::class, [
                 'label' => 'Canonical URL',
