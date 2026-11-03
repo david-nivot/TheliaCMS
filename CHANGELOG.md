@@ -24,6 +24,13 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   was accepted and decoded whole on every thumbnail. An image already stored
   stays as it is.
 
+### Changed
+
+- **A list of the pages of a type or of a tag reads their titles and their
+  addresses in one go.** A list of recipes asked the database for the
+  translation and the address of each page one at a time; the cost no longer
+  grows with the number of pages.
+
 ## [2.8.4] - 2026-11-03
 
 ### Fixed

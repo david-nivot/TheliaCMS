@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace TheliaCMS\Page;
 
 use Propel\Runtime\ActiveQuery\Criteria;
+use Thelia\Tools\URL;
 use TheliaCMS\Media\CmsMediaLibrary;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Model\CmsPageContentQuery;
@@ -24,6 +25,7 @@ use TheliaCMS\Model\CmsTagQuery;
 use TheliaCMS\Model\Map\CmsPageContentTableMap;
 use TheliaCMS\Page\Field\FieldDefinitions;
 use TheliaCMS\Page\Field\PageFields;
+use TheliaCMS\TheliaCMS;
 use TheliaLibrary\Model\LibraryImage;
 use TheliaLibrary\Model\LibraryImageQuery;
 
@@ -35,6 +37,9 @@ final readonly class PublishedPageRepository
 {
     /** The cards of the page form, the ones X and the networks reading its tags know. */
     public const array TWITTER_CARDS = ['summary', 'summary_large_image'];
+
+    /** Ids in one `IN` when the addresses of a list are resolved. */
+    private const int ADDRESSES_PER_QUERY = 500;
 
     public function __construct(
         private CmsMediaLibrary $library,
@@ -124,19 +129,22 @@ final readonly class PublishedPageRepository
                 ->filterByPublishedAt(null, Criteria::ISNOTNULL)
                 ->filterByPublishedHtml(null, Criteria::ISNOTNULL)
             ->endUse()
+            ->joinWithI18n($locale, Criteria::LEFT_JOIN)
             ->withColumn(CmsPageContentTableMap::COL_PUBLISHED_AT, 'content_published_at')
             ->addDescendingOrderByColumn('content_published_at')
             ->find();
+
+        $live = array_values(array_filter(
+            iterator_to_array($pages, false),
+            fn (CmsPage $page): bool => $this->isLive($page, $now),
+        ));
+        $this->preloadAddresses($live, $locale);
 
         $cards = [];
         /** @var array<string, FieldDefinitions> $definitions read once per type */
         $definitions = [];
 
-        foreach ($pages as $page) {
-            if (!$this->isLive($page, $now)) {
-                continue;
-            }
-
+        foreach ($live as $page) {
             $type = PageTypeCode::orDefault($page->getPageType());
             $definitions[$type] ??= $this->fields->definitionsOf($page);
 
@@ -192,6 +200,7 @@ final readonly class PublishedPageRepository
                 ->filterByPublishedAt(null, Criteria::ISNOTNULL)
                 ->filterByPublishedHtml(null, Criteria::ISNOTNULL)
             ->endUse()
+            ->joinWithI18n($locale, Criteria::LEFT_JOIN)
             ->withColumn(CmsPageContentTableMap::COL_PUBLISHED_AT, 'content_published_at')
             ->find();
 
@@ -228,6 +237,7 @@ final readonly class PublishedPageRepository
 
         usort($rows, static fn (array $a, array $b): int => $query->compare($a, $b, $definitions));
         $rows = \array_slice($rows, $query->offset, $query->limit);
+        $this->preloadAddresses(array_column($rows, 'page'), $locale);
 
         return array_map(function (array $row) use ($locale, $pageType): PageCard {
             $page = $row['page'];
@@ -391,6 +401,21 @@ final readonly class PublishedPageRepository
         $tag = $page->getCmsTag();
 
         return PageTagColor::fromStored($tag?->getColor(), $tag?->getTextColor());
+    }
+
+    /**
+     * Resolves the addresses of the pages in one query per batch, so that
+     * each `getUrl()` of a list finds its answer already known.
+     *
+     * @param list<CmsPage> $pages
+     */
+    private function preloadAddresses(array $pages, string $locale): void
+    {
+        $ids = array_map(static fn (CmsPage $page): int => (int) $page->getId(), $pages);
+
+        foreach (array_chunk($ids, self::ADDRESSES_PER_QUERY) as $batch) {
+            URL::getInstance()->preloadRewrittenUrls(TheliaCMS::PAGE_VIEW, $locale, $batch);
+        }
     }
 
     private function nullIfBlank(?string $value): ?string
