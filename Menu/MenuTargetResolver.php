@@ -73,7 +73,7 @@ final readonly class MenuTargetResolver
         // Same check as the front-office renderer, so a menu never links to a
         // page that answers 404: visible, inside its publication window, and
         // published in this very locale.
-        if (null === $this->pages->find($pageId, $locale)) {
+        if (!$this->pages->isReachable($pageId, $locale)) {
             return new ResolvedTarget($label ?: $title, null, MenuTargetIssue::TargetOffline, $title);
         }
 

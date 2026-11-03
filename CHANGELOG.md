@@ -44,6 +44,30 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   was accepted and decoded whole on every thumbnail. An image already stored
   stays as it is.
 
+### Changed
+
+- **A list of the pages of a type or of a tag reads their titles and their
+  addresses in one go.** A list of recipes asked the database for the
+  translation and the address of each page one at a time; the cost no longer
+  grows with the number of pages.
+- **The checks that a page is online no longer read the page.** The language
+  switcher, the hreflang tags, the menus, the home page and the privacy link of
+  a form only need to know that the page opens; they no longer read its
+  content, its image, its sharing image and its tag to find out.
+- **The sitemap is read in a few queries and kept.** It asked the database for
+  each page, each of its languages and each address; it now reads them together
+  and keeps the answer until a page is published, hidden, renamed or moved, or
+  until a scheduled publication date passes.
+
+### Fixed
+
+- **The sitemap lists only pages that can be opened.** A page with a
+  publication date but no content to show (what an import can leave) was listed
+  and answered "not found" to the search engine that followed it.
+- **The sitemap points only to the languages of the site that are active.** A
+  page also published in a language since switched off still named it as an
+  alternate version of itself.
+
 ## [2.8.4] - 2026-11-03
 
 ### Fixed

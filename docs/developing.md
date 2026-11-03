@@ -106,6 +106,20 @@ shows how to test an update, outside a transaction.
   (`local/library/images/`), the test database being separate but not the
   disk: remove what it left behind, or the directory shows files no row
   names.
+- The cache pool of the test environment lives outside the transaction that takes
+  the rows back. A test that writes pages without the writer (`->save()`) and
+  then reads the sitemap must empty `SitemapCache::invalidate()` itself, in
+  `setUp()` and after the direct write, as `SitemapThemeHookTest` does; through
+  the writer, `PageInvalidator` does it.
+- A test that counts statements (`Tests/Integration/CountsStatements.php`)
+  calls `forgetWhatWasRead()` before each measure. Propel keeps the objects it
+  has read, with their translations, and the core keeps the addresses it has
+  resolved: a page made by `createPage()` costs nothing to read again, and a
+  query asked once per page does not show.
+- The CI runs MySQL 8, the DDEV host MariaDB: a date stored with a fraction of
+  a second is rounded by the first and cut by the second, so a test comparing
+  it to the second passes on the host and fails half the time in the CI. Build
+  such a date without its fraction (`date('Y-m-d H:i:s', …)`).
 - A test is seen red once, by breaking the code it covers, before it is kept.
   For a template, that means `touch` and `var/cache/test` removed before and
   after the sabotage (see above).

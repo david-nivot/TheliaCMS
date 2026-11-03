@@ -14,6 +14,11 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Tests\Integration\Sitemap;
 
+use Thelia\Model\LangQuery;
+use TheliaCMS\Content\Document;
+use TheliaCMS\Model\CmsPageContentQuery;
+use TheliaCMS\Page\Admin\PageDraft;
+use TheliaCMS\Sitemap\SitemapCache;
 use TheliaCMS\Sitemap\SitemapThemeHook;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
 
@@ -24,6 +29,22 @@ use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
  */
 final class SitemapThemeHookTest extends CmsIntegrationTestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // The cache lives outside the transaction that takes the rows back, and
+        // these cases write rows directly: nothing else would empty it.
+        $this->emptyTheCache();
+    }
+
+    protected function tearDown(): void
+    {
+        $this->emptyTheCache();
+
+        parent::tearDown();
+    }
+
     public function testAPublishedPageIsListedWithItsPublicationDate(): void
     {
         $page = $this->createPage('Atelier de gravure');
@@ -47,6 +68,7 @@ final class SitemapThemeHookTest extends CmsIntegrationTestCase
     {
         $page = $this->createPage('Page discrète');
         $page->setLocale($this->locale())->setNoindex(1)->save();
+        $this->emptyTheCache();
 
         self::assertStringNotContainsString('page-discrete', $this->render());
     }
@@ -55,8 +77,48 @@ final class SitemapThemeHookTest extends CmsIntegrationTestCase
     {
         $page = $this->createPage('Page hors ligne');
         $page->setVisible(0)->save();
+        $this->emptyTheCache();
 
         self::assertStringNotContainsString('page-hors-ligne', $this->render());
+    }
+
+    public function testAPageWithADateButNoHtmlToServeIsNotListed(): void
+    {
+        $page = $this->createPage('Page sans rendu');
+        $this->createPage('Page avec rendu');
+        // An import that sets the date alone: the page would answer 404.
+        CmsPageContentQuery::create()->filterByPageId($page->getId())->update(['PublishedHtml' => null]);
+        $this->emptyTheCache();
+
+        $xml = $this->render();
+
+        self::assertStringNotContainsString('page-sans-rendu', $xml);
+        self::assertStringContainsString('page-avec-rendu', $xml);
+    }
+
+    public function testAnInactiveLanguageIsNotAnAlternate(): void
+    {
+        $others = $this->otherActiveLocales();
+        $other = $others[0] ?? null;
+
+        if (null === $other) {
+            self::markTestSkipped('this host has a single active language: nothing to deactivate');
+        }
+
+        $page = $this->createPage('Page en deux langues');
+        $this->writer()->saveDraft($page, $other, new PageDraft(title: 'Page in two languages'));
+        $this->writer()->saveContent($page, $other, Document::richText('<h1>Page in two languages</h1>'));
+        $this->writer()->publish($page, $other);
+
+        self::assertStringContainsString('hreflang="'.str_replace('_', '-', $other).'"', $this->render(), 'while the language is active, it is an alternate');
+
+        LangQuery::create()->filterByLocale($other)->update(['Active' => 0]);
+        $this->emptyTheCache();
+        $xml = $this->render();
+
+        self::assertStringContainsString('page-en-deux-langues', $xml);
+        self::assertStringNotContainsString('hreflang="'.str_replace('_', '-', $other).'"', $xml);
+        self::assertStringNotContainsString('page-in-two-languages', $xml);
     }
 
     public function testTheHookStaysOutOfTheCatalogueSections(): void
@@ -64,6 +126,27 @@ final class SitemapThemeHookTest extends CmsIntegrationTestCase
         $this->createPage('Atelier de moulage');
 
         self::assertSame('', $this->render(context: 'product'));
+    }
+
+    /**
+     * @return list<string> the active languages other than the one the module answers in
+     */
+    private function otherActiveLocales(): array
+    {
+        $others = [];
+
+        foreach (LangQuery::create()->filterByActive(true)->find() as $lang) {
+            if ($lang->getLocale() !== $this->locale()) {
+                $others[] = (string) $lang->getLocale();
+            }
+        }
+
+        return $others;
+    }
+
+    private function emptyTheCache(): void
+    {
+        $this->getService(SitemapCache::class)->invalidate();
     }
 
     private function render(string $context = 'content'): string
@@ -74,7 +157,7 @@ final class SitemapThemeHookTest extends CmsIntegrationTestCase
 
     private function publishedAt(int $pageId): \DateTimeInterface
     {
-        $content = \TheliaCMS\Model\CmsPageContentQuery::create()
+        $content = CmsPageContentQuery::create()
             ->filterByPageId($pageId)
             ->filterByLocale($this->locale())
             ->findOne();

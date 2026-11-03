@@ -22,6 +22,7 @@ use TheliaCMS\Menu\MenuTargetType;
 use TheliaCMS\Page\Admin\CmsPageAdminRepository;
 use TheliaCMS\Partial\Definition\PageListPartial;
 use TheliaCMS\Partial\PartialCache;
+use TheliaCMS\Sitemap\SitemapCache;
 
 /**
  * Drops what shows a page once it changed: the page itself in a shared cache,
@@ -40,6 +41,7 @@ final readonly class PageInvalidator
         private CachePurger $httpCache,
         private CmsMenuRepository $menus,
         private CmsPageAdminRepository $tree,
+        private SitemapCache $sitemap,
     ) {
     }
 
@@ -80,10 +82,11 @@ final readonly class PageInvalidator
 
     /**
      * Only the order or the content of the lists changed, such as the position
-     * of a page among its siblings.
+     * of a page among its siblings. The sitemap is a list of pages too.
      */
     public function listsChanged(): void
     {
         $this->partials->invalidate(PageListPartial::NAME);
+        $this->sitemap->invalidate();
     }
 }
