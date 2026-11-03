@@ -1,3 +1,17 @@
+<section id="getting-started">
+    <h2>Getting started</h2>
+    <p>This is the shortest way from an empty page to a page that shows in the menu. Each step points to the part that explains it.</p>
+    <ol>
+        <li>Open <strong>CMS &gt; Pages</strong> and click <em>New page</em>. Type the title, pick the parent page and the template, then click <em>Save draft</em>.</li>
+        <li>On the screen of the page, click <em>Edit content</em>.</li>
+        <li>Write the content. With the generator: say in the brief what the page should hold, then click <em>Write the draft</em>. By hand: click <em>Or add a section by hand</em> and pick a component. See <a href="#content">The content of a page</a>.</li>
+        <li>Look at the preview on the right. <em>Preview the draft</em> opens it in a new tab.</li>
+        <li>Click <em>Publish</em>, at the top of the screen. The message "The page is online." confirms it. See <a href="#publish-first-page">Publishing your first page</a>.</li>
+        <li>Open <strong>CMS &gt; Menus</strong>, then the menu you want (<code>main</code> is the main menu). Under <em>Add an entry</em>, pick <em>Page</em> in <em>This entry points at</em>, select the page and click <em>Add to the menu</em>.</li>
+    </ol>
+    <p>Each language of the site is worked on its own: pick it with the language selector before you start. If a button is greyed out or publishing is refused, see <a href="#troubleshooting">Troubleshooting</a>.</p>
+</section>
+
 <section id="overview">
     <h2>Overview</h2>
     <p>The CMS manages the pages of the site, their content and everything around them. It all sits in the <strong>CMS</strong> section of the left-hand menu, where you only see the screens your profile allows.</p>
@@ -16,140 +30,329 @@
 
 <section id="pages">
     <h2>Pages</h2>
-    <h3>Finding a page</h3>
-    <p><strong>CMS &gt; Pages</strong> shows the tree of the site one level at a time. A page holding others shows how many and opens on its chevron. <em>Find a page</em> looks for a word in the titles of the language being edited; the publication state and the visibility narrow the search. The arrows that reorder pages only appear on the tree.</p>
-    <h3>Creating and setting up a page</h3>
-    <p>In each language, a page carries a title, an address, a summary, a detailed description and its search engine settings (title and description for search engines, sharing on social networks, canonical page, instructions to robots). For every language at once, it also has a parent page, a template, a tag, an image and a publication window (an optional date to go online and one to go offline).</p>
-    <p>The <em>Image</em> tab picks the image of the page in the media library, with the picker of the sections (thumbnails, search, filters), or uploads a new one. That image is the one shown on the cards presenting the page elsewhere on the site, and when the page is shared on social networks.</p>
-    <h3>The address of a page</h3>
-    <p>The address is made of the addresses of the parent pages and the page's own one: a page "Advice" filed under "Our services" answers on <code>/our-services/advice</code>. Leave the <em>URL slug</em> field empty and it is taken from the title.</p>
-    <p>Under the field, the screen shows the whole address the page will answer on in the language being edited. <em>Regenerate from the title</em> fills the field from the title: once a page has been saved, renaming it does not change its address by itself, and the screen points out when the address no longer follows the title. When another page, or the same page in another language, already answers on an address, a number is added to it (<code>cookies-2</code>) and the screen says so. Nothing changes until you save.</p>
-    <p>Changing the address of a page, or moving it in the tree, keeps the former address as a redirection towards the new one: links already published and search engines follow. The pages under it follow too.</p>
-    <p>The <em>Fixed address</em> field gives the page a whole address, kept as typed whatever its place in the tree, such as <code>about-us.html</code>. It keeps the addresses of a former site. The screen says, as you type, whether the address is free. Clear it to go back to the built address.</p>
-    <p>A few addresses are reserved for the site itself (<code>admin</code>, <code>api</code>, <code>search</code>…) and refused.</p>
-    <h3>Writing a summary or a description from a brief</h3>
-    <p>Beside the <em>Summary</em> and the <em>Detailed description</em> of a page, and beside the summary, the description and the conclusion of a product, a category, a brand, a folder and a content, <em>Write from a brief</em> asks the generator for the text of that field. Say what it should say, and if you like its tone and its audience: the generator also reads the title, what the field already holds (to rewrite or complete it), and may search the products, categories and pages of the site to name them or link to them.</p>
-    <p>The text comes back formatted (paragraphs, bold, italic, lists, links, subheadings) and is shown first, with what it cost. <em>Replace the text</em> puts it in place of the field, <em>Insert at the cursor</em> adds it where the cursor was, <em>Cancel</em> leaves the field as it was. Nothing is saved until you save the form, as if you had typed the text. The button takes the right to use the generator; its effort and length are set under <strong>CMS &gt; Settings</strong>, its model in the AI settings of Thelia.</p>
-    <h3>Home page, duplicating, the bin</h3>
+    <h3 id="pages-list">Finding a page</h3>
+    <p><strong>CMS &gt; Pages</strong> shows the tree of the site one level at a time. A page that holds others shows how many and opens on its arrow. The <em>Find a page</em> field looks for a word in the titles of the language edited, and the publication state or the visibility narrow the search. The arrows that change the order of pages only show on the tree.</p>
+    <figure class="figure d-block my-3">
+        <img class="figure-img img-fluid rounded border" src="{{ module_asset('TheliaCMS', 'assets/documentation/pages-list.en_US.png') }}" alt="The list of pages: the tree of the site, with the title, the publication state, the address and the actions of each page." loading="lazy">
+        <figcaption class="figure-caption">The list of pages: one row per page, its actions on the right.</figcaption>
+    </figure>
+    <p>Each row shows the state of the page in the language edited: <em>Draft</em>, <em>Scheduled</em>, <em>Published</em>, <em>Modified since publication</em> or <em>Unpublished</em>. <em>Hide</em> takes the page off the site, in every language; <em>Show</em> puts it back.</p>
+
+    <h3 id="page-settings">Creating and setting up a page</h3>
+    <p>A click on the title of a page opens its settings, in tabs: <em>General</em>, the <em>Fields</em> of the template when it has some, <em>Search engines and sharing</em>, <em>Image</em> and <em>Documents</em>. A page carries, in each language: a title, an address, a summary, a detailed description and its search engine information (title and description for search engines, social sharing, canonical page, instructions to robots). It also has, for all languages: a parent page, a template, a tag, an image and a publication period (<em>Publish on</em> and <em>Unpublish on</em>, both optional).</p>
+    <p>Settings are live as soon as they are saved: only the content goes through a draft and a publication. The <em>Image</em> tab picks the image of the page in the media library, with the same picker as the sections (thumbnails, search, filters), or sends a new one. This image is the one on the cards that present the page elsewhere on the site and in social sharing.</p>
+
+    <h3 id="page-address">The address of a page</h3>
+    <p>The address is made of those of the parent pages and the page's own address: a "Consulting" page filed under "Our services" answers on <code>/our-services/consulting</code>. Leave the <em>Page address</em> field empty and it is taken from the title.</p>
     <ul>
-        <li><em>Set as home page</em>, on the list, serves the page on <code>/</code>. Its own address then redirects to the home page.</li>
-        <li><em>Duplicate</em> makes a hidden copy of the page, with its tag and its content as a draft, to read over before publishing it.</li>
-        <li>A deleted page goes to the <strong>Bin</strong> (<strong>CMS &gt; Pages &gt; Bin</strong>) with the pages under it. It stays there for 30 days, a duration the settings change, and can be restored until then. After that it is deleted for good, content and addresses included.</li>
+        <li>Under the field, the screen shows the full address the page will answer on in the language edited. <em>Regenerate from the title</em> fills the field from the title: once the page is saved, renaming it does not change its address by itself, and the screen warns when the address no longer follows the title.</li>
+        <li>When another page, or the same page in another language, already answers on an address, a number is added (<code>cookies-2</code>) and the screen says so. Nothing changes before you save.</li>
+        <li>The <em>Fixed address</em> field gives the page a whole address, kept as typed wherever the page sits in the tree, for example <code>about-us.html</code>. It keeps the addresses of a former site. While you type, the screen says whether the address is free. Empty it to go back to the built address.</li>
+        <li>Some addresses are reserved for how the site works (<code>admin</code>, <code>api</code>, <code>search</code>...) and refused.</li>
     </ul>
-    <h3>Attaching documents to a page</h3>
-    <p>The <em>Documents</em> tab of a saved page attaches files to download: a data sheet, a catalogue, a form. You can choose several at once; PDF, Word, Excel and PowerPoint files, OpenDocument text, ZIP and plain text are accepted, up to the size the server allows, shown on the tab. A refused file is reported with its reason and does not stop the others from being added.</p>
+
+    <h3 id="change-address">Changing the address of a page without breaking links</h3>
+    <ol>
+        <li>In <strong>CMS &gt; Pages</strong>, pick the language with the selector, then click the title of the page.</li>
+        <li>In the <em>General</em> tab, type the new address in <em>Page address</em>, or click <em>Regenerate from the title</em>. To move the page, change the <em>Parent page</em> instead.</li>
+        <li>Check the full address shown under the field, then click <em>Save draft</em>. The address changes at once, without publishing the page again.</li>
+    </ol>
+    <p>The old address stays active and sends visitors to the new one with a permanent redirect (301): links already published and search engines follow. The pages filed under the moved page change address with it and keep their old addresses as redirects. Giving a page a <em>Fixed address</em> also keeps its former address as a redirect. A move in the tree applies to every language of the page, a change of address only to the language edited.</p>
+
+    <h3 id="brief-field">Writing a summary or a description from a brief</h3>
+    <p>Next to the <em>Summary</em> and the <em>Detailed description</em> of a page, and next to the summary, description and conclusion of a product, a category, a brand, a folder and a content, <em>Write from a brief</em> asks the generator for the text of that field. Say what it should say, and if you wish its tone and its audience: the generator also reads the title and what the field already holds (to rewrite or complete it), and may search the products, categories and pages of the site to cite them or link to them.</p>
+    <p>The text comes back formatted (paragraphs, bold, italic, lists, links, headings) and is shown first, with its cost. <em>Replace the text</em> puts it in place of the content of the field, <em>Insert at the cursor</em> adds it where the cursor was, <em>Cancel</em> leaves the field as it was. Nothing is saved before the form is saved, as if you had typed the text. The button takes the right to use the generator; its effort and length are set in <strong>CMS &gt; Settings</strong>, its model in the AI settings of Thelia.</p>
+
+    <h3 id="page-actions">Home page, duplicating, unpublishing</h3>
+    <p>These three actions sit at the bottom of the settings screen of a page.</p>
     <ul>
-        <li>The file is the same in every language; the <em>title</em> and the <em>description</em> are written in the language being edited. Without a title, the file carries its original name.</li>
+        <li><em>Set as home page</em> makes the page answer on the address <code>/</code>. Its own address then redirects to the home page.</li>
+        <li><em>Duplicate</em> creates a hidden copy of the page, with its tag and its content as a draft, to be read again before you publish it.</li>
+        <li><em>Unpublish</em> takes the page off the site in the language edited. The draft and the settings are kept: <em>Publish</em> puts the page back online.</li>
+    </ul>
+
+    <h3 id="trash">Bin</h3>
+    <p>A page you delete goes to the <strong>Bin</strong> (<strong>CMS &gt; Pages &gt; Bin</strong>) with the pages filed under it. It stays there 30 days, a period set in the settings, and <em>Restore</em> puts it back in the tree until then. A page filed under a page that is itself in the bin comes back with it. After that it is deleted for good, content and addresses included.</p>
+
+    <h3 id="documents">Attaching documents to a page</h3>
+    <p>The <em>Documents</em> tab of a saved page attaches files to download: a data sheet, a catalogue, a form. You can choose several at once; PDF, Word, Excel and PowerPoint files, OpenDocument text, ZIP files and plain text are accepted, up to the size the server allows, shown on the tab. A refused file is reported with its reason, without stopping the others from being added.</p>
+    <ul>
+        <li>The file is the same in every language; the <em>title</em> and the <em>description</em> are written in the language being edited. Without a title, the file is shown under its original name.</li>
         <li>The order is set with the arrows of each document; it is the order in which the theme lists them.</li>
-        <li>Every action of the tab (adding, texts, order, deleting) is saved at once, without <em>Save draft</em>, and the documents are online right away, without publishing the page again. Deleting a document also deletes its file: a link to it written in a page stops working.</li>
-        <li>A duplicated page gets its own copy of each file. The files of a page deleted for good, when the <strong>Bin</strong> is purged, are deleted with it.</li>
-        <li>Adding or editing a document takes the right to change pages, deleting one the right to delete them.</li>
+        <li>Each action of the tab (adding, text, order, deleting) is saved at once, without <em>Save draft</em>, and the documents are online right away, without publishing the page again. Deleting a document also deletes its file: a link written to it in a page stops working.</li>
+        <li>A duplicated page gets its own copy of each file. The files of a page deleted for good, when the <strong>Bin</strong> is emptied, are deleted with it.</li>
+        <li>Adding or changing a document takes the right to change pages, deleting one the right to delete them.</li>
     </ul>
 </section>
 
 <section id="content">
     <h2>The content of a page</h2>
-    <p>Content is edited on its own screen, <em>Edit content</em>, opened from the page. It is made of <strong>sections</strong> laid one under the other, each one a component (a banner, a text, a list of products, a form…). On the right, the preview shows the draft as the site will display it.</p>
-    <h3>Writing with the generator</h3>
-    <p><em>Write it from a brief</em> sends the generator what the page should say, its tone and its audience. It answers with a whole page, which replaces the draft. To write it, it follows the skills of the site, picks among the components offered and may search the products, categories, pages and images of the site. If the settings allow it, it also reads the web pages the brief cites by their address.</p>
-    <p>Then <em>Ask for a change</em> reworks the whole page, or a single section from its form, the others left as they are. The history of the screen lists every request with its outcome, its duration and its cost. The draft a request replaces is kept: <em>Previous drafts</em> lists the last five, and <em>Put it back</em> makes one the draft again, the current one kept in turn. Using the generator takes a right of its own, because every call is billed.</p>
-    <h3>Editing by hand</h3>
-    <p>Each section can also be edited by hand, in a form showing its fields: text, rows to add or remove for a list, a picker for an image or a product. A double click on free text in the preview edits it where it stands, with the toolbar of the editor; <em>Save</em> or Ctrl+Enter keeps the text, <em>Cancel</em> or Escape puts it back. Hovering a section in the preview shows <em>Edit</em>, which opens its form, and <em>Delete</em>, which removes it once confirmed. The form closes with its cross or the Escape key; another source for a picture than the media library, and the appearance of the section, are folded under their heading. The image of a section shows with its name and whether it is described; <em>Choose in the library</em> opens the library as thumbnails, with search, filters, tags and the sending of a new image. The width, the room and the alignment are chosen on buttons that draw them. An image of the media library is published with its alternative text from the library; the text of the section serves only a picture kept elsewhere, or an image not described yet. Choosing an image in a section takes the right to see the media. Sections are moved by dragging them or with the arrows, and removed. <em>Add a section</em>, under the last one, offers the components of the site: the one picked is added at the end of the page with an example text to replace. An empty page starts that way, without the generator.</p>
-    <h3>Previewing and publishing</h3>
+    <p>The content is edited on its own screen: <em>Edit content</em>, from the page. It is made of <strong>sections</strong> laid one under the other, each one a component (a banner, a text, a list of products, a form...). On the left, the brief and the list of sections; on the right, the preview shows the draft the way the site will display it.</p>
+    <figure class="figure d-block my-3">
+        <img class="figure-img img-fluid rounded border" src="{{ module_asset('TheliaCMS', 'assets/documentation/content-screen.en_US.png') }}" alt="The content screen: the list of sections on the left, the preview of the page on the right." loading="lazy">
+        <figcaption class="figure-caption">Sections are set on the left, the draft is read in the preview on the right.</figcaption>
+    </figure>
+
+    <h3 id="generator">Writing with the generator</h3>
+    <p>On an empty page, the brief asks what the page should say, its tone and its audience. <em>Write the draft</em> sends the brief to the generator, which answers with a whole page. To write, it follows the skills of the site, picks among the components offered and may search the products, categories, pages and images of the site. If the settings allow it, it also reads the web pages the brief cites by address. On a page already written, <em>Replace the draft</em> starts the page over, after a confirmation.</p>
+    <p>To touch up rather than start over, use <em>Ask for a change</em> then <em>Apply the change</em>: the whole page is reworked, and the sections the change does not concern are kept as they are. <em>Rewrite this section</em>, on a section of the list, reworks that section alone.</p>
+    <ul>
+        <li>The <em>History</em> of the screen lists each request, with its result, its duration and its cost.</li>
+        <li>The draft a request replaces is kept: <em>Previous drafts</em> lists the last five, and <em>Put it back</em> puts one in place of the current draft, which is kept in turn.</li>
+        <li>Using the generator takes a right of its own, because each call is billed.</li>
+    </ul>
+
+    <h3 id="translate">Writing another language from one already written</h3>
+    <p>When a page has no content yet in the chosen language but has some in another, the preview offers a button, <em>Write it in this language from the</em> source language <em>version</em> (with a list of languages when there are several). The generator keeps the sections and writes their texts for the new reader. The result arrives as a draft, to be read before you publish. It takes the right to use the generator. The items of the catalogue (products, categories, contents, folders) work the same way.</p>
+
+    <h3 id="by-hand">Editing a section in its form</h3>
+    <p>On the row of a section, <em>Edit by hand</em> opens a form that shows its fields: text, rows to add or remove for a list, a picker for an image or a product. Hovering over a section in the preview also shows <em>Edit</em>, which opens the same form, and <em>Delete</em>, which removes it after a confirmation.</p>
+    <ul>
+        <li>The form closes with the cross or the Escape key.</li>
+        <li>The source of an image other than the media library and the appearance of the section are folded under their heading.</li>
+        <li>Width, spacing and alignment are chosen on buttons that draw them.</li>
+    </ul>
+
+    <h3 id="by-hand-inline">Editing a text in the preview</h3>
+    <p>A double click on a free text in the preview makes it editable where it stands, with the toolbar of the editor. <em>Save</em> or Ctrl+Enter keeps the text, <em>Cancel</em> or Escape puts it back.</p>
+
+    <h3 id="by-hand-image">Putting an image in a section</h3>
+    <p>The image of a section is shown with its name and whether it is described. <em>Choose in the library</em> opens the media library as thumbnails, with search, filters, tags and the sending of a new image (see <a href="#add-described-image">Adding a described image</a>). An image of the media library is published with the alternative text of the library; the text of the section is only used for an image kept elsewhere, or until the image is described. Choosing an image in a section takes the right to see media.</p>
+
+    <h3 id="by-hand-sections">Adding, duplicating, moving, removing sections</h3>
+    <ul>
+        <li><em>Add a section</em>, under the last one, offers the components of the site: the one you choose lands at the end of the page with example text to replace. An empty page starts this way, without the generator.</li>
+        <li>The <em>Duplicate this section</em> button, next to the arrows of a section, puts a copy right after it in the draft: same component, same settings and same appearance, to be changed afterwards. A section of a component the site has put away is not copied.</li>
+        <li>Sections move by drag and drop or with the arrows.</li>
+        <li><em>Remove this section</em> deletes it from the draft, after a confirmation.</li>
+    </ul>
+    <p>Adding, duplicating, moving or removing a section only changes the draft of the language edited, and takes the right to change pages.</p>
+
+    <h3 id="preview-publish">Previewing and publishing</h3>
     <ul>
         <li>Saving never changes what visitors see: you work on a draft.</li>
         <li>The preview shows the <em>whole page</em>, with the header, the footer and the title of the site, or the <em>content only</em>, the sections with nothing around them; the choice is kept from one page to the next.</li>
-        <li><em>Preview the draft</em> gives a link valid for 72 hours, to send to someone without an account. A list sets the width of the preview to the ones the theme plans for (mobile, tablet, desktop).</li>
-        <li><em>Publish</em> puts the draft online. An empty page, or one still holding the example text of a legal page supplied at installation, is refused. The structure of the headings is checked: depending on the settings, a problem is reported or stops the publication.</li>
-        <li>Every publication keeps a version of the page.</li>
+        <li><em>Preview the draft</em> gives a link valid for 72 hours, to send to someone with no account. A list sets the width of the preview to those the theme provides (phone, tablet, screen).</li>
+        <li><em>Publish</em> puts the draft online. An empty page, or one that still holds the example text of a legal page supplied at installation, is refused. The structure of the headings is checked: depending on the settings, a problem is reported or blocks publication.</li>
+        <li>Each publication keeps a version of the page.</li>
     </ul>
-    <p>Each language has its own content: the French and the English versions of a page are two independent drafts, published separately.</p>
+    <p>Each language has its own content: the French and the English version of a page are two independent drafts, published separately.</p>
+
+    <h3 id="publish-first-page">Publishing your first page</h3>
+    <ol>
+        <li>In <strong>CMS &gt; Pages</strong>, open the content of the page with the <em>Edit content</em> button on its row.</li>
+        <li>Read the draft in the preview. To see it on the site before anyone else, click <em>Preview the draft</em>.</li>
+        <li>If the template of the page has required fields, fill them in: on the settings screen of the page, they are in the <em>Fields</em> tab.</li>
+        <li>Click <em>Publish</em>, at the top of the content screen. The message "The page is online." appears.</li>
+        <li>Check the state shown next to the title: it should read <em>Published</em>. <em>Unpublished</em> means the page is hidden or its withdrawal date has passed; <em>Scheduled</em>, that its publication date has not come yet. Both are set in the <em>General</em> tab of the settings.</li>
+    </ol>
+    <p>The <em>Publish this version</em> button, on the settings screen of the page, does the same. If publication is refused, the message says why: see <a href="#publication-refused">Publication is refused</a>.</p>
 </section>
 
 <section id="page-templates">
     <h2>Page templates</h2>
-    <p>A page template is the model of a series of pages: recipes, case studies, news items. Each page has one, picked in its <em>General</em> tab. The templates of the site are under <strong>CMS &gt; Page templates</strong> (also reached from the settings). The <code>default</code> template always exists.</p>
-    <h3>What a template sets</h3>
+    <p>A page template is the model of a series of pages: recipes, case studies, news. Each page has a template, chosen in its <em>General</em> tab. The templates of the site are in <strong>CMS &gt; Page templates</strong> (also reached from the settings). The <code>default</code> template always exists.</p>
+    <h3 id="template-settings">What a template sets</h3>
     <ul>
-        <li><strong>The layout.</strong> The theme of the site may draw the pages of a template its own way. The templates screen says, for each one, which layout it gets.</li>
+        <li><strong>The display.</strong> The theme of the site may draw the pages of a template its own way. The templates screen shows, for each one, the layout used.</li>
         <li><strong>A name and a description</strong> in each language.</li>
-        <li><strong>A brief</strong>, with a tone and an audience, which the generator reads before the brief of each page of the template: it says what its pages are about.</li>
-        <li><strong>Writing instructions</strong>, in markdown: how every page of the template is written (tone, length, sections expected, mandatory mentions). The generator reads them for each page of the template, like a skill kept to that template, and they win over a brief that says otherwise.</li>
-        <li><strong>Fields</strong>: the values each page of the template carries, such as a cooking time or a city. A field is a whole or decimal number, a duration in minutes, a short or long text, a yes or no, a word picked from a list, or a date. It may have a unit, bounds, be written again for each language (texts only) or be required: a page cannot be published while it is empty. Values are filled in the <em>Fields</em> tab of the settings of the page, and the generator writes them along with the content.</li>
-        <li><strong>A model page</strong>, the example content new pages of the template start from. It is never published nor online, and it is deleted with its template, never moved to the bin.</li>
+        <li><strong>A brief</strong>, with a tone and an audience, that the generator reads before the one of each page of the template: it says what its pages are about.</li>
+        <li><strong>Writing instructions</strong>, in markdown: how all the pages of the template are written (tone, length, expected sections, mandatory mentions). The generator reads them for each page of the template, like a skill reserved for that template, and they win over a brief that says otherwise.</li>
+        <li><strong>Fields</strong>: the information each page of the template carries, such as a preparation time or a city. A field is a whole or decimal number, a duration in minutes, a short or long text, a yes or no, a word taken from a list, or a date. It may have a unit, bounds, be written in each language (for texts) or be required: a page is not published while it is empty. The values are filled in the <em>Fields</em> tab of the page settings, and the generator writes them with the content.</li>
+        <li><strong>A model page</strong>, the example content new pages of the template start from. It is never published or online, and it is deleted with its template, never put in the bin.</li>
     </ul>
-    <p><em>Start a page from a template</em>, on the page list, copies the model page (its content in every language and the values of its fields) under the title you type.</p>
-    <h3>Listing the pages of a template</h3>
-    <p>The <em>Pages of a type</em> section, added to the content of a page, shows the pages online of a template: the latest news, every case study. It takes a heading, an order (most recent first, by title, by position in the tree, by a field) and a number of pages. The list is read on every visit: a page published tomorrow shows in it without publishing again the page holding it.</p>
-    <p>A template some page uses, even in the bin, cannot be deleted.</p>
+    <p><em>Create from the template</em>, in the <em>Start a page from a template</em> box of the pages list, copies the model page (content in every language and field values) under the title you type.</p>
+    <h3 id="template-lists">Listing the pages of a template</h3>
+    <p>The <em>Pages of a type</em> section, added in the content of a page, shows the online pages of a template: the latest news, all the case studies. It is set with a title, an order (most recent, by title, by position in the tree, by a field) and a number of pages. The list is read at every visit: a page published tomorrow shows up in it without publishing again the page that holds it.</p>
+    <p>A template used by a page, even one in the bin, cannot be deleted.</p>
 </section>
 
 <section id="tags">
     <h2>Tags</h2>
-    <p>A page carries one tag or none, picked in its <em>General</em> tab. Tags are created, renamed and deleted under <strong>CMS &gt; Tags</strong>. The theme uses them to gather pages, "the other news items" for instance. Deleting a tag takes it off the pages that carried it; the screen says how many.</p>
+    <p>A page carries one tag or none, chosen in its <em>General</em> tab. Tags are created, renamed and deleted in <strong>CMS &gt; Tags</strong>. The theme uses them to gather pages, for example "the other news". Deleting a tag removes it from the pages that carried it; the screen says how many.</p>
+    <h3 id="tag-colors">The color of a tag</h3>
+    <p>A tag can have a badge in the color of your choice. Tick <em>Give the tag a color</em>, then pick the <em>Background</em> with the color picker.</p>
+    <ul>
+        <li>By default, the text of the badge is black or white, whichever reads best on the background.</li>
+        <li>To choose the color of the text yourself, untick <em>Text in black or white, whichever reads best on the background</em> and set <em>Text</em>.</li>
+        <li>The badge shows in the back office; a theme may show it on the site too.</li>
+        <li>Changing the color of a tag changes the badge on every page that carries it.</li>
+    </ul>
 </section>
 
 <section id="catalogue">
     <h2>The content of products, categories and contents</h2>
-    <p>A product, a category, a content and a folder of the shop can also hold sections, language by language. Their screen in the back office has a <strong>CMS content</strong> tab, which says where their content stands in each language and opens its screen. That screen works like the one of a page: generator, editing by hand, preview, publication. The generator knows which item the content is shown on and what the item already shows, so it adds to the item rather than repeating its name or its price.</p>
-    <p>The preview shows the draft two ways: in the <em>whole page</em> of the item, in place, or as the <em>content only</em>, without the header and the footer of the site.</p>
+    <p>A product, a category, a content and a folder of the shop can also receive sections, language by language. Their sheet in the back office has a <strong>CMS content</strong> tab, which says where their content stands in each language and opens its screen with <em>Write the content</em> or <em>Edit the content</em>. That screen works like the one of a page: generator, editing by hand, duplicating a section, writing from another language, preview, publication. The generator knows which sheet the content shows on and what it already shows, to complete the sheet rather than repeat its name or its price.</p>
+    <p>The preview shows the draft two ways: in the <em>whole page</em> of the sheet, in its place, or as <em>content only</em>, without the header and footer of the site. <em>Take offline</em>, in the tab, puts the content of a language offline; its draft is kept.</p>
 </section>
 
 <section id="components">
     <h2>Components</h2>
     <p>The sections of a page come from a catalogue of components, of three families:</p>
     <ul>
-        <li><strong>The components of the theme</strong>: the blocks the theme of the site opens to pages (banners, cards, lists of products, videos…). They render with the layout of the site.</li>
+        <li><strong>Theme components</strong>: the blocks the theme of the site makes available to pages (banners, cards, product lists, videos...). They are displayed with the layout of the site.</li>
         <li><strong>Free text</strong>: a block of formatted text (headings, paragraphs, lists, links).</li>
-        <li><strong>Live content</strong>: a block worked out on every visit, such as a form of the site or the list of the pages of a template.</li>
+        <li><strong>Live content</strong>: a block computed at every visit, such as a form of the site or the list of pages of a template.</li>
     </ul>
-    <h3>The Components screen</h3>
+    <h3 id="components-screen">The Components screen</h3>
     <p><strong>CMS &gt; Components</strong> lists the catalogue: every component, where it comes from (the module, the theme, the site) and how many pages use it, drafts included. Switching a component off takes it out of what the generator may offer. Nothing else changes: the pages using it keep showing it and its sections stay editable by hand. Free text cannot be switched off. A button opens the toolkit of the theme, which shows every component offered, when the theme has one.</p>
-    <h3>Having a component made</h3>
+    <h3 id="make-component">Having a component made</h3>
     <p><em>New component</em> describes to the generator what the component should show, what an editor fills in and how it should look. It proposes a version, which you keep, have changed or ask for again. A component kept joins the catalogue as "made on this site". Its texts are written by the pages using it, in every language. Making a component takes the settings right and the custom code right.</p>
+    <h3 id="site-components">Copying, keeping or deleting a component of the site</h3>
+    <p>In <strong>CMS &gt; Components</strong>, the <em>Edit</em> button, on a component made on this site, opens its screen, with its preview, its properties and its history.</p>
+    <figure class="figure d-block my-3">
+        <img class="figure-img img-fluid rounded border" src="{{ module_asset('TheliaCMS', 'assets/documentation/site-component.en_US.png') }}" alt="The screen of a component of the site: its preview and the form to copy it into a new component." loading="lazy">
+        <figcaption class="figure-caption">The screen of a component of the site: the preview, and the copy form below it.</figcaption>
+    </figure>
+    <ul>
+        <li><strong>Copy</strong>: <em>Copy into a new component</em> asks for a <em>Code</em> (in PascalCase, for example <code>PriceTableDark</code>, which cannot change afterwards) and a <em>Label</em>, then <em>Copy</em> duplicates the template, the styles and the properties without calling the generator. The copy is a prototype: change it with <em>Ask a change</em>.</li>
+        <li><strong>Keep</strong>: a component in prototype is shown on the pages that hold it, but offered to nobody else. <em>Keep for the whole site</em>, on its screen or in the list, offers it to the generator and on the content screen of every page.</li>
+        <li><strong>Delete</strong>: <em>Delete the component</em> is final, after a confirmation. It is only possible when no page holds the component, drafts and languages included: otherwise the screen gives the number of pages and the component must first be taken out of each.</li>
+    </ul>
+    <p>Copying, keeping and deleting take the same rights as <em>New component</em>.</p>
+    <h3 id="prototype-from-page">Prototyping a component from a page</h3>
+    <p>On the content screen of a page, <em>Add a section</em> offers, under the existing components, <em>A new component</em>. Describe it in <em>Prototype a component</em> then click <em>Prototype it</em>: it takes up to a minute. The preview then shows the component in place of the draft.</p>
+    <ul>
+        <li><em>Keep it and add it to the page</em> adds it at the end of the draft. It stays a prototype: <strong>CMS &gt; Components</strong> then keeps it for the whole site.</li>
+        <li><em>Ask a change</em> then <em>Change it</em> proposes a new version.</li>
+        <li><em>Discard</em> keeps nothing.</li>
+    </ul>
+    <p>This takes the right to use the generator and those of <em>New component</em>. It exists on pages only, not on the items of the catalogue.</p>
 </section>
 
 <section id="skills">
     <h2>Skills</h2>
-    <p>A skill is an instruction the generator reads before it writes: how a page is structured here, how text is written, what accessibility and search engines ask, how to present the catalogue, how to translate a page, how to stay within the design system of the theme. The module ships seven (page structure, copywriting, accessibility, search engines, catalogue, translation, design system); the theme may add more or replace them.</p>
+    <p>A skill is an instruction the generator reads before it writes: how a page is structured here, how text is written, what accessibility and search engines ask, how to present the catalogue, how to translate a page, how to stay within the design system of the theme, how a component moves without script. The module ships eight (page structure, copywriting, accessibility, search engines, catalogue, translation, design system, motion); the theme may add more or replace them.</p>
     <p>Under <strong>CMS &gt; Skills</strong>, each skill can be rewritten, switched off and moved: the arrows of the list move it up or down one slot, and the generator reads the skills in that order. A skill <em>always read</em> is given to the generator with every request; a skill read <em>on request</em> is read only when the page calls for it, from its description. A rewritten skill keeps your text when the module is updated, and a button puts the shipped text back.</p>
     <p>An instruction you want followed on every page (a tone, a word to avoid, a mandatory mention) belongs in a skill. One that concerns a series of pages goes in the writing instructions of its template, and one for a single page in its own brief.</p>
 </section>
 
 <section id="menus-forms-media">
     <h2>Menus, forms, media</h2>
-    <h3>Menus</h3>
-    <p><strong>CMS &gt; Menus</strong> holds at least the main menu (<code>main</code>) and the footer one (<code>footer</code>). An entry points at a page, a content, a folder, a category or a product of the catalogue, a web address, or at nothing (it is then a group heading). Its label is optional: left empty, the title of the target is shown. An entry pointing at a category or a product follows its address in each language: renaming it or changing its address does not leave the menu behind. In the form, categories are shown as their tree and products grouped by their default category. The tree goes three levels deep; entries are moved with the buttons or by dragging them. An entry whose target is deleted, offline (a hidden category or product included) or not published in the language being read is left out of the menu in that language, and the screen says why.</p>
-    <h3>Forms</h3>
+    <h3 id="menus">Menus</h3>
+    <p><strong>CMS &gt; Menus</strong> holds at least the main menu (<code>main</code>) and the footer one (<code>footer</code>).</p>
+    <ul>
+        <li>An entry points at a page, a content, a folder, a category or a product of the catalogue, a web address, or at nothing (it is then a group heading). Its <em>Label</em> is optional: left empty, the title of the target is shown.</li>
+        <li>An entry pointing at a category or a product follows its address in each language: renaming it or changing its address does not leave the menu behind.</li>
+        <li>In the form, categories are shown as their tree and products grouped by their default category.</li>
+        <li>The tree goes three levels deep; entries are moved with the buttons or by dragging them.</li>
+        <li>An entry whose target is deleted, offline (a hidden category or product included) or unpublished in the language read disappears from the menu in that language, and the screen says why.</li>
+    </ul>
+    <h3 id="menus-by-language">A menu of its own for a language</h3>
+    <p>Each menu has a shared version, which every language reads. The screen of a menu says, for the language picked with the selector, whether it <em>follows the shared menu</em> or <em>has a menu of its own</em>. What you change then applies to every language that follows the shared menu, or to that language alone.</p>
+    <ul>
+        <li><em>Give this language a menu of its own</em> copies the shared menu for that language. Later changes no longer touch the other languages.</li>
+        <li><em>Realign on...</em> replaces the entries of the menu by a copy of another menu of the same code, picked in the list. The confirmation screen gives the number of entries replaced. Nothing is merged and it cannot be undone.</li>
+        <li><em>Make the shared menu a copy of this one</em> does the opposite: the shared menu takes the entries of the menu of this language.</li>
+        <li><em>Go back to the shared menu</em> deletes the own menu of the language, after a confirmation, and the language reads the shared menu again. An own menu you empty stays empty in its language.</li>
+    </ul>
+    <p>Realigning and going back to the shared menu take the rights to change and to delete menus. The code of a menu is changed on its shared version, for every language at once; deleting the shared menu also deletes the menus of its languages.</p>
+    <h3 id="forms">Forms</h3>
     <p><strong>CMS &gt; Forms</strong> creates forms, placed in a page with the form section. A field is a line of text, an email address, several lines, a drop-down list, a tick box, one choice among several, a phone number, a date or an agreement to be contacted. Recipients are set here. Robots are kept out without a captcha. <em>Answers</em> are read, searched by email address, exported (CSV, JSON) and deleted; they go on their own after the retention period of the form (365 days by default).</p>
-    <h3>Media</h3>
-    <p><strong>CMS &gt; Media</strong> keeps the images of the pages (JPEG, PNG, WebP). The alternative text is required in every language, except for an image marked decorative. Each image shows its dimensions, its weight and the pages using it; an image in use cannot be deleted. The list shows 48 images a page; it narrows to the images still to describe in the language edited, the unused ones, the decorative ones or one tag, and is ordered newest or oldest first, by title or by weight. The search reads the title, the alternative text, the caption and the tags. “Describe them one by one” shows the images of the list still to describe, one at a time: Enter saves the alternative text and moves to the next one, “It is decorative” marks it decorative, “Skip” leaves it for later. Images are dropped on the upload frame of the list or chosen; each file is sent on its own, a refused file is named with why without stopping the others, then the describe queue opens on the images added. The sheet of an image says, for each language, whether it is described, to describe or decorative; its tags are suggested from those of the library, and a replacing file is shown before it is saved. Images ticked on the list take or lose a tag, are marked decorative or not, or are deleted when nothing uses them; those still used are kept and named. On publication, images are served in several sizes and in WebP.</p>
-    <p>The images of the catalogue (products, categories, brands, folders, contents) are not in it on their own: the command <code>php Thelia thelia_cms:media:import-catalogue</code> copies them in, with their titles, alternative texts and tags. Run again, it copies only the new ones. A copy does not follow the catalogue: an image replaced there is copied again.</p>
+    <h3 id="media">Media</h3>
+    <p><strong>CMS &gt; Media</strong> keeps the images of the pages (JPEG, PNG, WebP). The alternative text is required in every language, except for an image marked decorative: it is what screen readers read and what shows when the image does not load. Each image shows its dimensions, its weight and the pages using it; an image in use cannot be deleted. On publication, images are served in several sizes and in WebP.</p>
+    <h3 id="add-described-image">Adding a described image</h3>
+    <ol>
+        <li>Open <strong>CMS &gt; Media</strong>. Drop the files on the <em>Drop images here, or choose them</em> frame, or click <em>Add images</em>. Several files at once are fine; a refused file is named with its reason, without stopping the others.</li>
+        <li>When sending is done, click <em>Describe the N image(s) added</em>.</li>
+        <li>For each image, type in <em>Alternative text</em> what it shows, for someone who cannot see it, then press Enter or click <em>Save and next</em>. An image that only decorates is marked with <em>It is decorative</em>; <em>Skip</em> leaves it for later.</li>
+        <li>The description is written for the language picked with the selector: repeat it in each language of the site.</li>
+        <li>Place the image: in the <em>Image</em> tab of a page, or in the form of a section with <em>Choose in the library</em>. The window that opens shows thumbnails; search, filter, then click the image. It tells whether each image is <em>Described</em>, <em>To describe</em> or <em>Decorative</em>.</li>
+    </ol>
+    <figure class="figure d-block my-3">
+        <img class="figure-img img-fluid rounded border" src="{{ module_asset('TheliaCMS', 'assets/documentation/media-picker.en_US.png') }}" alt="The window to choose an image: thumbnails, a search field and filters." loading="lazy">
+        <figcaption class="figure-caption">The window to choose an image: the state of each image reads on its thumbnail.</figcaption>
+    </figure>
+    <h3 id="media-list">Finding and sorting images</h3>
+    <p>The list shows 48 images a page. It narrows to the images still to describe in the language edited, the unused ones, the decorative ones or one tag, and is ordered newest or oldest first, by title or by weight. The search reads the title, the alternative text, the caption and the tags. <em>Describe them one by one</em> shows the images of the list still to describe, one at a time.</p>
+    <p>Images ticked on the list take or lose a tag, are marked decorative or not, or are deleted when nothing uses them; those still used are kept and named.</p>
+    <h3 id="media-sheet">The sheet of an image</h3>
+    <p>The sheet of an image says, for each language, whether it is described, to describe or decorative. Its tags are suggested from those of the library, and a replacing file is shown before it is saved. <em>Delete this image</em> is greyed out while a page or an item uses the image: see <a href="#image-in-use">An image cannot be deleted</a>.</p>
+    <h3 id="media-catalogue">The images of the catalogue</h3>
+    <p>The images of the catalogue (products, categories, brands, folders, contents) are not in the library on their own: the command <code>php Thelia thelia_cms:media:import-catalogue</code> copies them in, with their titles, alternative texts and tags. Run again, it copies only the new ones. A copy does not follow the catalogue: an image replaced there is copied again.</p>
 </section>
 
 <section id="settings">
     <h2>Settings</h2>
     <p><strong>CMS &gt; Settings</strong> gathers the settings of the site:</p>
     <ul>
-        <li><strong>What this site is</strong>: a shop, or a showcase site. As a showcase, the cart and the checkout are closed and the CMS moves to the top of the menu. Saving the showcase mode also creates an <em>Editor</em> profile (pages, menus, media, forms, none of the shop and none of these settings), to assign under <strong>Configuration &gt; Administrators</strong>; its permissions are yours to change afterwards. Going back to a shop reopens the cart and the checkout in one save.</li>
-        <li><strong>Page shown when an address does not exist</strong>: a CMS page, served with the 404 status.</li>
-        <li><strong>Days a deleted page waits in the bin</strong>: 30 by default, 0 never to empty the bin on its own.</li>
-        <li><strong>Seconds a shared cache may keep a page</strong>: 0, the default, turns that cache off. Set it with whoever runs the hosting.</li>
-        <li><strong>Close the site for maintenance</strong>, with the <strong>page shown during maintenance</strong> and the <strong>addresses that keep seeing the site</strong> (IP addresses). The site then answers that it is coming back soon, which protects its ranking. The back office and signed-in administrators are still served.</li>
-        <li><strong>Generator</strong>: the <em>reasoning effort</em>, the <em>longest answer</em> and whether to <em>read the web pages a brief cites</em> (off until you turn it on: the server of the shop fetches the page and sends its text to the AI provider). A higher effort gives better pages, slower and more expensive, on models that read it. The texts written from a brief beside a field have an effort and a length of their own. The connection, the model and the budget are set in the AI settings of Thelia, not here.</li>
+        <li><strong>What this site is</strong>: a shop, or a showcase site. In showcase mode, the cart and the checkout are closed and the CMS moves to the top of the menu. Saving showcase mode also creates an <em>Editor</em> profile (pages, menus, media, forms, without the shop or these settings), to assign in <strong>Configuration &gt; Administrators</strong>; its rights can then be changed freely. Going back to shop mode reopens the cart and the checkout in one save.</li>
+        <li><strong>Site search</strong>: in showcase mode, the addresses <code>/recherche</code> and <code>/search</code> show a search page. It searches the online pages in the language of the visitor, ten results at a time, and leaves out the pages set to <em>Do not index (noindex)</em>. In shop mode, the search of the theme keeps these addresses.</li>
+        <li><strong>Page shown when an address does not exist</strong>: a page of the CMS, served with the 404 code.</li>
+        <li><strong>Days spent in the bin before deletion</strong>: 30 by default, 0 to never empty the bin automatically.</li>
+        <li><strong>Seconds a page is kept by a shared cache</strong>: 0, the default, switches this cache off. To set with whoever looks after the hosting.</li>
+        <li><strong>Close the site for maintenance</strong>, with the <strong>page shown during maintenance</strong> and the <strong>addresses that keep seeing the site</strong> (IP addresses). The site then answers that it is coming back soon, which protects its search ranking. The back office and signed-in administrators are still served.</li>
+        <li><strong>Generator</strong>: the <em>thinking effort</em>, the <em>maximum length of the answer</em>, the permission to <em>read the web pages cited in the brief</em> (off until you switch it on: the shop server fetches the page and sends its text to the AI provider) and <em>Let a brief make a component of the site</em> (off too: the generator may then make a component, at most two per page, when none of the catalogue fits, and it stays a prototype). A higher effort gives better pages, slower and costlier, on the models that read it. The texts written from a brief next to a field have their own effort and their own length. The connection, the model and the budget are set in the AI settings of Thelia, not here.</li>
     </ul>
     <p>Page templates, components and skills are set from their own screens, with the same right.</p>
 </section>
 
 <section id="permissions">
-    <h2>Who may do what</h2>
-    <p>Rights are given per profile, under <strong>Configuration &gt; Administrators</strong>:</p>
+    <h2>Who can do what</h2>
+    <p>Rights are given by profile, in <strong>Configuration &gt; Administrators</strong>:</p>
     <ul>
-        <li>pages: the tree, the content, publication, tags, the content of the items of the shop, and this documentation;</li>
-        <li>the generator: asking it to write or to change, a right of its own because every call is billed;</li>
+        <li>pages: the tree, the content, publication, sections added, duplicated or moved by hand, tags, the content of the shop sheets, and this documentation;</li>
+        <li>the generator: asking the generator to write or change, a right of its own because each call is billed;</li>
         <li>menus; forms and their answers; media;</li>
-        <li>settings: mode of the site, maintenance, error page, generator, page templates, components, skills;</li>
-        <li>custom code: embedded frames (<code>iframe</code>) in published content, and making components.</li>
+        <li>settings: site mode, maintenance, error page, generator, page templates, components, skills;</li>
+        <li>custom code: embedded frames (<code>iframe</code>) in published content, and the making of components.</li>
     </ul>
     <p>A screen or a button your profile does not allow is not offered.</p>
+</section>
+
+<section id="troubleshooting">
+    <h2>Troubleshooting</h2>
+    <h3 id="greyed-button">A button is greyed out or missing</h3>
+    <ul>
+        <li><em>Publish</em> is greyed out: the page has no content yet. Write it or add a section. The button is missing for the model page of a template, which is never published, and for a profile without the right to change pages.</li>
+        <li><em>Write the draft</em>, <em>Replace the draft</em> or <em>Write it in this language from...</em> is greyed out: the screen says "Your profile may read this screen and publish, not ask the generator to write". Ask whoever manages profiles for the right on the generator.</li>
+        <li>The <em>Documents</em> tab is greyed out: the page is not saved yet. Save the draft first.</li>
+        <li><em>Delete this image</em> is greyed out: see below.</li>
+    </ul>
+    <h3 id="publication-refused">Publication is refused</h3>
+    <p>The screen says why. The possible cases:</p>
+    <ul>
+        <li>"This page has no content yet": the draft is empty, or shows nothing. Write it or add a section.</li>
+        <li>"This page still holds the sample text it was created with": replace the example texts with your own.</li>
+        <li>"This page is the model of its type": a model is never published. Create a new page from the template.</li>
+        <li>"Fill in the fields this type requires before publishing" followed by the field names: fill them in the <em>Fields</em> tab of the page settings.</li>
+        <li>"Fix the heading structure first": the messages above list the problems, for example a skipped heading level or several level 1 headings. Fix the headings of the sections, then publish again. Depending on how the site is configured, this check blocks publication or lets the page through with a warning.</li>
+        <li>"Its content is no longer valid": open the page in the editor, the messages point to the section to fix.</li>
+    </ul>
+    <h3 id="address-suffix">The address of a page ends with "-2"</h3>
+    <p>Another page, or the same page in another language, already answers on that address. The screen announces it before you save, and nothing changes until you do. Change the <em>Page address</em> to another one, or change the address of the other page.</p>
+    <h3 id="image-in-use">An image cannot be deleted</h3>
+    <p>An image used by a page or an item cannot be deleted. On its sheet, <em>Delete this image</em> is greyed out and the list of pages using it is shown. Take the image out of each (<em>Remove</em> in its <em>Image</em> tab, or in the form of the section), then delete it. In a bulk deletion, images still in use are kept and named.</p>
+    <h3 id="generator-unavailable">The generator does not answer</h3>
+    <p>The screen gives the reason. Editing by hand and publishing still work. The cases, with what to do:</p>
+    <ul>
+        <li>The AI budget of the site is spent: the generator works again next month, or as soon as the budget is raised in the AI settings of Thelia.</li>
+        <li>The generator is turned off, or no AI connection and model is set up for it, or the key of the connection cannot be read: to fix in the AI settings of Thelia.</li>
+        <li>The AI provider does not answer, or too many requests were sent: wait a few minutes and try again.</li>
+        <li>The answer was cut at the length limit: ask for a shorter page, or raise the limit in <strong>CMS &gt; Settings</strong>.</li>
+        <li>The model declined to write: reword the brief.</li>
+    </ul>
+    <p>If it lasts, tell whoever looks after the site.</p>
+</section>
+
+<section id="glossary">
+    <h2>Glossary</h2>
+    <dl>
+        <dt>Page</dt>
+        <dd>An address of the site, with its title, its settings and its content. It exists in every language.</dd>
+        <dt>Template</dt>
+        <dd>The model of a series of pages (recipes, news): layout, writing instructions, fields and model page.</dd>
+        <dt>Section</dt>
+        <dd>A block of the content of a page, laid under the previous one. Each section is a component.</dd>
+        <dt>Component</dt>
+        <dd>The kind of a section (a banner, a text, a list of products). The theme and the site provide them.</dd>
+        <dt>Skill</dt>
+        <dd>An instruction the generator reads before it writes, rewritten and switched off from <strong>CMS &gt; Skills</strong>.</dd>
+        <dt>Draft</dt>
+        <dd>The content being written. Visitors do not see it before it is published.</dd>
+        <dt>Tag</dt>
+        <dd>A word, with an optional color, that gathers pages.</dd>
+        <dt>Generator</dt>
+        <dd>The automatic writing by AI: it writes pages, sections, texts and components from a brief.</dd>
+    </dl>
 </section>

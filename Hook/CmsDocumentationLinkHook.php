@@ -37,22 +37,24 @@ use Twig\Environment;
 class CmsDocumentationLinkHook extends BaseHook
 {
     /**
-     * The section explaining each screen, by the start of its route name; the
-     * longest start that matches wins. The ids are shared by every language
-     * of the documentation.
+     * The part of the documentation explaining each screen, by the start of
+     * its route name; the longest start that matches wins. The ids are shared
+     * by every language of the documentation: a `<section id>` or an
+     * `<h3 id>`, both reached by the same fragment.
      */
     private const array SECTIONS = [
         'admin.cms.pages.content.' => 'content',
         'admin.cms.pages.' => 'pages',
+        'admin.cms.pages.trash' => 'trash',
         'admin.cms.catalogue.' => 'catalogue',
         'admin.cms.tags.' => 'tags',
         'admin.cms.settings.page_types.' => 'page-templates',
         'admin.cms.settings.' => 'settings',
         'admin.cms.components.' => 'components',
         'admin.cms.skills.' => 'skills',
-        'admin.cms.menus.' => 'menus-forms-media',
-        'admin.cms.forms.' => 'menus-forms-media',
-        'admin.cms.media.' => 'menus-forms-media',
+        'admin.cms.menus.' => 'menus',
+        'admin.cms.forms.' => 'forms',
+        'admin.cms.media.' => 'media',
     ];
 
     public function __construct(

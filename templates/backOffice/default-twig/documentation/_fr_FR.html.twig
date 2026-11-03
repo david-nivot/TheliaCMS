@@ -1,3 +1,17 @@
+<section id="getting-started">
+    <h2>Premiers pas</h2>
+    <p>Voici le chemin le plus court, de la page vide à la page visible dans le menu. Chaque étape renvoie à la partie qui la détaille.</p>
+    <ol>
+        <li>Ouvrez <strong>CMS &gt; Pages</strong> et cliquez sur <em>Nouvelle page</em>. Saisissez le titre, choisissez la page parente et le gabarit, puis cliquez sur <em>Enregistrer le brouillon</em>.</li>
+        <li>Sur l’écran de la page, cliquez sur <em>Modifier le contenu</em>.</li>
+        <li>Écrivez le contenu. Avec le générateur : dites ce que la page doit contenir dans le brief, puis cliquez sur <em>Écrire le brouillon</em>. À la main : cliquez sur <em>Ou ajoutez une section à la main</em> et choisissez un composant. Voir <a href="#content">Le contenu d’une page</a>.</li>
+        <li>Regardez l’aperçu à droite. <em>Aperçu du brouillon</em> l’ouvre dans un nouvel onglet.</li>
+        <li>Cliquez sur <em>Publier</em>, en haut de l’écran. Le message « La page est en ligne. » confirme la publication. Voir <a href="#publish-first-page">Publier sa première page</a>.</li>
+        <li>Ouvrez <strong>CMS &gt; Menus</strong>, puis le menu voulu (<code>main</code> pour le menu principal). Dans <em>Ajouter une entrée</em>, choisissez <em>Page</em> dans <em>Cette entrée pointe vers</em>, sélectionnez la page et cliquez sur <em>Ajouter au menu</em>.</li>
+    </ol>
+    <p>Chaque langue du site se travaille à part : choisissez-la avec le sélecteur de langue avant de commencer. Si un bouton est grisé ou si la publication est refusée, voir <a href="#troubleshooting">Si ça ne marche pas</a>.</p>
+</section>
+
 <section id="overview">
     <h2>Vue d’ensemble</h2>
     <p>Le CMS gère les pages du site, leur contenu et tout ce qui les entoure. Tout se trouve dans la section <strong>CMS</strong> du menu de gauche. Vous n’y voyez que les écrans que votre profil autorise.</p>
@@ -16,27 +30,51 @@
 
 <section id="pages">
     <h2>Pages</h2>
-    <h3>Trouver une page</h3>
+    <h3 id="pages-list">Trouver une page</h3>
     <p><strong>CMS &gt; Pages</strong> présente l’arbre du site un niveau à la fois. Une page qui en contient d’autres affiche leur nombre et s’ouvre sur sa flèche. Le champ <em>Trouver une page</em> cherche un mot dans les titres de la langue modifiée, et l’état de publication ou la visibilité affinent la recherche. Les flèches qui changent l’ordre des pages n’apparaissent que sur l’arbre.</p>
-    <h3>Créer et régler une page</h3>
-    <p>Une page porte, dans chaque langue : un titre, une adresse, un résumé, une description détaillée et ses informations de référencement (titre et description pour les moteurs de recherche, partage sur les réseaux sociaux, page canonique, consignes aux robots). Elle a aussi, pour toutes les langues : une page parente, un gabarit, une étiquette, une image et une période de publication (date de mise en ligne et date de retrait, facultatives).</p>
-    <p>L’onglet <em>Image</em> choisit l’image de la page dans la médiathèque, avec le même sélecteur que les sections (vignettes, recherche, filtres), ou en envoie une nouvelle. Cette image est celle des cartes qui présentent la page ailleurs sur le site et du partage sur les réseaux sociaux.</p>
-    <h3>L’adresse d’une page</h3>
+    <figure class="figure d-block my-3">
+        <img class="figure-img img-fluid rounded border" src="{{ module_asset('TheliaCMS', 'assets/documentation/pages-list.fr_FR.png') }}" alt="La liste des pages : l’arbre du site, avec pour chaque page son titre, son état de publication, son adresse et ses actions." loading="lazy">
+        <figcaption class="figure-caption">La liste des pages : une ligne par page, ses actions à droite.</figcaption>
+    </figure>
+    <p>Chaque ligne affiche l’état de la page dans la langue modifiée : <em>Brouillon</em>, <em>Programmée</em>, <em>Publiée</em>, <em>Modifiée depuis la publication</em> ou <em>Dépubliée</em>. <em>Masquer</em> retire la page du site, dans toutes les langues ; <em>Afficher</em> la remet.</p>
+
+    <h3 id="page-settings">Créer et régler une page</h3>
+    <p>Un clic sur le titre d’une page ouvre ses réglages, répartis en onglets : <em>Général</em>, <em>Champs</em> du gabarit quand il en a, <em>Moteurs de recherche et partage</em>, <em>Image</em> et <em>Documents</em>. Une page porte, dans chaque langue : un titre, une adresse, un résumé, une description détaillée et ses informations de référencement (titre et description pour les moteurs de recherche, partage sur les réseaux sociaux, page canonique, consignes aux robots). Elle a aussi, pour toutes les langues : une page parente, un gabarit, une étiquette, une image et une période de publication (<em>Publier le</em> et <em>Dépublier le</em>, facultatives).</p>
+    <p>Les réglages sont en ligne dès l’enregistrement : seul le contenu passe par un brouillon et une publication. L’onglet <em>Image</em> choisit l’image de la page dans la médiathèque, avec le même sélecteur que les sections (vignettes, recherche, filtres), ou en envoie une nouvelle. Cette image est celle des cartes qui présentent la page ailleurs sur le site et du partage sur les réseaux sociaux.</p>
+
+    <h3 id="page-address">L’adresse d’une page</h3>
     <p>L’adresse est faite de celle des pages parentes et de l’adresse propre à la page : une page « Conseil » rangée sous « Nos services » répond sur <code>/nos-services/conseil</code>. Laissez le champ <em>Adresse de la page</em> vide et il est tiré du titre.</p>
-    <p>Sous le champ, l’écran affiche l’adresse complète sur laquelle la page répondra dans la langue modifiée. <em>Régénérer depuis le titre</em> remplit le champ à partir du titre : une fois la page enregistrée, la renommer ne change pas son adresse d’elle-même, et l’écran signale quand l’adresse ne suit plus le titre. Quand une autre page, ou la même page dans une autre langue, répond déjà sur une adresse, un numéro y est ajouté (<code>cookies-2</code>) et l’écran le dit. Rien ne change avant l’enregistrement.</p>
-    <p>Changer l’adresse d’une page, ou la déplacer dans l’arbre, garde l’ancienne adresse en redirection vers la nouvelle : les liens déjà publiés et les moteurs de recherche suivent. Les pages rangées dessous suivent aussi.</p>
-    <p>Le champ <em>Adresse figée</em> donne à la page une adresse entière, gardée telle quelle quelle que soit sa place dans l’arbre, par exemple <code>qui-sommes-nous.html</code>. Il sert à garder les adresses d’un ancien site. L’écran indique, pendant la saisie, si l’adresse est libre. Videz-le pour revenir à l’adresse construite.</p>
-    <p>Certaines adresses sont réservées au fonctionnement du site (<code>admin</code>, <code>api</code>, <code>recherche</code>…) et refusées.</p>
-    <h3>Rédiger un résumé ou une description depuis un brief</h3>
+    <ul>
+        <li>Sous le champ, l’écran affiche l’adresse complète sur laquelle la page répondra dans la langue modifiée. <em>Régénérer depuis le titre</em> remplit le champ à partir du titre : une fois la page enregistrée, la renommer ne change pas son adresse d’elle-même, et l’écran signale quand l’adresse ne suit plus le titre.</li>
+        <li>Quand une autre page, ou la même page dans une autre langue, répond déjà sur une adresse, un numéro y est ajouté (<code>cookies-2</code>) et l’écran le dit. Rien ne change avant l’enregistrement.</li>
+        <li>Le champ <em>Adresse figée</em> donne à la page une adresse entière, gardée telle quelle quelle que soit sa place dans l’arbre, par exemple <code>qui-sommes-nous.html</code>. Il sert à garder les adresses d’un ancien site. L’écran indique, pendant la saisie, si l’adresse est libre. Videz-le pour revenir à l’adresse construite.</li>
+        <li>Certaines adresses sont réservées au fonctionnement du site (<code>admin</code>, <code>api</code>, <code>recherche</code>…) et refusées.</li>
+    </ul>
+
+    <h3 id="change-address">Changer l’adresse d’une page sans casser les liens</h3>
+    <ol>
+        <li>Dans <strong>CMS &gt; Pages</strong>, choisissez la langue avec le sélecteur, puis cliquez sur le titre de la page.</li>
+        <li>Dans l’onglet <em>Général</em>, saisissez la nouvelle adresse dans <em>Adresse de la page</em>, ou cliquez sur <em>Régénérer depuis le titre</em>. Pour déplacer la page, changez plutôt la <em>Page parente</em>.</li>
+        <li>Vérifiez l’adresse complète affichée sous le champ, puis cliquez sur <em>Enregistrer le brouillon</em>. L’adresse change tout de suite, sans republier la page.</li>
+    </ol>
+    <p>L’ancienne adresse reste active et renvoie, par une redirection permanente (301), vers la nouvelle : les liens déjà publiés et les moteurs de recherche suivent. Les pages rangées sous la page déplacée changent d’adresse avec elle et gardent leurs anciennes adresses en redirection. Donner une <em>Adresse figée</em> à une page garde aussi son ancienne adresse en redirection. Un déplacement dans l’arbre vaut pour toutes les langues de la page, un changement d’adresse seulement pour la langue modifiée.</p>
+
+    <h3 id="brief-field">Rédiger un résumé ou une description depuis un brief</h3>
     <p>À côté du <em>Résumé</em> et de la <em>Description détaillée</em> d’une page, et à côté du résumé, de la description et de la conclusion d’un produit, d’une catégorie, d’une marque, d’un dossier et d’un contenu, <em>Rédiger depuis un brief</em> demande au générateur le texte de ce champ. Dites ce qu’il doit dire, et si vous le souhaitez son ton et son public : le générateur lit aussi le titre et ce que contient déjà le champ (pour le réécrire ou le compléter), et peut chercher dans les produits, catégories et pages du site pour les citer ou faire un lien.</p>
     <p>Le texte revient mis en forme (paragraphes, gras, italique, listes, liens, intertitres) et s’affiche d’abord, avec son coût. <em>Remplacer le texte</em> le met à la place du contenu du champ, <em>Insérer au curseur</em> l’ajoute là où était le curseur, <em>Annuler</em> laisse le champ tel quel. Rien n’est enregistré avant l’enregistrement du formulaire, comme si vous aviez tapé le texte. Le bouton demande le droit d’utiliser le générateur ; son effort et sa longueur se règlent dans <strong>CMS &gt; Réglages</strong>, son modèle dans les réglages IA de Thelia.</p>
-    <h3>Page d’accueil, duplication, corbeille</h3>
+
+    <h3 id="page-actions">Page d’accueil, duplication, dépublication</h3>
+    <p>Ces trois actions sont en bas de l’écran de réglages d’une page.</p>
     <ul>
-        <li><em>Définir comme page d’accueil</em>, sur la liste, fait servir la page sur l’adresse <code>/</code>. Son adresse propre redirige alors vers l’accueil.</li>
+        <li><em>Définir comme page d’accueil</em> fait servir la page sur l’adresse <code>/</code>. Son adresse propre redirige alors vers l’accueil.</li>
         <li><em>Dupliquer</em> crée une copie masquée de la page, avec son étiquette et son contenu en brouillon, à relire avant de la publier.</li>
-        <li>Une page supprimée part à la <strong>Corbeille</strong> (<strong>CMS &gt; Pages &gt; Corbeille</strong>) avec les pages rangées dessous. Elle y reste 30 jours, durée modifiable dans les réglages, et peut être restaurée jusque-là. Ensuite, elle est supprimée pour de bon, contenu et adresses compris.</li>
+        <li><em>Dépublier</em> retire la page du site dans la langue modifiée. Le brouillon et les réglages sont gardés : <em>Publier</em> la remet en ligne.</li>
     </ul>
-    <h3>Joindre des documents à une page</h3>
+
+    <h3 id="trash">Corbeille</h3>
+    <p>Une page supprimée part à la <strong>Corbeille</strong> (<strong>CMS &gt; Pages &gt; Corbeille</strong>) avec les pages rangées dessous. Elle y reste 30 jours, durée modifiable dans les réglages, et <em>Restaurer</em> la remet dans l’arbre jusque-là. Une page rangée sous une page elle-même à la corbeille revient avec elle. Ensuite, elle est supprimée pour de bon, contenu et adresses compris.</p>
+
+    <h3 id="documents">Joindre des documents à une page</h3>
     <p>L’onglet <em>Documents</em> d’une page enregistrée joint des fichiers à télécharger : une fiche technique, un catalogue, un formulaire. Vous pouvez en choisir plusieurs à la fois ; sont acceptés les PDF, les fichiers Word, Excel et PowerPoint, le texte OpenDocument, les ZIP et le texte brut, dans la limite de taille que le serveur accepte, affichée sur l’onglet. Un fichier refusé est signalé avec sa raison, sans empêcher l’ajout des autres.</p>
     <ul>
         <li>Le fichier est le même dans toutes les langues ; le <em>titre</em> et la <em>description</em> s’écrivent dans la langue en cours d’édition. Sans titre, le fichier porte son nom d’origine.</li>
@@ -49,13 +87,48 @@
 
 <section id="content">
     <h2>Le contenu d’une page</h2>
-    <p>Le contenu se modifie sur son propre écran : <em>Modifier le contenu</em>, depuis la page. Il est fait de <strong>sections</strong> posées les unes sous les autres, chacune étant un composant (un bandeau, un texte, une liste de produits, un formulaire…). À droite, l’aperçu montre le brouillon tel que le site l’affichera.</p>
-    <h3>Écrire avec le générateur</h3>
-    <p><em>L’écrire depuis un brief</em> envoie au générateur ce que la page doit dire, son ton et son public. Il répond par une page entière, qui remplace le brouillon. Pour écrire, il suit les skills du site, choisit parmi les composants proposés et peut chercher dans les produits, catégories, pages et images du site. Si les réglages l’autorisent, il lit aussi les pages web que le brief cite par leur adresse.</p>
-    <p>Ensuite, <em>Demander une modification</em> retouche toute la page, ou une seule section depuis son formulaire, les autres restant telles quelles. L’historique de l’écran liste chaque demande, avec son résultat, sa durée et son coût. Le brouillon qu’une demande remplace est gardé : <em>Brouillons précédents</em> en liste les cinq derniers, et <em>Rétablir</em> en remet un à la place du brouillon actuel, lui-même gardé à son tour. Utiliser le générateur demande un droit à part, parce que chaque appel est facturé.</p>
-    <h3>Modifier à la main</h3>
-    <p>Chaque section se modifie aussi à la main, dans un formulaire qui présente ses champs : du texte, des lignes à ajouter ou retirer pour une liste, un sélecteur pour une image ou un produit. Un double-clic sur un texte libre dans l’aperçu le rend modifiable sur place, avec la barre d’outils de l’éditeur ; <em>Enregistrer</em> ou Ctrl+Entrée garde le texte, <em>Annuler</em> ou Échap le remet. Survoler une section dans l’aperçu affiche <em>Modifier</em>, qui ouvre son formulaire, et <em>Supprimer</em>, qui la retire après confirmation. Le formulaire se ferme avec la croix ou la touche Échap ; la source d’une image autre que la médiathèque et l’apparence de la section sont repliées sous leur titre. L’image d’une section s’affiche avec son nom et son état de description ; <em>Choisir dans la médiathèque</em> ouvre la médiathèque en vignettes, avec recherche, filtres, étiquettes et envoi d’une nouvelle image. La largeur, l’espace et l’alignement se choisissent sur des boutons qui les dessinent. Une image de la médiathèque est publiée avec son texte alternatif de la médiathèque ; le texte de la section ne sert qu’à une image hébergée ailleurs, ou en attendant que l’image soit décrite. Choisir une image dans une section demande le droit de voir les médias. Les sections se déplacent par glisser-déposer ou avec les flèches, et se suppriment. <em>Ajouter une section</em>, sous la dernière, propose les composants du site : celui choisi arrive en fin de page avec un texte d’exemple à remplacer. Une page vide se commence ainsi, sans le générateur.</p>
-    <h3>Prévisualiser et publier</h3>
+    <p>Le contenu se modifie sur son propre écran : <em>Modifier le contenu</em>, depuis la page. Il est fait de <strong>sections</strong> posées les unes sous les autres, chacune étant un composant (un bandeau, un texte, une liste de produits, un formulaire…). À gauche, le brief et la liste des sections ; à droite, l’aperçu montre le brouillon tel que le site l’affichera.</p>
+    <figure class="figure d-block my-3">
+        <img class="figure-img img-fluid rounded border" src="{{ module_asset('TheliaCMS', 'assets/documentation/content-screen.fr_FR.png') }}" alt="L’écran de contenu : la liste des sections à gauche, l’aperçu de la page à droite." loading="lazy">
+        <figcaption class="figure-caption">Les sections se règlent à gauche, l’aperçu du brouillon se lit à droite.</figcaption>
+    </figure>
+
+    <h3 id="generator">Écrire avec le générateur</h3>
+    <p>Sur une page vide, le brief demande ce que la page doit dire, son ton et son public. <em>Écrire le brouillon</em> envoie le brief au générateur, qui répond par une page entière. Pour écrire, il suit les skills du site, choisit parmi les composants proposés et peut chercher dans les produits, catégories, pages et images du site. Si les réglages l’autorisent, il lit aussi les pages web que le brief cite par leur adresse. Sur une page déjà écrite, <em>Remplacer le brouillon</em> recommence la page à zéro, après une confirmation.</p>
+    <p>Pour retoucher plutôt que recommencer, utilisez <em>Demander une modification</em> puis <em>Appliquer la modification</em> : toute la page est retouchée, les sections qui ne sont pas concernées restent telles quelles. <em>Réécrire cette section</em>, sur une section de la liste, retouche cette seule section.</p>
+    <ul>
+        <li>L’<em>Historique</em> de l’écran liste chaque demande, avec son résultat, sa durée et son coût.</li>
+        <li>Le brouillon qu’une demande remplace est gardé : <em>Brouillons précédents</em> en liste les cinq derniers, et <em>Rétablir</em> en remet un à la place du brouillon actuel, lui-même gardé à son tour.</li>
+        <li>Utiliser le générateur demande un droit à part, parce que chaque appel est facturé.</li>
+    </ul>
+
+    <h3 id="translate">Écrire une autre langue à partir d’une langue déjà écrite</h3>
+    <p>Quand une page n’a pas encore de contenu dans la langue choisie mais en a dans une autre, l’aperçu propose <em>L’écrire dans cette langue à partir de la version en</em> suivi de la langue source (une liste de langues quand il y en a plusieurs). Le générateur garde les sections et écrit leurs textes pour le nouveau lecteur. Le résultat arrive en brouillon, à relire avant de publier. Cela demande le droit d’utiliser le générateur. Les fiches du catalogue (produits, catégories, contenus, dossiers) fonctionnent de la même façon.</p>
+
+    <h3 id="by-hand">Modifier une section dans son formulaire</h3>
+    <p>Sur la ligne d’une section, <em>Modifier à la main</em> ouvre un formulaire qui présente ses champs : du texte, des lignes à ajouter ou retirer pour une liste, un sélecteur pour une image ou un produit. Survoler une section dans l’aperçu affiche aussi <em>Modifier</em>, qui ouvre le même formulaire, et <em>Supprimer</em>, qui la retire après confirmation.</p>
+    <ul>
+        <li>Le formulaire se ferme avec la croix ou la touche Échap.</li>
+        <li>La source d’une image autre que la médiathèque et l’apparence de la section sont repliées sous leur titre.</li>
+        <li>La largeur, l’espace et l’alignement se choisissent sur des boutons qui les dessinent.</li>
+    </ul>
+
+    <h3 id="by-hand-inline">Modifier un texte dans l’aperçu</h3>
+    <p>Un double-clic sur un texte libre dans l’aperçu le rend modifiable sur place, avec la barre d’outils de l’éditeur. <em>Enregistrer</em> ou Ctrl+Entrée garde le texte, <em>Annuler</em> ou Échap le remet comme avant.</p>
+
+    <h3 id="by-hand-image">Mettre une image dans une section</h3>
+    <p>L’image d’une section s’affiche avec son nom et son état de description. <em>Choisir dans la médiathèque</em> ouvre la médiathèque en vignettes, avec recherche, filtres, étiquettes et envoi d’une nouvelle image (voir <a href="#add-described-image">Ajouter une image décrite</a>). Une image de la médiathèque est publiée avec son texte alternatif de la médiathèque ; le texte de la section ne sert qu’à une image hébergée ailleurs, ou en attendant que l’image soit décrite. Choisir une image dans une section demande le droit de voir les médias.</p>
+
+    <h3 id="by-hand-sections">Ajouter, dupliquer, déplacer, retirer des sections</h3>
+    <ul>
+        <li><em>Ajouter une section</em>, sous la dernière, propose les composants du site : celui choisi arrive en fin de page avec un texte d’exemple à remplacer. Une page vide se commence ainsi, sans le générateur.</li>
+        <li>Le bouton <em>Dupliquer cette section</em>, à côté des flèches d’une section, en met une copie juste après elle dans le brouillon : même composant, mêmes réglages et même apparence, à modifier ensuite. Une section d’un composant que le site a mis de côté ne se copie pas.</li>
+        <li>Les sections se déplacent par glisser-déposer ou avec les flèches.</li>
+        <li><em>Retirer cette section</em> la supprime du brouillon, après confirmation.</li>
+    </ul>
+    <p>Ajouter, dupliquer, déplacer ou retirer une section ne change que le brouillon de la langue modifiée, et demande le droit de modifier les pages.</p>
+
+    <h3 id="preview-publish">Prévisualiser et publier</h3>
     <ul>
         <li>Enregistrer ne change jamais ce que voient les visiteurs : on travaille sur un brouillon.</li>
         <li>L’aperçu montre la <em>page entière</em>, avec l’en-tête, le pied et le titre du site, ou le <em>contenu seul</em>, les sections sans rien autour ; le choix est gardé d’une page à l’autre.</li>
@@ -64,12 +137,22 @@
         <li>Chaque publication garde une version de la page.</li>
     </ul>
     <p>Chaque langue a son propre contenu : la version française et la version anglaise d’une page sont deux brouillons indépendants, publiés séparément.</p>
+
+    <h3 id="publish-first-page">Publier sa première page</h3>
+    <ol>
+        <li>Dans <strong>CMS &gt; Pages</strong>, ouvrez le contenu de la page avec le bouton <em>Modifier le contenu</em> de sa ligne.</li>
+        <li>Relisez le brouillon dans l’aperçu. Si vous voulez le voir sur le site avant tout le monde, cliquez sur <em>Aperçu du brouillon</em>.</li>
+        <li>Si le gabarit de la page a des champs obligatoires, remplissez-les : sur l’écran de réglages de la page, ils sont dans l’onglet <em>Champs</em>.</li>
+        <li>Cliquez sur <em>Publier</em>, en haut de l’écran de contenu. Le message « La page est en ligne. » apparaît.</li>
+        <li>Vérifiez l’état affiché à côté du titre : il doit indiquer <em>Publiée</em>. Un état <em>Dépubliée</em> veut dire que la page est masquée ou que sa date de retrait est passée ; <em>Programmée</em>, que sa date de mise en ligne n’est pas encore venue. Les deux se règlent dans l’onglet <em>Général</em> des réglages.</li>
+    </ol>
+    <p>Le bouton <em>Publier cette version</em>, sur l’écran de réglages de la page, fait la même chose. Si la publication est refusée, le message dit pourquoi : voir <a href="#publication-refused">La publication est refusée</a>.</p>
 </section>
 
 <section id="page-templates">
     <h2>Gabarits</h2>
     <p>Un gabarit est le modèle d’une série de pages : des recettes, des réalisations, des actualités. Chaque page a un gabarit, choisi dans son onglet <em>Général</em>. Les gabarits du site sont dans <strong>CMS &gt; Gabarits</strong> (aussi accessibles depuis les réglages). Le gabarit <code>default</code> existe toujours.</p>
-    <h3>Ce que règle un gabarit</h3>
+    <h3 id="template-settings">Ce que règle un gabarit</h3>
     <ul>
         <li><strong>L’affichage.</strong> Le thème du site peut dessiner les pages d’un gabarit à sa façon. L’écran des gabarits indique, pour chacun, la mise en page utilisée.</li>
         <li><strong>Un nom et une description</strong> dans chaque langue.</li>
@@ -78,8 +161,8 @@
         <li><strong>Des champs</strong> : les informations que porte chaque page du gabarit, comme un temps de préparation ou une ville. Un champ est un nombre entier ou décimal, une durée en minutes, un texte court ou long, un oui ou non, un mot pris dans une liste, ou une date. Il peut avoir une unité, des bornes, être écrit dans chaque langue (pour les textes) ou être obligatoire : une page ne se publie pas tant qu’il est vide. Les valeurs se remplissent dans l’onglet <em>Champs</em> des réglages de la page, et le générateur les écrit avec le contenu.</li>
         <li><strong>Une page modèle</strong>, le contenu d’exemple dont partent les nouvelles pages du gabarit. Elle n’est jamais publiée ni en ligne, et elle est supprimée avec son gabarit, jamais mise à la corbeille.</li>
     </ul>
-    <p><em>Créer une page depuis un gabarit</em>, sur la liste des pages, copie la page modèle (contenu dans toutes les langues et valeurs des champs) sous le titre saisi.</p>
-    <h3>Lister les pages d’un gabarit</h3>
+    <p><em>Créer depuis le gabarit</em>, dans le cadre <em>Créer une page depuis un gabarit</em> de la liste des pages, copie la page modèle (contenu dans toutes les langues et valeurs des champs) sous le titre saisi.</p>
+    <h3 id="template-lists">Lister les pages d’un gabarit</h3>
     <p>La section <em>Pages d’un type</em>, ajoutée dans le contenu d’une page, affiche les pages en ligne d’un gabarit : les dernières actualités, toutes les réalisations. Elle se règle avec un titre, un ordre (les plus récentes, par titre, par position dans l’arbre, par un champ) et un nombre de pages. La liste se lit à chaque visite : une page publiée demain y apparaît sans republier la page qui la contient.</p>
     <p>Un gabarit utilisé par une page, même dans la corbeille, ne peut pas être supprimé.</p>
 </section>
@@ -87,12 +170,20 @@
 <section id="tags">
     <h2>Étiquettes</h2>
     <p>Une page porte une étiquette ou aucune, choisie dans son onglet <em>Général</em>. Les étiquettes se créent, se renomment et se suppriment dans <strong>CMS &gt; Étiquettes</strong>. Le thème s’en sert pour regrouper des pages, par exemple « les autres actualités ». Supprimer une étiquette la retire des pages qui la portaient ; l’écran dit combien.</p>
+    <h3 id="tag-colors">La couleur d’une étiquette</h3>
+    <p>Une étiquette peut avoir un badge de la couleur de votre choix. Cochez <em>Donner une couleur à l’étiquette</em>, puis choisissez le <em>Fond</em> avec le sélecteur de couleur.</p>
+    <ul>
+        <li>Par défaut, le texte du badge est noir ou blanc, selon ce qui se lit le mieux sur le fond.</li>
+        <li>Pour choisir vous-même la couleur du texte, décochez <em>Texte en noir ou en blanc, selon ce qui se lit le mieux sur le fond</em> et réglez <em>Texte</em>.</li>
+        <li>Le badge se voit dans le back-office ; un thème peut l’afficher aussi sur le site.</li>
+        <li>Changer la couleur d’une étiquette change le badge de toutes les pages qui la portent.</li>
+    </ul>
 </section>
 
 <section id="catalogue">
     <h2>Le contenu des produits, catégories et contenus</h2>
-    <p>Un produit, une catégorie, un contenu et un dossier de la boutique peuvent aussi recevoir des sections, langue par langue. Leur fiche dans le back-office a un onglet <strong>Contenu CMS</strong>, qui dit où en est leur contenu dans chaque langue et ouvre son écran. Cet écran fonctionne comme celui d’une page : générateur, modification à la main, aperçu, publication. Le générateur sait sur quelle fiche le contenu s’affiche et ce qu’elle montre déjà, pour compléter la fiche plutôt que répéter son nom ou son prix.</p>
-    <p>L’aperçu montre le brouillon de deux façons : dans la <em>page entière</em> de la fiche, à sa place, ou en <em>contenu seul</em>, sans l’en-tête et le pied du site.</p>
+    <p>Un produit, une catégorie, un contenu et un dossier de la boutique peuvent aussi recevoir des sections, langue par langue. Leur fiche dans le back-office a un onglet <strong>Contenu CMS</strong>, qui dit où en est leur contenu dans chaque langue et ouvre son écran avec <em>Écrire le contenu</em> ou <em>Modifier le contenu</em>. Cet écran fonctionne comme celui d’une page : générateur, modification à la main, duplication de section, écriture à partir d’une autre langue, aperçu, publication. Le générateur sait sur quelle fiche le contenu s’affiche et ce qu’elle montre déjà, pour compléter la fiche plutôt que répéter son nom ou son prix.</p>
+    <p>L’aperçu montre le brouillon de deux façons : dans la <em>page entière</em> de la fiche, à sa place, ou en <em>contenu seul</em>, sans l’en-tête et le pied du site. <em>Retirer du site</em>, dans l’onglet, met le contenu d’une langue hors ligne ; son brouillon est conservé.</p>
 </section>
 
 <section id="components">
@@ -103,27 +194,81 @@
         <li><strong>Le texte libre</strong> : un bloc de texte mis en forme (intertitres, paragraphes, listes, liens).</li>
         <li><strong>Le contenu vivant</strong> : un bloc calculé à chaque visite, comme un formulaire du site ou la liste des pages d’un gabarit.</li>
     </ul>
-    <h3>L’écran Composants</h3>
+    <h3 id="components-screen">L’écran Composants</h3>
     <p><strong>CMS &gt; Composants</strong> liste le catalogue : chaque composant, son origine (le module, le thème, le site) et le nombre de pages qui l’utilisent, brouillons compris. Désactiver un composant le retire de ce que le générateur peut proposer. Rien d’autre ne change : les pages qui l’utilisent continuent de l’afficher et ses sections restent modifiables à la main. Le texte libre ne se désactive pas. Un bouton ouvre la boîte à outils du thème, qui montre chaque composant proposé, quand le thème l’offre.</p>
-    <h3>Faire créer un composant</h3>
+    <h3 id="make-component">Faire créer un composant</h3>
     <p><em>Nouveau composant</em> décrit au générateur ce que le composant doit montrer, ce qu’un éditeur y remplira et à quoi il doit ressembler. Il en propose une version, que vous gardez, faites modifier ou redemandez. Un composant gardé rejoint le catalogue comme « fait sur ce site ». Ses textes sont écrits par les pages qui l’utilisent, dans chaque langue. Créer un composant demande le droit sur les réglages et celui sur le code personnalisé.</p>
+    <h3 id="site-components">Copier, garder ou supprimer un composant du site</h3>
+    <p>Dans <strong>CMS &gt; Composants</strong>, le bouton <em>Modifier</em>, sur un composant créé sur ce site, ouvre son écran, avec son aperçu, ses propriétés et son historique.</p>
+    <figure class="figure d-block my-3">
+        <img class="figure-img img-fluid rounded border" src="{{ module_asset('TheliaCMS', 'assets/documentation/site-component.fr_FR.png') }}" alt="L’écran d’un composant du site : son aperçu et le formulaire pour le copier dans un nouveau composant." loading="lazy">
+        <figcaption class="figure-caption">L’écran d’un composant du site : l’aperçu, et le formulaire de copie en dessous.</figcaption>
+    </figure>
+    <ul>
+        <li><strong>Copier</strong> : <em>Copier dans un nouveau composant</em> demande un <em>Code</em> (en PascalCase, par exemple <code>PriceTableDark</code>, qui ne pourra plus changer) et un <em>Intitulé</em>, puis <em>Copier</em> recopie le gabarit, les styles et les propriétés sans appeler le générateur. La copie est un prototype : modifiez-la avec <em>Demander une modification</em>.</li>
+        <li><strong>Garder</strong> : un composant en prototype est affiché sur les pages qui le portent, mais proposé à personne d’autre. <em>Garder pour tout le site</em>, sur son écran ou dans la liste, le propose au générateur et sur l’écran de contenu de chaque page.</li>
+        <li><strong>Supprimer</strong> : <em>Supprimer le composant</em> est définitif, après confirmation. Il n’est possible que si aucune page ne contient le composant, brouillons et langues compris : sinon, l’écran indique le nombre de pages et il faut d’abord le retirer de chacune.</li>
+    </ul>
+    <p>Copier, garder et supprimer demandent les mêmes droits que <em>Nouveau composant</em>.</p>
+    <h3 id="prototype-from-page">Prototyper un composant depuis une page</h3>
+    <p>Sur l’écran de contenu d’une page, <em>Ajouter une section</em> propose, sous les composants existants, <em>Un nouveau composant</em>. Décrivez-le dans <em>Prototyper un composant</em> puis cliquez sur <em>Le prototyper</em> : cela prend jusqu’à une minute. L’aperçu montre alors le composant à la place du brouillon.</p>
+    <ul>
+        <li><em>Le garder et l’ajouter à la page</em> l’ajoute en fin de brouillon. Il reste un prototype : <strong>CMS &gt; Composants</strong> le garde ensuite pour tout le site.</li>
+        <li><em>Demander une modification</em> puis <em>Modifier</em> en propose une nouvelle version.</li>
+        <li><em>Abandonner</em> ne garde rien.</li>
+    </ul>
+    <p>Cette possibilité demande le droit d’utiliser le générateur et ceux de <em>Nouveau composant</em>. Elle n’existe que sur les pages, pas sur les fiches du catalogue.</p>
 </section>
 
 <section id="skills">
     <h2>Skills</h2>
-    <p>Une skill est une consigne que le générateur lit avant d’écrire : comment une page est structurée ici, comment le texte s’écrit, ce que demandent l’accessibilité et le référencement, comment présenter le catalogue, comment traduire une page, comment rester dans le design system du thème. Le module en fournit sept (structure de page, rédaction, accessibilité, référencement, catalogue, traduction, design system) ; le thème peut en ajouter ou en remplacer.</p>
+    <p>Une skill est une consigne que le générateur lit avant d’écrire : comment une page est structurée ici, comment le texte s’écrit, ce que demandent l’accessibilité et le référencement, comment présenter le catalogue, comment traduire une page, comment rester dans le design system du thème, comment un composant bouge sans script. Le module en fournit huit (structure de page, rédaction, accessibilité, référencement, catalogue, traduction, design system, mouvement) ; le thème peut en ajouter ou en remplacer.</p>
     <p>Dans <strong>CMS &gt; Skills</strong>, chaque skill se réécrit, se désactive et change de position : les flèches de la liste la montent ou la descendent d’un rang, et le générateur lit les skills dans cet ordre. Une skill <em>toujours lue</em> est donnée au générateur à chaque demande ; une skill <em>à la demande</em> n’est lue que lorsque la page en a besoin, d’après sa description. Une skill réécrite garde votre texte quand le module est mis à jour, et un bouton remet le texte d’origine.</p>
     <p>Une consigne que vous voulez voir respectée sur toutes les pages (un ton, un mot à éviter, une mention obligatoire) a sa place dans une skill. Une consigne propre à une série de pages va dans les consignes de rédaction de son gabarit, et celle d’une seule page dans son brief.</p>
 </section>
 
 <section id="menus-forms-media">
     <h2>Menus, formulaires, médias</h2>
-    <h3>Menus</h3>
-    <p><strong>CMS &gt; Menus</strong> contient au moins le menu principal (<code>main</code>) et celui du pied de page (<code>footer</code>). Une entrée pointe vers une page, un contenu, un dossier, une catégorie ou un produit du catalogue, une adresse web, ou vers rien (c’est alors un intitulé de groupe). Son libellé est facultatif : vide, c’est le titre de la cible qui s’affiche. Une entrée vers une catégorie ou un produit suit son adresse dans chaque langue : la renommer ou changer son adresse ne laisse pas le menu en arrière. Dans le formulaire, les catégories sont présentées en arbre et les produits groupés par catégorie par défaut. L’arbre va jusqu’à trois niveaux ; les entrées se déplacent avec les boutons ou par glisser-déposer. Une entrée dont la cible est supprimée, hors ligne (une catégorie ou un produit masqué compris) ou non publiée dans la langue lue disparaît du menu dans cette langue, et l’écran dit pourquoi.</p>
-    <h3>Formulaires</h3>
+    <h3 id="menus">Menus</h3>
+    <p><strong>CMS &gt; Menus</strong> contient au moins le menu principal (<code>main</code>) et celui du pied de page (<code>footer</code>).</p>
+    <ul>
+        <li>Une entrée pointe vers une page, un contenu, un dossier, une catégorie ou un produit du catalogue, une adresse web, ou vers rien (c’est alors un intitulé de groupe). Son <em>Intitulé</em> est facultatif : vide, c’est le titre de la cible qui s’affiche.</li>
+        <li>Une entrée vers une catégorie ou un produit suit son adresse dans chaque langue : la renommer ou changer son adresse ne laisse pas le menu en arrière.</li>
+        <li>Dans le formulaire, les catégories sont présentées en arbre et les produits groupés par catégorie par défaut.</li>
+        <li>L’arbre va jusqu’à trois niveaux ; les entrées se déplacent avec les boutons ou par glisser-déposer.</li>
+        <li>Une entrée dont la cible est supprimée, hors ligne (une catégorie ou un produit masqué compris) ou non publiée dans la langue lue disparaît du menu dans cette langue, et l’écran dit pourquoi.</li>
+    </ul>
+    <h3 id="menus-by-language">Un menu propre à une langue</h3>
+    <p>Chaque menu a une version partagée, que lisent toutes les langues. L’écran d’un menu dit, pour la langue choisie avec le sélecteur, si elle <em>suit le menu partagé</em> ou si elle <em>a son propre menu</em>. Ce que vous modifiez s’applique alors à toutes les langues qui suivent le menu partagé, ou à cette langue seule.</p>
+    <ul>
+        <li><em>Donner à cette langue son propre menu</em> copie le menu partagé pour cette langue. Les changements suivants ne touchent plus les autres langues.</li>
+        <li><em>Réaligner sur…</em> remplace les entrées du menu par une copie d’un autre menu du même code, choisi dans la liste. L’écran de confirmation donne le nombre d’entrées remplacées. Rien n’est fusionné et l’opération est irréversible.</li>
+        <li><em>Faire du menu partagé une copie de celui-ci</em> fait l’inverse : le menu partagé reprend les entrées du menu de cette langue.</li>
+        <li><em>Revenir au menu partagé</em> supprime le menu propre de la langue, après confirmation, et la langue relit le menu partagé. Un menu propre que vous videz reste vide dans sa langue.</li>
+    </ul>
+    <p>Réaligner et revenir au menu partagé demandent les droits de modifier et de supprimer les menus. Le code d’un menu se change sur sa version partagée, pour toutes les langues à la fois ; supprimer le menu partagé supprime aussi les menus de ses langues.</p>
+    <h3 id="forms">Formulaires</h3>
     <p><strong>CMS &gt; Formulaires</strong> crée des formulaires, placés dans une page avec la section formulaire. Un champ est une ligne de texte, une adresse e-mail, plusieurs lignes, une liste déroulante, une case à cocher, un choix parmi plusieurs, un téléphone, une date ou un accord pour être recontacté. Les destinataires se règlent ici. Les robots sont écartés sans captcha. Les <em>Réponses</em> se consultent, se cherchent par adresse e-mail, s’exportent (CSV, JSON) et se suppriment ; elles sont effacées d’elles-mêmes après la durée de conservation du formulaire (365 jours par défaut).</p>
-    <h3>Médias</h3>
-    <p><strong>CMS &gt; Médias</strong> range les images des pages (JPEG, PNG, WebP). Le texte alternatif est obligatoire dans chaque langue, sauf pour une image marquée décorative. Chaque image indique ses dimensions, son poids et les pages qui l’utilisent ; une image utilisée ne peut pas être supprimée. La liste montre 48 images par page ; elle se restreint aux images encore à décrire dans la langue éditée, aux inutilisées, aux décoratives ou à une étiquette, et se trie des plus récentes aux plus anciennes, par titre ou par poids. La recherche lit le titre, le texte alternatif, la légende et les étiquettes. « Les décrire une à une » présente les images de la liste encore à décrire, une par une : Entrée enregistre le texte alternatif et passe à la suivante, « Elle est décorative » la marque décorative, « Passer » la laisse pour plus tard. Les images se déposent sur le cadre d’envoi de la liste ou se choisissent ; chaque fichier est envoyé à part, un fichier refusé est nommé avec la raison sans empêcher les autres, puis la file « Décrire » s’ouvre sur les images ajoutées. La fiche d’une image indique, pour chaque langue, si elle est décrite, à décrire ou décorative ; ses étiquettes sont proposées parmi celles de la médiathèque, et un fichier de remplacement s’affiche avant l’enregistrement. Les images cochées dans la liste reçoivent ou perdent une étiquette, deviennent décoratives ou non, ou sont supprimées si rien ne les utilise ; celles encore utilisées sont gardées et nommées. À la publication, les images sont servies en plusieurs tailles et au format WebP.</p>
+    <h3 id="media">Médias</h3>
+    <p><strong>CMS &gt; Médias</strong> range les images des pages (JPEG, PNG, WebP). Le texte alternatif est obligatoire dans chaque langue, sauf pour une image marquée décorative : c’est ce que lisent les lecteurs d’écran et ce qui s’affiche quand l’image ne charge pas. Chaque image indique ses dimensions, son poids et les pages qui l’utilisent ; une image utilisée ne peut pas être supprimée. À la publication, les images sont servies en plusieurs tailles et au format WebP.</p>
+    <h3 id="add-described-image">Ajouter une image décrite</h3>
+    <ol>
+        <li>Ouvrez <strong>CMS &gt; Médias</strong>. Déposez les fichiers sur le cadre <em>Déposez des images ici, ou choisissez-les</em>, ou cliquez sur <em>Ajouter des images</em>. Plusieurs fichiers à la fois sont possibles ; un fichier refusé est nommé avec sa raison, sans empêcher les autres.</li>
+        <li>Quand l’envoi est fini, cliquez sur <em>Décrire les N image(s) ajoutée(s)</em>.</li>
+        <li>Pour chaque image, saisissez dans <em>Texte alternatif</em> ce qu’elle montre, pour quelqu’un qui ne la voit pas, puis appuyez sur Entrée ou cliquez sur <em>Enregistrer et suivante</em>. Une image qui ne sert qu’à décorer se marque avec <em>Elle est décorative</em> ; <em>Passer</em> la laisse pour plus tard.</li>
+        <li>La description se fait pour la langue choisie avec le sélecteur : recommencez dans chaque langue du site.</li>
+        <li>Placez l’image : dans l’onglet <em>Image</em> d’une page, ou dans le formulaire d’une section avec <em>Choisir dans la médiathèque</em>. La fenêtre qui s’ouvre montre les vignettes ; cherchez, filtrez, puis cliquez sur l’image. Elle indique si chaque image est <em>Décrite</em>, <em>À décrire</em> ou <em>Décorative</em>.</li>
+    </ol>
+    <figure class="figure d-block my-3">
+        <img class="figure-img img-fluid rounded border" src="{{ module_asset('TheliaCMS', 'assets/documentation/media-picker.fr_FR.png') }}" alt="La fenêtre pour choisir une image : des vignettes, un champ de recherche et des filtres." loading="lazy">
+        <figcaption class="figure-caption">La fenêtre de choix d’une image : l’état de chaque image se lit sur sa vignette.</figcaption>
+    </figure>
+    <h3 id="media-list">Retrouver et trier les images</h3>
+    <p>La liste montre 48 images par page. Elle se restreint aux images encore à décrire dans la langue éditée, aux inutilisées, aux décoratives ou à une étiquette, et se trie des plus récentes aux plus anciennes, par titre ou par poids. La recherche lit le titre, le texte alternatif, la légende et les étiquettes. <em>Les décrire une à une</em> présente les images de la liste encore à décrire, une par une.</p>
+    <p>Les images cochées dans la liste reçoivent ou perdent une étiquette, deviennent décoratives ou non, ou sont supprimées si rien ne les utilise ; celles encore utilisées sont gardées et nommées.</p>
+    <h3 id="media-sheet">La fiche d’une image</h3>
+    <p>La fiche d’une image indique, pour chaque langue, si elle est décrite, à décrire ou décorative. Ses étiquettes sont proposées parmi celles de la médiathèque, et un fichier de remplacement s’affiche avant l’enregistrement. <em>Supprimer cette image</em> est grisé tant qu’une page ou une fiche l’utilise : voir <a href="#image-in-use">Une image ne se supprime pas</a>.</p>
+    <h3 id="media-catalogue">Les images du catalogue</h3>
     <p>Les images du catalogue (produits, catégories, marques, dossiers, contenus) n’y figurent pas d’elles-mêmes : la commande <code>php Thelia thelia_cms:media:import-catalogue</code> les y copie avec leurs titres, textes alternatifs et étiquettes. Relancée, elle ne copie que les nouvelles. Une copie ne suit pas le catalogue : une image remplacée là-bas est copiée à nouveau.</p>
 </section>
 
@@ -132,11 +277,12 @@
     <p><strong>CMS &gt; Réglages</strong> rassemble les réglages du site :</p>
     <ul>
         <li><strong>Ce qu’est ce site</strong> : une boutique, ou un site vitrine. En vitrine, le panier et la commande sont fermés et le CMS passe en tête du menu. Enregistrer le mode vitrine crée aussi un profil <em>Éditeur</em> (pages, menus, médias, formulaires, sans la boutique ni ces réglages), à attribuer dans <strong>Configuration &gt; Administrateurs</strong> ; ses droits se modifient ensuite librement. Revenir en boutique rouvre le panier et la commande en un enregistrement.</li>
+        <li><strong>Recherche du site</strong> : en mode vitrine, les adresses <code>/recherche</code> et <code>/search</code> affichent une page de recherche. Elle cherche dans les pages en ligne de la langue du visiteur, par dix résultats, et laisse de côté les pages réglées sur <em>Ne pas indexer (noindex)</em>. En boutique, la recherche du thème garde ces adresses.</li>
         <li><strong>Page affichée quand une adresse n’existe pas</strong> : une page du CMS, servie avec le code 404.</li>
         <li><strong>Jours passés à la corbeille avant suppression</strong> : 30 par défaut, 0 pour ne jamais vider la corbeille automatiquement.</li>
         <li><strong>Secondes de conservation d’une page par un cache partagé</strong> : 0, la valeur par défaut, désactive ce cache. À régler avec la personne qui gère l’hébergement.</li>
         <li><strong>Fermer le site pour maintenance</strong>, avec la <strong>page affichée pendant la maintenance</strong> et les <strong>adresses qui continuent de voir le site</strong> (adresses IP). Le site répond alors qu’il revient bientôt, ce qui protège son référencement. Le back-office et les administrateurs connectés restent servis.</li>
-        <li><strong>Générateur</strong> : l’<em>effort de réflexion</em>, la <em>longueur maximale de la réponse</em> et l’autorisation de <em>lire les pages web citées dans le brief</em> (désactivée tant que vous ne l’activez pas : le serveur de la boutique récupère la page et envoie son texte au fournisseur d’IA). Un effort plus élevé donne de meilleures pages, plus lentes et plus coûteuses, sur les modèles qui le lisent. Les textes rédigés depuis un brief à côté d’un champ ont leur propre effort et leur propre longueur. La connexion, le modèle et le budget se règlent dans les réglages IA de Thelia, pas ici.</li>
+        <li><strong>Générateur</strong> : l’<em>effort de réflexion</em>, la <em>longueur maximale de la réponse</em>, l’autorisation de <em>lire les pages web citées dans le brief</em> (désactivée tant que vous ne l’activez pas : le serveur de la boutique récupère la page et envoie son texte au fournisseur d’IA) et <em>Laisser un brief créer un composant du site</em> (désactivé aussi : le générateur peut alors créer un composant, au plus deux par page, quand aucun du catalogue ne convient, et il reste un prototype). Un effort plus élevé donne de meilleures pages, plus lentes et plus coûteuses, sur les modèles qui le lisent. Les textes rédigés depuis un brief à côté d’un champ ont leur propre effort et leur propre longueur. La connexion, le modèle et le budget se règlent dans les réglages IA de Thelia, pas ici.</li>
     </ul>
     <p>Les gabarits, les composants et les skills se règlent depuis leurs propres écrans, avec le même droit.</p>
 </section>
@@ -145,11 +291,68 @@
     <h2>Qui peut faire quoi</h2>
     <p>Les droits se donnent par profil, dans <strong>Configuration &gt; Administrateurs</strong> :</p>
     <ul>
-        <li>les pages : l’arbre, le contenu, la publication, les étiquettes, le contenu des fiches de la boutique, et cette documentation ;</li>
+        <li>les pages : l’arbre, le contenu, la publication, les sections ajoutées, dupliquées ou déplacées à la main, les étiquettes, le contenu des fiches de la boutique, et cette documentation ;</li>
         <li>le générateur : demander au générateur d’écrire ou de modifier, droit à part parce que chaque appel est facturé ;</li>
         <li>les menus ; les formulaires et leurs réponses ; les médias ;</li>
         <li>les réglages : mode du site, maintenance, page d’erreur, générateur, gabarits, composants, skills ;</li>
         <li>le code personnalisé : des cadres intégrés (<code>iframe</code>) dans le contenu publié, et la création de composants.</li>
     </ul>
     <p>Un écran ou un bouton que votre profil n’autorise pas n’est pas proposé.</p>
+</section>
+
+<section id="troubleshooting">
+    <h2>Si ça ne marche pas</h2>
+    <h3 id="greyed-button">Un bouton est grisé ou absent</h3>
+    <ul>
+        <li><em>Publier</em> est grisé : la page n’a pas encore de contenu. Écrivez-le ou ajoutez une section. Le bouton est absent pour la page modèle d’un gabarit, qui ne se publie jamais, et pour un profil sans le droit de modifier les pages.</li>
+        <li><em>Écrire le brouillon</em>, <em>Remplacer le brouillon</em> ou <em>L’écrire dans cette langue à partir de…</em> est grisé : l’écran dit « Votre profil peut lire cet écran et publier, pas demander au générateur d’écrire ». Demandez le droit sur le générateur à la personne qui gère les profils.</li>
+        <li>L’onglet <em>Documents</em> est grisé : la page n’est pas encore enregistrée. Enregistrez d’abord le brouillon.</li>
+        <li><em>Supprimer cette image</em> est grisé : voir plus bas.</li>
+    </ul>
+    <h3 id="publication-refused">La publication est refusée</h3>
+    <p>L’écran dit pourquoi. Les cas possibles :</p>
+    <ul>
+        <li>« Cette page n’a pas encore de contenu » : le brouillon est vide, ou ne montre rien. Écrivez-le ou ajoutez une section.</li>
+        <li>« Cette page contient encore le texte d’exemple avec lequel elle a été créée » : remplacez les textes d’exemple par les vôtres.</li>
+        <li>« Cette page est le modèle de son type » : un modèle ne se publie jamais. Créez une nouvelle page depuis le gabarit.</li>
+        <li>« Remplissez les champs que ce type exige avant de publier » suivi des noms des champs : remplissez-les dans l’onglet <em>Champs</em> des réglages de la page.</li>
+        <li>« Corrigez d’abord la structure des titres » : les messages au-dessus listent les problèmes, par exemple un niveau de titre sauté ou plusieurs titres de niveau 1. Corrigez les intertitres des sections, puis publiez de nouveau. Selon la configuration du site, ce contrôle bloque la publication ou la laisse passer en vous prévenant.</li>
+        <li>« Son contenu n’est plus valide » : ouvrez la page dans l’éditeur, les messages indiquent la section à corriger.</li>
+    </ul>
+    <h3 id="address-suffix">L’adresse d’une page finit par « -2 »</h3>
+    <p>Une autre page, ou la même page dans une autre langue, répond déjà sur cette adresse. L’écran l’annonce avant l’enregistrement et rien n’est modifié tant que vous n’enregistrez pas. Changez l’<em>Adresse de la page</em> pour une autre, ou changez l’adresse de l’autre page.</p>
+    <h3 id="image-in-use">Une image ne se supprime pas</h3>
+    <p>Une image utilisée par une page ou une fiche n’est pas supprimable. Sur sa fiche, <em>Supprimer cette image</em> est grisé et la liste des pages qui l’utilisent est affichée. Retirez l’image de chacune (<em>Retirer</em> dans son onglet <em>Image</em>, ou dans le formulaire de la section), puis supprimez-la. Dans une suppression en lot, les images encore utilisées sont gardées et nommées.</p>
+    <h3 id="generator-unavailable">Le générateur ne répond pas</h3>
+    <p>L’écran donne la raison. Modifier à la main et publier restent possibles. Les cas, avec ce qu’il faut faire :</p>
+    <ul>
+        <li>Le budget IA du site est épuisé : le générateur refonctionne le mois suivant, ou dès que le budget est relevé dans les réglages IA de Thelia.</li>
+        <li>Le générateur est désactivé, ou aucune connexion IA ni aucun modèle ne lui est affecté, ou la clé de la connexion est illisible : à régler dans les réglages IA de Thelia.</li>
+        <li>Le fournisseur d’IA ne répond pas, ou trop de demandes ont été envoyées : attendez quelques minutes et recommencez.</li>
+        <li>La réponse a été coupée à la limite de longueur : demandez une page plus courte, ou relevez la limite dans <strong>CMS &gt; Réglages</strong>.</li>
+        <li>Le modèle a refusé de rédiger : reformulez le brief.</li>
+    </ul>
+    <p>Quand cela dure, prévenez la personne qui s’occupe du site.</p>
+</section>
+
+<section id="glossary">
+    <h2>Lexique</h2>
+    <dl>
+        <dt>Page</dt>
+        <dd>Une adresse du site, avec son titre, ses réglages et son contenu. Elle existe dans chaque langue.</dd>
+        <dt>Gabarit</dt>
+        <dd>Le modèle d’une série de pages (recettes, actualités) : mise en page, consignes de rédaction, champs et page modèle.</dd>
+        <dt>Section</dt>
+        <dd>Un bloc du contenu d’une page, posé sous le précédent. Chaque section est un composant.</dd>
+        <dt>Composant</dt>
+        <dd>Le type d’une section (un bandeau, un texte, une liste de produits). Le thème et le site en fournissent.</dd>
+        <dt>Skill</dt>
+        <dd>Une consigne que le générateur lit avant d’écrire, réécrite et désactivée depuis <strong>CMS &gt; Skills</strong>.</dd>
+        <dt>Brouillon</dt>
+        <dd>Le contenu en cours d’écriture. Les visiteurs ne le voient pas avant la publication.</dd>
+        <dt>Étiquette</dt>
+        <dd>Un mot, avec une couleur facultative, qui regroupe des pages.</dd>
+        <dt>Générateur</dt>
+        <dd>La rédaction automatique par IA : il écrit des pages, des sections, des textes et des composants à partir d’un brief.</dd>
+    </dl>
 </section>

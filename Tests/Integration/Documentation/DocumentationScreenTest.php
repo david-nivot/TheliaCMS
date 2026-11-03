@@ -72,7 +72,7 @@ final class DocumentationScreenTest extends AdminScreenTestCase
 
     public function testEachScreenLinksToTheSectionExplainingIt(): void
     {
-        foreach (['/admin/cms/skills' => 'skills', '/admin/cms/settings/page-types' => 'page-templates', '/admin/cms/pages/trash' => 'pages', '/admin/cms/media' => 'menus-forms-media'] as $url => $section) {
+        foreach (['/admin/cms/skills' => 'skills', '/admin/cms/settings/page-types' => 'page-templates', '/admin/cms/pages/trash' => 'trash', '/admin/cms/media' => 'media'] as $url => $section) {
             $link = $this->screen($url)->filter('[data-testid="cms-documentation-link"]');
 
             self::assertSame(1, $link->count(), $url.' links to its help.');
