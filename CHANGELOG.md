@@ -24,6 +24,8 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   elsewhere cannot follow.
 - The help under the image of a page is translated.
 
+## [2.8.3] - 2026-11-03
+
 ### Changed
 
 - **Every branch is checked, by static analysis and code style too.** The CI
@@ -1851,7 +1853,8 @@ the published pages.
 - The breadcrumb of a page filed under a draft one offered a link to that page,
   which answers 404, both to the reader and in the `BreadcrumbList`.
 
-[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.8.2...HEAD
+[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.8.3...HEAD
+[2.8.3]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.8.3
 [2.8.2]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.8.2
 [2.8.1]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.8.1
 [2.8.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.8.0
