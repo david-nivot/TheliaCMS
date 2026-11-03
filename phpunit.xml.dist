@@ -17,7 +17,7 @@
          failOnWarning="true"
          failOnRisky="true"
          failOnDeprecation="true"
-         cacheDirectory=".phpunit.cache"
+         cacheDirectory=".phpunit.cache/unit"
          displayDetailsOnTestsThatTriggerWarnings="true"
          displayDetailsOnTestsThatTriggerDeprecations="true">
     <testsuites>

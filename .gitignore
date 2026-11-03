@@ -2,3 +2,4 @@
 /Model/Map/
 /assets/node_modules/
 /.phpunit.cache/
+/.php-cs-fixer.cache

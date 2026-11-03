@@ -73,6 +73,19 @@ shows how to test an update, outside a transaction.
   loaded between the edit and the copy caches the old stylesheet under the
   new version, and the browser keeps it until a hard reload.
 
+## Static analysis and code style
+
+- PHPStan reads the Thelia install the module sits in, and the Propel models
+  `php bin/test-prepare` builds under `var/propel/test` (`var/propel/dev`
+  otherwise). From the root of the install:
+  `vendor/bin/phpstan analyse -c local/modules/TheliaCMS/phpstan.dist.neon --memory-limit=-1`.
+- `phpstan-baseline.neon` lists the errors present when the analysis came in.
+  Fixing one means regenerating it (`--generate-baseline=local/modules/TheliaCMS/phpstan-baseline.neon`);
+  a new error is fixed, never added to it.
+- The code style is the one of the core. From the module directory, with the
+  install's fixer: `../../../vendor/bin/php-cs-fixer fix --dry-run --diff`
+  (drop `--dry-run --diff` to apply).
+
 ## Writing tests
 
 - Under DDEV, the web container exports `DATABASE_NAME=db`, which wins over

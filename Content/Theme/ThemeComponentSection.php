@@ -212,7 +212,7 @@ final readonly class ThemeComponentSection implements SectionDefinitionInterface
     }
 
     /**
-     * @param array<string, mixed>  $props
+     * @param array<string, mixed>                                    $props
      * @param array<string, string|array<int, array<string, string>>> $addresses the address to draw a picture prop from, by prop, instead of reading it as an id; for the picture of a row of a list, by row and field
      */
     private function draw(array $props, string $locale, array $addresses): string

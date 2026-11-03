@@ -12,7 +12,6 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-
 namespace TheliaCMS\Tests\Unit\Page\Document;
 
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -119,7 +118,7 @@ final class PageDocumentBlockTest extends TestCase
     {
         // Echoes the message and the locale it was asked in: the texts are
         // translated in the language of the page, not of the request.
-        $translator = new class() implements TranslatorInterface {
+        $translator = new class implements TranslatorInterface {
             public function trans(string $id, array $parameters = [], ?string $domain = null, ?string $locale = null): string
             {
                 if (TheliaCMS::DOMAIN_NAME !== $domain) {

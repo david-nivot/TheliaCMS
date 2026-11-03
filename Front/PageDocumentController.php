@@ -98,8 +98,6 @@ final readonly class PageDocumentController
         // request. Symfony strips the marker itself before sending.
         $response->headers->set(AbstractSessionListener::NO_AUTO_CACHE_CONTROL_HEADER, 'true');
 
-
-
         $response->isNotModified($request);
 
         return $response;
