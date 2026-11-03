@@ -20,6 +20,7 @@ use TheliaCMS\Page\PageTagWriter;
 use TheliaCMS\Page\PublishedPageRepository;
 use TheliaCMS\Search\PageSearch;
 use TheliaCMS\Search\SearchTerms;
+use TheliaCMS\Sitemap\SitemapCache;
 use TheliaCMS\Sitemap\SitemapThemeHook;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
 
@@ -37,6 +38,14 @@ final class ModelPageOfflineTest extends CmsIntegrationTestCase
 {
     /** The full-text search reads committed rows only. */
     protected bool $useTransaction = false;
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        // The rows are committed here, and the sitemap kept with them.
+        $this->getService(SitemapCache::class)->invalidate();
+    }
 
     public function testAModelHoldingAPublishedVersionIsOfferedToNoVisitor(): void
     {
@@ -70,6 +79,8 @@ final class ModelPageOfflineTest extends CmsIntegrationTestCase
     {
         $this->getPropelConnection()->exec(\sprintf('UPDATE cms_page SET model = 1, visible = 1 WHERE id = %d', $page->getId()));
         CmsPageTableMap::clearInstancePool();
+        // Written without the writer: nothing else empties the sitemap kept.
+        $this->getService(SitemapCache::class)->invalidate();
     }
 
     private function sitemap(): string

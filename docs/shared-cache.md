@@ -184,3 +184,15 @@ have proxy clients for Varnish, Fastly, Cloudflare and Nginx. An implementation
 of `CachePurgerInterface` forwarding to one of those is three lines, and it is
 the better road: that library has years of production behind it, and a second
 client written here would have none.
+
+## The sitemap, kept by the module
+
+Apart from the proxy, the module keeps one thing itself: the XML its hook adds to
+the sitemap of the theme, in the cache pool of the site (`cache.app`), one entry
+for each language asked and each host served. It lives for `cache_ttl` at most,
+and ends sooner on the next `publish_at` or `unpublish_at` of a visible page, so
+a scheduled page shows and goes on time without anyone saving anything. Every
+change that empties the lists of pages empties it too (publishing, unpublishing,
+hiding, binning, renaming, a new address, the `noindex` of a page, an import);
+`php Thelia cache:pool:clear cache.app` does it by hand. Run from a command, with
+no request to build addresses from, the hook gives nothing and keeps nothing.

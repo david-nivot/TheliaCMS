@@ -119,7 +119,7 @@ final readonly class AlternateUrls
         // A page not published in that language has no address there: serving
         // the French text under an English URL is worse than having no
         // alternate at all (decision D3, spec §3.6).
-        if (null === $this->pages->find($pageId, $locale)) {
+        if (!$this->pages->isReachable($pageId, $locale)) {
             return null;
         }
 
