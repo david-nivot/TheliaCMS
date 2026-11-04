@@ -296,6 +296,33 @@ final class SiteComponentScreenTest extends AdminScreenTestCase
         self::assertSame([], $this->api->requests, 'The API is not called.');
     }
 
+    public function testAskingTheGeneratorForAComponentTakesTheRightToUseIt(): void
+    {
+        $this->api->answer(self::answer(PriceTable::component()));
+        $candidate = $this->ask('Un tableau de prix.');
+        $this->getService(SiteComponentRepository::class)->save(PriceTable::component(), SiteComponentRepository::STATUS_READY);
+        $token = $this->tokenOfTheForm($this->screen(self::NEW), self::GENERATE);
+
+        $this->logInAs((new FixtureFactory($this->getPropelConnection()))->restrictedAdmin([
+            CmsResources::SETTINGS => [AccessManager::VIEW, AccessManager::UPDATE],
+            CmsResources::CUSTOM_CODE => [AccessManager::VIEW, AccessManager::UPDATE],
+        ]));
+
+        self::assertSame(1, $this->screen(self::NEW)->filter('[data-testid="cms-site-component-not-allowed"]')->count());
+        self::assertSame(0, $this->screen('/admin/cms/components')->filter('[data-testid="cms-components-new"]')->count());
+
+        $kept = $this->screen('/admin/cms/components/site/PriceTable');
+        self::assertSame(0, $kept->filter('[data-testid="cms-site-component-change"]')->count(), 'No change is asked of the generator.');
+        self::assertSame(1, $kept->filter('form[data-testid="cms-site-component-copy"]')->count(), 'A copy calls no model: the right to make a component is enough.');
+
+        $screen = $this->screen($candidate);
+        self::assertSame(0, $screen->filter('[data-testid="cms-site-component-change"]')->count());
+        self::assertSame(1, $screen->filter('[data-testid="cms-site-component-keep"]')->count(), 'Keeping a version calls no model.');
+
+        self::assertSame(403, $this->send('POST', self::GENERATE, ['_token' => $token, 'request' => 'Un tableau de prix.']));
+        self::assertCount(1, $this->api->requests, 'Only the call made with the right reached the API.');
+    }
+
     /**
      * Sends a request from the form of a screen and gives where it ended.
      *

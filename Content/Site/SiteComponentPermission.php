@@ -22,7 +22,9 @@ use TheliaCMS\Security\CmsResources;
  * Who may make a component of the site, wherever it is made from: the
  * components screen, the content screen of a page, or the generator writing
  * a page. A component is markup and a stylesheet shown on every page that
- * holds it, so it takes the settings and the custom code permissions.
+ * holds it, so it takes the settings and the custom code permissions; asking
+ * the generator for one is a paid call, so it takes the generator permission
+ * too.
  */
 final readonly class SiteComponentPermission
 {
@@ -35,5 +37,16 @@ final readonly class SiteComponentPermission
     {
         return $this->securityContext->isGranted(['ADMIN'], [CmsResources::SETTINGS], [], [AccessManager::UPDATE])
             && $this->securityContext->isGranted(['ADMIN'], [CmsResources::CUSTOM_CODE], [], [AccessManager::UPDATE]);
+    }
+
+    /**
+     * Whether the generator may be asked for a component, or for a change of
+     * one. Keeping, copying or deleting one calls no model: mayMake() is
+     * enough for those.
+     */
+    public function mayAsk(): bool
+    {
+        return $this->mayMake()
+            && $this->securityContext->isGranted(['ADMIN'], [CmsResources::GENERATE], [], [AccessManager::UPDATE]);
     }
 }

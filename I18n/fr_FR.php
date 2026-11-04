@@ -1050,6 +1050,7 @@ return [
     'A table of two to four plans side by side, each with its name, its price per month, what it includes, and one plan put forward.' => 'Un tableau de deux à quatre formules côte à côte, chacune avec son nom, son prix par mois, ce qu’elle comprend, et une formule mise en avant.',
     'What it shows, what an editor fills in, how it looks. Its texts are written by pages, in every language of the site.' => 'Ce qu’il affiche, ce qu’un rédacteur renseigne, son apparence. Ses textes sont écrits par les pages, dans chaque langue du site.',
     'Making a component takes the settings and the custom code permissions.' => 'Créer un composant demande les droits sur les réglages et sur le code libre.',
+    'Asking the generator for a component takes the generator, the settings and the custom code permissions.' => 'Demander un composant au générateur demande les droits sur le générateur, sur les réglages et sur le code libre.',
     'Width of the preview' => 'Largeur de l’aperçu',
     'Preview of the component' => 'Aperçu du composant',
     'Phone' => 'Téléphone',

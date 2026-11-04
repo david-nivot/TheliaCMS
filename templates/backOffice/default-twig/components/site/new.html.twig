@@ -22,7 +22,7 @@
 
     <div class="card">
         <div class="card-body">
-            {% if may_make %}
+            {% if may_ask %}
                 {{ include('@TheliaCMSModule/backOffice/default-twig/components/site/_request_form.html.twig', {
                     testid: 'cms-site-component-request',
                     label: 'What the component is for'|trans({}, 'theliacms'),
@@ -31,7 +31,7 @@
                     button: 'Make the component'|trans({}, 'theliacms'),
                 }) }}
             {% else %}
-                <p class="mb-0 text-muted" data-testid="cms-site-component-not-allowed">{{ 'Making a component takes the settings and the custom code permissions.'|trans({}, 'theliacms') }}</p>
+                <p class="mb-0 text-muted" data-testid="cms-site-component-not-allowed">{{ 'Asking the generator for a component takes the generator, the settings and the custom code permissions.'|trans({}, 'theliacms') }}</p>
             {% endif %}
         </div>
     </div>

@@ -11,7 +11,7 @@ usual pipeline.
 - Thelia 3.3.0 or later, whose AI layer the generator goes through. The
   module holds no key, no provider and no model.
 - A connection and a range in the **AI settings** of Thelia: declare the
-  connection to a provider once, then give each of the three usages below a
+  connection to a provider once, then give each of the four usages below a
   range of models, turn it on and set its budget. Without that, the generator
   says so (`GenerationUnavailableException`, in the language of the back
   office) and nothing is called. The budget, the rate limit, the
@@ -29,16 +29,28 @@ usual pipeline.
 - The right `admin.cms.generate`, given to the editor profile the module
   seeds: asking the generator to write costs money.
 
-### The three usages
+### The four usages
 
-The module declares three usages to the AI layer. Each is set up on its own in
+The module declares four usages to the AI layer. Each is set up on its own in
 the AI settings, so a site can give the pages a stronger range than the texts:
 
-| Usage | What it writes |
-|---|---|
-| `theliacms.page_generation` | the document of a page or of a catalogue item: a brief, a change, a section, a translation |
-| `theliacms.text` | a text for a rich-text field (a product description, a chapo), from a brief |
-| `theliacms.component` | a component made in the back office |
+| Usage | Range declared | What it writes |
+|---|---|---|
+| `theliacms.page_generation` | advanced | the document of a page or of a catalogue item: a brief, a change, a section |
+| `theliacms.page_translation` | standard | the same document written in another language of the site, its sections, components and images kept |
+| `theliacms.text` | standard | a text for a rich-text field (a product description, a chapo), from a brief |
+| `theliacms.component` | advanced | a component made in the back office |
+
+A translation rewrites texts only, so it is declared at the standard range; a
+site that wants the advanced one for it raises the range of the usage in the AI
+settings. A budget or a model pinned on `theliacms.page_generation` does not
+cover translations: they are set up on their own usage.
+
+The cache of the prompt is the provider's, set by the AI layer: on Anthropic,
+Thelia asks for the short retention (five minutes) on every connection, and the
+module cannot ask for another. Calls a few minutes apart, such as the pages of
+a brief written one after the other, read the system prompt and the tools from
+that cache; a call after a longer pause writes them again.
 
 The layer picks the model from the range of the usage, records every request
 in its usage log, and the ledger of the module points at the row of the last
