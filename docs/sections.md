@@ -191,6 +191,35 @@ shows what the server serves. An address kept elsewhere is framed by CSS alone
 (`object-fit`, `object-position` from the focus); its zoom cannot be honoured, and
 the dialog does not offer it. A picture shown whole (`contain`) is served as before.
 
+### Pictures of the components of the theme and of the site
+
+A component whose markup is not the module's (`ThemeComponentSection`, `SiteComponentSection`)
+prints the address of its pictures itself, so the module cannot write `data-cms-crop` or a
+`style` on its `<img>`. `ImageFraming` (a service the two providers take) adds, after each
+`image` prop of the schema (at the top level and in the rows of a list), four editor-only props
+marked `editor = framing`: `{image}__proportions` (`original` by default, or a ratio of
+`ImageProportions`), `{image}__focus_x`, `{image}__focus_y` (0 to 100, 50) and `{image}__zoom`
+(100 to 400, by steps of 10, checked by `normalizeProps()`). The double underscore is a name the
+components do not spell, and a picture whose four names a real prop already holds stays unframed.
+
+At render time the component is given none of them: `ImageSource::framed()` turns the picture into
+the address of the zone `ImageFrame::zone()` computes from the size the library holds
+(`/image-library/{id}/{x},{y},{w},{h}/max/0/default.{ext}`), or into the address `of()` gave
+before when nothing is set (a component nobody framed draws the same bytes), when the file has
+no measured size, or when the zone is the whole file. A picture kept elsewhere is passed as it
+is. The rewriter then reads the region of the address of an `<img>` of the library
+(`ImageFrame::region()`, four integers, inside the file, not the whole file; anything else is
+ignored and the picture served whole, `src` included) and serves the zone as it does for
+`data-cms-crop`, which wins if both are there.
+
+In the form (`content-editor.js`, `bindPictureFraming`), each picture gets its proportions under
+it, then the sentence that says the kept part and the button that opens the dialog, per picture
+and per row (also for a row added without reloading). The dialog knows the shape asked for,
+not the box of the component: it keeps its own CSS box, and a box of another shape is cropped
+again by the theme. For a picture kept elsewhere the button is off, with the reason. The
+generator never sees the props (`EditorValues`); a rewrite gives each picture back its framing
+when the component and that picture are unchanged.
+
 ### Proportions, for the three widths and for the columns
 
 `proportions` (editor-only choice of `cms:image`, after `width`): `original` (default),

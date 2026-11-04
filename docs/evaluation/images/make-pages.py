@@ -4,6 +4,12 @@ image test page. Usage: make-pages.py [--slug SLUG] <width>=<id>:<file> ...
 (width, id and stored file name of each library image, one per use: 5 of 308 px,
 4 of 900, 7 of 1200, 5 of 2400, see README.md).
 
+With `--components`, it writes the page of the components bench (slug
+`img-test-components` unless `--slug` says otherwise): a component of the theme
+(`fixtures/ImgTestCard.html.twig`, opened by `fixtures/theliacms.yaml`) and a component of
+the site (`ImgTestPhoto`, carried by the export) with their pictures framed;
+`quadrants=<id>:<file>` and `portrait=<id>:<file>`. See README.md.
+
 With `--frame`, it writes the page of the framing bench instead (slug
 `img-test-frame` unless `--slug` says otherwise): `quadrants=<id>:<file>`, a
 landscape picture whose four quarters are four plain colours (make-quadrants.php),
@@ -17,9 +23,12 @@ ids = {}
 slug = 'img-test-sections'
 arguments = sys.argv[1:]
 frame = '--frame' in arguments
-arguments = [argument for argument in arguments if argument != '--frame']
+components = '--components' in arguments
+arguments = [argument for argument in arguments if argument not in ('--frame', '--components')]
 if frame:
     slug = 'img-test-frame'
+if components:
+    slug = 'img-test-components'
 if arguments[:1] == ['--slug']:
     slug = arguments[1]
     arguments = arguments[2:]
@@ -94,7 +103,8 @@ def framed(section_id, image_id, width_px, height_px, fit='cover', focus_x=50, f
         'width_px': width_px, 'height_px': height_px, 'fit': fit, 'focus_x': focus_x, 'focus_y': focus_y, 'zoom': zoom}}
 
 
-sections = [] if frame else sizes_sections()
+sections = [] if (frame or components) else sizes_sections()
+site_components = []
 
 if frame:
     for needed in ('quadrants', 'portrait', 'small'):
@@ -117,10 +127,53 @@ if frame:
         {'id': 'legacy', 'component': 'cms:image', 'props': {'image': quadrants, 'alt': 'legacy', 'caption': '', 'width': 'narrow'}},
     ]
 
+if components:
+    for needed in ('quadrants', 'portrait'):
+        if needed not in named:
+            sys.exit('--components needs %s=<id>:<file> (see README.md).' % needed)
+    quadrants, portrait = named['quadrants'], named['portrait']
+    EXTERNAL_PHOTO = EXTERNAL
+
+    def card(section_id, image_id, **framing):
+        """The theme component: the framing is stored beside the picture, as the form writes it."""
+        return {'id': section_id, 'component': 'Organisms:ImgTestCard:Base', 'props': {'image': image_id, 'title': section_id, **framing}}
+
+    def photo(section_id, image_id, **framing):
+        return {'id': section_id, 'component': 'Site:ImgTestPhoto', 'props': {'photo': image_id, 'title': section_id, **framing}}
+
+    # The quadrants are red, green, blue and yellow, top left to bottom right: the colour of
+    # a zone says which part of the picture it is.
+    sections = [
+        heading('h-theme', 'Component of the theme'),
+        card('theme-plain', quadrants),
+        card('theme-1x1-red', quadrants, image__proportions='1:1', image__focus_x=0, image__focus_y=0, image__zoom=300),
+        card('theme-original-yellow', quadrants, image__proportions='original', image__focus_x=100, image__focus_y=100, image__zoom=200),
+        card('theme-16x9-green', quadrants, image__proportions='16:9', image__focus_x=100, image__focus_y=0, image__zoom=200),
+        card('theme-external-1x1', EXTERNAL_PHOTO, image__proportions='1:1', image__zoom=300),
+        {'id': 'theme-rows', 'component': 'Organisms:ImgTestCard:Base', 'props': {'title': 'theme-rows', 'slides': [
+            {'title': 'row-1x1-green', 'picture': quadrants, 'picture__proportions': '1:1', 'picture__focus_x': 100, 'picture__focus_y': 0, 'picture__zoom': 300},
+            {'title': 'row-plain', 'picture': quadrants},
+        ]}},
+        heading('h-site', 'Component of the site'),
+        photo('site-plain', quadrants),
+        photo('site-16x9-blue', quadrants, photo__proportions='16:9', photo__focus_x=0, photo__focus_y=100, photo__zoom=200),
+        photo('site-portrait-16x9', portrait, photo__proportions='16:9', photo__focus_x=50, photo__focus_y=20),
+    ]
+    site_components = [{
+        'code': 'ImgTestPhoto', 'label': 'Image test photo', 'description': 'A photo in a 16:9 box, for the framing bench.',
+        'props': [
+            {'name': 'photo', 'type': 'image', 'label': 'Photo'},
+            {'name': 'title', 'type': 'text', 'label': 'Title'},
+        ],
+        'sample': {'photo': None, 'title': 'A photo'},
+        'template': '<figure class="img-test-photo" style="max-width: 40rem; margin: 0 0 1.5rem;"><img src="{{ props.photo }}" alt="" style="display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover;"><figcaption>{{ props.title }}</figcaption></figure>',
+        'css': '', 'provenance': None, 'status': 'ready',
+    }]
+
 document = {'version': 1, 'sections': sections}
 export = {
     'format': 'thelia-cms', 'version': 3, 'generated_at': '2026-11-04T00:00:00+01:00', 'module_version': '2.10.0',
-    'locales': ['fr_FR'], 'page_types': [], 'components': [], 'catalogue_contents': [], 'menus': [], 'forms': [], 'settings': {},
+    'locales': ['fr_FR'], 'page_types': [], 'components': site_components, 'catalogue_contents': [], 'menus': [], 'forms': [], 'settings': {},
     'media': [{'id': image_id, 'file_name': file_name} for image_id, file_name in media.items()],
     'pages': [{
         'uid': slug, 'parent': None, 'position': 90, 'visible': True, 'page_type': 'default', 'model': False, 'fields': [],

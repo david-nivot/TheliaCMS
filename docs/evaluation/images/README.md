@@ -38,6 +38,17 @@ announces and whether the file the browser picks fits the size it is drawn at.
   original, a width alone and a legacy section. Arguments:
   `quadrants=<id>:<file> portrait=<id>:<file> small=<id>:<file>`.
 
+- `make-pages.py --components` writes the page of the components bench (default
+  slug `img-test-components`): a component of the theme and a component of the site
+  (carried by the export, `ImgTestPhoto`) with their pictures framed, at the top level
+  and in the rows of a list. Arguments: `quadrants=<id>:<file> portrait=<id>:<file>`.
+  The component of the theme is a fixture: copy `fixtures/ImgTestCard.html.twig` to
+  `components/Organisms/ImgTestCard/Base.html.twig` of the front theme and
+  `fixtures/theliacms.yaml` to its `config/theliacms.yaml` (if the theme declares
+  none), then clear the cache. The quadrants make each zone a plain colour:
+  `theme-1x1-red`, `theme-original-yellow`, `theme-16x9-green`, `row-1x1-green`,
+  `site-16x9-blue`.
+
 ## Run it
 
 1. Upload four test pictures of 308, 900, 1200 and 2400 px wide to the media

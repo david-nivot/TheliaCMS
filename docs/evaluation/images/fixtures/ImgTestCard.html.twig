@@ -1,0 +1,15 @@
+{# @prop image image|null The picture of the card #}
+{# @prop title string The title under it #}
+{# @prop slides array<{title: string, picture: image|null}>|null Pictures in a row, each with its title #}
+{% props image = null, title = '', slides = null %}
+<figure class="img-test-card" style="max-width: 40rem; margin: 0 0 1.5rem;">
+    {% if image %}<img class="img-test-card__img" src="{{ image }}" alt="" style="display: block; width: 100%; height: auto;">{% endif %}
+    <figcaption>{{ title }}</figcaption>
+    {% if slides %}
+        <ul style="display: flex; gap: 0.5rem; list-style: none; margin: 0.5rem 0 0; padding: 0;">
+            {% for slide in slides %}
+                <li style="flex: 1;"><img src="{{ slide.picture }}" alt="" style="display: block; width: 100%; height: auto;">{{ slide.title }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</figure>

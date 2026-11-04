@@ -662,7 +662,11 @@ For the three widths of the Image section, **Proportions** (the image as it is, 
 kept; the image as it is keeps its markup and only takes a zoom. The Columns section
 has one **Proportions of the images** setting: the band of logos (the default), or a
 picture per column on the width of its column, in a shape, with the part kept set column
-by column. A page
+by column. The pictures of the components of the theme and of the
+components made from a brief have the same **Proportions** and **Crop the image…**, picture by
+picture (rows of a list included); the component keeps its own frame, so a box of another
+shape than the proportions chosen is cropped again by the theme, and a picture kept elsewhere
+is drawn as it is. A page
 already published keeps the files it was published with: after replacing a picture in the
 library, `php Thelia thelia_cms:render-published --all` renders what is online again.
 Details in [`docs/sections.md`](docs/sections.md).

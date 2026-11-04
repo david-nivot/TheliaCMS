@@ -491,6 +491,17 @@ the pre-existing portrait defect is not larger than described, the test host has
 - Generator: `EditorValues` hides the editor-only props of the rows of a list and restores them row by row, matched by position, when the component and the pictures of the row (compared as strings, an id written as a number or a string being the same picture) are unchanged; defaults otherwise, and for a row the replaced list did not have. A scalar list has no such props.
 - Not done: no capture of the dialog in the back-office documentation (text only); a duplicated row does not exist in the list form, so "added" is the only case.
 
+## Code decisions, phase E (2026-11-04)
+
+- Titles `type(hors-ticket): message`. Commits: the zone read from the address (rewriter), the framing of the pictures of theme and site components (schema, render, form), the generator, the reliquats of D, the documentation.
+- `Content/ImageFraming` (a service the two providers take, optional so a test can build them without it) extends a schema: after each `image` prop, at the top level and in the rows of a list, `{image}__proportions`, `{image}__focus_x`, `{image}__focus_y`, `{image}__zoom`, editor-only and marked `editor = framing` (the marker tells them from a prop of the component, whatever its name). The double underscore is a suffix no component spells; a picture whose four names a real prop already holds is left unframed. `Prop::withItems()` rebuilds a list with the extended rows.
+- Render: `ImageSource::framed()` returns `ImageSource::of()` when nothing is set, for an external picture, a file with no measured size, or a zone that is the whole file; else `/image-library/{id}/{x},{y},{w},{h}/max/0/default.{ext}` from `ImageFrame::zone()`. The component never receives the framing props (`ImageFraming::withoutFraming()`, in rows too). A zoom off the steps of 10 is refused by `normalizeProps()` of both sections.
+- Rewriter: the zone of `data-cms-crop` wins; else the region of the `src` (`ImageFrame::region()`: four integers) is kept when it lies inside the file and is not the whole file. A rejected region also resets `src` to `full` (never a zone the library would refuse). `square`, `pct:` are left to the library as before.
+- Form: `bindPictureFraming` (content-editor.js) binds each `{image}__focus_x` of a form or a row (a row added without reloading too): proportions fieldset moved under the picture, then the sentence and the slot of the dialog; the slot names its own fields and picture (`cmsCropFields`, `cmsCropField`) so a form with several pictures works. The shown width for the sharpness line is 1200 px (the component's width is unknown). The button is off for a picture kept elsewhere, with its own reason (`libraryOnly`).
+- Generator: `EditorValues` restores the framing picture by picture (a changed picture takes the defaults, its neighbour keeps its framing), for the top level and for rows.
+- Reliquats of D: the picture field of a list row takes the whole row (it was `span 2` of a grid of 8 rem columns); the sentence under it has a top margin so it no longer touches "Another source". The preview of page 77 answering "Cette page n'existe pas" is the state of the test page, not a defect: the page was created by `thelia_cms:import` from an export whose `draft_html` is null, and the preview of a draft without html is a 404 (`PublishedPageRepository::draft`). Rendering the draft (saving a section) fixes it.
+- Not covered by a test: the wiring of `ThemeComponentSections::sections()` to `ImageFraming` (no theme of the CI declares a component); proved in the browser with a fixture component (`docs/evaluation/images/fixtures`).
+
 ## Done (2026-11-04)
 
 Delivered on `feat/image-dimensions`, in the order of the table of section 7 (titles `type(hors-ticket): message`):
@@ -509,3 +520,4 @@ Not delivered, or not proved:
 - A drag by finger (the tool drives the mouse); the cache of derivatives under `web/image-library/` before and after a session of dragging (not counted); a check on the lowest 2.x of TheliaLibrary (tested on 2.2.1); the interplay with `fix/css-filter-csp` when both branches meet.
 - No capture of the dialog in the back-office documentation.
 - Phase D (proportions of the Image section, Columns section, editor-only props of list rows) is delivered in four commits; see its code decisions above.
+- Phase E: the pictures of the components of the theme and of the site are framed, picture by picture (see its code decisions above).
