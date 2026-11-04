@@ -320,9 +320,20 @@ final readonly class PromptBuilder
      *
      * @param list<string> $problems
      */
-    public static function correction(array $problems): string
+    public static function correction(array $problems, bool $section = false): string
     {
-        return "The document you answered with cannot be stored. Fix every problem below and answer with the whole document again:\n\n- ".implode("\n- ", $problems);
+        return \sprintf("The %s you answered with cannot be stored. Fix every problem below and answer with the %s again:\n\n- ", $section ? 'section' : 'document', $section ? 'section alone' : 'whole document').implode("\n- ", $problems);
+    }
+
+    /**
+     * The message that sends back a document that is well formed but names
+     * what the site does not hold, or whose headings would not publish.
+     *
+     * @param list<string> $problems
+     */
+    public static function checkCorrection(array $problems, bool $section = false): string
+    {
+        return \sprintf("The %s you answered with is well formed, but it does not fit the site. Fix every problem below, taking ids and addresses from the tools and leaving out what they do not give, and answer with the %s again:\n\n- ", $section ? 'section' : 'document', $section ? 'section alone' : 'whole document').implode("\n- ", $problems);
     }
 
     private static function role(): string

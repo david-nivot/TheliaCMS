@@ -120,6 +120,7 @@ final readonly class PageGenerator
         private LoggerInterface $logger,
         private GatewayFailures $failures,
         private TranslationGraft $graft,
+        private DocumentChecker $checker,
         private ObservedStream $streams = new ObservedStream(),
     ) {
     }
@@ -295,7 +296,7 @@ final readonly class PageGenerator
                     // its shape is read there, the ledger keeping none of it.
                     $this->logger->info('TheliaCMS: the generated document was refused once and sent back: {problems}', ['problems' => implode(' ', $exception->problems), 'answer' => mb_substr($response->text, 0, 4000)]);
                     $observer?->onCorrection($corrections, $exception->problems);
-                    $conversation = $conversation->withMessages(SentBackAnswer::of($response), AiMessage::user(PromptBuilder::correction($exception->problems)));
+                    $conversation = $conversation->withMessages(SentBackAnswer::of($response), AiMessage::user(PromptBuilder::correction($exception->problems, GenerationRequest::KIND_SECTION === $request->kind)));
 
                     continue;
                 }
@@ -309,6 +310,29 @@ final readonly class PageGenerator
                     } catch (InvalidDocumentException $exception) {
                         throw InvalidGenerationException::withProblems($exception->problems);
                     }
+                }
+
+                // The document is well formed; what it says is checked against
+                // the site. A problem goes back to the model while corrections
+                // are left, the same count as a document refused; past them the
+                // value is emptied and the page says it leaves it out, for the
+                // page is paid for.
+                $found = $this->checker->problems($document, $request, $request->current);
+
+                if ([] !== $found) {
+                    $messages = array_map(static fn (DocumentProblem $problem): string => $problem->message, $found);
+
+                    if ($corrections < self::CORRECTIONS) {
+                        ++$corrections;
+                        $this->logger->info('TheliaCMS: the generated document names what the site does not hold and was sent back: {problems}', ['problems' => implode(' ', $messages), 'answer' => mb_substr($response->text, 0, 4000)]);
+                        $observer?->onCorrection($corrections, $messages);
+                        $conversation = $conversation->withMessages(SentBackAnswer::of($response), AiMessage::user(PromptBuilder::checkCorrection($messages, GenerationRequest::KIND_SECTION === $request->kind)));
+
+                        continue;
+                    }
+
+                    [$document, $settled] = $this->checker->settle($document, $found, $request);
+                    $leftOut = [...$leftOut, ...$settled];
                 }
 
                 $durationMs = (int) ((hrtime(true) - $started) / 1_000_000);

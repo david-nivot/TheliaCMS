@@ -84,6 +84,18 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Fixed
 
+- **A generated page is checked against the site before it is kept.** The
+  validator only reads the shape: an image id nobody uploaded, a form that does
+  not exist or a guessed `/contact` went through, and a level 1 heading under
+  the title of the page was found at publication. A step after the validator
+  (`Generation\DocumentChecker`, every kind of request) now looks up the images of
+  the media library, the records a reference names, the internal addresses
+  (CMS pages online, URLs of the core) and the headings of the rendering. A
+  problem goes back to the model within the existing limit of corrections; past
+  it the value is emptied (a row or a section that cannot do without it is
+  dropped) and the page says it leaves it out, the generation still succeeding.
+  A translation, which copies them from its source, is checked on its headings
+  only.
 - **A section written again is a section, a translation is grafted on its
   source.** Asking the generator to write one section again made it answer
   with the whole document, taken as the new one without checking the others;

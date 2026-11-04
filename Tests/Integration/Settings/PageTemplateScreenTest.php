@@ -193,7 +193,7 @@ final class PageTemplateScreenTest extends AdminScreenTestCase
 
         $this->api->answer(FakeAiGateway::response(json_encode([
             'version' => 1,
-            'sections' => [['id' => 'recipe', 'component' => 'cms:richtext', 'props' => json_encode(['html' => '<h1>Tarte aux pommes</h1><p>Six parts.</p>'], \JSON_THROW_ON_ERROR)]],
+            'sections' => [['id' => 'recipe', 'component' => 'cms:richtext', 'props' => json_encode(['html' => '<h2>Tarte aux pommes</h2><p>Six parts.</p>'], \JSON_THROW_ON_ERROR)]],
             'fields' => json_encode(['servings' => 6, 'cooking_time' => 45], \JSON_THROW_ON_ERROR),
         ], \JSON_THROW_ON_ERROR)));
 

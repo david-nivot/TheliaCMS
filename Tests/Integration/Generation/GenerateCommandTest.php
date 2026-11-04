@@ -28,6 +28,7 @@ use TheliaCMS\Content\DocumentValidator;
 use TheliaCMS\Generation\Admin\TranslationSources;
 use TheliaCMS\Generation\Ai\GatewayFailures;
 use TheliaCMS\Generation\Ai\GeneratorToolDefinitions;
+use TheliaCMS\Generation\DocumentChecker;
 use TheliaCMS\Generation\GenerateCommand;
 use TheliaCMS\Generation\GenerationLog;
 use TheliaCMS\Generation\GenerationTargets;
@@ -161,6 +162,7 @@ final class GenerateCommandTest extends CmsIntegrationTestCase
                 new NullLogger(),
                 new GatewayFailures($this->getService(TranslatorInterface::class)),
                 $this->getService(TranslationGraft::class),
+                $this->getService(DocumentChecker::class),
             ),
             $this->getService(CmsPageWriter::class),
             $this->getService(ConsoleRequest::class),

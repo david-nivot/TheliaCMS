@@ -38,6 +38,7 @@ use TheliaCMS\Generation\Brief;
 use TheliaCMS\Generation\Component\ComponentGenerator;
 use TheliaCMS\Generation\Component\ComponentPrompt;
 use TheliaCMS\Generation\Component\ComponentRequest;
+use TheliaCMS\Generation\DocumentChecker;
 use TheliaCMS\Generation\GenerationException;
 use TheliaCMS\Generation\GenerationLog;
 use TheliaCMS\Generation\GenerationObserverInterface;
@@ -398,7 +399,7 @@ final class GenerationRunTrackingTest extends CmsIntegrationTestCase
     {
         return json_encode([
             'version' => 1,
-            'sections' => [['id' => 'hero', 'component' => 'cms:richtext', 'props' => json_encode(['html' => '<h1>Nos services</h1>'], \JSON_THROW_ON_ERROR)]],
+            'sections' => [['id' => 'hero', 'component' => 'cms:richtext', 'props' => json_encode(['html' => '<h2>Nos services</h2>'], \JSON_THROW_ON_ERROR)]],
         ], \JSON_THROW_ON_ERROR);
     }
 
@@ -459,6 +460,7 @@ final class GenerationRunTrackingTest extends CmsIntegrationTestCase
             $this->logger,
             $this->failures(),
             $this->getService(TranslationGraft::class),
+            $this->getService(DocumentChecker::class),
         );
     }
 

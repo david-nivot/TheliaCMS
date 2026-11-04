@@ -86,6 +86,33 @@ read back and checked by the validator against the full schema of each
 component, and a document it refuses is sent back with every problem listed,
 twice at most; a third refusal is an error the editor sees.
 
+A document the validator accepts is well formed, not true: the model may write
+an image id nobody uploaded, a form that does not exist, a `/contact` the site
+does not answer. `Generation\DocumentChecker` runs after the validator, for every
+kind of request, and looks up:
+
+- an image id in the media library (an https address is never fetched: the check
+  makes no call outside the site);
+- a reference in the table its prop names, from the picker of the prop (product,
+  category, folder, menu, form, page), a form or a page in the bin counting for
+  nothing;
+- an internal address (a path of the site): the home page, a page of the CMS that
+  is online and reachable, or a URL the core rewrote;
+- the headings of the rendered document, as the theme draws it under the title of
+  the page (`HeadingChecker`, `underTitle`), like the publication does.
+
+What the document held before the request (a revision, a section) is not the
+model's, and is not checked; a translation copies its images, references and
+addresses from its source, so only its headings are. A problem goes back to the
+model as a correction, in the same count as a document refused (two at most).
+Past it the generation still succeeds, because the page is paid for: an image, a
+reference or an address is emptied, a row of a list that cannot do without it is
+dropped, a section that cannot do without it is left out (a section written alone
+is kept as it was), and one sentence per problem is added to what the page leaves
+out, in the language of the page. A heading problem changes nothing in the
+document: it is said, and the editor mends it where it shows. A problem of shape
+keeps failing the generation after the corrections, as before.
+
 Two requests are held tighter than a brief. A **section asked again** is
 constrained to one section, the shape of an item of `sections`, and its prompt
 says to answer with that section alone, the whole document staying in the

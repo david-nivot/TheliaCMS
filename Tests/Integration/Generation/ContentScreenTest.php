@@ -129,7 +129,7 @@ final class ContentScreenTest extends AdminScreenTestCase
         $url = $this->url($page->getId());
 
         $this->api->answer(FakeAiGateway::response(self::document([
-            ['id' => 'hero', 'component' => 'cms:richtext', 'props' => ['html' => '<h1>Nos services</h1><p>Ce que nous faisons.</p>']],
+            ['id' => 'hero', 'component' => 'cms:richtext', 'props' => ['html' => '<h2>Nos services</h2><p>Ce que nous faisons.</p>']],
             ['id' => 'faq', 'component' => 'cms:richtext', 'props' => ['html' => '<h2>Questions</h2><p>Sur devis.</p>']],
         ])));
 
@@ -143,7 +143,7 @@ final class ContentScreenTest extends AdminScreenTestCase
         self::assertMatchesRegularExpression('#/admin/cms/pages/\d+/content\?.*done=\d+#', $location, 'The screen is reloaded with the row of the ledger.');
 
         $content = CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($this->locale())->findOne();
-        self::assertStringContainsString('"html":"<h1>Nos services</h1>', (string) $content?->getDraftDocument(), 'The draft is the document the model wrote.');
+        self::assertStringContainsString('"html":"<h2>Nos services</h2>', (string) $content?->getDraftDocument(), 'The draft is the document the model wrote.');
         self::assertStringContainsString('Nos services', (string) $content?->getDraftHtml());
         self::assertNull($content?->getPublishedHtml(), 'Nothing went online.');
         self::assertStringContainsString('Tone asked for: direct', $this->api->requests[0]->messages[0]->content);
@@ -206,7 +206,7 @@ final class ContentScreenTest extends AdminScreenTestCase
         $target = LangQuery::create()->filterByActive(1)->filterById($source->getId(), Criteria::NOT_EQUAL)->orderById()->findOne();
         self::assertNotNull($target, 'The shop of the tests has a second active language.');
         $url = \sprintf('/admin/cms/pages/%d/content?edit_language_id=%d', $page->getId(), $target->getId());
-        $this->api->answer(FakeAiGateway::response(self::document([['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h1>Translated</h1><p>Written for the test.</p>']]])));
+        $this->api->answer(FakeAiGateway::response(self::document([['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h2>Translated</h2><p>Written for the test.</p>']]])));
 
         $screen = $this->screen($url);
 
@@ -255,7 +255,7 @@ final class ContentScreenTest extends AdminScreenTestCase
     {
         $page = $this->createPage('Mine', published: false);
         $other = $this->createPage('Other', published: false);
-        $this->api->answer(FakeAiGateway::response(self::document([['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h1>Other</h1>']]])));
+        $this->api->answer(FakeAiGateway::response(self::document([['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h2>Other</h2>']]])));
 
         $form = $this->screen($this->url($other->getId()))->filter('[data-testid="cms-content-brief"] form')->form();
         $form['cms_brief[text]'] = 'Something.';
@@ -272,7 +272,7 @@ final class ContentScreenTest extends AdminScreenTestCase
         $page = $this->createPage('Streamed', published: false);
         $this->api
             ->answer(FakeAiGateway::response(toolCalls: [new AiToolCall('toolu_1', 'search_pages', ['query' => ''])]))
-            ->answer(FakeAiGateway::response(self::document([['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h1>Streamed</h1><p>Done.</p>']]])));
+            ->answer(FakeAiGateway::response(self::document([['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h2>Streamed</h2><p>Done.</p>']]])));
 
         $form = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-content-brief"] form')->form();
         $form['cms_brief[text]'] = 'A streamed page.';
@@ -321,7 +321,7 @@ final class ContentScreenTest extends AdminScreenTestCase
         $this->api
             ->answer(FakeAiGateway::response(toolCalls: [new AiToolCall('toolu_1', 'search_pages', ['query' => 'a']), new AiToolCall('toolu_2', 'search_pages', ['query' => 'b'])]))
             ->answer(FakeAiGateway::response($unknown))
-            ->answer(FakeAiGateway::response(self::document([['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h1>Details</h1>']]])));
+            ->answer(FakeAiGateway::response(self::document([['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h2>Details</h2>']]])));
 
         $form = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-content-brief"] form')->form();
         $form['cms_brief[text]'] = 'A page with details.';
@@ -353,7 +353,7 @@ final class ContentScreenTest extends AdminScreenTestCase
         $page = $this->createPage('Cut', published: false);
         $this->api
             ->cutAfter(['{"version"'], new AiProviderUnavailableException('anthropic-main', true, 'overloaded_error'))
-            ->answer(FakeAiGateway::response(self::document([['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h1>Cut</h1><p>Done.</p>']]])));
+            ->answer(FakeAiGateway::response(self::document([['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h2>Cut</h2><p>Done.</p>']]])));
 
         $form = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-content-brief"] form')->form();
         $form['cms_brief[text]'] = 'A page cut once.';
@@ -369,7 +369,7 @@ final class ContentScreenTest extends AdminScreenTestCase
     public function testAChangeKeepsTheSectionsItDoesNotConcern(): void
     {
         $page = $this->createPage('Revised', published: false);
-        $this->api->answer(FakeAiGateway::response(self::document([['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h1>Revised</h1><p>After.</p>']]])));
+        $this->api->answer(FakeAiGateway::response(self::document([['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h2>Revised</h2><p>After.</p>']]])));
 
         $screen = $this->screen($this->url($page->getId()));
         $form = $screen->filter('[data-testid="cms-content-change"] form')->form();
@@ -387,7 +387,7 @@ final class ContentScreenTest extends AdminScreenTestCase
         $logos = array_map(static fn (int $id): array => ['image' => \sprintf('https://img.logoipsum.com/%d.svg', $id), 'image_alt' => 'Logoipsum', 'text' => 'Lorem ipsum dolor sit amet.'], [243, 245, 247]);
         $this->readingOn();
         $this->api->answer(FakeAiGateway::response(self::document([
-            ['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h1>Partners</h1><p>Written for the test.</p>']],
+            ['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h2>Partners</h2><p>Written for the test.</p>']],
             ['id' => 'logos', 'component' => 'cms:columns', 'props' => json_encode(['title' => '', 'columns' => $logos], \JSON_THROW_ON_ERROR)],
         ])));
 
@@ -454,7 +454,7 @@ final class ContentScreenTest extends AdminScreenTestCase
     public function testOneSectionIsWrittenAgainByItsOwnForm(): void
     {
         $page = $this->createPage('Sectioned', published: false);
-        $this->api->answer(FakeAiGateway::response(json_encode(['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h1>Sectioned</h1><p>Shorter.</p>']], \JSON_THROW_ON_ERROR)));
+        $this->api->answer(FakeAiGateway::response(json_encode(['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h2>Sectioned</h2><p>Shorter.</p>']], \JSON_THROW_ON_ERROR)));
 
         $screen = $this->screen($this->url($page->getId()));
         $form = $screen->filter('[data-testid="cms-content-sections"] li[data-section="content"] form[data-cms-generate]')->form();
@@ -565,7 +565,7 @@ final class ContentScreenTest extends AdminScreenTestCase
     }
 
     /**
-     * @param list<array{id: string, component: string, props: array<string, mixed>}> $sections
+     * @param list<array<string, mixed>> $sections
      */
     private static function document(array $sections): string
     {
