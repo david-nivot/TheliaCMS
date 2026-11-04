@@ -169,6 +169,10 @@ shows how to test an update, outside a transaction.
   language of the back office for the rest of the session
   (`SectionEditScreenTest::testWhatTheDocumentRefusesByHandReadsInTheLanguageOfTheBackOffice`,
   `MediaSheetScreenTest`).
+- The theme of the back office prints the help of a form field inside its
+  label (`label[for="<id>"] .bo-form-label__help`), not in a `#<id>_help`
+  element: a test that looks for the latter reads an empty string
+  (`GeneratorSettingsScreenTest::testTheEffortSaysWhichModelsReadIt`).
 - The French guillemets of `I18n/fr_FR.php` take a plain space (`« %s »`), not
   a no-break space: an expectation typed with one fails on every message.
 - A provider that cuts an answer at the output limit reports that limit as the
