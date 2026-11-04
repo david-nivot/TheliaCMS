@@ -117,11 +117,12 @@ final class SectionImagePickerTest extends AdminScreenTestCase
         $screen = $this->screen(\sprintf('/admin/cms/pages/%d/content?edit_language_id=%d', $this->pageWith(null)->getId(), Lang::getDefaultLanguage()->getId()));
         $form = $screen->filter('[data-testid="cms-section-edit-picture"] form[data-cms-section-form]');
 
-        foreach (['width_px', 'height_px', 'fit', 'focus_x', 'focus_y', 'zoom', 'caption', 'alt'] as $name) {
+        foreach (['proportions', 'width_px', 'height_px', 'fit', 'focus_x', 'focus_y', 'zoom', 'caption', 'alt'] as $name) {
             self::assertGreaterThan(0, $form->filter('[name="cms_section_picture['.$name.']"]')->count(), $name.' is in the form.');
         }
 
         self::assertSame(0, $form->filter('[hidden]')->count(), 'Nothing is hidden before the script runs.');
+        self::assertGreaterThan(0, $form->filter('[data-testid="cms-choice-proportions"] input[type="radio"]')->count(), 'The proportions are radios, which work with no script.');
 
         $labels = json_decode((string) $screen->filter('[data-cms-content]')->attr('data-cms-content-labels'), true, 512, \JSON_THROW_ON_ERROR);
 
@@ -169,6 +170,70 @@ final class SectionImagePickerTest extends AdminScreenTestCase
         $props = Document::fromJson($content?->getDraftDocument())?->section('picture')->props ?? [];
 
         self::assertSame(['custom', 960, 540, 'cover', 35, 20, 150], [$props['width'], $props['width_px'], $props['height_px'], $props['fit'], $props['focus_x'], $props['focus_y'], $props['zoom']]);
+    }
+
+    public function testTheProportionsAreChosenOnButtonsThatShowTheirShape(): void
+    {
+        $buttons = $this->dialog($this->pageWith(null))->filter('[data-testid="cms-choice-proportions"]');
+
+        self::assertSame(['original', '16:9', '4:3', '3:2', '1:1', '3:4'], $buttons->filter('input[type="radio"].btn-check')->each(static fn (Crawler $radio): string => (string) $radio->attr('value')));
+        self::assertSame('original', $buttons->filter('input:checked')->attr('value'), 'The picture as it is, the markup of before.');
+        self::assertSame(5, $buttons->filter('label svg')->count(), 'Each ratio drawn as its shape.');
+        self::assertSame(1, $buttons->filter('label i.bi-image')->count());
+    }
+
+    public function testTheProportionsAndTheKeptPartAreKeptAsTheEditorChoseThem(): void
+    {
+        $page = $this->pageWith(null);
+        $form = $this->dialog($page)->filter('form[data-cms-section-form]')->form();
+        $values = $form->getPhpValues();
+        $values['cms_section_picture'] = ['image' => (string) $this->image('Fauteuil')->getId(), 'width' => 'column', 'proportions' => '16:9', 'focus_x' => '30', 'focus_y' => '70', 'zoom' => '150'] + $values['cms_section_picture'];
+
+        self::assertSame(302, $this->send('POST', $form->getUri(), $values));
+
+        $content = CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($this->locale())->findOne();
+        $props = Document::fromJson($content?->getDraftDocument())?->section('picture')->props ?? [];
+
+        self::assertSame(['column', '16:9', 30, 70, 150], [$props['width'], $props['proportions'], $props['focus_x'], $props['focus_y'], $props['zoom']]);
+    }
+
+    /**
+     * The kept part of each picture of the columns is a field of its row, so
+     * a row added from the prototype carries it too, and each row is saved
+     * with its own.
+     */
+    public function testEachRowOfTheColumnsKeepsItsOwnPartOfItsPicture(): void
+    {
+        $page = $this->createPage('Colonnes', published: false);
+        $this->client->request('GET', '/admin/cms/pages');
+        $this->getService(CmsPageWriter::class)->saveContent($page, $this->locale(), new Document([
+            new Section('partners', 'cms:columns', ['columns' => [['text' => 'Un'], ['text' => 'Deux'], ['text' => 'Trois']]]),
+        ]));
+
+        $dialog = $this->screen(\sprintf('/admin/cms/pages/%d/content?edit_language_id=%d', $page->getId(), Lang::getDefaultLanguage()->getId()))->filter('[data-testid="cms-section-edit-partners"]');
+
+        self::assertSame(7, $dialog->filter('[data-testid="cms-choice-proportions"] input[type="radio"]')->count(), 'Band, the image as it is, and the five ratios.');
+        self::assertSame('band', $dialog->filter('[data-testid="cms-choice-proportions"] input:checked')->attr('value'));
+
+        foreach (['focus_x', 'focus_y', 'zoom'] as $name) {
+            self::assertSame(3, $dialog->filter('[name^="cms_section_partners[columns]"][name$="['.$name.']"]')->count(), $name.' in each row.');
+            self::assertStringContainsString('['.$name.']', (string) $dialog->filter('[data-cms-items]')->attr('data-prototype'), 'And in the prototype of a new row.');
+        }
+
+        $form = $dialog->filter('form[data-cms-section-form]')->form();
+        $values = $form->getPhpValues();
+        $values['cms_section_partners']['proportions'] = '1:1';
+        $values['cms_section_partners']['columns'][0] = ['focus_x' => '10', 'focus_y' => '90', 'zoom' => '200'] + $values['cms_section_partners']['columns'][0];
+        $values['cms_section_partners']['columns'][2] = ['focus_x' => '80', 'focus_y' => '20', 'zoom' => '120'] + $values['cms_section_partners']['columns'][2];
+
+        self::assertSame(302, $this->send('POST', $form->getUri(), $values));
+
+        $content = CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($this->locale())->findOne();
+        $props = Document::fromJson($content?->getDraftDocument())?->section('partners')->props ?? [];
+        $columns = array_map(static fn (array $column): array => [$column['focus_x'], $column['focus_y'], $column['zoom']], $props['columns']);
+
+        self::assertSame('1:1', $props['proportions']);
+        self::assertSame([[10, 90, 200], [50, 50, 100], [80, 20, 120]], $columns);
     }
 
     private function save(CmsPage $page, string $imageId): ?int

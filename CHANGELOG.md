@@ -72,6 +72,14 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   be set (the zone has the proportions of the picture, zoom 100 is the whole of
   it). A size in pixels keeps its width and height and ignores the proportions.
   The setting is the editor's: the generator is not offered it.
+- **The pictures of the Columns section take proportions too.** One setting for
+  the whole section, "Proportions of the images": "Band (logos)" (the default,
+  the markup of before to the byte), "Original image", 16:9, 4:3, 3:2, 1:1 and
+  3:4. Outside the band, each picture takes the width of its column, in the
+  shape chosen, filling it around the part kept, and the `sizes` announced is
+  the one of the column. The part kept (centre and zoom) is set column by
+  column, with the same dialog in each row of the list, also in a row added
+  without reloading (the media picker of such a row is now bound too).
 - **The back-office documentation, the README and `docs/sections.md` describe the
   size and the framing of an image**: the widths, the size in pixels, the fit, the
   dialog and its keys, an image kept elsewhere, and the published pages that keep

@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace TheliaCMS\Content;
 
 use Symfony\Contracts\Translation\TranslatorInterface;
+use TheliaCMS\Locale\TranslatableText;
 use TheliaCMS\TheliaCMS;
 
 /**
@@ -53,11 +54,29 @@ final readonly class ColumnsSection implements SectionDefinitionInterface
     {
         return new PropSchema([
             Prop::text('title', $this->trans('Heading'), help: $this->trans('Above the columns; none when empty.')),
+            Prop::choice('proportions', $this->trans('Proportions of the images'), [
+                ImageProportions::BAND => $this->trans('Band (logos)'),
+                ImageProportions::ORIGINAL => $this->trans('Original image'),
+                ...array_combine(ImageProportions::ratios(), ImageProportions::ratios()),
+            ], ImageProportions::BAND, icons: [
+                ImageProportions::BAND => 'bi-distribute-vertical',
+                ImageProportions::ORIGINAL => 'bi-image',
+                ...array_combine(ImageProportions::ratios(), array_map(static fn (string $ratio): string => 'ratio-'.str_replace(':', '-', $ratio), ImageProportions::ratios())),
+            ])->forEditor(
+                help: $this->trans('"Band" shows each picture whole in a strip of the same height, as a row of logos. The other choices give every picture the width of its column, in this shape.'),
+                only: true,
+            ),
             Prop::items('columns', $this->trans('Columns'), [
                 Prop::image('image', $this->trans('Image'), help: $this->trans('An image of the media library, or the https address of a picture kept elsewhere.')),
                 Prop::text('image_alt', $this->trans('Text of the image'), help: $this->trans('For a picture kept elsewhere: what it shows, for a reader who does not see it. An image of the media library is described in the library.')),
                 Prop::text('title', $this->trans('Heading')),
                 Prop::text('text', $this->trans('Text'), max: 500),
+                Prop::integer('focus_x', $this->trans('Kept part, horizontal'), 50, 0, 100)
+                    ->forEditor(help: $this->trans('Where the part of the picture to keep sits, from the left (0) to the right (100) edge.'), only: true),
+                Prop::integer('focus_y', $this->trans('Kept part, vertical'), 50, 0, 100)
+                    ->forEditor(help: $this->trans('Where the part of the picture to keep sits, from the top (0) to the bottom (100) edge.'), only: true),
+                Prop::integer('zoom', $this->trans('Zoom'), 100, 100, 400)
+                    ->forEditor(help: $this->trans('100 shows the whole frame; 200 keeps half of its width and height. By steps of 10.'), only: true),
             ], min: 2, max: 4),
         ]);
     }
@@ -71,7 +90,15 @@ final readonly class ColumnsSection implements SectionDefinitionInterface
 
     public function normalizeProps(array $props): array
     {
-        return $this->schema()->normalize($props);
+        $props = $this->schema()->normalize($props);
+
+        foreach ($props['columns'] as $index => $column) {
+            if (0 !== $column['zoom'] % ImageSection::ZOOM_STEP) {
+                throw InvalidDocumentException::because([TranslatableText::of('"%s" item %d: %s', 'columns', $index + 1, TranslatableText::of('"%s" must be a multiple of %d.', 'zoom', ImageSection::ZOOM_STEP))]);
+            }
+        }
+
+        return $props;
     }
 
     public function render(array $props, string $locale): string
@@ -82,7 +109,11 @@ final readonly class ColumnsSection implements SectionDefinitionInterface
             return '';
         }
 
-        $html = \sprintf('<section class="cms-columns cms-columns--%d"%s>', \count($columns), ImageSlot::attribute(ImageSlot::column(\count($columns)), ImageSlot::columnBand()));
+        $proportions = $props['proportions'] ?? ImageProportions::BAND;
+        $banded = ImageProportions::BAND === $proportions || !(ImageProportions::ORIGINAL === $proportions || ImageProportions::isRatio($proportions));
+
+        // Only the band is held to a height: a picture on the width of its column has the height its proportions give.
+        $html = \sprintf('<section class="cms-columns cms-columns--%d"%s>', \count($columns), ImageSlot::attribute(ImageSlot::column(\count($columns)), $banded ? ImageSlot::columnBand() : null));
         $title = trim((string) ($props['title'] ?? ''));
 
         if ('' !== $title) {
@@ -96,7 +127,13 @@ final readonly class ColumnsSection implements SectionDefinitionInterface
             $source = ImageSource::of($column['image'] ?? null);
 
             if (null !== $source) {
-                $html .= \sprintf('<img class="cms-columns__image" src="%s" alt="%s" loading="lazy">', self::escape($source), self::escape(ImageSource::alt($column['image'] ?? null, (string) ($column['image_alt'] ?? ''), $locale)));
+                $html .= \sprintf(
+                    '<img class="cms-columns__image%s" src="%s" alt="%s" loading="lazy"%s>',
+                    $banded ? '' : ' cms-columns__image--framed',
+                    self::escape($source),
+                    self::escape(ImageSource::alt($column['image'] ?? null, (string) ($column['image_alt'] ?? ''), $locale)),
+                    $banded ? '' : self::framing($proportions, $column),
+                );
             }
 
             if ('' !== $heading = trim((string) ($column['title'] ?? ''))) {
@@ -111,6 +148,27 @@ final readonly class ColumnsSection implements SectionDefinitionInterface
         }
 
         return $html.'</div></section>';
+    }
+
+    /**
+     * The attributes of a picture on the width of its column: a ratio crops it
+     * to its shape around the part the editor keeps of it; the picture as it is
+     * keeps its own shape and is zoomed, for the publication to serve the zone.
+     *
+     * @param array<string, mixed> $column
+     */
+    private static function framing(string $proportions, array $column): string
+    {
+        $focusX = (int) ($column['focus_x'] ?? 50);
+        $focusY = (int) ($column['focus_y'] ?? 50);
+        $zoom = (int) ($column['zoom'] ?? 100);
+        $box = ImageProportions::box($proportions);
+
+        if (null === $box) {
+            return $zoom > 100 ? ImageFrame::attribute($focusX, $focusY, $zoom, 0, 0) : '';
+        }
+
+        return \sprintf(' style="aspect-ratio:%s;object-fit:cover;object-position:%d%% %d%%"', ImageProportions::aspectRatio($proportions), $focusX, $focusY).ImageFrame::attribute($focusX, $focusY, $zoom, $box[0], $box[1]);
     }
 
     private static function escape(string $value): string

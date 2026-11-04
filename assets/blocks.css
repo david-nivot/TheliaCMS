@@ -257,6 +257,15 @@
     object-position: right center;
   }
 
+  /* With proportions chosen (anything but the band), the image takes the width
+     of its column and the height its proportions give: a ratio is written on
+     the image (`aspect-ratio`, `object-fit`, `object-position`), the image as
+     it is keeps its own. */
+  .cms-columns__image--framed {
+    width: 100%;
+    height: auto;
+  }
+
   .cms-columns__heading {
     margin: 0 0 0.5rem;
     font-size: var(--font-size-h3-d, 1.375rem);
