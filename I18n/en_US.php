@@ -1050,6 +1050,7 @@ return [
     'A table of two to four plans side by side, each with its name, its price per month, what it includes, and one plan put forward.' => 'A table of two to four plans side by side, each with its name, its price per month, what it includes, and one plan put forward.',
     'What it shows, what an editor fills in, how it looks. Its texts are written by pages, in every language of the site.' => 'What it shows, what an editor fills in, how it looks. Its texts are written by pages, in every language of the site.',
     'Making a component takes the settings and the custom code permissions.' => 'Making a component takes the settings and the custom code permissions.',
+    'Asking the generator for a component takes the generator, the settings and the custom code permissions.' => 'Asking the generator for a component takes the generator, the settings and the custom code permissions.',
     'Width of the preview' => 'Width of the preview',
     'Preview of the component' => 'Preview of the component',
     'Phone' => 'Phone',

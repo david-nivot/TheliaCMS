@@ -20,7 +20,9 @@ use Symfony\Component\HttpClient\Response\MockResponse;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Domain\Ai\AiFinishReason;
 use Thelia\Domain\Ai\AiMessageRole;
+use Thelia\Domain\Ai\AiTier;
 use Thelia\Domain\Ai\AiToolCall;
+use Thelia\Domain\Ai\AiUsageRegistryInterface;
 use Thelia\Domain\Ai\Exception\AiBudgetExceededException;
 use Thelia\Domain\Ai\UntrustedSource;
 use Thelia\Model\ModuleConfigQuery;
@@ -90,6 +92,32 @@ final class PageGeneratorTest extends CmsIntegrationTestCase
 
         self::assertSame('0.002000', $row?->getCostUsd(), 'The ledger sums what the core announced for each request.');
         self::assertSame(4101, $row->getLogId(), 'The row points at the last request of the call in the log of the core.');
+    }
+
+    public function testATranslationRunsUnderAUsageOfItsOwnAtTheStandardTier(): void
+    {
+        $page = $this->createPage('Nos services', published: false);
+        $locale = $this->locale();
+        $otherLocale = 'fr_FR' === $locale ? 'en_US' : 'fr_FR';
+        $source = Document::richText('<h2>Nos services</h2><p>Du conseil.</p>');
+        $answer = self::document([['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h2>Our services</h2><p>Advice.</p>']]]);
+
+        $this->api->answer(FakeAiGateway::response($answer));
+        $result = $this->generator()->generate(GenerationRequest::translation(GenerationTarget::page($page, $otherLocale), $otherLocale, $source, $locale));
+
+        self::assertSame('<h2>Our services</h2><p>Advice.</p>', $result->document->sections[0]->props['html']);
+        self::assertSame(PageGenerator::TRANSLATION_USAGE, $this->api->requests[0]->usageId);
+
+        $this->api->answer(FakeAiGateway::response($answer));
+        $this->generator()->generate(GenerationRequest::revision($this->target($page), $locale, $source, new Brief('Plus court.')));
+        $this->api->answer(FakeAiGateway::response($answer));
+        $this->generator()->generate(GenerationRequest::section($this->target($page), $locale, $source, 'content', new Brief('Plus court.')));
+
+        self::assertSame([PageGenerator::USAGE, PageGenerator::USAGE], [$this->api->requests[1]->usageId, $this->api->requests[2]->usageId], 'A change asked by the editor stays on the usage of pages.');
+
+        $registry = $this->getService(AiUsageRegistryInterface::class);
+        self::assertSame(AiTier::Standard, $registry->get(PageGenerator::TRANSLATION_USAGE)->tier, 'The core knows the usage, at the standard tier.');
+        self::assertSame(AiTier::Advanced, $registry->get(PageGenerator::USAGE)->tier);
     }
 
     public function testABriefBecomesADocumentThroughTheToolsAndTheSchema(): void
