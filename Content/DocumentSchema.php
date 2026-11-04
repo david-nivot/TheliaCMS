@@ -31,6 +31,11 @@ namespace TheliaCMS\Content;
  */
 final readonly class DocumentSchema
 {
+    /** How long the title and the description a search engine shows may be: past it, a generated one is ignored. */
+    public const int META_TITLE_LENGTH = 60;
+
+    public const int META_DESCRIPTION_LENGTH = 155;
+
     public function __construct(
         private SectionCatalog $catalog,
     ) {
@@ -76,10 +81,12 @@ final readonly class DocumentSchema
      * @param bool         $withFields whether the answer also writes the values of
      *                                 the fields of the page, as a JSON object written
      *                                 as a string like the props (docs/adr/0009)
+     * @param bool         $withSeo    whether the answer may also propose the title and
+     *                                 the description a search engine shows for the page
      *
      * @return array<string, mixed>
      */
-    public function strict(array $kept = [], bool $withFields = false): array
+    public function strict(array $kept = [], bool $withFields = false, bool $withSeo = false): array
     {
         $names = $this->namesWith($kept);
 
@@ -104,6 +111,17 @@ final readonly class DocumentSchema
             'items' => ['type' => 'string'],
             'description' => 'Only when the page leaves out something the brief asked for: one short sentence each, in the language of the page, saying what is missing and why — an image the media library does not hold and the brief gives no https address of, a product the search does not find, a page that could not be read.',
         ];
+
+        if ($withSeo) {
+            $schema['properties']['meta_title'] = [
+                'type' => 'string',
+                'description' => \sprintf('Optional. The title a search engine shows for the page, in the language of the page, plain text of %d characters at most (longer is ignored): what the page is about, not the title of the page again word for word.', self::META_TITLE_LENGTH),
+            ];
+            $schema['properties']['meta_description'] = [
+                'type' => 'string',
+                'description' => \sprintf('Optional. The description a search engine shows for the page, in the language of the page, plain text of %d characters at most (longer is ignored): what a visitor finds on the page.', self::META_DESCRIPTION_LENGTH),
+            ];
+        }
 
         if ($withFields) {
             $schema['properties']['fields'] = [

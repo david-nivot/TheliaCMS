@@ -16,6 +16,7 @@ namespace TheliaCMS\Generation;
 
 use TheliaCMS\Catalogue\CatalogueItem;
 use TheliaCMS\Catalogue\CatalogueItemType;
+use TheliaCMS\Content\DocumentSchema;
 use TheliaCMS\Page\Field\FieldDefinition;
 use TheliaCMS\Page\Field\FieldKind;
 use TheliaCMS\Skill\Skill;
@@ -101,6 +102,10 @@ final readonly class PromptBuilder
         }
 
         array_push($lines, ...$this->typeLines($request));
+
+        if ($request->seoAsked()) {
+            array_push($lines, ...self::seoLines($request));
+        }
 
         // The brief of the page wins; the brief of its type says how every
         // page of the type sounds when the page says nothing.
@@ -259,6 +264,24 @@ final readonly class PromptBuilder
         }
 
         return $lines;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function seoLines(GenerationRequest $request): array
+    {
+        return [
+            '# What search engines show',
+            '',
+            \sprintf(
+                'Also propose `meta_title` (%d characters at most) and `meta_description` (%d characters at most), plain text in the language of the page, %s. A longer one is ignored, and the page keeps the ones its editor wrote: leave one out rather than write it badly.',
+                DocumentSchema::META_TITLE_LENGTH,
+                DocumentSchema::META_DESCRIPTION_LENGTH,
+                GenerationRequest::KIND_TRANSLATION === $request->kind ? 'written from the translated texts' : 'written from the page you write',
+            ),
+            '',
+        ];
     }
 
     private function fieldLine(FieldDefinition $field, int|float|string|bool|null $value, string $locale): string

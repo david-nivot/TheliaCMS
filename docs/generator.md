@@ -113,6 +113,18 @@ out, in the language of the page. A heading problem changes nothing in the
 document: it is said, and the editor mends it where it shows. A problem of shape
 keeps failing the generation after the corrections, as before.
 
+A page written from a brief and a page translated are also asked for the title
+and the description search engines show: two optional properties of the
+envelope, `meta_title` (60 characters at most) and `meta_description` (155), read
+as plain text on one line. They are written to `cms_page_i18n`, in the language
+of the call, only where the page holds none yet in that language
+(`CmsPageWriter::saveSeo()`): what an editor wrote is never replaced, and they
+are live as soon as saved, like the fields of the page type. One that is empty or
+longer than its limit is ignored: it is no reason for a correction turn, and the
+page does without. A change, a section and an item of the catalogue (whose meta
+belong to the core) are not asked for them. `thelia_cms:generate` prints them on
+a line of their own, as JSON, and writes them unless `--dry-run`.
+
 Two requests are held tighter than a brief. A **section asked again** is
 constrained to one section, the shape of an item of `sections`, and its prompt
 says to answer with that section alone, the whole document staying in the

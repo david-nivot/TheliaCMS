@@ -283,7 +283,7 @@ final readonly class PageGenerator
                 $observer?->onTurn($turns, []);
 
                 try {
-                    [$document, $writtenFields, $leftOut] = self::documentFrom(trim($response->text), GenerationRequest::KIND_SECTION === $request->kind);
+                    [$document, $writtenFields, $leftOut, $proposed] = self::documentFrom(trim($response->text), GenerationRequest::KIND_SECTION === $request->kind);
                     $document = $this->validator->validate($document);
                     $document = $this->shaped($request, $document);
                     $fields = $fieldsAsked->isEmpty() ? null : self::fieldsFrom($writtenFields, $fieldsAsked, $request->locale, $request->target->fieldValues);
@@ -338,7 +338,7 @@ final readonly class PageGenerator
                 $durationMs = (int) ((hrtime(true) - $started) / 1_000_000);
                 $logId = $record(GenerationLog::STATUS_DONE, null, $document->toJson(), $leftOut);
 
-                return new GenerationResult($document, $model, null, $usage, round($costUsd, 6), $durationMs, $turns, $logId, $fields, $leftOut, $provenance);
+                return new GenerationResult($document, $model, null, $usage, round($costUsd, 6), $durationMs, $turns, $logId, $fields, $leftOut, $provenance, $request->seoAsked() ? $proposed : []);
             }
         } catch (GenerationRefusedException $exception) {
             $exception->logId = $record(GenerationLog::STATUS_REFUSED, $exception->getMessage());
@@ -386,7 +386,7 @@ final readonly class PageGenerator
     {
         return GenerationRequest::KIND_SECTION === $request->kind
             ? new AiOutputSchema('cms_section', $this->schema->strictSection($kept))
-            : new AiOutputSchema('cms_page', $this->schema->strict($kept, $withFields));
+            : new AiOutputSchema('cms_page', $this->schema->strict($kept, $withFields, $request->seoAsked()));
     }
 
     /**
@@ -518,7 +518,7 @@ final readonly class PageGenerator
      * still to be read, and what it says the page leaves out. With `$single`,
      * the answer is one section, and the document holds that section alone.
      *
-     * @return array{0: Document, 1: mixed, 2: list<string>}
+     * @return array{0: Document, 1: mixed, 2: list<string>, 3: array<string, string>}
      *
      * @throws InvalidDocumentException
      */
@@ -573,7 +573,7 @@ final readonly class PageGenerator
             throw InvalidDocumentException::because($problems);
         }
 
-        return [Document::fromArray($decoded), $decoded['fields'] ?? null, self::leftOutFrom($decoded['left_out'] ?? null)];
+        return [Document::fromArray($decoded), $decoded['fields'] ?? null, self::leftOutFrom($decoded['left_out'] ?? null), self::seoFrom($decoded)];
     }
 
     /**
@@ -598,6 +598,34 @@ final readonly class PageGenerator
         }
 
         return null;
+    }
+
+    /**
+     * The title and the description the answer proposes for search engines,
+     * as plain text on one line. One that is empty or longer than its limit is
+     * ignored, never a reason for a correction turn: the page does without.
+     *
+     * @param array<array-key, mixed> $decoded
+     *
+     * @return array<string, string> by column of the page
+     */
+    private static function seoFrom(array $decoded): array
+    {
+        $seo = [];
+
+        foreach (['meta_title' => DocumentSchema::META_TITLE_LENGTH, 'meta_description' => DocumentSchema::META_DESCRIPTION_LENGTH] as $column => $limit) {
+            if (!\is_string($decoded[$column] ?? null)) {
+                continue;
+            }
+
+            $text = trim((string) preg_replace('/\s+/u', ' ', strip_tags($decoded[$column])));
+
+            if ('' !== $text && mb_strlen($text) <= $limit) {
+                $seo[$column] = $text;
+            }
+        }
+
+        return $seo;
     }
 
     /**

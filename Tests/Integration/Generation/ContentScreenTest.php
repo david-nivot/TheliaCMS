@@ -38,6 +38,7 @@ use TheliaCMS\Generation\GeneratorSettings;
 use TheliaCMS\Generation\Tool\ReadUrlTool;
 use TheliaCMS\Model\CmsPageContentQuery;
 use TheliaCMS\Model\CmsPageGenerationQuery;
+use TheliaCMS\Model\CmsPageQuery;
 use TheliaCMS\Model\CmsPageRevisionQuery;
 use TheliaCMS\Page\Admin\CmsPageWriter;
 use TheliaCMS\Security\CmsResources;
@@ -265,6 +266,30 @@ final class ContentScreenTest extends AdminScreenTestCase
         $screen = $this->screen($this->url($page->getId()).'&done='.$row?->getId());
 
         self::assertSame(0, $screen->filter('.cms-toast')->count());
+    }
+
+    public function testTheSearchTitleAndDescriptionOfABriefAreWrittenOnlyWhereThePageHasNone(): void
+    {
+        $page = $this->createPage('Nos services', published: false);
+        $other = $this->createPage('Notre atelier', published: false);
+        $locale = $this->locale();
+        $page->setLocale($locale)->setMetaTitle('Titre de l\'éditeur')->save();
+        $document = [['id' => 'hero', 'component' => 'cms:richtext', 'props' => ['html' => '<h2>Services</h2>']]];
+        $answer = static fn (): string => json_encode([...json_decode(self::document($document), true, 16, \JSON_THROW_ON_ERROR), 'meta_title' => 'Titre proposé', 'meta_description' => 'Description proposée.'], \JSON_THROW_ON_ERROR);
+
+        foreach ([$page, $other] as $target) {
+            $this->api->answer(FakeAiGateway::response($answer()));
+            $form = $this->screen($this->url($target->getId()))->filter('[data-testid="cms-content-brief"] form')->form();
+            $form['cms_brief[text]'] = 'Une page de services.';
+            self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()));
+        }
+
+        $kept = CmsPageQuery::create()->findPk($page->getId())->setLocale($locale);
+        $written = CmsPageQuery::create()->findPk($other->getId())->setLocale($locale);
+
+        self::assertSame('Titre de l\'éditeur', $kept->getMetaTitle(), 'What an editor wrote is never replaced.');
+        self::assertSame('Description proposée.', $kept->getMetaDescription(), 'The empty one is filled.');
+        self::assertSame(['Titre proposé', 'Description proposée.'], [$written->getMetaTitle(), $written->getMetaDescription()]);
     }
 
     public function testAScriptReadsTheProgressAsAStreamOfEvents(): void

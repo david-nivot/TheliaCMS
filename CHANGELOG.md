@@ -9,6 +9,13 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Added
 
+- **The generator proposes the title and the description search engines show.**
+  A page written from a brief, and a page translated, are asked for
+  `meta_title` (60 characters) and `meta_description` (155), two optional
+  properties of the answer, and write them to the page in the language of the
+  call only where it holds none yet: an editor's text is never replaced. One
+  that is empty or too long is ignored, with no correction turn. Items of the
+  catalogue, changes and sections are not asked. See docs/generator.md.
 - **A Content-Security-Policy for the pages of the module**, under CMS >
   Settings > Security headers: where pictures and fonts may come from, and that
   only the site may frame a page. Off by default; report-only first, the

@@ -40,6 +40,7 @@ use TheliaCMS\Generation\Tool\MakeComponentTool;
 use TheliaCMS\Generation\Tool\ReadUrlTool;
 use TheliaCMS\Generation\TranslationGraft;
 use TheliaCMS\Http\ConsoleRequest;
+use TheliaCMS\Model\CmsPageQuery;
 use TheliaCMS\Page\Admin\CmsPageWriter;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
 use TheliaCMS\Tests\Support\FakeAiGateway;
@@ -83,6 +84,24 @@ final class GenerateCommandTest extends CmsIntegrationTestCase
         self::assertSame(Command::SUCCESS, $saved->getStatusCode(), $saved->getDisplay());
         self::assertSame('high', $this->api->requests[1]->providerOptions['anthropic']['effort'] ?? null, 'Without --effort, the one of the settings.');
         self::assertInstanceOf(Document::class, $this->getService(ItemContentRepository::class)->draftDocument(CatalogueItemType::Product, $id, $this->locale()));
+    }
+
+    public function testTheSearchFieldsOfAPageAreWrittenWithItsDraftAndShownInTheOutput(): void
+    {
+        $page = $this->createPage('Notre atelier', published: false);
+        $locale = $this->locale();
+        $this->api->answer(FakeAiGateway::response(json_encode(
+            ['version' => 1, 'sections' => [['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h2>Atelier</h2>']]], 'meta_title' => 'Notre atelier à Lyon', 'meta_description' => 'Un atelier de menuiserie.'],
+            \JSON_THROW_ON_ERROR,
+        )));
+
+        $tester = $this->generate(['--page' => (string) $page->getId(), '--locale' => $locale, '--brief' => 'Présente l\'atelier.']);
+
+        self::assertSame(Command::SUCCESS, $tester->getStatusCode(), $tester->getDisplay());
+        self::assertStringContainsString('{"meta_title":"Notre atelier à Lyon","meta_description":"Un atelier de menuiserie."}', $tester->getDisplay());
+
+        $saved = CmsPageQuery::create()->findPk($page->getId())->setLocale($locale);
+        self::assertSame(['Notre atelier à Lyon', 'Un atelier de menuiserie.'], [$saved->getMetaTitle(), $saved->getMetaDescription()]);
     }
 
     public function testALanguageIsWrittenFromTheDraftOfAnother(): void

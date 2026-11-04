@@ -146,6 +146,10 @@ final class GenerateCommand extends Command
             $io->writeln(json_encode($result->fields, \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES | \JSON_THROW_ON_ERROR));
         }
 
+        if ([] !== $result->seo) {
+            $io->writeln(json_encode($result->seo, \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES | \JSON_THROW_ON_ERROR));
+        }
+
         $io->newLine();
         // One line whatever the width of the terminal: `compare-runs` reads
         // the cost of a run from it, and SymfonyStyle wraps a comment at 80
@@ -184,6 +188,10 @@ final class GenerateCommand extends Command
 
             if (null !== $result->fields && [] !== $result->fields) {
                 $this->writer->saveFields($page, $locale, $result->fields);
+            }
+
+            if ([] !== $result->seo) {
+                $this->writer->saveSeo($page, $locale, $result->seo);
             }
         }, $url);
         $io->success(\sprintf('Draft of page #%d saved in %s. Publish it with thelia_cms:publish --page %d.', $pageId, $locale, $pageId));

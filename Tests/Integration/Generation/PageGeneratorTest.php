@@ -26,6 +26,8 @@ use Thelia\Domain\Ai\AiUsageRegistryInterface;
 use Thelia\Domain\Ai\Exception\AiBudgetExceededException;
 use Thelia\Domain\Ai\UntrustedSource;
 use Thelia\Model\ModuleConfigQuery;
+use TheliaCMS\Catalogue\CatalogueItem;
+use TheliaCMS\Catalogue\CatalogueItemType;
 use TheliaCMS\Content\Document;
 use TheliaCMS\Content\DocumentSchema;
 use TheliaCMS\Content\DocumentValidator;
@@ -163,7 +165,7 @@ final class PageGeneratorTest extends CmsIntegrationTestCase
         self::assertSame($settings->maxTokens(), $first->maxOutputTokens);
         self::assertSame('cms_page', $first->outputSchema?->name);
         self::assertSame(['version', 'sections'], $first->outputSchema?->schema['required']);
-        self::assertSame($this->getService(DocumentSchema::class)->strict(), $first->outputSchema->schema);
+        self::assertSame($this->getService(DocumentSchema::class)->strict([], false, true), $first->outputSchema->schema, 'A page written from a brief is also asked for its search fields.');
         self::assertStringContainsString('# Skills', (string) $first->system);
         self::assertStringContainsString('## `cms:richtext`', (string) $first->system);
         self::assertContains('search_pages', array_column($first->tools, 'name'));
@@ -738,6 +740,67 @@ final class PageGeneratorTest extends CmsIntegrationTestCase
         self::assertSame(1, $result->turns);
         self::assertSame([], $result->leftOut);
         self::assertSame(987654, $result->document->sections[0]->props['image'], 'The translation is the page of the source, a dead image included.');
+    }
+
+    public function testASearchTitleAndDescriptionAreAskedForAPageFromABriefAndForATranslationOnly(): void
+    {
+        $page = $this->createPage('Nos services', published: false);
+        $locale = $this->locale();
+        $otherLocale = 'fr_FR' === $locale ? 'en_US' : 'fr_FR';
+        $source = new Document([new Section('intro', RichTextSection::NAME, ['html' => '<h2>Bonjour</h2>'])]);
+        $withMeta = static fn (string $title, string $description): string => json_encode([...json_decode(self::document([['id' => 'intro', 'component' => RichTextSection::NAME, 'props' => ['html' => '<h2>Bonjour</h2>']]]), true, 16, \JSON_THROW_ON_ERROR), 'meta_title' => $title, 'meta_description' => $description], \JSON_THROW_ON_ERROR | \JSON_UNESCAPED_UNICODE);
+
+        $this->api->answer(FakeAiGateway::response($withMeta('  Conseil en <b>stratégie</b>  ', "Des services de conseil\npour les PME.")));
+        $brief = $this->generator()->generate(GenerationRequest::fromBrief(GenerationTarget::page($page, $locale), $locale, new Brief('Des services.')));
+
+        $request = $this->api->requests[0];
+        self::assertContains('meta_title', array_keys($request->outputSchema?->schema['properties'] ?? []));
+        self::assertNotContains('meta_title', $request->outputSchema->schema['required'], 'Both are optional.');
+        self::assertNotContains('meta_description', $request->outputSchema->schema['required']);
+        self::assertStringContainsString('# What search engines show', $request->messages[0]->content);
+        self::assertSame(['meta_title' => 'Conseil en stratégie', 'meta_description' => 'Des services de conseil pour les PME.'], $brief->seo, 'Plain text, on one line.');
+
+        $this->api->answer(FakeAiGateway::response($withMeta('Our advice', 'Advice for small companies.')));
+        $translation = $this->generator()->generate(GenerationRequest::translation(GenerationTarget::page($page, $otherLocale), $otherLocale, $source, $locale));
+
+        self::assertContains('meta_description', array_keys($this->api->requests[1]->outputSchema?->schema['properties'] ?? []));
+        self::assertStringContainsString('written from the translated texts', $this->api->requests[1]->messages[0]->content);
+        self::assertSame(['meta_title' => 'Our advice', 'meta_description' => 'Advice for small companies.'], $translation->seo);
+
+        // Not asked, so not read, whatever the model writes.
+        $this->api->answer(FakeAiGateway::response($withMeta('Revised', 'Revised page.')));
+        $revision = $this->generator()->generate(GenerationRequest::revision($this->target($page), $locale, $source, new Brief('Plus court.')));
+        $this->api->answer(FakeAiGateway::response(self::section(['id' => 'intro', 'component' => RichTextSection::NAME, 'props' => ['html' => '<h2>Bonjour</h2>']])));
+        $section = $this->generator()->generate(GenerationRequest::section($this->target($page), $locale, $source, 'intro', new Brief('Plus court.')));
+        $item = new CatalogueItem(CatalogueItemType::Category, 1, $locale, 'Vernis', null, null, null, null);
+        $this->api->answer(FakeAiGateway::response($withMeta('Item', 'Item page.')));
+        $forItem = $this->generator()->generate(GenerationRequest::fromBrief(GenerationTarget::item($item), $locale, new Brief('Les vernis.')));
+
+        foreach ([1 => $this->api->requests[2], 2 => $this->api->requests[3], 3 => $this->api->requests[4]] as $request) {
+            self::assertNotContains('meta_title', array_keys($request->outputSchema?->schema['properties'] ?? []));
+            self::assertStringNotContainsString('What search engines show', $request->messages[0]->content);
+        }
+
+        self::assertSame([[], [], []], [$revision->seo, $section->seo, $forItem->seo]);
+    }
+
+    public function testATitleOrADescriptionOverItsLimitIsIgnoredWithoutACorrection(): void
+    {
+        $page = $this->createPage('Nos services', published: false);
+        $locale = $this->locale();
+        $document = json_decode(self::document([['id' => 'intro', 'component' => RichTextSection::NAME, 'props' => ['html' => '<h2>Bonjour</h2>']]]), true, 16, \JSON_THROW_ON_ERROR);
+
+        $this->api->answer(FakeAiGateway::response(json_encode([...$document, 'meta_title' => str_repeat('é', 61), 'meta_description' => str_repeat('a', 155)], \JSON_THROW_ON_ERROR)));
+        $long = $this->generator()->generate(GenerationRequest::fromBrief(GenerationTarget::page($page, $locale), $locale, new Brief('Des services.')));
+
+        self::assertSame(1, $long->turns, 'No correction turn is paid for a title that is too long.');
+        self::assertSame(['meta_description' => str_repeat('a', 155)], $long->seo, '155 characters fit, 61 for the title do not.');
+
+        $this->api->answer(FakeAiGateway::response(json_encode([...$document, 'meta_title' => str_repeat('é', 60), 'meta_description' => str_repeat('a', 156)], \JSON_THROW_ON_ERROR)));
+        $edge = $this->generator()->generate(GenerationRequest::fromBrief(GenerationTarget::page($page, $locale), $locale, new Brief('Des services.')));
+
+        self::assertSame(['meta_title' => str_repeat('é', 60)], $edge->seo, '60 characters fit, 156 for the description do not.');
+        self::assertSame(1, $edge->turns);
     }
 
     private function readingOn(): void

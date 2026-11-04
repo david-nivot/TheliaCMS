@@ -129,6 +129,16 @@ final readonly class GenerationRequest
     }
 
     /**
+     * Whether the answer may propose the title and the description search
+     * engines show: for a page written from a brief or a page translated, not
+     * for an item of the catalogue, whose meta fields belong to the core.
+     */
+    public function seoAsked(): bool
+    {
+        return null === $this->target->item && \in_array($this->kind, [self::KIND_BRIEF, self::KIND_TRANSLATION], true);
+    }
+
+    /**
      * The fields of the page the answer writes along with the document: all
      * of them for a page written or changed as a whole, the translated ones
      * for a translation — the others are the same in every language — and
