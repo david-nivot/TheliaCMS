@@ -76,6 +76,8 @@ final class ComponentGeneratorTest extends CmsIntegrationTestCase
         self::assertSame(ComponentPrompt::schema(), $request->outputSchema?->schema, 'The answer is constrained to a component.');
         self::assertSame([], $request->tools, 'Making a component needs no tool of the site.');
         self::assertStringContainsString('var(--cms-color-accent)', (string) $request->system, 'The tokens of the stylesheet are named.');
+        self::assertStringContainsString('`data-cms-sizes`', (string) $request->system, 'The width of the pictures can be declared.');
+        self::assertStringContainsString('`data-cms-height`', (string) $request->system);
         self::assertStringContainsString('# Movement and interaction without script', (string) $request->system, 'The skill on motion is read beside the one on accessibility.');
         self::assertStringContainsString('`cms:richtext`', $request->messages[0]->content, 'The model is told what the site already has.');
         self::assertStringContainsString('Un tableau de prix', $request->messages[0]->content);

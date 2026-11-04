@@ -41,6 +41,15 @@ final readonly class ComponentPrompt
      */
     public const array ELEMENTS_TAKEN_OUT = ['input', 'select', 'textarea', 'noscript'];
 
+    /**
+     * What a template says of the width of its pictures, and a template
+     * that says it: tested against the filter of the site, so the model is
+     * never taught an attribute the page would take out.
+     */
+    public const string IMAGE_WIDTH_RULE = 'Pictures: the site offers each picture of the media library in several widths, and the browser chooses by `sizes`, the width the picture is drawn at. Without a word from the component it assumes the whole viewport. When the component draws its pictures narrower than the page (a fifth or a third of it, a row of logos, a card), put `data-cms-sizes` on the element that holds them, with the `sizes` the browser reads: `(min-width: 64rem) 20vw, 50vw` is a fifth of the page on a wide screen and half of it on a narrow one. Conditions are on `min-width` or `max-width`; widths are in `px`, `rem`, `em`, `vw`, `vh` or `calc()`; nothing else is read. A picture drawn at a fixed height, as wide as its proportions make it (a band of logos), adds `data-cms-height` on the same element, a length such as `5rem`. Both attributes are taken out of the published page; they are the only `data-` attributes a template may hold.';
+
+    public const string IMAGE_WIDTH_EXAMPLE = '<ul class="logos" data-cms-sizes="(min-width: 64rem) 20vw, 50vw">{% for logo in props.logos %}<li class="logos__item"><img src="{{ logo.image }}" alt="{{ logo.name }}"></li>{% endfor %}</ul>';
+
     public function __construct(
         private SkillRepository $skills,
         private SectionCatalog $catalog,
@@ -198,7 +207,8 @@ final readonly class ComponentPrompt
             '- Text is escaped when printed; an `html` prop is printed as it is.',
             '- No text of its own outside what it prints: the template writes markup and props, nothing else.',
             '- No `script`, `style`, `iframe`, `object`, `embed`, `form`, `link`, `meta`, no `on…` attribute, no `javascript:`.',
-            '- What it draws is filtered like a page that goes online, which keeps the elements of HTML text and layout and their attributes, and takes out the rest without a word: '.implode(', ', array_map(static fn (string $element): string => 'no `'.$element.'`', self::ELEMENTS_TAKEN_OUT)).', no `data-` attribute. The template is refused when it holds one.',
+            '- What it draws is filtered like a page that goes online, which keeps the elements of HTML text and layout and their attributes, and takes out the rest without a word: '.implode(', ', array_map(static fn (string $element): string => 'no `'.$element.'`', self::ELEMENTS_TAKEN_OUT)).', no `data-` attribute but the two of the width of the pictures, below. The template is refused when it holds another.',
+            '- '.self::IMAGE_WIDTH_RULE.' For instance: `'.self::IMAGE_WIDTH_EXAMPLE.'`',
             '- One root element, a `section` or a `div`. Headings start at `h2`: the page has its own `h1`.',
             '- Test what may be empty before drawing it: `{% if props.image %}`, `{% if props.title is not empty %}`. An image is drawn with its `alt` from a prop.',
             '- Class names describe the parts (`plan`, `plan__price`); the site puts the component inside an element of its own class, which the stylesheet is scoped to.',

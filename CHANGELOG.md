@@ -34,7 +34,9 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   grid, not at 1200px. The images of the columns are drawn in a band of a
   fixed height, as wide as their proportions make them: `data-cms-height`
   says it, and the publication holds the width announced to the one that
-  height gives.
+  height gives. The generator of site components is taught both attributes
+  (when to put them, with an example), so a component it makes declares the
+  width of its pictures.
   Components of the site, of a module or of the theme can declare it too, see
   docs/sections.md and docs/creating-a-component.md. The filter that runs on
   every page lets the attribute through. Pages published before keep the old
