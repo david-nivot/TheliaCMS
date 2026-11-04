@@ -14,9 +14,13 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Tests\Integration\ImportExport;
 
+use Propel\Runtime\ActiveQuery\Criteria;
 use Propel\Runtime\Propel;
 use Thelia\Model\ModuleConfigQuery;
 use TheliaCMS\Content\Document;
+use TheliaCMS\Content\RichTextSection;
+use TheliaCMS\Content\Section;
+use TheliaCMS\Content\SectionAppearance;
 use TheliaCMS\Generation\Brief;
 use TheliaCMS\Generation\GeneratorSettings;
 use TheliaCMS\ImportExport\ExportFormat;
@@ -173,6 +177,32 @@ final class SiteRoundTripTest extends CmsIntegrationTestCase
 
         self::assertSame([], $report->warnings());
         self::assertSame($before, $this->snapshot(), 'The emoji did not come back the way it went in.');
+    }
+
+    public function testThePreciseRoomOfASectionComesBackFromTheExport(): void
+    {
+        $page = $this->createPage('Page a l espace', published: false);
+        $this->writer()->saveContent($page, $this->locale(), new Document([
+            new Section('intro', RichTextSection::NAME, ['html' => '<p>Texte</p>'], new SectionAppearance(background: '#f8d7d7', padding_top: '0px', padding_bottom: '64px', margin_top: '2rem')),
+        ]));
+        $this->writer()->publish($page, $this->locale());
+
+        $before = $this->snapshot();
+        self::assertStringContainsString('padding-top:0px;padding-bottom:64px;margin-top:2rem', (string) $before['page-a-l-espace']['published_html']);
+
+        $document = SiteDocument::fromArray($this->getService(SiteExporter::class)->export());
+        $this->emptyTheSite();
+        $report = $this->getService(SiteImporter::class)->import($document, new ImportOptions());
+
+        self::assertSame([], $report->warnings());
+        self::assertSame($before, $this->snapshot());
+
+        $imported = CmsPageContentQuery::create()->filterByLocale($this->locale())->filterByPublishedHtml('%padding-top:0px%', Criteria::LIKE)->findOne();
+        self::assertSame(
+            ['background' => '#f8d7d7', 'padding_top' => '0px', 'padding_bottom' => '64px', 'margin_top' => '2rem'],
+            Document::fromJson($imported?->getDraftDocument())?->section('intro')?->appearance->toArray(),
+            'The document of the draft carries the room as it was written.',
+        );
     }
 
     public function testAnImportedPageIsNotFlaggedAsChangedSinceItsPublication(): void

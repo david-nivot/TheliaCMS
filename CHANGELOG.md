@@ -9,6 +9,22 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Added
 
+- **A section takes a precise room, inside and outside.** The **Appearance** group
+  of "Edit by hand" gains four fields: room inside the section, top and bottom
+  (`padding_top`, `padding_bottom`, the background goes with it), and room outside
+  it, top and bottom (`margin_top`, `margin_bottom`, which keeps it apart from its
+  neighbours). A value is a number of two decimals at most and `px` (0 to 320) or
+  `rem` (0 to 20), such as `64px` or `2rem`; `calc()`, `var()`, negative numbers and
+  other units are refused, and the style is built from the checked value only.
+  The buttons Small, Medium and Large stay and set the room inside, above and
+  below together; a precise side wins over them for that side. `padding` also
+  accepts a length (it then shows in the top and bottom fields, no button
+  standing for it). An empty field is the room of the component, as before. A
+  section saved before writes the same markup, byte for byte. The generator is
+  not offered the precise values: its schema and its catalogue sheet keep the
+  three presets. An exported site carries them with the document; a site
+  without this release refuses the document of a page that holds one (warning,
+  page imported without its document).
 - **The Image section takes a size of the editor's choosing.** A fourth width,
   "A size in pixels" (160 to 2400), sets the width of the picture; with a height
   (80 to 2000, a box no more stretched than 4:1 or 1:4) the picture sits in a
