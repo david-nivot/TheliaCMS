@@ -105,6 +105,11 @@ shows how to test an update, outside a transaction.
   -c local/modules/TheliaCMS/phpunit.integration.xml.dist`), after removing
   `var/propel/test` and `var/cache/test` if they were built with it.
 
+- One integration suite at a time on a host. Two suites run together, or a
+  suite stopped halfway, leave rows behind (`Duplicate entry 'admin-40'`,
+  `'ROUND-TRIP-REF'`) and the next run fails by the hundred, with no link to
+  the code: `php bin/test-prepare` empties the test database.
+
 - `TheliaCMS::setConfigValue($key, null)` stores an empty value; it does not
   put a setting back to "never saved", which a setting with a computed default
   tells apart (`ContentSecurityPolicySettings::hosts()`). A test that needs the
@@ -219,6 +224,12 @@ shows how to test an update, outside a transaction.
 - A page cited by a brief is read by `ReadUrlTool` on the server, through the
   HTTP client of the core that refuses private addresses; its text goes to the
   model as `UntrustedContent`. Reading is off until the site turns it on.
+- A round of the determinism bench (`docs/evaluation/determinism/run-round.sh`)
+  calls the model for about half an hour on the host, and each call is paid.
+  While it runs, copy no code into the module, clear no cache and run no
+  suite: a container rebuilt under it makes the calls in flight fail. Two
+  rounds run one after the other, never together: a second generation of a
+  page is refused while one runs (`GenerationLog::runningFor()`).
 - The grammar of structured outputs has limits the documentation does not
   spell out: a `const` needs a `type`, an enum holds strings only (a numeric
   PHP array key becomes an integer), at most 24 optional properties and 16
