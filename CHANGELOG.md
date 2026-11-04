@@ -10,11 +10,12 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 ### Added
 
 - **A section takes a precise room, inside and outside.** The **Appearance** group
-  of "Edit by hand" gains a room button, **Precise room**, which shows four
-  fields (another button hides them and leaves them out): room inside the section, top and bottom
-  (`padding_top`, `padding_bottom`, the background goes with it), and room outside
-  it, top and bottom (`margin_top`, `margin_bottom`, which keeps it apart from its
-  neighbours). A value is a number of two decimals at most and `px` (0 to 320) or
+  of "Edit by hand" gains a room button, **Precise room**, which shows eight
+  fields (another button hides them and leaves them out): room inside the
+  section, top, bottom, left and right (`padding_top`, `padding_bottom`,
+  `padding_left`, `padding_right`, the background goes with it), and room
+  outside it on the same four sides (`margin_*`: above and below, it keeps the
+  section apart from its neighbours; left and right, it narrows the band). A value is a number of two decimals at most and `px` (0 to 320) or
   `rem` (0 to 20), such as `64px` or `2rem`; `calc()`, `var()`, negative numbers and
   other units are refused, and the style is built from the checked value only.
   The buttons Small, Medium and Large stay and set the room inside, above and

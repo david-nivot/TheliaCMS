@@ -388,24 +388,24 @@ body:has(.cms-content) {
     grid-column: 1 / -1;
 }
 
-/* The precise room: the inner room and the outer room side by side, each a
-   top and a bottom, its help under the pair. */
+/* The precise room: the inner room, then the outer room, each a top, a
+   bottom, a left and a right on one line, its help under them. */
 .cms-content__spacing-groups {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    gap: 0.75rem 1rem;
-}
-
-@container (min-width: 34rem) {
-    .cms-content__spacing-groups {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+    gap: 0.75rem;
 }
 
 .cms-content__spacing-fields {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.5rem;
+}
+
+@container (min-width: 34rem) {
+    .cms-content__spacing-fields {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
 }
 
 .cms-content__spacing-fields .form-label {

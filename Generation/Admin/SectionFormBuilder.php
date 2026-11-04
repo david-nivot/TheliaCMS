@@ -183,7 +183,7 @@ final readonly class SectionFormBuilder
             'attr' => ['placeholder' => '#1c1f22'],
         ]));
         $group->add('padding', ChoiceType::class, [
-            'label' => 'Room above and below',
+            'label' => 'Room around the section',
             'help' => 'Inside the section, the background goes with it. "Precise room" sets each side, inside and outside, in px or rem.',
             'required' => false,
             'placeholder' => "The component's",
@@ -204,8 +204,12 @@ final readonly class SectionFormBuilder
         ];
         $group->add('padding_top', TextType::class, $length('Inside, top', 'Inside the section, the background goes with it. Written 64px (0 to 320) or 2rem (0 to 20). Empty: the component\'s.'));
         $group->add('padding_bottom', TextType::class, $length('Inside, bottom'));
-        $group->add('margin_top', TextType::class, $length('Outside, top', 'Outside the section, between it and its neighbours. Same units. Empty: none.'));
+        $group->add('padding_left', TextType::class, $length('Inside, left'));
+        $group->add('padding_right', TextType::class, $length('Inside, right'));
+        $group->add('margin_top', TextType::class, $length('Outside, top', 'Outside the section: above and below, between it and its neighbours; left and right, the band is narrower. Same units. Empty: none.'));
         $group->add('margin_bottom', TextType::class, $length('Outside, bottom'));
+        $group->add('margin_left', TextType::class, $length('Outside, left'));
+        $group->add('margin_right', TextType::class, $length('Outside, right'));
 
         $builder->add($group);
     }

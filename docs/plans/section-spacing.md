@@ -22,7 +22,9 @@ The **Appearance** of a section offers three presets of room (`small`, `medium`,
 - Style order: background, text colour, `padding-block`, `padding-top`, `padding-bottom`, `margin-top`, `margin-bottom`, `text-align`. A section without the new keys writes the same style as before, byte for byte.
 - The validation of the appearance is the only barrier (the CSS filter of the rendering does not bound a length): the style is built from the checked values only.
 - Form: one text field per side (a number and its unit in one field, `64px`), more direct than a number plus a unit select for an editor who types a value, with an example as placeholder and the bounds in the help. A `padding` stored as a length, which no button stands for, is shown in the top and bottom fields, and saved there.
-- No button is checked when the room is not a preset.
+- First delivery: no button checked when the room is not a preset; replaced by the "Precise room" button below.
+- Left and right (asked after the first delivery): `padding_left`, `padding_right`, `margin_left`, `margin_right`, same pattern and bounds; style order `padding-block`, `padding-top`, `padding-bottom`, `padding-left`, `padding-right`, `margin-top`, `margin-bottom`, `margin-left`, `margin-right`. A side margin narrows the band (the wrapper of the whole width). No guard on narrow screens: 320px on each side of a phone leaves no room, the editor's to judge.
+- Form: the eight fields show under the room button "Precise room" only (value `precise`, never stored); another button leaves them out of the save. A preset beside a precise side opens on "Precise room", the preset written as its length in the inside fields left empty.
 - Generator: the schema given to the model and the sheet of the catalogue are unchanged; the model sets presets only. A translation takes the appearance of the source. Export and import carry the document as it is; a site without this lot refuses the document of a page that holds a precise value (warning, page imported without document): said in the CHANGELOG.
 
 ## Tests

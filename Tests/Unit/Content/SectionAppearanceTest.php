@@ -68,6 +68,20 @@ final class SectionAppearanceTest extends TestCase
         self::assertSame(['padding_top' => '0px', 'padding_bottom' => '64px', 'margin_top' => '2rem', 'margin_bottom' => '0.25rem'], $appearance->toArray());
     }
 
+    public function testTheLeftAndTheRightTakeALengthAsTheTopAndTheBottomDo(): void
+    {
+        $appearance = SectionAppearance::fromArray([
+            'margin_right' => '1rem',
+            'padding_left' => '24PX',
+            'margin_left' => '0px',
+            'padding_right' => '1.5rem',
+            'padding_top' => '8px',
+        ]);
+
+        self::assertSame('padding-top:8px;padding-left:24px;padding-right:1.5rem;margin-left:0px;margin-right:1rem', $appearance->style());
+        self::assertSame(['padding_top' => '8px', 'padding_left' => '24px', 'padding_right' => '1.5rem', 'margin_left' => '0px', 'margin_right' => '1rem'], $appearance->toArray());
+    }
+
     public function testTheBoundsOfEachUnitAreAccepted(): void
     {
         $appearance = SectionAppearance::fromArray(['padding_top' => '320px', 'padding_bottom' => '20rem', 'margin_top' => '319.99px', 'margin_bottom' => '20.00rem']);
@@ -97,6 +111,9 @@ final class SectionAppearanceTest extends TestCase
         yield 'too large in px' => ['padding_top', '321px'];
         yield 'too large in rem' => ['padding_bottom', '20.01rem'];
         yield 'three decimals' => ['margin_bottom', '1.234rem'];
+        yield 'left as calc' => ['padding_left', 'calc(1px + 1px)'];
+        yield 'right too large' => ['margin_right', '321px'];
+        yield 'right negative' => ['margin_right', '-1rem'];
         yield 'no unit' => ['margin_top', '64'];
         yield 'no number' => ['margin_top', 'px'];
         yield 'leading zero' => ['margin_top', '08px'];
@@ -139,7 +156,7 @@ final class SectionAppearanceTest extends TestCase
      */
     public static function messagesWithoutLengths(): iterable
     {
-        yield 'unknown setting' => [['shadow' => true], 'The appearance has no setting "shadow": only background, text, padding, align, and the room above and below set in the editor.'];
+        yield 'unknown setting' => [['shadow' => true], 'The appearance has no setting "shadow": only background, text, padding, align, and the room on each side set in the editor.'];
         yield 'unknown preset' => [['padding' => 'huge'], 'The padding of the appearance is none of small, medium, large.'];
     }
 

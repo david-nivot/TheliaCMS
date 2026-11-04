@@ -104,9 +104,10 @@
 
 {#
     The precise room of a section: the inner room (padding) and the outer
-    room (margin), each with a top and a bottom, a length written by hand.
-    The group holds the four fields, named padding_top, padding_bottom,
-    margin_top and margin_bottom. Served shown, under the room buttons;
+    room (margin), each with a top, a bottom, a left and a right, a length
+    written by hand. The group holds the eight fields, named padding_top,
+    padding_bottom, padding_left, padding_right and the same for margin.
+    Served shown, under the room buttons;
     the script hides it unless "Precise room" is checked.
 #}
 {% macro spacing(group) %}
@@ -116,7 +117,7 @@
             {% for kind in ['padding', 'margin'] %}
                 <div class="cms-content__spacing-group" data-testid="cms-spacing-{{ kind }}">
                     <div class="cms-content__spacing-fields">
-                        {% for side in ['top', 'bottom'] %}
+                        {% for side in ['top', 'bottom', 'left', 'right'] %}
                             {% set field = group[kind ~ '_' ~ side] %}
                             <div>
                                 <label class="form-label" for="{{ field.vars.id }}">{{ field.vars.label|trans({}, field.vars.translation_domain) }}</label>
@@ -127,8 +128,9 @@
                     </div>
                     <div class="form-text">{{ group[kind ~ '_top'].vars.help|trans({}, group[kind ~ '_top'].vars.translation_domain) }}</div>
                 </div>
-                {% do group[kind ~ '_top'].setRendered %}
-                {% do group[kind ~ '_bottom'].setRendered %}
+                {% for side in ['top', 'bottom', 'left', 'right'] %}
+                    {% do group[kind ~ '_' ~ side].setRendered %}
+                {% endfor %}
             {% endfor %}
         </div>
     </fieldset>

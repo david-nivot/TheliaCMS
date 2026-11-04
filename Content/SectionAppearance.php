@@ -29,8 +29,9 @@ use TheliaCMS\Locale\TranslatableText;
  * checked against a strict pattern and a bound per unit, as it is the one
  * thing standing between a typed value and the style attribute. The inner
  * room (`padding_*`, the background goes with it) and the outer room
- * (`margin_*`, it keeps sections apart) have a top and a bottom of their own;
- * a side that is set wins over `padding` for that side.
+ * (`margin_*`, it keeps sections apart, or narrows the band from a side) have
+ * a top, a bottom, a left and a right of their own; a side that is set wins
+ * over `padding` for that side.
  */
 final readonly class SectionAppearance
 {
@@ -45,8 +46,12 @@ final readonly class SectionAppearance
     public const array SIDES = [
         'padding_top' => 'padding-top',
         'padding_bottom' => 'padding-bottom',
+        'padding_left' => 'padding-left',
+        'padding_right' => 'padding-right',
         'margin_top' => 'margin-top',
         'margin_bottom' => 'margin-bottom',
+        'margin_left' => 'margin-left',
+        'margin_right' => 'margin-right',
     ];
 
     /** The settings the generator is given, the only ones a message names. */
@@ -65,6 +70,10 @@ final readonly class SectionAppearance
         public ?string $padding_bottom = null,
         public ?string $margin_top = null,
         public ?string $margin_bottom = null,
+        public ?string $padding_left = null,
+        public ?string $padding_right = null,
+        public ?string $margin_left = null,
+        public ?string $margin_right = null,
     ) {
     }
 
@@ -79,7 +88,7 @@ final readonly class SectionAppearance
 
         foreach (array_keys($values) as $key) {
             if (!\in_array($key, self::PRESET_SETTINGS, true) && !\array_key_exists($key, self::SIDES)) {
-                $problems[] = TranslatableText::of('The appearance has no setting "%s": only %s, and the room above and below set in the editor.', $key, implode(', ', self::PRESET_SETTINGS));
+                $problems[] = TranslatableText::of('The appearance has no setting "%s": only %s, and the room on each side set in the editor.', $key, implode(', ', self::PRESET_SETTINGS));
             }
         }
 
@@ -97,7 +106,7 @@ final readonly class SectionAppearance
             throw InvalidDocumentException::because($problems);
         }
 
-        return new self($background, $text, $padding, $align, $sides['padding_top'], $sides['padding_bottom'], $sides['margin_top'], $sides['margin_bottom']);
+        return new self($background, $text, $padding, $align, ...$sides);
     }
 
     public function isEmpty(): bool
@@ -117,8 +126,12 @@ final readonly class SectionAppearance
             'align' => $this->align,
             'padding_top' => $this->padding_top,
             'padding_bottom' => $this->padding_bottom,
+            'padding_left' => $this->padding_left,
+            'padding_right' => $this->padding_right,
             'margin_top' => $this->margin_top,
             'margin_bottom' => $this->margin_bottom,
+            'margin_left' => $this->margin_left,
+            'margin_right' => $this->margin_right,
         ], static fn (?string $value): bool => null !== $value);
     }
 

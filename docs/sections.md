@@ -100,7 +100,9 @@ component (`TheliaCMS\Content\SectionAppearance`):
 | `text` | `#rrggbb` | `color` |
 | `padding` | `small`, `medium`, `large`, or a length | `padding-block` of 1.5, 3 or 5 rem, or of the length |
 | `padding_top`, `padding_bottom` | a length | `padding-top`, `padding-bottom`, after `padding-block`: a side that is set wins for its side |
+| `padding_left`, `padding_right` | a length | `padding-left`, `padding-right` |
 | `margin_top`, `margin_bottom` | a length | `margin-top`, `margin-bottom` (outside the band, its background does not follow) |
+| `margin_left`, `margin_right` | a length | `margin-left`, `margin-right`: the band is narrower |
 | `align` | `left`, `center`, `right` | `text-align` |
 
 A length is a number of two decimals at most followed by `px` (0 to 320) or
@@ -108,7 +110,7 @@ A length is a number of two decimals at most followed by `px` (0 to 320) or
 number, bare number or other unit. The check of the appearance is the only
 barrier, the CSS filter of the rendering does not bound a length. The
 generator's schema and catalogue sheet list the three presets only; a precise
-room is the editor's: "Edit by hand" shows its four fields under the room
+room is the editor's: "Edit by hand" shows its eight fields under the room
 button "Precise room" only, and another button leaves them out of the save. A
 site without this release refuses an imported page
 whose document holds one.

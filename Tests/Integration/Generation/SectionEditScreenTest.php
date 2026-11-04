@@ -135,19 +135,21 @@ final class SectionEditScreenTest extends AdminScreenTestCase
         $form[$field('padding_bottom')] = '64PX';
         $form[$field('margin_top')] = '2rem';
         $form[$field('margin_bottom')] = '';
+        $form[$field('padding_left')] = '1rem';
+        $form[$field('margin_right')] = '48px';
 
         self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()));
 
         $content = CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($this->locale())->findOne();
         self::assertSame(
-            ['background' => '#f8d7d7', 'padding_top' => '0px', 'padding_bottom' => '64px', 'margin_top' => '2rem'],
+            ['background' => '#f8d7d7', 'padding_top' => '0px', 'padding_bottom' => '64px', 'padding_left' => '1rem', 'margin_top' => '2rem', 'margin_right' => '48px'],
             Document::fromJson($content?->getDraftDocument())?->section('intro')?->appearance->toArray(),
         );
-        self::assertStringContainsString('style="background-color:#f8d7d7;padding-top:0px;padding-bottom:64px;margin-top:2rem"', (string) $content?->getDraftHtml());
+        self::assertStringContainsString('style="background-color:#f8d7d7;padding-top:0px;padding-bottom:64px;padding-left:1rem;margin-top:2rem;margin-right:48px"', (string) $content?->getDraftHtml());
 
         $screen = $this->screen($this->url($page));
         $form = $screen->filter('[data-testid="cms-section-edit-intro"] form[data-cms-section-form]')->form();
-        self::assertSame(['0px', '64px', '2rem', ''], [$form[$field('padding_top')]->getValue(), $form[$field('padding_bottom')]->getValue(), $form[$field('margin_top')]->getValue(), $form[$field('margin_bottom')]->getValue()], 'The form shows what was saved.');
+        self::assertSame(['0px', '64px', '1rem', '', '2rem', '', '', '48px'], array_map(static fn (string $side): string => (string) $form[$field($side)]->getValue(), ['padding_top', 'padding_bottom', 'padding_left', 'padding_right', 'margin_top', 'margin_bottom', 'margin_left', 'margin_right']), 'The form shows what was saved.');
         self::assertNotNull($screen->filter('[data-testid="cms-section-appearance"]')->attr('open'), 'A section with a precise room has its appearance open.');
         self::assertSame(SectionFormBuilder::PRECISE_ROOM, $form[$field('padding')]->getValue(), 'A precise room checks its button.');
     }
