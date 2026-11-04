@@ -111,20 +111,20 @@ final class CmsFormType extends AbstractType
                 'constraints' => [new Length(max: 1024)],
             ])
             ->add('sendReceipt', CheckboxType::class, [
-                'label' => 'Send a copy to the person who wrote',
+                'label' => 'Send a receipt to the person who wrote',
                 'required' => false,
-                'help' => 'Needs an email field on the form.',
+                'help' => 'Needs an email field on the form. One address receives three receipts a day at most.',
             ])
             ->add('receiptSubject', TextType::class, [
-                'label' => 'Copy subject',
+                'label' => 'Receipt subject',
                 'required' => false,
                 'constraints' => [new Length(max: 255)],
             ])
             ->add('receiptBody', TextareaType::class, [
-                'label' => 'Copy message',
+                'label' => 'Receipt message',
                 'required' => false,
                 'attr' => ['rows' => 3],
-                'help' => 'What the person reads above their own answers.',
+                'help' => 'The whole text of the receipt. It never repeats the answers: its address is typed by whoever sends the form.',
             ])
             ->add('storeSubmissions', CheckboxType::class, [
                 'label' => 'Keep the answers in the back office',

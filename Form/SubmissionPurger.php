@@ -28,9 +28,9 @@ use TheliaCMS\Model\CmsFormSubmissionQuery;
 final readonly class SubmissionPurger
 {
     /**
-     * @return int how many submissions were deleted
+     * @return int how many submissions were deleted, or would be on a dry run
      */
-    public function purge(?\DateTimeImmutable $now = null): int
+    public function purge(?\DateTimeImmutable $now = null, bool $dryRun = false): int
     {
         $now ??= new \DateTimeImmutable();
         $deleted = 0;
@@ -45,10 +45,11 @@ final readonly class SubmissionPurger
                 continue;
             }
 
-            $deleted += CmsFormSubmissionQuery::create()
+            $due = CmsFormSubmissionQuery::create()
                 ->filterByFormId($form->getId())
-                ->filterByCreatedAt($cutoff, Criteria::LESS_THAN)
-                ->delete();
+                ->filterByCreatedAt($cutoff, Criteria::LESS_THAN);
+
+            $deleted += $dryRun ? $due->count() : $due->delete();
         }
 
         return $deleted;

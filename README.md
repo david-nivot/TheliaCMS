@@ -714,16 +714,28 @@ interface.
 
 ### What stops the robots
 
-Three checks, none of which asks anything of the visitor:
+Four checks, none of which asks anything of the visitor:
 
 - a field only a robot fills in;
 - a signed record of when the form was served, so a message sent in under three
   seconds, or with a stamp this site never issued, goes nowhere;
-- a cap on how many messages one sender may get through, kept in the core
-  `form_firewall` table under `cms_form_<code>` and honouring the existing
-  `form_firewall_attempts` and `form_firewall_time_to_wait` settings. Only
-  accepted messages are counted: mistyping an address six times on a long form
-  should not lock somebody out for an hour.
+- that stamp carries one message: each display of the form gets a stamp of its
+  own, and a stamp that already brought a message in is a replay. A message
+  sent back for a mistyped field goes again with the same stamp;
+- a cap on how many messages one sender may get through, honouring the
+  existing `form_firewall_active`, `form_firewall_attempts` and
+  `form_firewall_time_to_wait` settings of the shop. Only accepted messages are
+  counted: mistyping an address six times on a long form should not lock
+  somebody out for an hour.
+
+A robot is told its message was sent, as everybody else is: feedback is what it
+tunes against. The counts live in the `cms_form_throttle` table, one row per
+counter keyed by a keyed hash, written in one statement, so twenty messages
+posted at the same instant are counted twenty times. Expired rows go with
+`maintenance:purge`.
+
+A page that shows a form is never kept by a shared cache: it is served
+`private, no-store`, so that each visitor gets a stamp of their own.
 
 There is no captcha. A captcha sends the visitor to a third party and gets in
 the way of anyone using assistive technology, and on the volume a showcase site
@@ -746,6 +758,14 @@ own is one that half the sites never run.
 
 The address a message came from is never stored: what is kept is a keyed hash
 of it, which recognises the same sender twice without recording who visited.
+
+The receipt sent back to the person, when the form asks for one, carries the
+subject and the message written in the settings of the form, or a short default,
+and never the answers. Its address is typed by whoever sends the form: a receipt
+that repeated the answers would let anyone make the shop write any text, in its
+own name, to any address. For the same reason one address receives three
+receipts a day at most, whoever sends the form; beyond that the message is still
+kept and the recipients still told, only the receipt is skipped.
 
 A sent form is pushed to the data layer as `generate_lead`, carrying the code of
 the form and nothing else, and only when the person agreed to be contacted.

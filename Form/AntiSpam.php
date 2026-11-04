@@ -27,6 +27,11 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
  * The moment the form was served is signed, so it cannot simply be back-dated
  * in the posted body, and it expires: a page kept open for a day is not a form
  * worth accepting, and a stolen token is worth nothing tomorrow.
+ *
+ * Each display gets a stamp of its own, the moment plus a random nonce, so that
+ * a stamp can be spent by the message it carried (SubmissionRateLimiter) without
+ * two visitors served in the same second sharing one. That is also why a page
+ * showing a form is never kept by a shared cache (PageCacheListener).
  */
 final readonly class AntiSpam
 {
@@ -54,8 +59,9 @@ final readonly class AntiSpam
     public function stamp(string $formCode, ?\DateTimeImmutable $now = null): string
     {
         $issuedAt = ($now ?? new \DateTimeImmutable())->getTimestamp();
+        $nonce = bin2hex(random_bytes(8));
 
-        return $issuedAt.'.'.$this->sign($formCode, $issuedAt);
+        return $issuedAt.'.'.$nonce.'.'.$this->sign($formCode, $issuedAt, $nonce);
     }
 
     /**
@@ -74,23 +80,28 @@ final readonly class AntiSpam
      * Whether the stamp is one this site issued, for this form, long enough ago
      * to have been filled in by hand and recently enough to still be current.
      *
+     * A stamp of the form `moment.signature`, without a nonce, is the one pages
+     * carried before 2.10.0: still accepted while it is current, so a visitor
+     * who had the page open during the update does not lose their message.
+     *
      * @param array<string, mixed> $input
      */
     public function stampIsPlausible(string $formCode, array $input, ?\DateTimeImmutable $now = null): bool
     {
-        $stamp = $input[self::STAMP_FIELD] ?? '';
+        $stamp = self::stampOf($input);
 
-        if (\is_array($stamp) || !str_contains((string) $stamp, '.')) {
+        if (null === $stamp) {
             return false;
         }
 
-        [$issuedAt, $signature] = explode('.', (string) $stamp, 2);
+        $parts = explode('.', $stamp, 3);
+        [$issuedAt, $nonce, $signature] = 3 === \count($parts) ? $parts : [$parts[0], '', $parts[1]];
 
-        if (1 !== preg_match('/^\d{1,12}$/', $issuedAt)) {
+        if (1 !== preg_match('/^\d{1,12}$/', $issuedAt) || 1 !== preg_match('/^([0-9a-f]{16})?$/', $nonce)) {
             return false;
         }
 
-        if (!hash_equals($this->sign($formCode, (int) $issuedAt), $signature)) {
+        if (!hash_equals($this->sign($formCode, (int) $issuedAt, $nonce), $signature)) {
             return false;
         }
 
@@ -99,11 +110,27 @@ final readonly class AntiSpam
         return $age >= self::MINIMUM_SECONDS && $age <= self::MAXIMUM_SECONDS;
     }
 
-    private function sign(string $formCode, int $issuedAt): string
+    /**
+     * The stamp the input carries, or null when it carries none that could be one.
+     *
+     * @param array<string, mixed> $input
+     */
+    public static function stampOf(array $input): ?string
+    {
+        $stamp = $input[self::STAMP_FIELD] ?? '';
+
+        if (\is_array($stamp) || !str_contains((string) $stamp, '.')) {
+            return null;
+        }
+
+        return (string) $stamp;
+    }
+
+    private function sign(string $formCode, int $issuedAt, string $nonce): string
     {
         return hash_hmac(
             'sha256',
-            $formCode.'|'.$issuedAt,
+            '' === $nonce ? $formCode.'|'.$issuedAt : $formCode.'|'.$issuedAt.'|'.$nonce,
             hash_hmac('sha256', 'thelia-cms.form-stamp', $this->applicationSecret),
         );
     }

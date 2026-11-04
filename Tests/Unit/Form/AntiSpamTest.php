@@ -126,6 +126,45 @@ final class AntiSpamTest extends TestCase
         ));
     }
 
+    /**
+     * Each display has a stamp of its own: one stamp carries one message, and
+     * two visitors served in the same second must not share it.
+     */
+    public function testTwoDisplaysInTheSameSecondGetTwoStamps(): void
+    {
+        $issued = new \DateTimeImmutable(self::NOW);
+
+        self::assertNotSame($this->antiSpam->stamp('contact', $issued), $this->antiSpam->stamp('contact', $issued));
+    }
+
+    public function testAStampWithAnotherNonceIsRefused(): void
+    {
+        $issued = new \DateTimeImmutable(self::NOW);
+        [$moment, , $signature] = explode('.', $this->antiSpam->stamp('contact', $issued), 3);
+
+        self::assertFalse($this->antiSpam->stampIsPlausible(
+            'contact',
+            [AntiSpam::STAMP_FIELD => $moment.'.'.str_repeat('0', 16).'.'.$signature],
+            $issued->modify('+10 seconds'),
+        ));
+    }
+
+    /**
+     * A page open while the site was updated carries a stamp without a nonce.
+     */
+    public function testAStampIssuedBeforeTheNonceIsStillAccepted(): void
+    {
+        $issued = new \DateTimeImmutable(self::NOW);
+        $legacy = $issued->getTimestamp().'.'.hash_hmac(
+            'sha256',
+            'contact|'.$issued->getTimestamp(),
+            hash_hmac('sha256', 'thelia-cms.form-stamp', 'a secret nobody else has'),
+        );
+
+        self::assertTrue($this->antiSpam->stampIsPlausible('contact', [AntiSpam::STAMP_FIELD => $legacy], $issued->modify('+10 seconds')));
+        self::assertFalse($this->antiSpam->stampIsPlausible('newsletter', [AntiSpam::STAMP_FIELD => $legacy], $issued->modify('+10 seconds')));
+    }
+
     public function testAMissingOrMalformedStampIsRefused(): void
     {
         $now = new \DateTimeImmutable(self::NOW);
@@ -135,5 +174,7 @@ final class AntiSpamTest extends TestCase
         self::assertFalse($this->antiSpam->stampIsPlausible('contact', [AntiSpam::STAMP_FIELD => '.'], $now));
         self::assertFalse($this->antiSpam->stampIsPlausible('contact', [AntiSpam::STAMP_FIELD => ['an', 'array']], $now));
         self::assertFalse($this->antiSpam->stampIsPlausible('contact', [AntiSpam::STAMP_FIELD => 'abc.def'], $now));
+        self::assertFalse($this->antiSpam->stampIsPlausible('contact', [AntiSpam::STAMP_FIELD => '123.NOT-HEX-NONCE!.def'], $now));
+        self::assertFalse($this->antiSpam->stampIsPlausible('contact', [AntiSpam::STAMP_FIELD => '123.a.b.c'], $now));
     }
 }

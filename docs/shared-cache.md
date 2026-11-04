@@ -29,6 +29,14 @@ Cloudflare and Akamai, spaces for Fastly and for the Varnish `xkey` module.
 `cms-partial-<name>` tag is added for each dynamic block the page shows (a list
 of pages, a form), whether it sits in the content or is read by the template.
 
+A page that shows a form is the exception, whatever the settings: it is served
+`private, no-store`. Each display of a form carries a stamp that carries one
+message, so a copy served to a second visitor would have their message dropped
+as a replay. The same holds for a page of the shop that shows a form through
+the content of the module (the document of a product, for instance). With the
+shared cache of Thelia on, that `no-store` is what keeps the core from sharing
+the page.
+
 No `Vary` header is written: the language of a page comes from its address, its
 domain or its `lang` parameter, which a cache keys on already, never from
 `Accept-Language`.

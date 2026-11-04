@@ -7,6 +7,27 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Changed
+
+- **The receipt of a form no longer repeats the answers.** It carries the
+  subject and the message written in the settings of the form, or a short
+  default, and nothing of what was posted. Its address is typed by whoever
+  sends the form, so a receipt that repeated the answers let anyone make the
+  shop write any text, in its own name, to any address. A site with a message
+  of its own keeps it, without the answers below. The settings call it a
+  receipt rather than a copy.
+- **A page that shows a form is never kept by a shared cache.** It is served
+  `private, no-store`, with the shared cache of Thelia on as well, so that each
+  visitor gets a stamp of their own (see Security). A page of the shop that
+  shows a form through the content of the module is treated the same.
+- **The rate limit of the forms counts in a table of the module,
+  `cms_form_throttle`.** The settings `form_firewall_active`,
+  `form_firewall_attempts` and `form_firewall_time_to_wait` still apply; the
+  window now opens with the first message and closes after the waiting time,
+  rather than moving with every refused attempt. The rows the module kept in
+  the core `form_firewall` table are deleted by the update. Needs the update
+  of the module to 2.10.0 or later to create the table.
+
 ### Fixed
 
 - **The messages of the back-office forms read in the language of the back
@@ -35,6 +56,24 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   a proxy kept it and served it to everybody in place of the closed site.
 - **An import empties the kept sitemap.** It stayed as it was before the import
   until it expired.
+- **`maintenance:purge --dry-run` no longer deletes the answers of the forms.**
+  It reports how many would go, and deletes nothing.
+
+### Security
+
+- **A burst of messages from one sender gets no more through than the rate
+  limit.** The count was read, then written: twenty messages posted at the same
+  instant by a sender new to the form all read an empty count, and all twenty
+  went through where six should. The count is now written in one statement.
+- **A stamp carries one message.** The stamp of a form was valid for twelve
+  hours and for any number of messages: one display of the page let a script
+  post as often as the rate limit allowed, from as many addresses as it had.
+  Each display now gets a stamp of its own, spent by the message it brings in;
+  a replay is told the message was sent, as a robot is, and nothing is kept.
+- **One address receives three receipts a day at most.** A script spread over
+  many senders could have the shop write to one address as often as it liked.
+  Beyond three, the receipt is skipped without a word; the message is kept and
+  the recipients told.
 
 ## [2.9.0] - 2026-11-03
 

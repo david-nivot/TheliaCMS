@@ -28,14 +28,6 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
  */
 final readonly class VisitorFingerprint
 {
-    /**
-     * The core `form_firewall.ip_address` column is VARCHAR(15) — it was sized
-     * for a dotted IPv4 and holds no IPv6 address at all. Sixty bits of hash
-     * fit, identify a sender as reliably as the address did, and stop the table
-     * from being a list of who visited.
-     */
-    private const int BUCKET_LENGTH = 15;
-
     public function __construct(
         #[Autowire('%kernel.secret%')]
         private string $applicationSecret,
@@ -52,13 +44,5 @@ final readonly class VisitorFingerprint
             (string) $ipAddress,
             hash_hmac('sha256', 'thelia-cms.visitor', $this->applicationSecret),
         );
-    }
-
-    /**
-     * Stored in the rate-limiting table.
-     */
-    public function bucket(?string $ipAddress): string
-    {
-        return substr($this->of($ipAddress), 0, self::BUCKET_LENGTH);
     }
 }
