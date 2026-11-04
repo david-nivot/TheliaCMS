@@ -58,6 +58,12 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Fixed
 
+- **The two reasoning effort fields of CMS > Settings say which models read
+  them.** Their help promised a time spent thinking, while only Anthropic
+  models read the effort, and think freely at the two highest values only;
+  another provider ignores it. The field of the texts had no help at all.
+  Setting the effort by range of models is asked of Thelia
+  (thelia/thelia#4264).
 - **An answer cut below the limit of the generator says where it was cut.**
   The AI layer of Thelia also holds a call under the limit of its usage and of
   its model: the message said "cut at 16000 tokens, raise the limit of the

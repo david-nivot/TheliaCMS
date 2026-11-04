@@ -725,7 +725,7 @@ return [
     'High: the default' => 'Élevé : le réglage par défaut',
     'Very high' => 'Très élevé',
     'Maximum: slow, for a demanding brief' => 'Maximal : lent, pour un brief exigeant',
-    'How long the model thinks before it writes. More effort costs more and takes longer.' => 'Le temps que le modèle passe à réfléchir avant d’écrire. Plus d’effort coûte plus cher et prend plus de temps.',
+    'Read by Anthropic models only; other providers ignore it. From low to high, it sets the care the answer gets; very high and maximum also let the model think before it writes. More effort costs more and takes longer.' => 'Lu par les seuls modèles Anthropic ; les autres fournisseurs l’ignorent. De faible à élevé, il règle le soin donné à la réponse ; très élevé et maximal laissent aussi le modèle réfléchir avant d’écrire. Plus d’effort coûte plus cher et prend plus de temps.',
     'Longest answer, in tokens' => 'Longueur maximale de la réponse, en jetons',
     'An answer cut at this length loses the end of the page. A long page needs about four tokens a word.' => 'Une réponse coupée à cette longueur perd la fin de la page. Une page longue demande environ quatre jetons par mot.',
     'The AI provider, its key, the model, the budget and the limits of the generator are set in the AI settings of Thelia, not here. This card only holds how the generator asks.' => 'Le fournisseur d’IA, sa clé, le modèle, le budget et les limites du générateur se règlent dans les réglages IA de Thelia, pas ici. Cette carte ne contient que la façon dont le générateur demande.',
