@@ -21,7 +21,7 @@ usual pipeline.
 - Six settings, in the **Generator** card of CMS > Settings, each with a
   default: `generator_effort` (`high`; `low`, `medium`, `xhigh` and `max`
   exist; passed to the model as its reasoning effort, read by Anthropic models
-  and without effect on the others), `generator_max_tokens` (16000),
+  and without effect on the others), `generator_max_tokens` (48000),
   `generator_web_fetch` (off: read the web pages a brief cites, below),
   `generator_component_making` (off: let a brief make a component of the
   site, below), and for the texts beside a field `generator_text_effort` (`low`) and

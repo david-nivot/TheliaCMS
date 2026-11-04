@@ -53,12 +53,13 @@ final class FakeAiGateway implements AiGatewayInterface
         ?AiFinishReason $finishReason = null,
         int $logId = 1,
         ?AiProvenance $provenance = null,
+        int $outputTokens = 5,
     ): AiResponse {
         return new AiResponse(
             $text,
             $data,
             $toolCalls,
-            new AiTokenUsage(10, 5),
+            new AiTokenUsage(10, $outputTokens),
             '0.00100000',
             'fake-model',
             'fake',

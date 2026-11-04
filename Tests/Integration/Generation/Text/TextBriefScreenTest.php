@@ -20,6 +20,7 @@ use Thelia\Domain\Ai\AiFinishReason;
 use Thelia\Domain\Ai\AiGatewayInterface;
 use Thelia\Test\FixtureFactory;
 use TheliaCMS\Generation\GenerationRequest;
+use TheliaCMS\Generation\GeneratorSettings;
 use TheliaCMS\Model\CmsPageGenerationQuery;
 use TheliaCMS\Security\CmsResources;
 use TheliaCMS\Tests\Integration\Security\AdminScreenTestCase;
@@ -112,7 +113,7 @@ final class TextBriefScreenTest extends AdminScreenTestCase
         $this->api->answer(FakeAiGateway::response(finishReason: AiFinishReason::ContentFilter));
         self::assertSame(422, $this->send('POST', self::ROUTE, $this->parameters(), $server), 'The model declined: the editor is told, nothing is retried.');
 
-        $this->api->answer(FakeAiGateway::response('{"html":"<p>Un atel', finishReason: AiFinishReason::MaxTokens));
+        $this->api->answer(FakeAiGateway::response('{"html":"<p>Un atel', finishReason: AiFinishReason::MaxTokens, outputTokens: $this->getService(GeneratorSettings::class)->textMaxTokens()));
         self::assertSame(502, $this->send('POST', self::ROUTE, $this->parameters(), $server), 'The answer was cut by the limit.');
         self::assertStringContainsString('cut at', (string) json_decode((string) $this->client->getResponse()->getContent(), true)['error']);
     }

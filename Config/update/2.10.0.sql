@@ -20,3 +20,16 @@ CREATE TABLE IF NOT EXISTS `cms_form_throttle`
 ) ENGINE=InnoDB CHARACTER SET='utf8mb4' COLLATE='utf8mb4_general_ci' ROW_FORMAT=DYNAMIC;
 
 DELETE FROM `form_firewall` WHERE `form_name` LIKE 'cms\_form\_%';
+
+-- The default output limit of the generator goes from 16000 to 48000 tokens
+-- (docs/adr/0008). The settings screen writes the limit on every save, so a
+-- site that saved it once still holds the former default and would never see
+-- the new one: that exact value is raised, any other is the choice of the site
+-- and is kept.
+UPDATE `module_config_i18n` AS `value`
+    INNER JOIN `module_config` AS `setting` ON `setting`.`id` = `value`.`id`
+    INNER JOIN `module` ON `module`.`id` = `setting`.`module_id`
+SET `value`.`value` = '48000'
+WHERE `module`.`code` = 'TheliaCMS'
+  AND `setting`.`name` = 'generator_max_tokens'
+  AND `value`.`value` = '16000';

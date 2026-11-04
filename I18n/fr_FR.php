@@ -1309,6 +1309,7 @@ return [
     'The model declined to write this. Reword the brief.' => 'Le modèle a refusé de rédiger ceci. Reformulez le brief.',
     'The answer was cut at the output limit: %advice%' => 'La réponse a été coupée à la limite de longueur : %advice%',
     'The answer was cut at %limit% tokens: %advice%' => 'La réponse a été coupée à %limit% tokens : %advice%',
+    'The answer was cut at %written% tokens, below the %limit% asked: the AI settings of Thelia hold this usage, or its model, to less. Raise the limit there, or ask for less.' => 'La réponse a été coupée à %written% tokens, sous les %limit% demandés : les réglages IA de Thelia limitent davantage cet usage, ou son modèle. Relevez la limite là-bas, ou demandez moins.',
     'The AI provider stopped before it had written anything. Try again.' => 'Le fournisseur d’IA s’est arrêté avant d’avoir rien écrit. Réessayez.',
     'raise the limit of the generator or ask for a simpler component.' => 'relevez la limite du générateur ou demandez un composant plus simple.',
     'raise the limit of the generator or ask for a shorter page.' => 'relevez la limite du générateur ou demandez une page plus courte.',

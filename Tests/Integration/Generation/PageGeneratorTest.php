@@ -231,7 +231,7 @@ final class PageGeneratorTest extends CmsIntegrationTestCase
     public function testAnAnswerCutShortIsAFailureNotAHalfPage(): void
     {
         $page = $this->createPage('Page coupée', published: false);
-        $this->api->answer(FakeAiGateway::response('{"version":1,"sections":[', finishReason: AiFinishReason::MaxTokens));
+        $this->api->answer(FakeAiGateway::response('{"version":1,"sections":[', finishReason: AiFinishReason::MaxTokens, outputTokens: $this->getService(GeneratorSettings::class)->maxTokens()));
 
         try {
             $this->generator()->generate(GenerationRequest::fromBrief($this->target($page), $this->locale(), new Brief('Long')));

@@ -18,6 +18,12 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Changed
 
+- **The generator writes answers up to 48000 tokens**, against 16000: thinking
+  and the whole document of a long page count in the limit, and an answer cut
+  there was paid and thrown away. Only what is written is billed, but the AI
+  layer of Thelia reserves the budget of the whole limit on every call. The
+  update raises a stored 16000, which the settings screen wrote on every save;
+  any other value is kept. See docs/adr/0008.
 - **The receipt of a form no longer repeats the answers.** It carries the
   subject and the message written in the settings of the form, or a short
   default, and nothing of what was posted. Its address is typed by whoever
@@ -37,8 +43,19 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   the core `form_firewall` table are deleted by the update. Needs the update
   of the module to 2.10.0 or later to create the table.
 
+### Removed
+
+- `CmsPageRenderer::THEME_TEMPLATE` and `CmsPageRenderer::MODULE_TEMPLATE`,
+  deprecated since 1.2.0 and read nowhere: the template of a page depends on
+  its type (`PageTemplateResolver`).
+
 ### Fixed
 
+- **An answer cut below the limit of the generator says where it was cut.**
+  The AI layer of Thelia also holds a call under the limit of its usage and of
+  its model: the message said "cut at 16000 tokens, raise the limit of the
+  generator" when the answer stopped at 8191, where raising it changed nothing.
+  It now gives the length written and points at the AI settings of Thelia.
 - **The messages of the back-office forms read in the language of the back
   office.** Twenty messages stayed in English on a French screen though their
   translation was there: the brief, a change asked of a document, the language
