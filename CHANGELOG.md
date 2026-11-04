@@ -22,9 +22,26 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   the section until its rule names `.cms-section-styled > …` too. Found on a
   site where a section given a background spread over the whole screen. See
   docs/sections.md, "What a theme does with the band".
+- **A row of the ledger from the start of a call.** A generation (page,
+  catalogue item, text or component) writes its row, `running`, before the
+  first request, touches it at every turn, and completes it with the outcome.
+  A call killed half way, or stopped by an error nobody foresaw, leaves a row
+  instead of a gap: `failed` with a sentence for the editor when the error was
+  caught, `interrupted` (read back by the history) when the process died and
+  the row was not touched for 30 minutes. The screen shows both with their own
+  label. See docs/generator.md, "The ledger".
+- **What a call needed, on its history line**: `effort`, `corrections`,
+  `retries` and `tools` (`{name: count}`) on `cms_page_generation`, shown as
+  "2 corrections, 1 retry, read_url ×2, effort high". Needs the update of the
+  module to 2.10.0 or later to add the columns.
 
 ### Changed
 
+- **A second generation on the same page, in the same language, is refused
+  while one runs** (page and catalogue item calls): "A generation is already
+  running for this page in this language (started at 10:42 by …)". A call
+  that died no longer holds the page after 30 minutes. A check then an insert,
+  no lock: two calls a few milliseconds apart can both pass.
 - **The generator writes answers up to 48000 tokens**, against 16000: thinking
   and the whole document of a long page count in the limit, and an answer cut
   there was paid and thrown away. Only what is written is billed, but the AI
@@ -73,6 +90,22 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   another provider ignores it. The field of the texts had no help at all.
   Setting the effort by range of models is asked of Thelia
   (thelia/thelia#4264).
+- **A stream cut half way is asked again once**, as the same conversation,
+  instead of failing the call: a provider that drops after the first tokens
+  (retryable failure, or a stream that ends without its last event) costs one
+  more request, shown on the screen ("The answer was cut half way: the model is
+  asked again."), and counts neither as a turn nor as a correction. A failure
+  before any event is still not asked again by the module: the core retried it
+  already. A second cut fails with the usual message.
+- **The cost of a request that failed or was cut is counted.** The row of the
+  usage log of the core named by the exception (priced from the tokens
+  received) is added to the cost of the call, so the ledger and the spend of
+  the site no longer under-count a stream that aborted after it had been paid.
+- **An unexpected error no longer breaks the stream of the screen half way.**
+  The generators write `failed` and rethrow a `GenerationException` (the
+  error stays as the previous one, and is logged with its trace); the runner
+  answers with an error event, or a message, for anything else, such as a
+  save that fails once the call is `done` (logged only, the row stays `done`).
 - **An answer cut below the limit of the generator says where it was cut.**
   The AI layer of Thelia also holds a call under the limit of its usage and of
   its model: the message said "cut at 16000 tokens, raise the limit of the

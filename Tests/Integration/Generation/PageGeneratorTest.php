@@ -370,6 +370,10 @@ final class PageGeneratorTest extends CmsIntegrationTestCase
             {
                 $this->events[] = \sprintf('correction %d', $round);
             }
+
+            public function onCut(): void
+            {
+            }
         };
 
         $result = $this->generator()->generate(

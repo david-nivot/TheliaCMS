@@ -35,12 +35,14 @@ use TheliaCMS\Generation\Ai\CorrelationId;
 use TheliaCMS\Generation\Ai\GatewayFailures;
 use TheliaCMS\Generation\Ai\ObservedStream;
 use TheliaCMS\Generation\Ai\SentBackAnswer;
+use TheliaCMS\Generation\Ai\StreamCutException;
 use TheliaCMS\Generation\GenerationException;
 use TheliaCMS\Generation\GenerationLog;
 use TheliaCMS\Generation\GenerationObserverInterface;
 use TheliaCMS\Generation\GenerationRefusedException;
 use TheliaCMS\Generation\GeneratorSettings;
 use TheliaCMS\Generation\InvalidGenerationException;
+use TheliaCMS\Generation\RunDetails;
 use TheliaCMS\Generation\Usage;
 
 /**
@@ -51,8 +53,10 @@ use TheliaCMS\Generation\Usage;
  *
  * One conversation per request, without tools: the request, the component,
  * and the corrections it needs. A component the site refuses goes back with
- * every problem listed, twice at most. Every outcome is written to the
- * ledger, beside the calls that write pages, before it is returned or thrown.
+ * every problem listed, twice at most. A row of the ledger, beside the calls
+ * that write pages, is written before the first request, `running`, and every
+ * outcome completes it before the result is returned or thrown. An answer cut
+ * half way is asked again, once, and counts as neither a turn nor a correction.
  */
 #[AsAiUsage(
     id: 'theliacms.component',
@@ -68,6 +72,9 @@ final readonly class ComponentGenerator
 
     /** How many times a refused component is sent back for correction. */
     private const int CORRECTIONS = 2;
+
+    /** How many times an answer cut half way is asked again. */
+    private const int RETRIES = 1;
 
     public function __construct(
         private AiGatewayInterface $gateway,
@@ -91,13 +98,14 @@ final readonly class ComponentGenerator
     {
         $started = hrtime(true);
         $model = '';
+        $effort = $this->settings->effort();
         $conversation = new AiRequest(
             self::USAGE,
             [AiMessage::user($this->prompts->userMessage($request))],
             implode("\n\n", array_column($this->prompts->system(), 'text')),
             outputSchema: new AiOutputSchema('site_component', ComponentPrompt::schema()),
             maxOutputTokens: $this->settings->maxTokens(),
-            providerOptions: ['anthropic' => ['effort' => $this->settings->effort()]],
+            providerOptions: ['anthropic' => ['effort' => $effort]],
             correlationId: CorrelationId::new('theliacms', 'component', $request->componentId ?? 0),
         );
         $usage = new Usage();
@@ -105,9 +113,12 @@ final readonly class ComponentGenerator
         $coreLogId = null;
         $provenance = null;
         $turns = 0;
+        $corrections = 0;
+        $retries = 0;
         $finishReason = null;
+        $rowId = $this->log->beginComponent($request->componentId ?? 0, $request->locale, $request->kind(), $request->text);
 
-        $record = function (string $status, ?string $error = null, ?string $component = null) use ($request, &$model, $started, &$usage, &$costUsd, &$coreLogId, &$provenance, &$turns, &$finishReason): int {
+        $record = function (string $status, ?string $error = null, ?string $component = null) use ($request, $rowId, $effort, &$model, $started, &$usage, &$costUsd, &$coreLogId, &$provenance, &$turns, &$finishReason, &$corrections, &$retries): int {
             return $this->log->recordComponent(
                 $request->componentId ?? 0,
                 $request->locale,
@@ -126,6 +137,8 @@ final readonly class ComponentGenerator
                 $error,
                 $component,
                 GenerationLog::STATUS_DONE === $status ? $provenance : null,
+                $rowId,
+                new RunDetails($effort, $corrections, $retries),
             );
         };
 
@@ -135,8 +148,27 @@ final readonly class ComponentGenerator
 
                 try {
                     $response = $this->streams->read($this->gateway->stream($conversation), $observer);
+                } catch (StreamCutException $cut) {
+                    // Paid for what arrived, whether it is asked again or not.
+                    $coreLogId = $cut->coreLogId ?? $coreLogId;
+                    $costUsd += $this->failures->costOf($cut->coreLogId);
+
+                    if ($retries >= self::RETRIES) {
+                        throw $this->failures->exceptionForCut($cut);
+                    }
+
+                    ++$retries;
+
+                    $this->logger->warning('TheliaCMS: the answer of the model was cut half way and is asked again: {message}', ['message' => $cut->getMessage(), 'exception' => $cut]);
+                    $observer?->onCut();
+                    --$turns;
+                    $this->log->touch($rowId, $model, $usage, $turns, (int) ((hrtime(true) - $started) / 1_000_000), $costUsd, $coreLogId);
+
+                    continue;
                 } catch (AiExceptionInterface $exception) {
-                    $coreLogId = $this->failures->logIdOf($exception) ?? $coreLogId;
+                    $failedLogId = $this->failures->logIdOf($exception);
+                    $coreLogId = $failedLogId ?? $coreLogId;
+                    $costUsd += $this->failures->costOf($failedLogId);
 
                     throw $this->failures->exceptionFor($exception);
                 }
@@ -147,6 +179,7 @@ final readonly class ComponentGenerator
                 $costUsd += (float) $response->cost;
                 $coreLogId = $response->logId;
                 $provenance = $response->provenance;
+                $this->log->touch($rowId, $model, $usage, $turns, (int) ((hrtime(true) - $started) / 1_000_000), $costUsd, $coreLogId);
                 $observer?->onTurn($turns, []);
                 $this->failures->assertUsable($response, $this->settings->maxTokens(), 'raise the limit of the generator or ask for a simpler component.');
 
@@ -160,12 +193,12 @@ final readonly class ComponentGenerator
                         throw InvalidSiteComponentException::because($breakages);
                     }
                 } catch (InvalidSiteComponentException $exception) {
-                    if ($turns > self::CORRECTIONS) {
+                    if (++$corrections > self::CORRECTIONS) {
                         throw InvalidGenerationException::withProblems($exception->problems);
                     }
 
                     $this->logger->info('TheliaCMS: the generated component was refused and sent back: {problems}', ['problems' => implode(' ', $exception->problems)]);
-                    $observer?->onCorrection($turns, $exception->problems);
+                    $observer?->onCorrection($corrections, $exception->problems);
                     $conversation = $conversation->withMessages(SentBackAnswer::of($response), AiMessage::user(ComponentPrompt::correction($exception->problems)));
 
                     continue;
@@ -193,6 +226,20 @@ final readonly class ComponentGenerator
             // cannot take among them: the same ledger row, the same words.
             $failure = $this->failures->exceptionFor($exception);
             $failure->logId = $record(GenerationLog::STATUS_FAILED, $failure->getMessage());
+
+            throw $failure;
+        } catch (\Throwable $exception) {
+            // Anything else (Propel, a TypeError in a tool): the editor gets
+            // a sentence, the log gets the exception with its trace, and the
+            // row says `failed` rather than staying `running`.
+            $this->logger->error('TheliaCMS: the generation stopped on an unexpected error: {message}', ['message' => $exception->getMessage(), 'exception' => $exception]);
+            $failure = $this->failures->unexpected($exception);
+
+            try {
+                $failure->logId = $record(GenerationLog::STATUS_FAILED, $failure->getMessage());
+            } catch (\Throwable $recording) {
+                $this->logger->error('TheliaCMS: the failed generation could not be written to the ledger: {message}', ['message' => $recording->getMessage(), 'exception' => $recording]);
+            }
 
             throw $failure;
         }

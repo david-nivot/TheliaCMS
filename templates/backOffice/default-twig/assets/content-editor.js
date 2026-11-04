@@ -519,7 +519,7 @@
                             addStep(event.message, false);
                             steps.lastElementChild.setAttribute("data-cms-delta", "");
                         }
-                    } else if (name === "correction") {
+                    } else if (name === "correction" || name === "cut") {
                         addStep(event.message, true);
                     } else if (name === "done") {
                         finished = true;

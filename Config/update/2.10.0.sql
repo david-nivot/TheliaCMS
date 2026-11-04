@@ -33,3 +33,82 @@ SET `value`.`value` = '48000'
 WHERE `module`.`code` = 'TheliaCMS'
   AND `setting`.`name` = 'generator_max_tokens'
   AND `value`.`value` = '16000';
+
+-- The ledger of the generator keeps what a call needed beyond its outcome: the
+-- effort asked of the model, the corrections and the cut answers asked again
+-- (`retries`), and the tools it called with their counts (a JSON object). A
+-- call is now written from its start, with the status `running`, and a call
+-- not touched for 30 minutes is read as `interrupted`: both are values of the
+-- existing `status` column, nothing to alter.
+--
+-- Written to be replayable: a fresh install runs it after TheliaMain.sql, which
+-- already has the columns. `ADD COLUMN IF NOT EXISTS` is not used: MariaDB
+-- understands it and MySQL does not.
+
+SET @cms_page_generation_effort_exists := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE() AND table_name = 'cms_page_generation' AND column_name = 'effort'
+);
+
+SET @cms_page_generation_effort_add := IF(
+    0 = @cms_page_generation_effort_exists,
+    'ALTER TABLE `cms_page_generation` ADD COLUMN `effort` VARCHAR(20) DEFAULT NULL AFTER `left_out`',
+    'DO 0'
+);
+
+PREPARE cms_page_generation_effort_statement FROM @cms_page_generation_effort_add;
+
+EXECUTE cms_page_generation_effort_statement;
+
+DEALLOCATE PREPARE cms_page_generation_effort_statement;
+
+SET @cms_page_generation_corrections_exists := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE() AND table_name = 'cms_page_generation' AND column_name = 'corrections'
+);
+
+SET @cms_page_generation_corrections_add := IF(
+    0 = @cms_page_generation_corrections_exists,
+    'ALTER TABLE `cms_page_generation` ADD COLUMN `corrections` INTEGER DEFAULT 0 NOT NULL AFTER `effort`',
+    'DO 0'
+);
+
+PREPARE cms_page_generation_corrections_statement FROM @cms_page_generation_corrections_add;
+
+EXECUTE cms_page_generation_corrections_statement;
+
+DEALLOCATE PREPARE cms_page_generation_corrections_statement;
+
+SET @cms_page_generation_retries_exists := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE() AND table_name = 'cms_page_generation' AND column_name = 'retries'
+);
+
+SET @cms_page_generation_retries_add := IF(
+    0 = @cms_page_generation_retries_exists,
+    'ALTER TABLE `cms_page_generation` ADD COLUMN `retries` INTEGER DEFAULT 0 NOT NULL AFTER `corrections`',
+    'DO 0'
+);
+
+PREPARE cms_page_generation_retries_statement FROM @cms_page_generation_retries_add;
+
+EXECUTE cms_page_generation_retries_statement;
+
+DEALLOCATE PREPARE cms_page_generation_retries_statement;
+
+SET @cms_page_generation_tools_exists := (
+    SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE() AND table_name = 'cms_page_generation' AND column_name = 'tools'
+);
+
+SET @cms_page_generation_tools_add := IF(
+    0 = @cms_page_generation_tools_exists,
+    'ALTER TABLE `cms_page_generation` ADD COLUMN `tools` LONGTEXT DEFAULT NULL AFTER `retries`',
+    'DO 0'
+);
+
+PREPARE cms_page_generation_tools_statement FROM @cms_page_generation_tools_add;
+
+EXECUTE cms_page_generation_tools_statement;
+
+DEALLOCATE PREPARE cms_page_generation_tools_statement;

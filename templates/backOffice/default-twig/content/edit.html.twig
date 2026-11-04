@@ -393,6 +393,9 @@
                                         <td>
                                             <span class="badge {{ row.status_class }}">{{ row.status }}</span>
                                             <span class="text-muted">{{ '%turns% turn(s), %duration% s'|trans({ '%turns%': row.turns, '%duration%': row.duration }, 'theliacms') }}</span>
+                                            {% if row.details %}
+                                                <span class="text-muted small d-block" data-testid="cms-content-history-details">{{ row.details }}</span>
+                                            {% endif %}
                                             {% if row.error %}
                                                 <details class="small"><summary>{{ 'Details'|trans({}, 'theliacms') }}</summary><p class="mb-0 cms-content__history-break">{{ row.error }}</p></details>
                                             {% endif %}

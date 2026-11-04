@@ -21,6 +21,7 @@ use Thelia\Domain\Ai\AiRequest;
 use Thelia\Domain\Ai\AiResponse;
 use Thelia\Domain\Ai\AiTokenUsage;
 use Thelia\Domain\Ai\AiToolCall;
+use Thelia\Domain\Ai\Exception\AiProviderUnavailableException;
 use Thelia\Domain\Ai\Stream\StreamCompleted;
 use Thelia\Domain\Ai\Stream\StreamEvent;
 use Thelia\Domain\Ai\Stream\TextDelta;
@@ -32,11 +33,13 @@ use Thelia\Domain\Ai\Stream\ToolCallReceived;
  *
  * An answer queued with complete() or stream() is consumed by either method,
  * in order. A queued Throwable is thrown instead, by the first iteration for a
- * stream, as the real gateway does.
+ * stream, as the real gateway does. A stream queued with cutAfter() gives
+ * its events and then fails, as the gateway does for a provider that drops
+ * after the first tokens.
  */
 final class FakeAiGateway implements AiGatewayInterface
 {
-    /** @var list<AiResponse|list<StreamEvent>|\Throwable> */
+    /** @var list<AiResponse|list<StreamEvent>|\Throwable|array{cut: list<StreamEvent>, failure: AiProviderUnavailableException}> */
     private array $queue = [];
 
     /** @var list<AiRequest> every request received, in order */
@@ -119,6 +122,19 @@ final class FakeAiGateway implements AiGatewayInterface
         return $this;
     }
 
+    /**
+     * Queues a stream that gives a delta for every piece of text and then
+     * fails with the exception given, as a provider dropping half way does.
+     *
+     * @param list<string> $deltas
+     */
+    public function cutAfter(array $deltas, AiProviderUnavailableException $failure): self
+    {
+        $this->queue[] = ['cut' => array_map(static fn (string $text): StreamEvent => new TextDelta($text), $deltas), 'failure' => $failure];
+
+        return $this;
+    }
+
     public function complete(AiRequest $request): AiResponse
     {
         $this->requests[] = $request;
@@ -126,6 +142,10 @@ final class FakeAiGateway implements AiGatewayInterface
 
         if ($answer instanceof \Throwable) {
             throw $answer;
+        }
+
+        if (\is_array($answer) && isset($answer['cut'])) {
+            throw $answer['failure'];
         }
 
         if (\is_array($answer)) {
@@ -154,6 +174,12 @@ final class FakeAiGateway implements AiGatewayInterface
             $answer = [new StreamCompleted($answer)];
         }
 
+        if (isset($answer['cut'])) {
+            yield from $answer['cut'];
+
+            throw $answer['failure'];
+        }
+
         yield from $answer;
     }
 
@@ -163,7 +189,7 @@ final class FakeAiGateway implements AiGatewayInterface
     }
 
     /**
-     * @return AiResponse|list<StreamEvent>|\Throwable
+     * @return AiResponse|list<StreamEvent>|\Throwable|array{cut: list<StreamEvent>, failure: AiProviderUnavailableException}
      */
     private function next(): AiResponse|array|\Throwable
     {

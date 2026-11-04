@@ -17,6 +17,7 @@ namespace TheliaCMS\Generation;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Thelia\Core\Security\SecurityContext;
 use Thelia\Domain\Ai\AiProvenance;
+use Thelia\Model\AdminQuery;
 use TheliaCMS\Content\ProvenanceMark;
 use TheliaCMS\Model\CmsPageGeneration;
 use TheliaCMS\Model\CmsPageGenerationQuery;
@@ -36,6 +37,15 @@ final readonly class GenerationLog
     public const string STATUS_INVALID = 'invalid';
     public const string STATUS_FAILED = 'failed';
 
+    /** A call that started and has not ended: written before the first request to the model. */
+    public const string STATUS_RUNNING = 'running';
+
+    /** A running call nobody touched for STALE_AFTER seconds: the process died, the call has no other outcome. */
+    public const string STATUS_INTERRUPTED = 'interrupted';
+
+    /** A running call touches its row at every turn; one silent for this long (30 minutes) is read as dead. */
+    public const int STALE_AFTER = 1800;
+
     /** A change made by hand, recorded with the calls so the history reads in order. */
     public const string KIND_MANUAL = 'manual';
 
@@ -49,6 +59,7 @@ final readonly class GenerationLog
      * @param int|null          $logId    the row of the usage log of the core written for the last request of the call, null when none was
      * @param list<WebPageRead> $webPages the pages the call read, counted
      * @param list<string>      $leftOut  what the answer says the page leaves out of the brief
+     * @param int|null          $rowId    the row begin() wrote for the call, completed here; a new row when null
      */
     public function record(
         GenerationRequest $request,
@@ -68,8 +79,10 @@ final readonly class GenerationLog
         array $webPages = [],
         array $leftOut = [],
         ?AiProvenance $provenance = null,
+        ?int $rowId = null,
+        RunDetails $details = new RunDetails(),
     ): int {
-        $row = (new CmsPageGeneration())
+        $row = $this->rowOf($rowId)
             ->setTargetType($request->target->type)
             ->setTargetId($request->target->id)
             ->setLocale($request->locale)
@@ -95,6 +108,7 @@ final readonly class GenerationLog
             ->setWebPages([] === $webPages ? null : json_encode(array_map(static fn (WebPageRead $page): array => $page->toArray(), $webPages), \JSON_THROW_ON_ERROR | \JSON_UNESCAPED_SLASHES | \JSON_UNESCAPED_UNICODE))
             ->setLeftOut([] === $leftOut ? null : json_encode($leftOut, \JSON_THROW_ON_ERROR | \JSON_UNESCAPED_SLASHES | \JSON_UNESCAPED_UNICODE))
             ->setCreatedBy($this->securityContext->getAdminUser()?->getId());
+        self::setDetails($row, $details);
 
         $row->save();
 
@@ -124,8 +138,10 @@ final readonly class GenerationLog
         ?string $error = null,
         ?string $component = null,
         ?AiProvenance $provenance = null,
+        ?int $rowId = null,
+        RunDetails $details = new RunDetails(),
     ): int {
-        $row = (new CmsPageGeneration())
+        $row = $this->rowOf($rowId)
             ->setTargetType(GenerationTarget::TYPE_COMPONENT)
             ->setTargetId($componentId)
             ->setLocale($locale)
@@ -149,9 +165,132 @@ final readonly class GenerationLog
             ->setDocument($component)
             ->setProvenance(ProvenanceMark::encode($provenance))
             ->setCreatedBy($this->securityContext->getAdminUser()?->getId());
+        self::setDetails($row, $details);
         $row->save();
 
         return (int) $row->getId();
+    }
+
+    /**
+     * Writes the row of a call before its first request to the model, with
+     * the status `running`: a call that dies leaves a row, not a gap.
+     */
+    public function begin(GenerationRequest $request, string $prompt): int
+    {
+        $row = (new CmsPageGeneration())
+            ->setTargetType($request->target->type)
+            ->setTargetId($request->target->id)
+            ->setLocale($request->locale)
+            ->setKind($request->kind)
+            ->setPrompt($prompt)
+            ->setBrief(self::briefJson($request->brief))
+            ->setStatus(self::STATUS_RUNNING)
+            ->setCostUsd('0.000000')
+            ->setCreatedBy($this->securityContext->getAdminUser()?->getId());
+        $row->save();
+
+        return (int) $row->getId();
+    }
+
+    /**
+     * The same for a call that writes a component.
+     */
+    public function beginComponent(int $componentId, string $locale, string $kind, string $request): int
+    {
+        $row = (new CmsPageGeneration())
+            ->setTargetType(GenerationTarget::TYPE_COMPONENT)
+            ->setTargetId($componentId)
+            ->setLocale($locale)
+            ->setKind($kind)
+            ->setPrompt($request)
+            ->setBrief(json_encode(['text' => $request], \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES | \JSON_THROW_ON_ERROR))
+            ->setStatus(self::STATUS_RUNNING)
+            ->setCostUsd('0.000000')
+            ->setCreatedBy($this->securityContext->getAdminUser()?->getId());
+        $row->save();
+
+        return (int) $row->getId();
+    }
+
+    /**
+     * A running call is alive: its row says how far it got, and `updated_at`
+     * moves. One statement, no model loaded.
+     */
+    public function touch(int $rowId, string $model, Usage $usage, int $turns, int $durationMs, float $costUsd, ?int $logId): void
+    {
+        CmsPageGenerationQuery::create()
+            ->filterById($rowId)
+            ->filterByStatus(self::STATUS_RUNNING)
+            ->update([
+                'Model' => $model,
+                'InputTokens' => $usage->inputTokens,
+                'OutputTokens' => $usage->outputTokens,
+                'CacheReadTokens' => $usage->cacheReadTokens,
+                'CacheWriteTokens' => $usage->cacheWriteTokens,
+                'Turns' => $turns,
+                'DurationMs' => $durationMs,
+                'CostUsd' => number_format($costUsd, 6, '.', ''),
+                'LogId' => $logId,
+                'UpdatedAt' => date('Y-m-d H:i:s'),
+            ]);
+    }
+
+    /**
+     * The call running now for a target in a language, if one is: the guard
+     * refuses a second call on the same page. A running row nobody touched
+     * for STALE_AFTER seconds is first written `interrupted`, so it is no
+     * call running.
+     */
+    public function runningFor(GenerationTarget $target, string $locale): ?CmsPageGeneration
+    {
+        self::interruptStale($target->type, $target->id, $locale);
+
+        return CmsPageGenerationQuery::create()
+            ->filterByTargetType($target->type)
+            ->filterByTargetId($target->id)
+            ->filterByLocale($locale)
+            ->filterByStatus(self::STATUS_RUNNING)
+            ->orderById(Criteria::DESC)
+            ->findOne();
+    }
+
+    /**
+     * The name of the editor who started a call, null when the row has none
+     * (a command) or the account is gone.
+     */
+    public function starterOf(CmsPageGeneration $row): ?string
+    {
+        $admin = null === $row->getCreatedBy() ? null : AdminQuery::create()->findPk($row->getCreatedBy());
+
+        if (null === $admin) {
+            return null;
+        }
+
+        $name = trim($admin->getFirstname().' '.$admin->getLastname());
+
+        return '' !== $name ? $name : $admin->getLogin();
+    }
+
+    /**
+     * What a call needed beyond its outcome, as the row kept it.
+     *
+     * @return array<string, int>
+     */
+    public static function toolsOf(CmsPageGeneration $row): array
+    {
+        $json = (string) $row->getTools();
+
+        if ('' === $json) {
+            return [];
+        }
+
+        try {
+            $counts = json_decode($json, true, 2, \JSON_THROW_ON_ERROR);
+        } catch (\JsonException) {
+            return [];
+        }
+
+        return \is_array($counts) ? array_map('intval', array_filter($counts, 'is_int')) : [];
     }
 
     /**
@@ -256,6 +395,8 @@ final readonly class GenerationLog
      */
     public function history(GenerationTarget $target, string $locale, int $limit = 50): array
     {
+        self::interruptStale($target->type, $target->id, $locale);
+
         return array_values(iterator_to_array(
             CmsPageGenerationQuery::create()
                 ->filterByTargetType($target->type)
@@ -276,12 +417,55 @@ final readonly class GenerationLog
      */
     public function find(int $id, GenerationTarget $target, string $locale): ?CmsPageGeneration
     {
+        self::interruptStale($target->type, $target->id, $locale);
+
         return CmsPageGenerationQuery::create()
             ->filterById($id)
             ->filterByTargetType($target->type)
             ->filterByTargetId($target->id)
             ->filterByLocale($locale)
             ->findOne();
+    }
+
+    /**
+     * Writes `interrupted` on the calls of a target type that are still
+     * `running` and were not touched for STALE_AFTER seconds: the ledger is
+     * where a call that died is found out, nothing else watches it.
+     * `updated_at` is left as the last touch, which is when the call was
+     * last seen alive.
+     *
+     * @param int|null    $targetId null for every target of the type
+     * @param string|null $locale   null for every language
+     */
+    public static function interruptStale(string $targetType, ?int $targetId = null, ?string $locale = null): void
+    {
+        $query = CmsPageGenerationQuery::create()
+            ->filterByTargetType($targetType)
+            ->filterByStatus(self::STATUS_RUNNING)
+            ->filterByUpdatedAt(date('Y-m-d H:i:s', time() - self::STALE_AFTER), Criteria::LESS_THAN);
+
+        if (null !== $targetId) {
+            $query->filterByTargetId($targetId);
+        }
+
+        if (null !== $locale) {
+            $query->filterByLocale($locale);
+        }
+
+        $query->update(['Status' => self::STATUS_INTERRUPTED]);
+    }
+
+    private function rowOf(?int $rowId): CmsPageGeneration
+    {
+        return (null === $rowId ? null : CmsPageGenerationQuery::create()->findPk($rowId)) ?? new CmsPageGeneration();
+    }
+
+    private static function setDetails(CmsPageGeneration $row, RunDetails $details): void
+    {
+        $row->setEffort($details->effort)
+            ->setCorrections($details->corrections)
+            ->setRetries($details->retries)
+            ->setTools([] === $details->tools ? null : json_encode($details->tools, \JSON_THROW_ON_ERROR));
     }
 
     private static function briefJson(Brief $brief): string

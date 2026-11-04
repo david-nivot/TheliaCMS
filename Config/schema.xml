@@ -685,6 +685,10 @@
         <column name="provenance" type="CLOB"/>
         <column name="web_pages" type="CLOB"/>
         <column name="left_out" type="CLOB"/>
+        <column name="effort" size="20" type="VARCHAR"/>
+        <column defaultValue="0" name="corrections" required="true" type="INTEGER"/>
+        <column defaultValue="0" name="retries" required="true" type="INTEGER"/>
+        <column name="tools" type="CLOB"/>
         <column name="created_by" type="INTEGER"/>
 
         <index name="idx_cms_page_generation_target">

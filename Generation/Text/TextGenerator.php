@@ -35,6 +35,7 @@ use TheliaCMS\Generation\GenerationLog;
 use TheliaCMS\Generation\GenerationRefusedException;
 use TheliaCMS\Generation\GeneratorSettings;
 use TheliaCMS\Generation\InvalidGenerationException;
+use TheliaCMS\Generation\RunDetails;
 use TheliaCMS\Generation\Tool\GeneratorTools;
 use TheliaCMS\Generation\Usage;
 
@@ -46,8 +47,9 @@ use TheliaCMS\Generation\Usage;
  * The model may search the products, categories and pages of the site and
  * read a skill. It reads no page of the web: the tools offered are the ones of
  * TOOLS and nothing the provider runs. An answer that is not the envelope
- * asked for, or holds no text once filtered, goes back once. Every outcome is written to the ledger, with the kind `text`,
- * before it is returned or thrown.
+ * asked for, or holds no text once filtered, goes back once. A row of the
+ * ledger, with the kind `text`, is written before the first request, `running`,
+ * and every outcome completes it before the result is returned or thrown.
  */
 #[AsAiUsage(
     id: 'theliacms.text',
@@ -88,6 +90,7 @@ final readonly class TextGenerator
     public function generate(TextRequest $text): TextResult
     {
         $request = $text->request;
+        $effort = $this->settings->textEffort();
         $started = hrtime(true);
         $model = '';
         $prompt = $this->prompts->userMessage($text);
@@ -98,7 +101,7 @@ final readonly class TextGenerator
             outputSchema: new AiOutputSchema('text', TextPrompt::schema()),
             tools: $this->definitions->of(self::TOOLS),
             maxOutputTokens: $this->settings->textMaxTokens(),
-            providerOptions: ['anthropic' => ['effort' => $this->settings->textEffort()]],
+            providerOptions: ['anthropic' => ['effort' => $effort]],
             correlationId: CorrelationId::new('theliacms', 'text', $request->target->type, $request->target->id),
         );
         $usage = new Usage();
@@ -106,9 +109,12 @@ final readonly class TextGenerator
         $coreLogId = null;
         $turns = 0;
         $corrections = 0;
+        /** @var array<string, int> $toolCounts */
+        $toolCounts = [];
         $finishReason = null;
+        $rowId = $this->log->begin($request, $prompt);
 
-        $record = function (string $status, ?string $error = null, ?string $html = null) use ($request, $prompt, &$model, $started, &$usage, &$costUsd, &$coreLogId, &$turns, &$finishReason): int {
+        $record = function (string $status, ?string $error = null, ?string $html = null) use ($request, $prompt, $rowId, $effort, &$model, $started, &$usage, &$costUsd, &$coreLogId, &$turns, &$finishReason, &$corrections, &$toolCounts): int {
             return $this->log->record(
                 $request,
                 $status,
@@ -124,6 +130,8 @@ final readonly class TextGenerator
                 null,
                 $error,
                 $html,
+                rowId: $rowId,
+                details: new RunDetails($effort, $corrections, 0, $toolCounts),
             );
         };
 
@@ -136,7 +144,9 @@ final readonly class TextGenerator
                 try {
                     $response = $this->gateway->complete($conversation);
                 } catch (AiExceptionInterface $exception) {
-                    $coreLogId = $this->failures->logIdOf($exception) ?? $coreLogId;
+                    $failedLogId = $this->failures->logIdOf($exception);
+                    $coreLogId = $failedLogId ?? $coreLogId;
+                    $costUsd += $this->failures->costOf($failedLogId);
 
                     throw $this->failures->exceptionFor($exception);
                 }
@@ -147,8 +157,10 @@ final readonly class TextGenerator
                 $costUsd += (float) $response->cost;
                 $coreLogId = $response->logId;
                 $this->failures->assertUsable($response, $this->settings->textMaxTokens(), 'raise the limit of the texts in the settings or ask for a shorter text.');
+                $this->log->touch($rowId, $model, $usage, $turns, (int) ((hrtime(true) - $started) / 1_000_000), $costUsd, $coreLogId);
 
                 if ($response->hasToolCalls()) {
+                    $toolCounts = RunDetails::counted($toolCounts, array_map(static fn (AiToolCall $call): string => $call->name, $response->toolCalls));
                     $conversation = $conversation->withMessages(AiMessage::fromResponse($response), ...$this->toolResults($response->toolCalls, $text));
 
                     continue;
@@ -190,6 +202,20 @@ final readonly class TextGenerator
             // cannot take among them: the same ledger row, the same words.
             $failure = $this->failures->exceptionFor($exception);
             $failure->logId = $record(GenerationLog::STATUS_FAILED, $failure->getMessage());
+
+            throw $failure;
+        } catch (\Throwable $exception) {
+            // Anything else (Propel, a TypeError in a tool): the editor gets
+            // a sentence, the log gets the exception with its trace, and the
+            // row says `failed` rather than staying `running`.
+            $this->logger->error('TheliaCMS: the generation stopped on an unexpected error: {message}', ['message' => $exception->getMessage(), 'exception' => $exception]);
+            $failure = $this->failures->unexpected($exception);
+
+            try {
+                $failure->logId = $record(GenerationLog::STATUS_FAILED, $failure->getMessage());
+            } catch (\Throwable $recording) {
+                $this->logger->error('TheliaCMS: the failed generation could not be written to the ledger: {message}', ['message' => $recording->getMessage(), 'exception' => $recording]);
+            }
 
             throw $failure;
         }

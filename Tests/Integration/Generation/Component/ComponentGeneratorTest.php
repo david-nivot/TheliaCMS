@@ -254,6 +254,10 @@ final class ComponentGeneratorTest extends CmsIntegrationTestCase
             public function onCorrection(int $round, array $problems): void
             {
             }
+
+            public function onCut(): void
+            {
+            }
         };
 
         $this->generator()->generate(new ComponentRequest('Un tableau de prix.', $this->locale()), $observer);

@@ -20,7 +20,7 @@ use TheliaCMS\Generation\Tool\MakeComponentTool;
 /**
  * The progress of a generation, written to the browser as it happens, as
  * server-sent events: `start`, one `turn` per answer of the model, a
- * `correction` when a document was sent back, then `done` or `error`.
+ * `correction` when a document was sent back, `cut` when a stream cut half way is asked again, then `done` or `error`.
  *
  * A generation takes half a minute; a screen that shows nothing for half a
  * minute is a screen that looks broken.
@@ -79,6 +79,12 @@ final class GenerationStream implements GenerationObserverInterface
             'problems' => $problems,
             'message' => ($this->translate)($this->messages['refused'] ?? 'The document was refused by the site and sent back for correction.', []),
         ]);
+    }
+
+    public function onCut(): void
+    {
+        $this->announced = 0;
+        $this->emit('cut', ['message' => ($this->translate)('The answer was cut half way: the model is asked again.', [])]);
     }
 
     public function done(string $redirect, string $message): void

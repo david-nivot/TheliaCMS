@@ -25,6 +25,7 @@ use Thelia\Domain\Ai\Exception\AiKeyDecryptionException;
 use Thelia\Domain\Ai\Exception\AiProviderUnavailableException;
 use Thelia\Domain\Ai\Exception\AiRateLimitExceededException;
 use Thelia\Domain\Ai\Exception\InactiveAiUsageException;
+use Thelia\Model\AiUsageLogQuery;
 use TheliaCMS\Generation\GenerationException;
 use TheliaCMS\Generation\GenerationRefusedException;
 use TheliaCMS\Generation\GenerationUnavailableException;
@@ -63,6 +64,46 @@ final readonly class GatewayFailures
             $exception instanceof AiGuardrailBlockedException => GenerationRefusedException::because($this->say('A safety check of the site stopped this request. Reword the brief and try again.'), $exception),
             default => GenerationException::because($this->say('The generator could not reach the AI. Try again, and tell the person who looks after the site if it lasts.'), $exception),
         };
+    }
+
+    /**
+     * What a call that was cut twice fails with: the message of the failure
+     * of the provider, or the one of a stream that just ended.
+     */
+    public function exceptionForCut(StreamCutException $cut): GenerationException
+    {
+        return null === $cut->unavailable ? GenerationException::because($this->say($cut->getMessage()), $cut) : $this->exceptionFor($cut->unavailable);
+    }
+
+    /**
+     * What a call that failed for a reason nobody foresaw tells the editor.
+     * The detail is for the log of the site, not for the screen.
+     */
+    public function unexpected(\Throwable $previous): GenerationException
+    {
+        return GenerationException::because($this->say('The generation stopped on an unexpected error. Try again, and tell the person who looks after the site if it lasts.'), $previous);
+    }
+
+    /**
+     * What the guard says when a call is already running for the same page
+     * in the same language.
+     */
+    public function alreadyRunning(\DateTimeInterface $since, ?string $name): GenerationUnavailableException
+    {
+        return GenerationUnavailableException::because($this->say('A generation is already running for this page in this language (started at %time% by %name%).', [
+            '%time%' => $since->format('H:i'),
+            '%name%' => $name ?? $this->say('another editor'),
+        ]));
+    }
+
+    /**
+     * What the row of the usage log of the core says the request cost, for
+     * a request that failed or was cut: the core prices it from the tokens
+     * received. Zero when no row is named, or the row holds no cost.
+     */
+    public function costOf(?int $coreLogId): float
+    {
+        return null === $coreLogId ? 0.0 : (float) AiUsageLogQuery::create()->findPk($coreLogId)?->getCost();
     }
 
     /**

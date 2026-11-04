@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Generation\Admin;
 
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -32,6 +33,11 @@ use TheliaCMS\TheliaCMS;
  * screen works without the script. Either way the screen is read again with
  * the id of the ledger row, and shows the outcome from there: the script
  * puts that screen in place of the one on show, the browser goes there.
+ *
+ * What the generator throws is a GenerationException, written to the ledger.
+ * Anything else (the closure that saves the document failing, after the row
+ * says `done`) is logged and answered like a failure: a half-written stream
+ * is a worse answer than a sentence.
  */
 final readonly class GenerationRunner
 {
@@ -41,6 +47,7 @@ final readonly class GenerationRunner
     public function __construct(
         private PageGenerator $generator,
         private TranslatorInterface $translator,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -68,6 +75,11 @@ final readonly class GenerationRunner
             }
 
             return new RedirectResponse(self::withOutcome($screenUrl, $exception->logId));
+        } catch (\Throwable $exception) {
+            $this->logger->error('TheliaCMS: the generation ended on an unexpected error: {message}', ['message' => $exception->getMessage(), 'exception' => $exception]);
+            $this->flash($request, 'danger', $this->unexpected());
+
+            return new RedirectResponse($screenUrl);
         }
 
         return new RedirectResponse(self::withOutcome($screenUrl, (int) $result->logId));
@@ -94,6 +106,11 @@ final readonly class GenerationRunner
                 $events->error($exception->getMessage(), null === $exception->logId ? null : self::withOutcome($screenUrl, $exception->logId));
 
                 return;
+            } catch (\Throwable $exception) {
+                $this->logger->error('TheliaCMS: the generation ended on an unexpected error: {message}', ['message' => $exception->getMessage(), 'exception' => $exception]);
+                $events->error($this->unexpected());
+
+                return;
             }
 
             $events->done(self::withOutcome($screenUrl, (int) $result->logId), $this->translator->trans('The document is written.', [], TheliaCMS::DOMAIN_NAME));
@@ -106,6 +123,11 @@ final readonly class GenerationRunner
         ]);
 
         return $response;
+    }
+
+    private function unexpected(): string
+    {
+        return $this->translator->trans('The generation stopped on an unexpected error. Try again, and tell the person who looks after the site if it lasts.', [], TheliaCMS::DOMAIN_NAME);
     }
 
     private static function wantsAStream(Request $request): bool
