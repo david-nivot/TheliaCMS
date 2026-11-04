@@ -55,6 +55,12 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   screen, and matched no translation. The sentence now travels with its values
   apart, and the screen translates it; the generator still reads it in
   English.
+- **What the document of a page refuses reads in the language of the back
+  office.** A section saved by hand with a link that is no address, a colour
+  that is no colour or a list too long, and a page or the content of an item
+  that can no longer be published, were told why in English. The screen now
+  translates each problem, the number and the id of the section included; the
+  generator, the logs and the command still read it in English.
 - **A shared cache lets a page go on time.** A page was shared for the whole
   TTL even when it, or any page it shows in a menu or a list, was scheduled to
   go online or offline sooner: a page unpublished in five minutes stayed in the

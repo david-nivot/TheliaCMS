@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Content;
 
+use TheliaCMS\Locale\TranslatableText;
+
 /**
  * Whether a document can be stored, and the document as it will be stored.
  *
@@ -42,14 +44,14 @@ final readonly class DocumentValidator
         $sections = [];
 
         foreach ($document->sections as $index => $section) {
-            $label = \sprintf('Section %d ("%s")', $index + 1, $section->id);
+            $label = TranslatableText::of('Section %d ("%s")', $index + 1, $section->id);
 
             if (1 !== preg_match(self::ID_PATTERN, $section->id)) {
-                $problems[] = \sprintf('%s has an id that is not lowercase letters, digits, hyphens and underscores, forty characters at most.', $label);
+                $problems[] = TranslatableText::of('%s has an id that is not lowercase letters, digits, hyphens and underscores, forty characters at most.', $label);
             }
 
             if (isset($seen[$section->id])) {
-                $problems[] = \sprintf('%s repeats the id of section %d.', $label, $seen[$section->id] + 1);
+                $problems[] = TranslatableText::of('%s repeats the id of section %d.', $label, $seen[$section->id] + 1);
             }
 
             $seen[$section->id] ??= $index;
@@ -57,7 +59,7 @@ final readonly class DocumentValidator
             $definition = $this->catalog->find($section->component);
 
             if (null === $definition) {
-                $problems[] = \sprintf('%s uses "%s", which is not a component of the catalogue.', $label, $section->component);
+                $problems[] = TranslatableText::of('%s uses "%s", which is not a component of the catalogue.', $label, $section->component);
 
                 continue;
             }
@@ -65,8 +67,8 @@ final readonly class DocumentValidator
             try {
                 $sections[] = $section->withProps($definition->normalizeProps($section->props));
             } catch (InvalidDocumentException $exception) {
-                foreach ($exception->problems as $problem) {
-                    $problems[] = $label.': '.$problem;
+                foreach ($exception->texts as $problem) {
+                    $problems[] = TranslatableText::of('%s: %s', $label, $problem);
                 }
             }
         }

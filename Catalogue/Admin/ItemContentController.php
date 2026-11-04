@@ -274,7 +274,7 @@ final readonly class ItemContentController
 
             return $this->back($item, $lang);
         } catch (InvalidDocumentException $exception) {
-            foreach ($exception->problems as $problem) {
+            foreach ($exception->translated($this->translator) as $problem) {
                 $this->flash($request, 'danger', $problem);
             }
 
