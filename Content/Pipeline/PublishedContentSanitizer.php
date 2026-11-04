@@ -17,6 +17,7 @@ namespace TheliaCMS\Content\Pipeline;
 use Symfony\Component\HtmlSanitizer\HtmlSanitizer;
 use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
 use TheliaCMS\Content\DocumentRenderer;
+use TheliaCMS\Content\ImageSlot;
 use TheliaCMS\Content\Theme\ThemeComponentSections;
 
 /**
@@ -216,6 +217,11 @@ final readonly class PublishedContentSanitizer
             // The section an element renders, which the content screen
             // reads to point at it in the preview.
             ->allowAttribute(DocumentRenderer::SECTION_ATTRIBUTE, '*')
+            // The width a section draws its images at, which the publication
+            // turns into their `sizes` and takes out. Any value is let
+            // through here: what the rewriter does not read as a width is
+            // ignored there, and the attribute does nothing else.
+            ->allowAttribute(ImageSlot::ATTRIBUTE, '*')
             // `open` is what an author toggles on a question that should start
             // expanded; without it a `<details>` always comes back closed.
             ->allowAttribute('open', ['details'])

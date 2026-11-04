@@ -298,6 +298,79 @@ final class ImageRewriterTest extends TestCase
         return $matches[1];
     }
 
+    public function testWritesTheSizesASectionDeclaresAndTakesTheAttributeOut(): void
+    {
+        $html = $this->rewrite(
+            '<figure data-cms-sizes="(max-width: 50rem) calc(100vw - 2rem), 48rem"><img src="/image-library/7/full/max/0/default.jpg" alt=""></figure>',
+        );
+
+        self::assertSame(2, substr_count($html, 'sizes="(max-width: 50rem) calc(100vw - 2rem), 48rem"'), 'The image and its WebP source.');
+        self::assertStringNotContainsString('data-cms-sizes', $html);
+    }
+
+    public function testTakesTheDeclarationOfTheNearestElement(): void
+    {
+        $html = $this->rewrite(
+            '<div data-cms-sizes="100vw"><p data-cms-sizes="calc(100vw - 2rem)"><img src="/image-library/7/full/max/0/default.jpg" alt="inner"></p>'
+            .'<img src="/image-library/7/full/max/0/default.jpg" alt="outer"></div>',
+        );
+
+        [$inner, $outer] = $this->imageTags($html);
+
+        self::assertStringContainsString('sizes="calc(100vw - 2rem)"', $inner);
+        self::assertStringContainsString('sizes="100vw"', $outer);
+    }
+
+    public function testAnInvalidDeclarationIsNotReplacedByOneFurtherUp(): void
+    {
+        $html = $this->rewrite(
+            '<div data-cms-sizes="100vw"><p data-cms-sizes="url(x)"><img src="/image-library/7/full/max/0/default.jpg" alt=""></p></div>',
+        );
+
+        self::assertSame(2, substr_count($html, 'sizes="(max-width: 1440px) 100vw, 1440px"'), 'The nearest element is the one that knows.');
+    }
+
+    public function testAnImageOutsideEveryDeclarationKeepsTheDefault(): void
+    {
+        $html = $this->rewrite('<div data-cms-sizes="100vw"></div><img src="/image-library/7/full/max/0/default.jpg" alt="">');
+
+        self::assertSame(2, substr_count($html, 'sizes="(max-width: 1440px) 100vw, 1440px"'));
+        self::assertStringNotContainsString('data-cms-sizes', $html);
+    }
+
+    /**
+     * @return iterable<string, array{0: string}>
+     */
+    public static function declarationsThatAreNotWidths(): iterable
+    {
+        yield 'a function that loads' => ['url(https://evil.test/x)'];
+        yield 'a second attribute' => ['100vw" onerror="alert(1)'];
+        yield 'an unbalanced calc' => ['calc(100vw - 2rem'];
+        yield 'empty' => [''];
+    }
+
+    #[DataProvider('declarationsThatAreNotWidths')]
+    public function testIgnoresADeclarationThatIsNotAListOfWidths(string $declared): void
+    {
+        $html = $this->rewrite(\sprintf('<div data-cms-sizes="%s"><img src="/image-library/7/full/max/0/default.jpg" alt=""></div>', htmlspecialchars($declared)));
+
+        self::assertSame(2, substr_count($html, 'sizes="(max-width: 1440px) 100vw, 1440px"'));
+        self::assertStringNotContainsString('data-cms-sizes', $html);
+        self::assertStringNotContainsString('evil.test', $html);
+        self::assertStringNotContainsString('onerror', $html);
+    }
+
+    public function testTakesTheAttributeOutOfASectionWithoutALibraryImage(): void
+    {
+        $html = $this->rewrite(
+            '<section data-cms-sizes="100vw"><img src="https://cdn.test/photo.jpg" alt="Remote"></section><p data-cms-sizes="100vw">Text</p>',
+            null,
+        );
+
+        self::assertStringNotContainsString('data-cms-sizes', $html);
+        self::assertStringNotContainsString('sizes=', $html);
+    }
+
     /**
      * @return list<string>
      */

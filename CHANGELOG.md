@@ -9,13 +9,21 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Fixed
 
-- **A published image is no longer announced wider than its file.** Its
+- **A published image is announced at the width it is drawn at.** Its
   `sizes` said the viewport up to 1440px whatever the file, so a browser read
   a 308px pack shot at 1440px: a theme leaving an image at its own size
   (`width: auto`, as the columns of logos are) showed it stretched and
-  blurred. The slot is now the viewport up to the width of the file, 1440px
-  at most; the candidate picked does not change. Pages published before keep
-  the old value until they are published again.
+  blurred. Two changes. The default is now the viewport up to the width of the
+  file, 1440px at most (the candidate picked does not change). And a section
+  says the width of its images itself, with a `data-cms-sizes` attribute the
+  publication reads and takes out: the image section (`narrow`, `column`,
+  `full`) and the columns (one share of the grid, the gaps out) declare theirs,
+  so a 1200px picture in one of three columns is announced at a third of the
+  grid, not at 1200px.
+  Components of the site, of a module or of the theme can declare it too, see
+  docs/sections.md and docs/creating-a-component.md. The filter that runs on
+  every page lets the attribute through. Pages published before keep the old
+  `sizes` until they are published again.
 
 ## [2.10.0] - 2026-11-04
 

@@ -90,8 +90,9 @@ final readonly class ImageSection implements SectionDefinitionInterface
 
         $width = \in_array($props['width'] ?? null, self::WIDTHS, true) ? $props['width'] : 'narrow';
         $html = \sprintf(
-            '<figure class="cms-image cms-image--%s"><img class="cms-image__img" src="%s" alt="%s" loading="lazy">',
+            '<figure class="cms-image cms-image--%s"%s><img class="cms-image__img" src="%s" alt="%s" loading="lazy">',
             $width,
+            ImageSlot::attribute(self::slot($width)),
             self::escape($source),
             self::escape(ImageSource::alt($props['image'] ?? null, (string) ($props['alt'] ?? ''), $locale)),
         );
@@ -101,6 +102,19 @@ final readonly class ImageSection implements SectionDefinitionInterface
         }
 
         return $html.'</figure>';
+    }
+
+    /**
+     * The width the picture is drawn at, which `blocks.css` gives each width
+     * of the section.
+     */
+    private static function slot(string $width): string
+    {
+        return match ($width) {
+            'full' => ImageSlot::screen(),
+            'column' => ImageSlot::content(),
+            default => ImageSlot::narrow(),
+        };
     }
 
     private static function escape(string $value): string

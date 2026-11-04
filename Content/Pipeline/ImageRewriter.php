@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Content\Pipeline;
 
+use TheliaCMS\Content\ImageSlot;
 use TheliaCMS\Media\MediaResolver;
 
 /**
@@ -75,6 +76,13 @@ final readonly class ImageRewriter
             $this->rewriteImage($document, $image, 0 === $position);
         }
 
+        // Read, it has done its work: nothing of it goes online.
+        foreach (iterator_to_array((new \DOMXPath($document))->query('//*[@'.ImageSlot::ATTRIBUTE.']') ?: []) as $declaring) {
+            if ($declaring instanceof \DOMElement) {
+                $declaring->removeAttribute(ImageSlot::ATTRIBUTE);
+            }
+        }
+
         return $this->innerHtml($document, $root);
     }
 
@@ -106,26 +114,50 @@ final readonly class ImageRewriter
         }
 
         $widths = $this->widthsFor($media->width);
+        $sizes = [] === $widths ? null : $this->sizes($widths, $this->declaredSizes($image));
 
-        if ([] !== $widths) {
+        if (null !== $sizes) {
             $image->setAttribute('srcset', $this->srcset($media->id, $widths, $media->format));
-            $image->setAttribute('sizes', $this->sizes($widths));
+            $image->setAttribute('sizes', $sizes);
         }
 
-        $this->wrapInPicture($document, $image, $media->id, $widths);
+        $this->wrapInPicture($document, $image, $media->id, $widths, $sizes);
     }
 
     /**
-     * The slot is the viewport, up to the width of the file. With the slot
-     * wider than the file, a browser reads a 300px file at the width of the
-     * viewport: an image a theme leaves at its own size (`width: auto`, as
-     * the columns of logos are) comes out stretched and blurred. The candidate
+     * The `sizes` the section of the image declared, on the nearest element
+     * that carries the attribute. A value that is not a list of widths counts
+     * as no declaration, and the elements further up are not asked: the
+     * nearest one is the one that knows.
+     */
+    private function declaredSizes(\DOMElement $image): ?string
+    {
+        for ($node = $image; $node instanceof \DOMElement; $node = $node->parentNode) {
+            if ($node->hasAttribute(ImageSlot::ATTRIBUTE)) {
+                $declared = trim($node->getAttribute(ImageSlot::ATTRIBUTE));
+
+                return ImageSlot::isValid($declared) ? $declared : null;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * What a section says it draws the image at; else, the viewport up to the
+     * width of the file. With the slot wider than the file, a browser reads a
+     * 300px file at the width of the viewport: an image a theme leaves at its
+     * own size (`width: auto`) comes out stretched and blurred. The candidate
      * it picks does not change, the file being the largest one offered.
      *
      * @param non-empty-list<int> $widths ascending, the last one being the original width
      */
-    private function sizes(array $widths): string
+    private function sizes(array $widths, ?string $declared): string
     {
+        if (null !== $declared) {
+            return $declared;
+        }
+
         $slot = min($widths[array_key_last($widths)], self::WIDEST_SLOT);
 
         return \sprintf('(max-width: %1$dpx) 100vw, %1$dpx', $slot);
@@ -139,7 +171,7 @@ final readonly class ImageRewriter
      *
      * @param list<int> $widths
      */
-    private function wrapInPicture(\DOMDocument $document, \DOMElement $image, int $imageId, array $widths): void
+    private function wrapInPicture(\DOMDocument $document, \DOMElement $image, int $imageId, array $widths, ?string $sizes): void
     {
         $parent = $image->parentNode;
 
@@ -154,8 +186,8 @@ final readonly class ImageRewriter
             ? $this->srcset($imageId, $widths, 'webp')
             : $this->url($imageId, null, 'webp'));
 
-        if ([] !== $widths) {
-            $source->setAttribute('sizes', $this->sizes($widths));
+        if (null !== $sizes) {
+            $source->setAttribute('sizes', $sizes);
         }
 
         $parent->replaceChild($picture, $image);

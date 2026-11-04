@@ -1,0 +1,68 @@
+<?php
+
+declare(strict_types=1);
+
+/*
+ * This file is part of the Thelia package.
+ * http://www.thelia.net
+ *
+ * (c) OpenStudio <info@thelia.net>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+namespace TheliaCMS\Tests\Unit\Content\Pipeline;
+
+use PHPUnit\Framework\TestCase;
+use TheliaCMS\Content\ColumnsSection;
+use TheliaCMS\Content\ImageSection;
+use TheliaCMS\Content\Pipeline\ImageRewriter;
+use TheliaCMS\Content\Pipeline\PublishedContentSanitizer;
+use TheliaCMS\Media\MediaFile;
+use TheliaCMS\Media\MediaResolver;
+
+/**
+ * What a section declares is read at the end of the publication, after the
+ * sanitizer: the two have to agree on the attribute.
+ */
+final class ImageSlotPipelineTest extends TestCase
+{
+    public function testAnImageSectionIsPublishedWithTheSizesOfItsWidth(): void
+    {
+        $html = $this->publish((new ImageSection())->render(['image' => 'https://example.com/a.jpg', 'width' => 'narrow'], 'fr_FR'));
+
+        self::assertSame(2, substr_count($html, 'sizes="(max-width: 50rem) calc(100vw - 2rem), 48rem"'));
+        self::assertStringNotContainsString('data-cms-sizes', $html);
+    }
+
+    public function testColumnsArePublishedWithTheSizesOfOneColumn(): void
+    {
+        $html = $this->publish((new ColumnsSection())->render(['columns' => array_fill(0, 3, ['image' => 'https://example.com/a.jpg'])], 'fr_FR'));
+
+        self::assertSame(6, substr_count($html, '(min-width: 77rem) 23.67rem, (min-width: 48rem) calc((100vw - 2rem - 4rem) / 3), calc(100vw - 2rem)'), 'Three images, each with its WebP source.');
+        self::assertStringNotContainsString('data-cms-sizes', $html);
+    }
+
+    public function testAComponentOfTheSiteDeclaresItsOwnWidth(): void
+    {
+        $html = $this->publish('<div class="cms-site cms-site--logo-wall" data-cms-sizes="(min-width: 64rem) 20vw, 50vw"><img src="/image-library/7/full/max/0/default.jpg" alt=""></div>');
+
+        self::assertSame(2, substr_count($html, 'sizes="(min-width: 64rem) 20vw, 50vw"'));
+        self::assertStringNotContainsString('data-cms-sizes', $html);
+    }
+
+    private function publish(string $html): string
+    {
+        // Every picture is taken for one of the library, which is what the
+        // sections draw with an id: they read the database for it.
+        $resolver = new class implements MediaResolver {
+            public function fromUrl(string $url): ?MediaFile
+            {
+                return '' === $url ? null : new MediaFile(id: 7, format: 'jpg', width: 1600, height: 900);
+            }
+        };
+
+        return (string) (new ImageRewriter($resolver))->rewrite((new PublishedContentSanitizer())->html($html));
+    }
+}
