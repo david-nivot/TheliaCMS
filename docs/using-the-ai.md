@@ -47,7 +47,7 @@ the CMS. Ask whoever looks after the site if it is not done yet.
    stronger model.
 
 The **Generator** card of CMS > Settings keeps three choices: how hard the AI
-thinks (more effort, better but slower and dearer; no effect on some providers),
+thinks (more effort, better but slower and dearer; read by Anthropic models only),
 how long an answer may be, and whether it may read the web pages a brief cites.
 
 If something is missing, the editor reads one sentence that says what to change

@@ -725,7 +725,7 @@ return [
     'High: the default' => 'High: the default',
     'Very high' => 'Very high',
     'Maximum: slow, for a demanding brief' => 'Maximum: slow, for a demanding brief',
-    'How long the model thinks before it writes. More effort costs more and takes longer.' => 'How long the model thinks before it writes. More effort costs more and takes longer.',
+    'Read by Anthropic models only; other providers ignore it. From low to high, it sets the care the answer gets; very high and maximum also let the model think before it writes. More effort costs more and takes longer.' => 'Read by Anthropic models only; other providers ignore it. From low to high, it sets the care the answer gets; very high and maximum also let the model think before it writes. More effort costs more and takes longer.',
     'Longest answer, in tokens' => 'Longest answer, in tokens',
     'An answer cut at this length loses the end of the page. A long page needs about four tokens a word.' => 'An answer cut at this length loses the end of the page. A long page needs about four tokens a word.',
     'The AI provider, its key, the model, the budget and the limits of the generator are set in the AI settings of Thelia, not here. This card only holds how the generator asks.' => 'The AI provider, its key, the model, the budget and the limits of the generator are set in the AI settings of Thelia, not here. This card only holds how the generator asks.',

@@ -45,6 +45,26 @@ final class GeneratorSettingsScreenTest extends AdminScreenTestCase
         self::assertStringContainsString('AI settings of Thelia', $card->text(''), 'The card says where the provider, the key, the model and the budget are set.');
     }
 
+    /**
+     * Only the adapter of Anthropic reads the effort: the help says so on
+     * both fields, rather than promise a time spent thinking that the models
+     * only take at the two highest efforts.
+     */
+    public function testTheEffortSaysWhichModelsReadIt(): void
+    {
+        foreach (['en_US' => 'Anthropic models only', 'fr_FR' => 'modèles Anthropic'] as $locale => $expected) {
+            $screen = $this->screen(self::SCREEN.'?lang='.$locale);
+
+            foreach (['generatorEffort', 'textEffort'] as $field) {
+                // The theme of the back office prints the help inside the label.
+                $help = $screen->filter('label[for="cms_settings_'.$field.'"] .bo-form-label__help')->text('');
+
+                self::assertStringContainsString($expected, $help, $field.' in '.$locale);
+                self::assertStringNotContainsString('How long the model thinks', $help);
+            }
+        }
+    }
+
     public function testPostingTheFormChangesWhatTheGeneratorReads(): void
     {
         $form = $this->settingsForm();
