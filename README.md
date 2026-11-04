@@ -327,6 +327,31 @@ shop: from the command line, that is the `url_site` setting, or `--url` over it
 component fails with a message saying so, and the other pages render.
 `thelia_cms:publish` and `thelia_cms:generate` take `--url` too.
 
+### Rendering what is online again
+
+The published HTML is written when a page is published. A change of the module
+since, such as the `sizes` of the images, reaches a page only at its next
+publication; `thelia_cms:render-published` brings what is online up to date at
+once, from the published documents, and publishes nothing:
+
+```bash
+php Thelia thelia_cms:render-published --all --dry-run
+php Thelia thelia_cms:render-published --all
+php Thelia thelia_cms:render-published --page 12 --locale fr_FR
+```
+
+`--all` is every page that is not in the bin and every online content of the
+catalogue; `--page` names pages. `--dry-run` lists what would change and writes
+nothing. Only the published HTML is written: the drafts, the kept versions, the
+date of the publication, the search entry, the activity log and the checks of a
+publication are left alone (a page online stays online, whatever the checks
+would say today). A page that renders the same is not written, and the cache of
+one that changed is purged as a publication purges it. Like `thelia_cms:render`,
+the command holds nobody's right to custom code: an online version whose iframe
+the new rendering would take out is left alone and listed, to be published again
+from the back office. `--url` is the same as for the other commands. Run it
+after an update whose changelog says so.
+
 ### Publishing from the command line
 
 `thelia_cms:publish` puts drafts online through the same pipeline as the button

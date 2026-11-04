@@ -7,6 +7,18 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **`thelia_cms:render-published`**, the published counterpart of
+  `thelia_cms:render`: it renders what is online again from the published
+  documents (pages and contents of the catalogue), so a change of the module
+  reaches pages already published without publishing them again. Only the
+  published HTML is written, and only where it changed; the drafts, the kept
+  versions, the date of the publication, the activity log and the checks of a
+  publication are left alone, and the cache of a changed page is purged as a
+  publication does. `--page`, `--all`, `--locale`, `--dry-run`, `--url`. See the
+  README, "Rendering what is online again".
+
 ### Fixed
 
 - **A published image is announced at the width it is drawn at.** Its
@@ -23,7 +35,8 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   Components of the site, of a module or of the theme can declare it too, see
   docs/sections.md and docs/creating-a-component.md. The filter that runs on
   every page lets the attribute through. Pages published before keep the old
-  `sizes` until they are published again.
+  `sizes` until they are rendered again: after the update, run
+  `php Thelia thelia_cms:render-published --all` (see below).
 
 ## [2.10.0] - 2026-11-04
 
