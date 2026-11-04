@@ -57,6 +57,14 @@ final class PublishedContentSanitizerTest extends TestCase
         self::assertStringContainsString('cms-image__img--cover', $html);
     }
 
+    public function testKeepsWhatAnImageSectionKeepsOfItsPicture(): void
+    {
+        $html = (string) $this->sanitizer->html('<figure class="cms-image"><img src="/image-library/7/full/max/0/default.jpg" alt="" data-cms-crop="35,20,150,960,540"></figure><p data-cms-crop="35,20,150,960,540">text</p>');
+
+        self::assertStringContainsString('data-cms-crop="35,20,150,960,540"', $html);
+        self::assertSame(1, substr_count($html, 'data-cms-crop'), 'Only a picture carries it.');
+    }
+
     public function testKeepsTheWidthASectionDeclaresForItsImages(): void
     {
         $html = $this->sanitizer->html('<figure class="cms-image" data-cms-sizes="(max-width: 50rem) calc(100vw - 2rem), 48rem" data-cms-height="5rem"><img src="/image-library/7/full/max/0/default.jpg" alt=""></figure>');

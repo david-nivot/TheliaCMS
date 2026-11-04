@@ -18,7 +18,18 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   kept part are for the editor alone: the generator is not offered them and the
   prompt is unchanged. A section saved before keeps its exact markup. This
   release draws the box with CSS (`object-fit`, `object-position`,
-  `aspect-ratio`); the zone served by the media library follows.
+  `aspect-ratio`) and, for a picture of the media library, serves the kept part
+  itself (see the next entry).
+- **A picture that fills a box is served as the part the editor kept.** On
+  publication, the media library gives the zone of the file (`x,y,w,h` of the
+  region of its image route) instead of the whole file, in the proportions of the
+  box: the candidates of the `srcset` are strictly narrower than the zone, the
+  last one is the zone at its own size, WebP and the original format alike, and
+  `width` and `height` are those of the zone. A zone is never outside the file
+  and never upscaled; a zone that is the whole file, a picture shown whole, an
+  address kept elsewhere or a file of unknown size are served as before. The
+  section says the kept part with `data-cms-crop` on the image, which is read
+  and taken out on publication.
 - **`thelia_cms:render-published`**, the published counterpart of
   `thelia_cms:render`: it renders what is online again from the published
   documents (pages and contents of the catalogue), so a change of the module

@@ -444,3 +444,11 @@ the pre-existing portrait defect is not larger than described, the test host has
 - `data-cms-crop` is not written yet: the box is drawn by CSS alone (`aspect-ratio`, `object-fit`, `object-position`); zoom has no effect before phase B.
 - Contain declares `data-cms-height="{height_px}px"` on the figure, as planned, for the rewriter of phase B.
 - The asset version of `ContentScreen.php` is derived from the mtime of the files: nothing to bump by hand.
+
+## Code decisions, phase B (2026-11-04)
+
+- `Content/ImageFrame` is the pure class: `zone()` (section 3 arithmetic; the width is floored with a 1e-9 guard against float noise, the zone is clamped inside the original, `null` for the whole picture), `attribute()` and `parse()` of `data-cms-crop="focus_x,focus_y,zoom,box_width,box_height"`. `parse()` accepts only what `ImageSection` could have written (focus 0-100, zoom 100-400 by 10, box within the bounds and the 4:1 ratio); anything else is ignored.
+- The section writes `data-cms-crop` on the `<img>` only in fill mode with both dimensions; contain and the width-only box do not carry it.
+- The sanitizer lets `data-cms-crop` through on `<img>` only (`PublishedContentSanitizer`).
+- `ImageRewriter::attributes()` takes an optional zone (4th parameter): `width`/`height` are the zone's, `srcset` candidates are `R/{n},{m}/0/...` strictly under the zone width then `R/max/0/...`, `sizes` as declared. The rewriter also rewrites `src` to the zone at `max` (a browser without `srcset` must not load the whole file). The fixed-height banding of contain is not applied to a zone.
+- A zone equal to the whole picture, an unknown size and an external image take the path of before.

@@ -121,7 +121,7 @@ final class ImageSectionTest extends TestCase
     public function testAFilledBoxKeepsItsProportionsAndTheKeptPart(): void
     {
         self::assertSame(
-            '<figure class="cms-image cms-image--custom" style="width:min(960px, 100% - 2rem)" data-cms-sizes="min(960px, calc(100vw - 2rem))"><img class="cms-image__img cms-image__img--cover" src="https://example.com/a.jpg" alt="" loading="lazy" style="aspect-ratio:960/540;object-fit:cover;object-position:35% 20%"></figure>',
+            '<figure class="cms-image cms-image--custom" style="width:min(960px, 100% - 2rem)" data-cms-sizes="min(960px, calc(100vw - 2rem))"><img class="cms-image__img cms-image__img--cover" src="https://example.com/a.jpg" alt="" loading="lazy" style="aspect-ratio:960/540;object-fit:cover;object-position:35% 20%" data-cms-crop="35,20,150,960,540"></figure>',
             $this->drawn(['width' => 'custom', 'width_px' => 960, 'height_px' => 540, 'fit' => 'cover', 'focus_x' => 35, 'focus_y' => 20, 'zoom' => 150]),
         );
     }

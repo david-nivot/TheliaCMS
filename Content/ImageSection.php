@@ -188,6 +188,12 @@ final readonly class ImageSection implements SectionDefinitionInterface
         if ($framed) {
             $imageClass .= $contain ? ' cms-image__img--contain' : ' cms-image__img--cover';
             $imageStyle = \sprintf(' style="aspect-ratio:%d/%d;object-fit:%s%s"', $widthPixels, $heightPixels, $contain ? 'contain' : 'cover', $contain ? '' : \sprintf(';object-position:%d%% %d%%', (int) ($props['focus_x'] ?? 50), (int) ($props['focus_y'] ?? 50)));
+
+            // What the editor keeps of the picture, for the publication to serve
+            // as a zone of the file: it knows the size of the file, this does not.
+            if (!$contain) {
+                $imageStyle .= ImageFrame::attribute((int) ($props['focus_x'] ?? 50), (int) ($props['focus_y'] ?? 50), (int) ($props['zoom'] ?? 100), $widthPixels, $heightPixels);
+            }
         }
 
         $html = \sprintf(
