@@ -15,8 +15,8 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   box of those proportions, which it keeps as the screen narrows: it either
   fills the box around a kept part (horizontal and vertical position, zoom by
   steps of 10, 100 to 400) or is shown whole in it. The size, the fit and the
-  kept part are for the editor alone: the generator is not offered them and the
-  prompt is unchanged. A section saved before keeps its exact markup. This
+  kept part are for the editor alone: the generator is not offered them (see
+  the entry on rewrites below). A section saved before keeps its exact markup. This
   release draws the box with CSS (`object-fit`, `object-position`,
   `aspect-ratio`) and, for a picture of the media library, serves the kept part
   itself (see the next entry).
@@ -63,6 +63,10 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   takes the defaults. A different preset width asked for wins over the size in
   pixels, which stays in the section. The description of the Image section tells
   the generator that the exact size and the kept part are the editor's.
+- **The back-office documentation, the README and `docs/sections.md` describe the
+  size and the framing of an image**: the widths, the size in pixels, the fit, the
+  dialog and its keys, an image kept elsewhere, and the published pages that keep
+  their files until `thelia_cms:render-published` renders them again.
 - **`thelia_cms:render-published`**, the published counterpart of
   `thelia_cms:render`: it renders what is online again from the published
   documents (pages and contents of the catalogue), so a change of the module
@@ -79,7 +83,8 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   the editor.** The image, its width, its caption, then the text of the image;
   each field explains itself in the words of an editor, apart from the
   instruction the generator reads. The generator's prompt lists the four props in
-  the new order and says nothing more.
+  the new order, and the description of the Image section gains one sentence (see
+  the entry on rewrites above).
 
 ### Fixed
 

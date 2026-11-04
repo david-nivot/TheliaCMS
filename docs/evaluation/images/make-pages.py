@@ -2,7 +2,13 @@
 """Writes pages.json, the site export `thelia_cms:import` reads to create the
 image test page. Usage: make-pages.py [--slug SLUG] <width>=<id>:<file> ...
 (width, id and stored file name of each library image, one per use: 5 of 308 px,
-4 of 900, 7 of 1200, 5 of 2400, see README.md)."""
+4 of 900, 7 of 1200, 5 of 2400, see README.md).
+
+With `--frame`, it writes the page of the framing bench instead (slug
+`img-test-frame` unless `--slug` says otherwise): `quadrants=<id>:<file>`, a
+landscape picture whose four quarters are four plain colours (make-quadrants.php),
+`portrait=<id>:<file>` and `small=<id>:<file>`, a portrait picture and one
+narrower than the 960 px box. See README.md."""
 import json
 import sys
 
@@ -10,14 +16,22 @@ media = {}
 ids = {}
 slug = 'img-test-sections'
 arguments = sys.argv[1:]
+frame = '--frame' in arguments
+arguments = [argument for argument in arguments if argument != '--frame']
+if frame:
+    slug = 'img-test-frame'
 if arguments[:1] == ['--slug']:
     slug = arguments[1]
     arguments = arguments[2:]
+named = {}
 for argument in arguments:
     width, _, rest = argument.partition('=')
     image_id, _, file_name = rest.partition(':')
-    ids.setdefault(int(width), []).append(int(image_id))
     media[int(image_id)] = file_name
+    if width in ('quadrants', 'portrait', 'small'):
+        named[width] = int(image_id)
+    else:
+        ids.setdefault(int(width), []).append(int(image_id))
 
 
 def take(width):
@@ -49,28 +63,59 @@ def heading(section_id, title):
     return {'id': section_id, 'component': 'cms:richtext', 'props': {'html': '<h2>'+title+'</h2>'}}
 
 
-sections = [
-    heading('h-intro', 'Image sizes bench'),
-    heading('h-image', 'Image sections'),
-    image('image-full-2400', 'full', 2400, 'Full 2400'),
-    image('image-full-308', 'full', 308, 'Full 308'),
-    image('image-column-1200', 'column', 1200, 'Column 1200'),
-    image('image-narrow-2400', 'narrow', 2400, 'Narrow 2400'),
-    image('image-narrow-1200', 'narrow', 1200, 'Narrow 1200'),
-    image('image-narrow-900', 'narrow', 900, 'Narrow 900'),
-    image('image-narrow-308', 'narrow', 308, 'Narrow 308'),
-    external_image('image-narrow-external', 'narrow'),
-    heading('h-columns', 'Columns'),
-    columns('columns-2', [take(1200), take(900)]),
-    columns('columns-3', [take(1200), take(900), take(308)]),
-    columns('columns-3-external', [EXTERNAL, take(1200), take(2400)]),
-    columns('columns-4', [take(2400), take(1200), take(900), take(308)]),
-    heading('h-html', 'Free text'),
-    {'id': 'html-1200', 'component': 'cms:richtext', 'props': {'html': '<p>A picture in free text.</p><p><img src="/image-library/%d/full/max/0/default.jpg" alt="Free text 1200"></p>' % take(1200)}},
-    {'id': 'html-308', 'component': 'cms:richtext', 'props': {'html': '<p><img src="/image-library/%d/full/max/0/default.jpg" alt="Free text 308"></p>' % take(308)}},
-    heading('h-site', 'Component of the site'),
-    {'id': 'site-scroller', 'component': 'Site:ScrollingImageFrame', 'props': {'image': take(2400), 'alt': 'Scroller 2400', 'direction': 'horizontal', 'speed': 'slow', 'height': 320, 'pause_label': ''}},
-]
+def sizes_sections():
+    return [
+        heading('h-intro', 'Image sizes bench'),
+        heading('h-image', 'Image sections'),
+        image('image-full-2400', 'full', 2400, 'Full 2400'),
+        image('image-full-308', 'full', 308, 'Full 308'),
+        image('image-column-1200', 'column', 1200, 'Column 1200'),
+        image('image-narrow-2400', 'narrow', 2400, 'Narrow 2400'),
+        image('image-narrow-1200', 'narrow', 1200, 'Narrow 1200'),
+        image('image-narrow-900', 'narrow', 900, 'Narrow 900'),
+        image('image-narrow-308', 'narrow', 308, 'Narrow 308'),
+        external_image('image-narrow-external', 'narrow'),
+        heading('h-columns', 'Columns'),
+        columns('columns-2', [take(1200), take(900)]),
+        columns('columns-3', [take(1200), take(900), take(308)]),
+        columns('columns-3-external', [EXTERNAL, take(1200), take(2400)]),
+        columns('columns-4', [take(2400), take(1200), take(900), take(308)]),
+        heading('h-html', 'Free text'),
+        {'id': 'html-1200', 'component': 'cms:richtext', 'props': {'html': '<p>A picture in free text.</p><p><img src="/image-library/%d/full/max/0/default.jpg" alt="Free text 1200"></p>' % take(1200)}},
+        {'id': 'html-308', 'component': 'cms:richtext', 'props': {'html': '<p><img src="/image-library/%d/full/max/0/default.jpg" alt="Free text 308"></p>' % take(308)}},
+        heading('h-site', 'Component of the site'),
+        {'id': 'site-scroller', 'component': 'Site:ScrollingImageFrame', 'props': {'image': take(2400), 'alt': 'Scroller 2400', 'direction': 'horizontal', 'speed': 'slow', 'height': 320, 'pause_label': ''}},
+    ]
+
+def framed(section_id, image_id, width_px, height_px, fit='cover', focus_x=50, focus_y=50, zoom=100, source=None):
+    """A section of the Image component sized by the editor (editor-only props included)."""
+    return {'id': section_id, 'component': 'cms:image', 'props': {
+        'image': image_id if source is None else source, 'alt': section_id, 'caption': '', 'width': 'custom',
+        'width_px': width_px, 'height_px': height_px, 'fit': fit, 'focus_x': focus_x, 'focus_y': focus_y, 'zoom': zoom}}
+
+
+sections = [] if frame else sizes_sections()
+
+if frame:
+    for needed in ('quadrants', 'portrait', 'small'):
+        if needed not in named:
+            sys.exit('--frame needs %s=<id>:<file> (see README.md).' % needed)
+    quadrants, portrait, small = named['quadrants'], named['portrait'], named['small']
+    sections = [
+        heading('h-frame', 'Framing bench'),
+        framed('fill-0-0', quadrants, 960, 540, focus_x=0, focus_y=0),
+        framed('fill-100-100', quadrants, 960, 540, focus_x=100, focus_y=100),
+        framed('fill-50-50-zoom-200', quadrants, 960, 540, zoom=200),
+        framed('fill-0-0-zoom-200', quadrants, 960, 540, focus_x=0, focus_y=0, zoom=200),
+        framed('portrait-box-0-0', quadrants, 600, 800, focus_x=0, focus_y=0),
+        framed('portrait-box-100-0', quadrants, 600, 800, focus_x=100, focus_y=0),
+        framed('contain', quadrants, 960, 540, fit='contain'),
+        framed('image-under-box', small, 960, 540, focus_x=0, focus_y=0),
+        framed('external-box', None, 960, 540, focus_x=20, focus_y=80, source=EXTERNAL),
+        framed('portrait-original', portrait, 960, 540, focus_x=50, focus_y=0),
+        framed('width-only', quadrants, 600, 0),
+        {'id': 'legacy', 'component': 'cms:image', 'props': {'image': quadrants, 'alt': 'legacy', 'caption': '', 'width': 'narrow'}},
+    ]
 
 document = {'version': 1, 'sections': sections}
 export = {

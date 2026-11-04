@@ -643,6 +643,23 @@ At publication every image becomes a `<picture>` with a WebP alternative, a
 `srcset` bounded by the file's real width and ending on the original, explicit
 `width` and `height`, and lazy loading on everything but the first image.
 
+### Size and framing of an Image section
+
+The Image section is as wide as a column of text, as the content or as the screen,
+or **A size in pixels** (160 to 2400). With that size, a height (80 to 2000, a box
+between 1:4 and 4:1) gives the picture a frame that keeps its proportions as the
+screen narrows: **Fill the frame** crops the picture to it, **Show the whole
+picture** leaves empty bands. The part kept is a centre and a zoom, set in a
+dialog (**Crop the image…**: drag, click, arrow keys, `+` and `-`, three sliders),
+and served by the media library as a zone of the file, in the proportions of the
+frame, never upscaled. A picture kept elsewhere (an `https` address) is framed by CSS
+alone: the centre counts, the zoom does not. The size and the framing are the editor's:
+the generator is not offered them, and a revision, a section written again or a
+translation keeps what the editor set as long as the picture is the same. A page
+already published keeps the files it was published with: after replacing a picture in the
+library, `php Thelia thelia_cms:render-published --all` renders what is online again.
+Details in [`docs/sections.md`](docs/sections.md).
+
 ## Menus
 
 Menus live under **CMS > Menus** and a theme calls them by code. `main` and

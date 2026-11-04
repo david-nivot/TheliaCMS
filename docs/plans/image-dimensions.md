@@ -468,3 +468,31 @@ the pre-existing portrait defect is not larger than described, the test host has
 - Button label "Crop the image…" (fr "Recadrer l'image…"), confirm "Confirm" (fr "Valider").
 - Not proved in a browser: a drag by finger (the tool drives the mouse); `touch-action: none` on the stage alone is read in the computed style.
 
+
+## Code decisions, phase C2 (2026-11-04)
+
+- `Generation/EditorValues` is the one place that moves the editor-only values between the stored document and the model. `forModel()` leaves the `editorOnly` props out of a draft before it goes in the prompt (revision, section written again, translation, and the model of a page type) and reads a choice at an editor-only value (`width = custom`) as the default of the prop (`narrow`); the stored document is not touched. `restore()` and `restoreSection()` give an answer the values of the section it replaces, matched by id, when the component and every image prop are the same; otherwise the defaults (an editor-only value in an answer is reset too). Top-level props only: no component has an editor-only prop in a list row.
+- Case decided: the model is shown `narrow` in place of `custom`. An answer that leaves `narrow` keeps `custom` (the model cannot express it); an answer that changes the width to another preset is a request and wins. The size in pixels stays in the section, ready if the editor goes back to `custom`. This differs from the proposal "custom kept if the image is the same", which would have ignored a deliberate "make it full width".
+- `PageGenerator::shaped()` calls `restore()` for a revision and `restoreSection()` for a section; a translation still goes through `TranslationGraft`, which already copies every prop that is not words from the source (proved by a test, not by reading). A brief answer has nothing to restore.
+- The sentence added to `ImageSection::description()` is in the catalogue sheet, so the prefix of the system prompt changes once (with the order of the Image lines from phase A).
+- The bench page of the framing is `make-pages.py --frame`; the test picture is made by `make-quadrants.php`. `measure.js` reads `boxRatio`, `region`, the colour of the four corners of the file served and the layout shift.
+- Crop dialog, leftovers of C1: the tracks of the three sliders were already drawn at `c4058df`; the focus ring of the zone was outside the frame and so cut by the stage on the edges it touched, it is now inside (`outline-offset: -6px`). The button reads the real reason for an image the CMS library does not hold (`data-cms-image-source` gains `gone` and `loading`).
+- No capture of the dialog was added to the back-office documentation (the other screens have one per language and the admin was driven in French only); the text describes it.
+
+## Done (2026-11-04)
+
+Delivered on `feat/image-dimensions`, in the order of the table of section 7 (titles `type(hors-ticket): message`):
+
+- Choice buttons on the whole line; editor help and editor-only props (`Prop::forEditor`, `offeredChoices`); order and help of the Image section (schema order: image, width, size in pixels, height, fit, kept part, caption, text).
+- Size in pixels (160 to 2400), height (80 to 2000, ratio 1:4 to 4:1), fit, focus and zoom as props of `cms:image`, with the markup written in CSS (`aspect-ratio`, `object-fit`, `object-position`), the legacy markup byte for byte.
+- `ImageFrame` and the zone served by TheliaLibrary at publication (`data-cms-crop`, `srcset` of `x,y,w,h` regions, WebP alike); the portrait defect of `n,!` fixed for all images.
+- The form of the dimensions that follows the choice, and the crop dialog (pointer, keyboard, sliders, sharpness).
+- The generator: draft without editor-only props, framing kept by a revision, a section written again and a translation, one sentence in the description.
+- Bench `docs/evaluation/images` (`--frame`, `make-quadrants.php`, `measure.js`), README, `docs/sections.md`, back-office documentation (fr, en), CHANGELOG.
+
+Not delivered, or not proved:
+
+- The determinism bench (`docs/evaluation/determinism`) was not rerun (paid calls). To replay: the briefs that ask for a picture (the order of the Image lines of the catalogue and the new sentence move the cached prefix), and the briefs of revision, section and translation over a draft that holds an Image section (the JSON of the draft is lighter).
+- A drag by finger (the tool drives the mouse); the cache of derivatives under `web/image-library/` before and after a session of dragging (not counted); a check on the lowest 2.x of TheliaLibrary (tested on 2.2.1); the interplay with `fix/css-filter-csp` when both branches meet.
+- No capture of the dialog in the back-office documentation.
+- Editor-only props inside the rows of a list are neither hidden from the model nor restored (no component has any).
