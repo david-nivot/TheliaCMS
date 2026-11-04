@@ -119,6 +119,7 @@ final readonly class PageGenerator
         private GenerationLog $log,
         private LoggerInterface $logger,
         private GatewayFailures $failures,
+        private TranslationGraft $graft,
         private ObservedStream $streams = new ObservedStream(),
     ) {
     }
@@ -166,7 +167,7 @@ final readonly class PageGenerator
             GenerationRequest::KIND_TRANSLATION === $request->kind ? self::TRANSLATION_USAGE : self::USAGE,
             [AiMessage::user($prompt)],
             implode("\n\n", array_column($this->prompts->system(), 'text')),
-            outputSchema: new AiOutputSchema('cms_page', $this->schema->strict($request->keptComponents(), !$fieldsAsked->isEmpty())),
+            outputSchema: $this->outputSchema($request, $request->keptComponents(), !$fieldsAsked->isEmpty()),
             tools: $tools,
             maxOutputTokens: $this->settings->maxTokens(),
             providerOptions: ['anthropic' => ['effort' => $effort]],
@@ -270,7 +271,7 @@ final readonly class PageGenerator
                     // A component made this turn is a name the schema did not
                     // hold: the schema is written again with it.
                     $schema = \count($this->componentMaker->made()) > $madeBefore
-                        ? new AiOutputSchema('cms_page', $this->schema->strict([...$request->keptComponents(), ...$this->componentMaker->made()], !$fieldsAsked->isEmpty()))
+                        ? $this->outputSchema($request, [...$request->keptComponents(), ...$this->componentMaker->made()], !$fieldsAsked->isEmpty())
                         : null;
                     $conversation = $this->withPages($conversation, $pages, $schema)->withMessages(AiMessage::fromResponse($response), ...$results);
 
@@ -281,8 +282,9 @@ final readonly class PageGenerator
                 $observer?->onTurn($turns, []);
 
                 try {
-                    [$document, $writtenFields, $leftOut] = self::documentFrom(trim($response->text));
+                    [$document, $writtenFields, $leftOut] = self::documentFrom(trim($response->text), GenerationRequest::KIND_SECTION === $request->kind);
                     $document = $this->validator->validate($document);
+                    $document = $this->shaped($request, $document);
                     $fields = $fieldsAsked->isEmpty() ? null : self::fieldsFrom($writtenFields, $fieldsAsked, $request->locale, $request->target->fieldValues);
                 } catch (InvalidDocumentException $exception) {
                     if (++$corrections > self::CORRECTIONS) {
@@ -298,11 +300,15 @@ final readonly class PageGenerator
                     continue;
                 }
 
-                // A translation changes the words, not the look: the appearance
-                // of each section is the one of the source, whatever the model
-                // wrote back.
-                if (GenerationRequest::KIND_TRANSLATION === $request->kind && null !== $request->current) {
-                    $document = $document->withAppearancesOf($request->current);
+                // The section written alone is grafted in the document it
+                // belongs to, which is stored whole: whatever the others
+                // hold, they are checked as they are stored.
+                if (null !== $request->current && GenerationRequest::KIND_SECTION === $request->kind) {
+                    try {
+                        $document = $this->validator->validate($document);
+                    } catch (InvalidDocumentException $exception) {
+                        throw InvalidGenerationException::withProblems($exception->problems);
+                    }
                 }
 
                 $durationMs = (int) ((hrtime(true) - $started) / 1_000_000);
@@ -344,6 +350,57 @@ final readonly class PageGenerator
 
             throw $failure;
         }
+    }
+
+    /**
+     * The schema the answer is constrained with: the envelope of a document,
+     * or one section when only one is written again.
+     *
+     * @param list<string> $kept
+     */
+    private function outputSchema(GenerationRequest $request, array $kept, bool $withFields): AiOutputSchema
+    {
+        return GenerationRequest::KIND_SECTION === $request->kind
+            ? new AiOutputSchema('cms_section', $this->schema->strictSection($kept))
+            : new AiOutputSchema('cms_page', $this->schema->strict($kept, $withFields));
+    }
+
+    /**
+     * The validated answer put where it belongs. A translation is written
+     * onto its source: same sections, same order, only the words are the
+     * model's. A section written alone is grafted in the document it
+     * replaces a section of, keeping the appearance of the section it
+     * replaces unless the answer sets one.
+     * Any other answer is the document.
+     *
+     * @throws InvalidDocumentException when the answer is not what was asked, which sends it back
+     */
+    private function shaped(GenerationRequest $request, Document $answer): Document
+    {
+        if (null === $request->current) {
+            return $answer;
+        }
+
+        if (GenerationRequest::KIND_TRANSLATION === $request->kind) {
+            return $this->graft->graft($request->current, $answer);
+        }
+
+        if (GenerationRequest::KIND_SECTION !== $request->kind) {
+            return $answer;
+        }
+
+        $written = $answer->sections[0];
+
+        if ($written->id !== $request->sectionId) {
+            throw InvalidDocumentException::because([\sprintf('The section to write again is "%s": answer with that id, not "%s".', $request->sectionId, $written->id)]);
+        }
+
+        $replaced = $request->current->section((string) $request->sectionId);
+
+        // The look of the section replaced stays unless the answer sets one:
+        // a brief that asks for a colour in words is read by the model, which
+        // writes it here.
+        return $request->current->withSection(null === $replaced || !$written->appearance->isEmpty() ? $written : $written->withAppearance($replaced->appearance));
     }
 
     /**
@@ -434,13 +491,14 @@ final readonly class PageGenerator
 
     /**
      * The document of the answer, what it wrote for the fields of the page,
-     * still to be read, and what it says the page leaves out.
+     * still to be read, and what it says the page leaves out. With `$single`,
+     * the answer is one section, and the document holds that section alone.
      *
      * @return array{0: Document, 1: mixed, 2: list<string>}
      *
      * @throws InvalidDocumentException
      */
-    private static function documentFrom(string $text): array
+    private static function documentFrom(string $text, bool $single = false): array
     {
         if ('' === $text) {
             throw InvalidDocumentException::because(['The answer holds no document.']);
@@ -457,8 +515,14 @@ final readonly class PageGenerator
             throw InvalidDocumentException::because(['The answer is not valid JSON: '.$exception->getMessage()]);
         }
 
-        if (!\is_array($decoded)) {
+        if (!\is_array($decoded) || ($single && array_is_list($decoded))) {
             throw InvalidDocumentException::because(['The answer is not a JSON object.']);
+        }
+
+        // One section written alone has the shape of an item of `sections`:
+        // it is read as the document of that one section.
+        if ($single) {
+            $decoded = ['version' => Document::VERSION, 'sections' => [$decoded]];
         }
 
         // Held to the envelope, the model writes the props of each section as

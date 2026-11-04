@@ -84,6 +84,16 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Fixed
 
+- **A section written again is a section, a translation is grafted on its
+  source.** Asking the generator to write one section again made it answer
+  with the whole document, taken as the new one without checking the others;
+  now the answer is one section (the id asked, any component), grafted in the
+  document keeping the appearance of the section it replaces (unless the
+  answer sets one), and the document goes through the validator again. A
+  translation keeps the order, ids and components of its source (a difference
+  is sent back for correction) and takes from the answer only the `text`,
+  `html` and `json` props, the rows of a list included: images, references,
+  addresses, figures, switches and choices are copied from the source.
 - **The two reasoning effort fields of CMS > Settings say which models read
   them.** Their help promised a time spent thinking, while only Anthropic
   models read the effort, and think freely at the two highest values only;

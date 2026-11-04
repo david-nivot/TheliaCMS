@@ -39,6 +39,7 @@ use TheliaCMS\Generation\PromptBuilder;
 use TheliaCMS\Generation\Tool\GeneratorTools;
 use TheliaCMS\Generation\Tool\MakeComponentTool;
 use TheliaCMS\Generation\Tool\ReadUrlTool;
+use TheliaCMS\Generation\TranslationGraft;
 use TheliaCMS\Model\CmsComponentQuery;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Model\CmsPageGenerationQuery;
@@ -221,6 +222,7 @@ final class MakeComponentToolTest extends CmsIntegrationTestCase
             $this->getService(GenerationLog::class),
             new NullLogger(),
             new GatewayFailures($this->getService(TranslatorInterface::class)),
+            $this->getService(TranslationGraft::class),
         );
     }
 

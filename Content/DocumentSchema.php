@@ -81,13 +81,7 @@ final readonly class DocumentSchema
      */
     public function strict(array $kept = [], bool $withFields = false): array
     {
-        $names = $this->catalog->offeredNames();
-
-        foreach ($kept as $name) {
-            if (!\in_array($name, $names, true) && null !== $this->catalog->find($name)) {
-                $names[] = $name;
-            }
-        }
+        $names = $this->namesWith($kept);
 
         $schema = [
             'type' => 'object',
@@ -96,17 +90,7 @@ final readonly class DocumentSchema
                 'sections' => [
                     'type' => 'array',
                     'description' => 'The sections of the page, in order.',
-                    'items' => [
-                        'type' => 'object',
-                        'properties' => [
-                            'id' => ['type' => 'string', 'description' => 'Unique in the page: lowercase letters, digits, hyphens and underscores, saying what the section is.'],
-                            'component' => ['type' => 'string', 'enum' => $names, 'description' => 'The name of a component of the catalogue.'],
-                            'props' => ['type' => 'string', 'description' => 'The props of the component, as a JSON object written as a string, with the keys and the values the catalogue describes for this component.'],
-                            'appearance' => self::appearance(),
-                        ],
-                        'required' => ['id', 'component', 'props'],
-                        'additionalProperties' => false,
-                    ],
+                    'items' => self::sectionItem($names),
                 ],
             ],
             'required' => ['version', 'sections'],
@@ -130,6 +114,58 @@ final readonly class DocumentSchema
         }
 
         return $schema;
+    }
+
+    /**
+     * The schema a section written alone is held to: the shape of one item of
+     * `sections`, nothing around it. What a request to write one section again
+     * is constrained with, the rest of the document staying what it is.
+     *
+     * @param list<string> $kept components the site no longer offers that the document uses
+     *
+     * @return array<string, mixed>
+     */
+    public function strictSection(array $kept = []): array
+    {
+        return self::sectionItem($this->namesWith($kept));
+    }
+
+    /**
+     * @param list<string> $kept
+     *
+     * @return list<string>
+     */
+    private function namesWith(array $kept): array
+    {
+        $names = $this->catalog->offeredNames();
+
+        foreach ($kept as $name) {
+            if (!\in_array($name, $names, true) && null !== $this->catalog->find($name)) {
+                $names[] = $name;
+            }
+        }
+
+        return $names;
+    }
+
+    /**
+     * @param list<string> $names
+     *
+     * @return array<string, mixed>
+     */
+    private static function sectionItem(array $names): array
+    {
+        return [
+            'type' => 'object',
+            'properties' => [
+                'id' => ['type' => 'string', 'description' => 'Unique in the page: lowercase letters, digits, hyphens and underscores, saying what the section is.'],
+                'component' => ['type' => 'string', 'enum' => $names, 'description' => 'The name of a component of the catalogue.'],
+                'props' => ['type' => 'string', 'description' => 'The props of the component, as a JSON object written as a string, with the keys and the values the catalogue describes for this component.'],
+                'appearance' => self::appearance(),
+            ],
+            'required' => ['id', 'component', 'props'],
+            'additionalProperties' => false,
+        ];
     }
 
     /**

@@ -29,6 +29,10 @@ use Thelia\Model\ModuleConfigQuery;
 use TheliaCMS\Content\Document;
 use TheliaCMS\Content\DocumentSchema;
 use TheliaCMS\Content\DocumentValidator;
+use TheliaCMS\Content\ImageSection;
+use TheliaCMS\Content\RichTextSection;
+use TheliaCMS\Content\Section;
+use TheliaCMS\Content\SectionAppearance;
 use TheliaCMS\Generation\Ai\GatewayFailures;
 use TheliaCMS\Generation\Ai\GeneratorToolDefinitions;
 use TheliaCMS\Generation\Brief;
@@ -45,6 +49,7 @@ use TheliaCMS\Generation\PromptBuilder;
 use TheliaCMS\Generation\Tool\GeneratorTools;
 use TheliaCMS\Generation\Tool\MakeComponentTool;
 use TheliaCMS\Generation\Tool\ReadUrlTool;
+use TheliaCMS\Generation\TranslationGraft;
 use TheliaCMS\Model\CmsPageContentQuery;
 use TheliaCMS\Model\CmsPageGenerationQuery;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
@@ -110,7 +115,7 @@ final class PageGeneratorTest extends CmsIntegrationTestCase
 
         $this->api->answer(FakeAiGateway::response($answer));
         $this->generator()->generate(GenerationRequest::revision($this->target($page), $locale, $source, new Brief('Plus court.')));
-        $this->api->answer(FakeAiGateway::response($answer));
+        $this->api->answer(FakeAiGateway::response(self::section(['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h2>Our services</h2><p>Advice.</p>']])));
         $this->generator()->generate(GenerationRequest::section($this->target($page), $locale, $source, 'content', new Brief('Plus court.')));
 
         self::assertSame([PageGenerator::USAGE, PageGenerator::USAGE], [$this->api->requests[1]->usageId, $this->api->requests[2]->usageId], 'A change asked by the editor stays on the usage of pages.');
@@ -499,11 +504,144 @@ final class PageGeneratorTest extends CmsIntegrationTestCase
         self::assertStringContainsString('https://example.com/a-propos', $first->messages[0]->content, 'The brief still says what it says.');
     }
 
+    public function testASectionIsAskedAloneAndGraftedKeepingTheAppearanceOfTheOneItReplaces(): void
+    {
+        $page = $this->createPage('Nos services', published: false);
+        $locale = $this->locale();
+        $source = new Document([
+            new Section('hero', RichTextSection::NAME, ['html' => '<h2>Bienvenue</h2>']),
+            new Section('offer', RichTextSection::NAME, ['html' => '<h2>Offre</h2>'], new SectionAppearance('#112233', align: 'center')),
+            new Section('contact', RichTextSection::NAME, ['html' => '<h2>Contact</h2>']),
+        ]);
+
+        // Another component, and no appearance: the section keeps its look.
+        $this->api->answer(FakeAiGateway::response(self::section([
+            'id' => 'offer',
+            'component' => ImageSection::NAME,
+            'props' => ['image' => 'https://example.com/offer.jpg', 'alt' => 'Une offre'],
+        ])));
+
+        $result = $this->generator()->generate(GenerationRequest::section($this->target($page), $locale, $source, 'offer', new Brief('Une image à la place du texte.')));
+
+        self::assertSame(['hero', 'offer', 'contact'], array_map(static fn (Section $section): string => $section->id, $result->document->sections));
+        self::assertEquals($source->sections[0], $result->document->sections[0], 'The other sections are the ones of the document.');
+        self::assertEquals($source->sections[2], $result->document->sections[2]);
+        self::assertSame(ImageSection::NAME, $result->document->sections[1]->component, 'The component of the section may change.');
+        self::assertSame('https://example.com/offer.jpg', $result->document->sections[1]->props['image']);
+        self::assertSame(['background' => '#112233', 'align' => 'center'], $result->document->sections[1]->appearance->toArray(), 'The appearance of the section replaced is kept.');
+
+        $request = $this->api->requests[0];
+        self::assertSame(['id', 'component', 'props', 'appearance'], array_keys($request->outputSchema?->schema['properties'] ?? []), 'The schema is the one of a section, not of a document.');
+        self::assertContains(ImageSection::NAME, $request->outputSchema->schema['properties']['component']['enum']);
+        self::assertStringContainsString('answer with that section alone, with the id `offer`', $request->messages[0]->content);
+        self::assertStringContainsString('# The document the page holds today', $request->messages[0]->content);
+        self::assertStringContainsString('<h2>Contact</h2>', $request->messages[0]->content, 'The whole document stays in the context.');
+    }
+
+    public function testAnAppearanceTheAnswerSetsReplacesTheOneOfTheSectionReplaced(): void
+    {
+        $page = $this->createPage('Nos services', published: false);
+        $source = new Document([new Section('offer', RichTextSection::NAME, ['html' => '<h2>Offre</h2>'], new SectionAppearance('#112233', align: 'center'))]);
+
+        $this->api->answer(FakeAiGateway::response(self::section(['id' => 'offer', 'component' => RichTextSection::NAME, 'props' => ['html' => '<h2>Offre</h2>'], 'appearance' => ['background' => '#f8d7d7']])));
+
+        $result = $this->generator()->generate(GenerationRequest::section($this->target($page), $this->locale(), $source, 'offer', new Brief('Sur un fond rose.')));
+
+        self::assertSame(['background' => '#f8d7d7'], $result->document->sections[0]->appearance->toArray(), 'A look asked for in the brief is the one of the answer.');
+    }
+
+    public function testASectionAnsweredUnderAnotherIdIsSentBack(): void
+    {
+        $page = $this->createPage('Nos services', published: false);
+        $locale = $this->locale();
+        $source = new Document([
+            new Section('hero', RichTextSection::NAME, ['html' => '<h2>Bienvenue</h2>']),
+            new Section('offer', RichTextSection::NAME, ['html' => '<h2>Offre</h2>']),
+        ]);
+
+        $this->api
+            ->answer(FakeAiGateway::response(self::section(['id' => 'hero', 'component' => RichTextSection::NAME, 'props' => ['html' => '<h2>Autre</h2>']])))
+            ->answer(FakeAiGateway::response(self::section(['id' => 'offer', 'component' => RichTextSection::NAME, 'props' => ['html' => '<h2>Offre revue</h2>']])));
+
+        $result = $this->generator()->generate(GenerationRequest::section($this->target($page), $locale, $source, 'offer', new Brief('Plus court.')));
+
+        self::assertSame(2, $result->turns);
+        self::assertStringContainsString('The section to write again is "offer": answer with that id, not "hero".', $this->api->requests[1]->messages[2]->content);
+        self::assertSame('<h2>Bienvenue</h2>', $result->document->sections[0]->props['html'], 'The section of another id was not taken.');
+        self::assertSame('<h2>Offre revue</h2>', $result->document->sections[1]->props['html']);
+    }
+
+    public function testTheDocumentGraftedStillGoesThroughTheValidator(): void
+    {
+        $page = $this->createPage('Nos services', published: false);
+        $locale = $this->locale();
+        $source = new Document([
+            new Section('old', 'Gone:Component', ['x' => 1]),
+            new Section('offer', RichTextSection::NAME, ['html' => '<h2>Offre</h2>']),
+        ]);
+
+        $this->api->answer(FakeAiGateway::response(self::section(['id' => 'offer', 'component' => RichTextSection::NAME, 'props' => ['html' => '<h2>Offre revue</h2>']])));
+
+        try {
+            $this->generator()->generate(GenerationRequest::section($this->target($page), $locale, $source, 'offer', new Brief('Plus court.')));
+            self::fail('A document the validator refuses is not handed back.');
+        } catch (InvalidGenerationException $exception) {
+            self::assertStringContainsString('"Gone:Component", which is not a component', $exception->problems[0]);
+        }
+
+        self::assertCount(1, $this->api->requests, 'The problem is not one the model can fix: no correction is paid for.');
+    }
+
+    public function testATranslationIsWrittenOntoItsSourceAndADifferenceIsSentBack(): void
+    {
+        $page = $this->createPage('Nos services', published: false);
+        $locale = $this->locale();
+        $otherLocale = 'fr_FR' === $locale ? 'en_US' : 'fr_FR';
+        $source = new Document([
+            new Section('team', ImageSection::NAME, ['image' => 'https://example.com/team.jpg', 'alt' => 'Équipe', 'caption' => 'Notre équipe', 'width' => 'full'], new SectionAppearance('#112233')),
+            new Section('intro', RichTextSection::NAME, ['html' => '<h2>Bonjour</h2>']),
+        ]);
+
+        $this->api
+            // Wrong order and another component: sent back.
+            ->answer(FakeAiGateway::response(self::document([
+                ['id' => 'intro', 'component' => RichTextSection::NAME, 'props' => ['html' => '<h2>Hello</h2>']],
+                ['id' => 'team', 'component' => ImageSection::NAME, 'props' => ['image' => 'https://example.com/team.jpg', 'alt' => 'Team']],
+            ])))
+            // Right sections, an image and a width the model changed: its texts only are read.
+            ->answer(FakeAiGateway::response(self::document([
+                ['id' => 'team', 'component' => ImageSection::NAME, 'props' => ['image' => 'https://invented.example/other.jpg', 'alt' => 'Team', 'caption' => 'Our team', 'width' => 'narrow'], 'appearance' => ['background' => '#ffffff']],
+                ['id' => 'intro', 'component' => RichTextSection::NAME, 'props' => ['html' => '<h2>Hello</h2>']],
+            ])));
+
+        $result = $this->generator()->generate(GenerationRequest::translation(GenerationTarget::page($page, $otherLocale), $otherLocale, $source, $locale));
+
+        self::assertSame(2, $result->turns);
+        self::assertStringContainsString('Section 1 must be "team" (cms:image), as in the source, and is "intro" (cms:richtext).', $this->api->requests[1]->messages[2]->content);
+
+        $team = $result->document->sections[0];
+        self::assertSame('https://example.com/team.jpg', $team->props['image'], 'An image is the one of the source.');
+        self::assertSame('full', $team->props['width']);
+        self::assertSame('Our team', $team->props['caption'], 'A text is the one of the answer.');
+        self::assertSame('Team', $team->props['alt']);
+        self::assertSame('#112233', $team->appearance->background);
+        self::assertSame('<h2>Hello</h2>', $result->document->sections[1]->props['html']);
+        self::assertStringContainsString('every image, reference, address, figure and choice is taken from the source', $this->api->requests[0]->messages[0]->content);
+    }
+
     private function readingOn(): void
     {
         $settings = $this->getService(GeneratorSettings::class);
         $settings->save($settings->effort(), $settings->maxTokens(), webFetch: true);
         ModuleConfigQuery::resetConfigCache();
+    }
+
+    /**
+     * @param array<string, mixed> $section
+     */
+    private static function section(array $section): string
+    {
+        return json_encode([...$section, 'props' => json_encode($section['props'], \JSON_THROW_ON_ERROR | \JSON_UNESCAPED_UNICODE)], \JSON_THROW_ON_ERROR | \JSON_UNESCAPED_UNICODE);
     }
 
     /**
@@ -532,6 +670,7 @@ final class PageGeneratorTest extends CmsIntegrationTestCase
             $this->getService(GenerationLog::class),
             new NullLogger(),
             new GatewayFailures($this->getService(TranslatorInterface::class)),
+            $this->getService(TranslationGraft::class),
         );
     }
 

@@ -86,6 +86,21 @@ read back and checked by the validator against the full schema of each
 component, and a document it refuses is sent back with every problem listed,
 twice at most; a third refusal is an error the editor sees.
 
+Two requests are held tighter than a brief. A **section asked again** is
+constrained to one section, the shape of an item of `sections`, and its prompt
+says to answer with that section alone, the whole document staying in the
+context. The answer must carry the id asked (another id is sent back as a
+correction); its component is free; the appearance is the one of the section it
+replaces unless the answer sets one (a brief asking for a colour in words);
+`Document::withSection()` grafts it in the document, which goes through the
+validator once more. A **translation** is written onto its source
+(`Generation\TranslationGraft`): the sections, their order, ids and components
+are the source's, and any difference is sent back as a correction; only the
+`text` and `html` props are read from the answer, in the rows of a list too,
+and `json` too, since it may hold text; an `image`, a `reference`, a `url`, an
+`integer`, a `boolean` and a `choice` are copied from the source whatever the
+model wrote, and so is the appearance.
+
 While it writes, the model may ask the site:
 
 | Tool | Answers |
@@ -195,8 +210,9 @@ the signed preview link of the draft.
   last written from in this language (kept in the ledger, column `brief`),
   so a page is written again from its own brief, corrected.
 - **The sections of the draft**: each one numbered and quoted by its title,
-  with a form to rewrite that section alone; the others are kept as they
-  are, ids included. A section is also removed by hand, after confirmation.
+  with a form to rewrite that section alone; the model answers with that
+  section only, grafted in the document, so the others are kept as they are,
+  ids included. A section is also removed by hand, after confirmation.
   The number of a section is shown on it in the preview when the pointer is
   on its row, and the row is lit when the pointer is on the section; the
   label of a row scrolls the preview to the section. The renderer puts
@@ -217,8 +233,9 @@ the signed preview link of the draft.
 - **Written from another language**: when the page holds nothing in the
   language on screen and a draft in another, the stage offers to write this
   language from it (`GenerationRequest::translation`): the same sections,
-  components, ids, images and references, the texts written for the new
-  reader rather than word for word. One language is picked by default, in
+  components, ids, images and references (copied from the source, not read
+  from the answer), the texts written for the new reader rather than word for
+  word. One language is picked by default, in
   the order of the shop; a select lets the editor choose when there are
   several. The brief form stays at hand for a page written on its own.
 - **History**: the calls of the ledger for this page and language, with their

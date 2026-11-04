@@ -62,6 +62,7 @@ use TheliaCMS\Generation\Text\TextSanitizer;
 use TheliaCMS\Generation\Tool\GeneratorTools;
 use TheliaCMS\Generation\Tool\MakeComponentTool;
 use TheliaCMS\Generation\Tool\ReadUrlTool;
+use TheliaCMS\Generation\TranslationGraft;
 use TheliaCMS\Model\CmsPageGenerationQuery;
 use TheliaCMS\Skill\SkillRepository;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
@@ -259,6 +260,7 @@ final class GatewayRefusalsTest extends CmsIntegrationTestCase
             $this->getService(GenerationLog::class),
             new NullLogger(),
             $this->failures(),
+            $this->getService(TranslationGraft::class),
         );
     }
 

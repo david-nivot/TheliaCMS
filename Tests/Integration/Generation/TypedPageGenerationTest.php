@@ -31,6 +31,7 @@ use TheliaCMS\Generation\PromptBuilder;
 use TheliaCMS\Generation\Tool\GeneratorTools;
 use TheliaCMS\Generation\Tool\MakeComponentTool;
 use TheliaCMS\Generation\Tool\ReadUrlTool;
+use TheliaCMS\Generation\TranslationGraft;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Page\Admin\PageDraft;
 use TheliaCMS\Page\PageTypeWriter;
@@ -137,12 +138,12 @@ final class TypedPageGenerationTest extends CmsIntegrationTestCase
         $page = $this->givenARecipe('Tarte aux pommes');
         $current = Document::richText('<h1>Tarte</h1>');
 
-        $this->api->answer(FakeAiGateway::response(json_encode(['version' => 1, 'sections' => [['id' => $current->sections[0]->id, 'component' => 'cms:richtext', 'props' => json_encode(['html' => '<h1>Tarte</h1><p>Encore.</p>'], \JSON_THROW_ON_ERROR)]]], \JSON_THROW_ON_ERROR)));
+        $this->api->answer(FakeAiGateway::response(json_encode(['id' => $current->sections[0]->id, 'component' => 'cms:richtext', 'props' => json_encode(['html' => '<h1>Tarte</h1><p>Encore.</p>'], \JSON_THROW_ON_ERROR)], \JSON_THROW_ON_ERROR)));
 
         $result = $this->generator()->generate(GenerationRequest::section($this->targets()->forPage($page, $this->locale()), $this->locale(), $current, $current->sections[0]->id, new Brief('Plus long.')));
 
         self::assertNull($result->fields);
-        self::assertSame(['version', 'sections'], $this->api->requests[0]->outputSchema?->schema['required']);
+        self::assertSame(['id', 'component', 'props'], $this->api->requests[0]->outputSchema?->schema['required'], 'A section alone is asked for: no envelope, so no `fields` either.');
     }
 
     private function givenARecipe(string $title): CmsPage
@@ -188,6 +189,7 @@ final class TypedPageGenerationTest extends CmsIntegrationTestCase
             $this->getService(GenerationLog::class),
             new NullLogger(),
             new GatewayFailures($this->getService(TranslatorInterface::class)),
+            $this->getService(TranslationGraft::class),
         );
     }
 }

@@ -454,7 +454,7 @@ final class ContentScreenTest extends AdminScreenTestCase
     public function testOneSectionIsWrittenAgainByItsOwnForm(): void
     {
         $page = $this->createPage('Sectioned', published: false);
-        $this->api->answer(FakeAiGateway::response(self::document([['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h1>Sectioned</h1><p>Shorter.</p>']]])));
+        $this->api->answer(FakeAiGateway::response(json_encode(['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h1>Sectioned</h1><p>Shorter.</p>']], \JSON_THROW_ON_ERROR)));
 
         $screen = $this->screen($this->url($page->getId()));
         $form = $screen->filter('[data-testid="cms-content-sections"] li[data-section="content"] form[data-cms-generate]')->form();
@@ -462,6 +462,9 @@ final class ContentScreenTest extends AdminScreenTestCase
 
         self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()));
         self::assertStringContainsString('Write the section `content` again', $this->api->requests[0]->messages[0]->content);
+        self::assertCount(1, $this->api->requests, 'The answer, one section, was taken as it came.');
+        $content = CmsPageContentQuery::create()->filterByPageId($page->getId())->findOne();
+        self::assertStringContainsString('<p>Shorter.</p>', (string) $content?->getDraftHtml());
         self::assertSame('section', CmsPageGenerationQuery::create()->filterByTargetId($page->getId())->findOne()?->getKind());
     }
 
@@ -470,8 +473,8 @@ final class ContentScreenTest extends AdminScreenTestCase
         $page = $this->createPage('Styled', published: false);
         $this->api
             // A colour named in words is refused and sent back, then written as a value.
-            ->answer(FakeAiGateway::response(self::document([['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h2>Cinq produits</h2>'], 'appearance' => ['background' => 'rouge pastel']]])))
-            ->answer(FakeAiGateway::response(self::document([['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h2>Cinq produits</h2>'], 'appearance' => ['background' => '#f8d7d7', 'padding' => 'medium']]])));
+            ->answer(FakeAiGateway::response(json_encode(['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h2>Cinq produits</h2>'], 'appearance' => ['background' => 'rouge pastel']], \JSON_THROW_ON_ERROR)))
+            ->answer(FakeAiGateway::response(json_encode(['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h2>Cinq produits</h2>'], 'appearance' => ['background' => '#f8d7d7', 'padding' => 'medium']], \JSON_THROW_ON_ERROR)));
 
         $screen = $this->screen($this->url($page->getId()));
         $form = $screen->filter('[data-testid="cms-content-sections"] li[data-section="content"] form[data-cms-generate]')->form();

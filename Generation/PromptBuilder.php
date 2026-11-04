@@ -129,9 +129,9 @@ final readonly class PromptBuilder
 
         $lines[] = match ($request->kind) {
             GenerationRequest::KIND_BRIEF => "# The brief\n\nWrite the whole page from this brief:\n\n".$request->brief->text,
-            GenerationRequest::KIND_TRANSLATION => \sprintf("# The task\n\nWrite this document in %s (`%s`): the same sections in the same order with the same ids and components, every text written for a reader of that language rather than word for word, and every image, reference, address and figure kept as it is. Change nothing else.", $shop['language'], $shop['locale']),
+            GenerationRequest::KIND_TRANSLATION => \sprintf("# The task\n\nWrite this document in %s (`%s`): the same sections in the same order with the same ids and components, every text written for a reader of that language rather than word for word. Only the texts of your answer are read: every image, reference, address, figure and choice is taken from the source, whatever you write. Change nothing else.", $shop['language'], $shop['locale']),
             GenerationRequest::KIND_REVISION => "# The change asked\n\nAnswer with the whole document again, changed as asked and nothing else: keep every section the change does not concern exactly as it is, ids included.\n\n".$request->brief->text,
-            GenerationRequest::KIND_SECTION => \sprintf("# The change asked\n\nWrite the section `%s` again as asked, and answer with the whole document: every other section exactly as it is, ids included.\n\n%s", $request->sectionId, $request->brief->text),
+            GenerationRequest::KIND_SECTION => \sprintf("# The change asked\n\nWrite the section `%s` again as asked, and answer with that section alone, with the id `%s`: the document above is there for context, the other sections are not part of your answer.\n\n%s", $request->sectionId, $request->sectionId, $request->brief->text),
             default => $request->brief->text,
         };
 

@@ -37,6 +37,7 @@ use TheliaCMS\Generation\PromptBuilder;
 use TheliaCMS\Generation\Tool\GeneratorTools;
 use TheliaCMS\Generation\Tool\MakeComponentTool;
 use TheliaCMS\Generation\Tool\ReadUrlTool;
+use TheliaCMS\Generation\TranslationGraft;
 use TheliaCMS\Http\ConsoleRequest;
 use TheliaCMS\Page\Admin\CmsPageWriter;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
@@ -159,6 +160,7 @@ final class GenerateCommandTest extends CmsIntegrationTestCase
                 $this->getService(GenerationLog::class),
                 new NullLogger(),
                 new GatewayFailures($this->getService(TranslatorInterface::class)),
+                $this->getService(TranslationGraft::class),
             ),
             $this->getService(CmsPageWriter::class),
             $this->getService(ConsoleRequest::class),

@@ -56,6 +56,7 @@ use TheliaCMS\Generation\Text\TextSanitizer;
 use TheliaCMS\Generation\Tool\GeneratorTools;
 use TheliaCMS\Generation\Tool\MakeComponentTool;
 use TheliaCMS\Generation\Tool\ReadUrlTool;
+use TheliaCMS\Generation\TranslationGraft;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Model\CmsPageGenerationQuery;
 use TheliaCMS\Skill\SkillRepository;
@@ -457,6 +458,7 @@ final class GenerationRunTrackingTest extends CmsIntegrationTestCase
             $this->getService(GenerationLog::class),
             $this->logger,
             $this->failures(),
+            $this->getService(TranslationGraft::class),
         );
     }
 
