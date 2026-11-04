@@ -41,6 +41,7 @@ final readonly class PromptBuilder
         private CatalogSheet $catalog,
         private ShopContext $shop,
         private GeneratorSettings $settings,
+        private EditorValues $editorValues,
     ) {
     }
 
@@ -127,7 +128,7 @@ final readonly class PromptBuilder
                 : '# The document the page holds today';
             $lines[] = '';
             $lines[] = '```json';
-            $lines[] = $request->current->toJson();
+            $lines[] = $this->editorValues->forModel($request->current)->toJson();
             $lines[] = '```';
             $lines[] = '';
         }
@@ -247,7 +248,7 @@ final readonly class PromptBuilder
             $lines[] = 'The model of the type, the demo every page of it starts from. Follow its structure — the kinds of sections and their order — and write everything in it again for this page: its texts, images and references are examples, not content of this page.';
             $lines[] = '';
             $lines[] = '```json';
-            $lines[] = $model->toJson();
+            $lines[] = $this->editorValues->forModel($model)->toJson();
             $lines[] = '```';
             $lines[] = '';
         }

@@ -31,7 +31,7 @@ component refuses, is rejected on the way in, every problem listed at once
 |---|---|---|
 | Free text | `cms:richtext` | The module. A piece of markup as is, filtered on the rendered page like everything that goes online. |
 | Columns | `cms:columns` | The module. Two to four columns side by side, each an image (of the media library or an `https` address) over an optional heading and a short text, drawn with the grid of `blocks.css` and stacked below 48rem. |
-| Image | `cms:image` | The module. One picture (of the media library or an `https` address) with an optional caption, at the width of the reading column (by default), of the content or of the whole screen; nothing is drawn while no image is chosen. |
+| Image | `cms:image` | The module. One picture (of the media library or an `https` address) with an optional caption, at the width of the reading column (by default), of the content, of the whole screen or at a size in pixels set by the editor, with an optional frame and the part of the picture kept (see [The size and the framing of an image](#the-size-and-the-framing-of-an-image)); nothing is drawn while no image is chosen. |
 | Live content | `Partial:<name>` | Every partial of the site (`PartialDefinitionInterface`), the ones of the module and the ones other modules register. The section renders the placeholder the partial renderer substitutes when the page is served. |
 | Components of the theme | As the theme names them, `Molecules:Reinsurance:Base` | The components the active theme opens to pages in `config/theliacms.yaml` (below). |
 | Components of the site | `Site:<Code>`, `Site:PricingPlans` | Made in the back office from a prompt and kept (**CMS > Components > New component**, or prototyped from the content screen of a page and kept for the whole site later): props as data, a sandboxed Twig template and a scoped stylesheet, stored in `cms_component` ([creating-a-component.md](creating-a-component.md#a-component-made-in-the-back-office)). |
@@ -98,8 +98,28 @@ component (`TheliaCMS\Content\SectionAppearance`):
 |---------|--------|---------------|
 | `background` | `#rrggbb` | `background-color` |
 | `text` | `#rrggbb` | `color` |
-| `padding` | `small`, `medium`, `large` | `padding-block` of 1.5, 3 or 5 rem |
+| `padding` | `small`, `medium`, `large`, or a length | `padding-block` of 1.5, 3 or 5 rem, or of the length |
+| `padding_top`, `padding_bottom` | a length | `padding-top`, `padding-bottom`, after `padding-block`: a side that is set wins for its side |
+| `padding_left`, `padding_right` | a length | `padding-left`, `padding-right` |
+| `margin_top`, `margin_bottom` | a length | `margin-top`, `margin-bottom` (outside the band, its background does not follow) |
+| `margin_left`, `margin_right` | a length | `margin-left`, `margin-right`: the band is narrower |
+
+A side on the left or the right, inside or outside, is written
+`max(min(<length>, 5vw), min((100vw - 48rem) * 1000, <length>))`: the length as
+set from 48rem up, 5% of the screen at most below, so that a phone keeps room for
+the content. In the style attribute itself, as no media query reaches it and no
+rule of the theme outweighs it.
 | `align` | `left`, `center`, `right` | `text-align` |
+
+A length is a number of two decimals at most followed by `px` (0 to 320) or
+`rem` (0 to 20), such as `64px` or `2rem`: no `calc()`, `var()`, negative
+number, bare number or other unit. The check of the appearance is the only
+barrier, the CSS filter of the rendering does not bound a length. The
+generator's schema and catalogue sheet list the three presets only; a precise
+room is the editor's: "Edit by hand" shows its eight fields under the room
+button "Precise room" only, and another button leaves them out of the save. A
+site without this release refuses an imported page
+whose document holds one.
 
 Every setting is optional, and nothing else can be set: an unknown setting or
 a value outside the list rejects the document like a wrong prop. A section
@@ -158,6 +178,101 @@ band with it. Name the components rather than every child.
 The band carries the section's id in `data-cms-section`, as the first element
 of a section without an appearance does; a script of the theme that looks a
 section up by its id finds the band.
+
+## The size and the framing of an image
+
+`cms:image` has the three widths of `blocks.css` (`narrow`, `column`, `full`) and a
+fourth, `custom`, which the editor alone sets. The props after `width` are for the
+editor too: they are `editorOnly` (`Prop::forEditor()`), so the generator is not
+offered them, the sheet of the catalogue does not list them and `custom` is out of
+the `width` enum it is constrained with.
+
+| Prop | Meaning | Bounds |
+|---|---|---|
+| `width_px` | width of the box, with `width = custom` | 0, or 160 to 2400 |
+| `height_px` | height of the box; 0 keeps the natural height of the picture | 0, or 80 to 2000; the box between 1:4 and 4:1 |
+| `fit` | `cover` (fill the box, crop the rest) or `contain` (the whole picture) | read with both sizes set |
+| `focus_x`, `focus_y` | centre of the part kept, in percent of the picture | 0 to 100 |
+| `zoom` | 100 shows the largest part of the box's proportions, 200 half its width and height | 100 to 400, by steps of 10 |
+
+The box keeps its ratio as the screen narrows (`aspect-ratio`, `width: min(Wpx, 100% - 2rem)`),
+so the part kept is the same at every width. A section saved before these props
+renders the same markup, byte for byte.
+
+For a picture of the media library the box is filled from a zone of the file:
+`ImageFrame::zone()` turns the focus and the zoom into `x,y,w,h` pixels of the
+original, and the publication asks the library for that region
+(`/image-library/{id}/{x},{y},{w},{h}/{size}/...`). The section writes the kept part as
+`data-cms-crop` on the `<img>` (read, then taken out, like `data-cms-sizes`); the
+`srcset` candidates are narrower than the zone, the last one is the zone at its own
+size, and `width` and `height` are those of the zone. A zone is never outside the
+file and never upscaled. The same arithmetic is in `image-crop.js`, so the dialog
+shows what the server serves. An address kept elsewhere is framed by CSS alone
+(`object-fit`, `object-position` from the focus); its zoom cannot be honoured, and
+the dialog does not offer it. A picture shown whole (`contain`) is served as before.
+
+### Pictures of the components of the theme and of the site
+
+A component whose markup is not the module's (`ThemeComponentSection`, `SiteComponentSection`)
+prints the address of its pictures itself, so the module cannot write `data-cms-crop` or a
+`style` on its `<img>`. `ImageFraming` (a service the two providers take) adds, after each
+`image` prop of the schema (at the top level and in the rows of a list), four editor-only props
+marked `editor = framing`: `{image}__proportions` (`original` by default, or a ratio of
+`ImageProportions`), `{image}__focus_x`, `{image}__focus_y` (0 to 100, 50) and `{image}__zoom`
+(100 to 400, by steps of 10, checked by `normalizeProps()`). The double underscore is a name the
+components do not spell, and a picture whose four names a real prop already holds stays unframed.
+
+At render time the component is given none of them: `ImageSource::framed()` turns the picture into
+the address of the zone `ImageFrame::zone()` computes from the size the library holds
+(`/image-library/{id}/{x},{y},{w},{h}/max/0/default.{ext}`), or into the address `of()` gave
+before when nothing is set (a component nobody framed draws the same bytes), when the file has
+no measured size, or when the zone is the whole file. A picture kept elsewhere is passed as it
+is. The rewriter then reads the region of the address of an `<img>` of the library
+(`ImageFrame::region()`, four integers, inside the file, not the whole file; anything else is
+ignored and the picture served whole, `src` included) and serves the zone as it does for
+`data-cms-crop`, which wins if both are there.
+
+In the form (`content-editor.js`, `bindPictureFraming`), each picture gets its proportions under
+it, then the sentence that says the kept part and the button that opens the dialog, per picture
+and per row (also for a row added without reloading). The dialog knows the shape asked for,
+not the box of the component: it keeps its own CSS box, and a box of another shape is cropped
+again by the theme. For a picture kept elsewhere the button is off, with the reason. The
+generator never sees the props (`EditorValues`); a rewrite gives each picture back its framing
+when the component and that picture are unchanged.
+
+### Proportions, for the three widths and for the columns
+
+`proportions` (editor-only choice of `cms:image`, after `width`): `original` (default),
+`16:9`, `4:3`, `3:2`, `1:1`, `3:4`. A ratio writes, on the `<img>` of a preset width,
+`aspect-ratio`, `object-fit: cover`, `object-position` and `data-cms-crop` with a box of
+that shape taken from `ImageProportions` (1600x900, 1600x1200, 1500x1000, 1000x1000,
+1200x1600: inside the bounds of the box above). `original` writes nothing, so the markup
+is the one of before, except with a zoom over 100: `data-cms-crop="x,y,zoom,0,0"`, a box of
+`0,0` meaning the proportions of the picture itself (`ImageFrame::zone()` then uses the
+size of the original, `parse()` accepts it), and the rewriter serves the zoomed zone.
+With `width = custom` the proportions are ignored (the box is width x height) and the form
+hides them. The dialog is offered for every preset width; with a size in pixels, as before,
+only with a height and the fill.
+
+`cms:columns` has the same choice at the top level of its props, with `band` in
+place of the default `original`. `band` is the strip of 5 rem of before (`data-cms-height`
+on the section, no framing). Any other value drops `data-cms-height`, gives each image the
+class `cms-columns__image--framed` (the width of its column, `height: auto`) and, for a
+ratio, the box of the rows above; `sizes` stays that of the column. Each row of the list has
+its own `focus_x`, `focus_y` and `zoom` (editor-only, in the row, zoom by steps of 10 checked
+by `ColumnsSection::normalizeProps()`). `Generation/EditorValues` hides the editor-only props
+of the rows from the model and puts them back row by row (same position, same component, same
+picture), the defaults otherwise.
+
+A published page keeps the files it was published with: after the picture is
+replaced in the library, or after a change of the module, `thelia_cms:render-published`
+renders what is online again (README, "Rendering what is online again").
+
+The generator never sees these props: the draft it is shown leaves them out and
+reads a custom width as the default one (`Generation/EditorValues::forModel()`), and
+an answer that replaces a section gets them back from the section it replaces when
+the component and the image are the same (`restore()`), the model's own different
+preset width winning over the custom one. Translation copies them from the source.
 
 ## The width of the images
 

@@ -14,12 +14,15 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Tests\Integration\Generation\Component;
 
+use Propel\Runtime\ActiveQuery\Criteria;
 use Psr\Log\NullLogger;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Domain\Ai\AiFinishReason;
 use Thelia\Domain\Ai\AiMessageRole;
 use Thelia\Domain\Ai\AsAiUsage;
 use Thelia\Domain\Ai\Exception\AiBudgetExceededException;
+use Thelia\Model\Lang;
+use Thelia\Model\LangQuery;
 use TheliaCMS\Content\SectionCatalog;
 use TheliaCMS\Content\Site\SiteComponent;
 use TheliaCMS\Content\Site\SiteComponentRepository;
@@ -91,6 +94,21 @@ final class ComponentGeneratorTest extends CmsIntegrationTestCase
         self::assertSame([GenerationTarget::TYPE_COMPONENT, 0, ComponentRequest::KIND_NEW, 'done'], [$row->getTargetType(), (int) $row->getTargetId(), $row->getKind(), $row->getStatus()]);
         self::assertStringContainsString('"code": "PriceTable"', (string) $row->getDocument());
         self::assertNull($this->getService(SiteComponentRepository::class)->find('PriceTable'), 'Nothing is kept before the editor says so.');
+    }
+
+    public function testTheLabelsAreWrittenInTheDefaultLanguageOfTheShopWhateverTheLanguageOfTheRequest(): void
+    {
+        $default = Lang::getDefaultLanguage();
+        $other = LangQuery::create()->filterById($default->getId(), Criteria::NOT_EQUAL)->findOne();
+        self::assertNotNull($other, 'The test base has a second language.');
+
+        $this->api->answer(self::answer(PriceTable::component()));
+        $this->generator()->generate(new ComponentRequest('A table of prices.', (string) $other->getLocale()));
+
+        $message = (string) $this->api->requests[0]->messages[0]->content;
+        self::assertStringContainsString(\sprintf('Language of the sample: %s (%s).', $other->getTitle(), $other->getLocale()), $message);
+        self::assertStringContainsString(\sprintf('Default language of the shop: %s (%s).', $default->getTitle(), $default->getLocale()), $message, 'The labels an editor reads in the back office are in the language of the shop.');
+        self::assertStringContainsString('in the default language of the shop', (string) $this->api->requests[0]->system);
     }
 
     public function testASkillTheSiteSwitchedOffIsNotRead(): void

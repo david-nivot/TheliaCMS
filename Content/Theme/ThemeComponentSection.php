@@ -18,7 +18,8 @@ use Symfony\Component\Asset\Packages;
 use Symfony\Component\Translation\LocaleSwitcher;
 use Symfony\UX\TwigComponent\ComponentRendererInterface;
 use TheliaCMS\Content\ExampleRenderingInterface;
-use TheliaCMS\Content\ImageSource;
+use TheliaCMS\Content\ImageFraming;
+use TheliaCMS\Content\Prop;
 use TheliaCMS\Content\PropSchema;
 use TheliaCMS\Content\PropType;
 use TheliaCMS\Content\SectionDefinitionInterface;
@@ -116,7 +117,10 @@ final readonly class ThemeComponentSection implements SectionDefinitionInterface
 
     public function normalizeProps(array $props): array
     {
-        return $this->schema->normalize($props);
+        $props = $this->schema->normalize($props);
+        ImageFraming::assertZoomSteps($this->schema->props, $props);
+
+        return $props;
     }
 
     public function renderExample(string $locale): string
@@ -236,16 +240,19 @@ final readonly class ThemeComponentSection implements SectionDefinitionInterface
             }
         }
 
+        $stored = $props;
+        $props = ImageFraming::withoutFraming($this->schema->props, $props);
+
         foreach ($props as $name => $value) {
             // A picture is stored as an id of the media library; the component
             // prints what it is given in a src, as a template of the theme
-            // hands it an address.
+            // hands it an address, the one of the part the editor keeps of it.
             if (isset($addresses[$name]) && \is_string($addresses[$name])) {
                 $value = $addresses[$name];
             } elseif (\in_array($name, $images, true)) {
-                $value = ImageSource::of($value);
+                $value = ImageFraming::source($value, $name, $stored);
             } elseif (isset($rowImages[$name]) && \is_array($value)) {
-                $value = $this->rowsWithAddresses($value, $rowImages[$name], \is_array($addresses[$name] ?? null) ? $addresses[$name] : []);
+                $value = $this->rowsWithAddresses($value, $rowImages[$name], \is_array($addresses[$name] ?? null) ? $addresses[$name] : [], $this->rowFraming($name));
             }
 
             // A row is stored as the schema names its fields and read by the
@@ -281,17 +288,24 @@ final readonly class ThemeComponentSection implements SectionDefinitionInterface
      * @param array<mixed>                      $rows
      * @param list<string>                      $fields    the picture fields of a row
      * @param array<int, array<string, string>> $addresses by row and field, instead of reading the field as an id
+     * @param list<Prop>                        $framing   the framing props of a row, which the component is not given
      *
      * @return array<mixed>
      */
-    private function rowsWithAddresses(array $rows, array $fields, array $addresses): array
+    private function rowsWithAddresses(array $rows, array $fields, array $addresses, array $framing): array
     {
         $drawn = [];
 
         foreach (array_values($rows) as $index => $row) {
+            $stored = $row;
+
+            if (\is_array($row)) {
+                $row = ImageFraming::withoutFraming($framing, $row);
+            }
+
             foreach ($fields as $field) {
                 if (\is_array($row) && \array_key_exists($field, $row)) {
-                    $row[$field] = $addresses[$index][$field] ?? ImageSource::of($row[$field]);
+                    $row[$field] = $addresses[$index][$field] ?? ImageFraming::source($row[$field], $field, \is_array($stored) ? $stored : []);
                 }
             }
 
@@ -299,6 +313,22 @@ final readonly class ThemeComponentSection implements SectionDefinitionInterface
         }
 
         return $drawn;
+    }
+
+    /**
+     * The framing props of a row of a list, which the component is not given.
+     *
+     * @return list<Prop>
+     */
+    private function rowFraming(string $list): array
+    {
+        foreach ($this->schema->props as $prop) {
+            if ($prop->name === $list) {
+                return array_values(array_filter($prop->items, ImageFraming::isFraming(...)));
+            }
+        }
+
+        return [];
     }
 
     /**

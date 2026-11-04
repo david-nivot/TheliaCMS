@@ -7,12 +7,167 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **A section takes a precise room, inside and outside.** The **Appearance** group
+  of "Edit by hand" gains a room button, **Precise room**, which shows eight
+  fields (another button hides them and leaves them out): room inside the
+  section, top, bottom, left and right (`padding_top`, `padding_bottom`,
+  `padding_left`, `padding_right`, the background goes with it), and room
+  outside it on the same four sides (`margin_*`: above and below, it keeps the
+  section apart from its neighbours; left and right, it narrows the band). On a
+  screen narrower than 48rem, a side on the left or the right takes 5% of the
+  width at most, so that a phone keeps room for the content. A value is a number of two decimals at most and `px` (0 to 320) or
+  `rem` (0 to 20), such as `64px` or `2rem`; `calc()`, `var()`, negative numbers and
+  other units are refused, and the style is built from the checked value only.
+  The buttons Small, Medium and Large stay and set the room inside, above and
+  below together; in a document, a precise side wins over them for that side.
+  `padding` also accepts a length. A section holding either opens on **Precise
+  room**, its room for both sides shown in the inside fields left empty. An empty field is the room of the component, as before. A
+  section saved before writes the same markup, byte for byte. The generator is
+  not offered the precise values: its schema and its catalogue sheet keep the
+  three presets. An exported site carries them with the document; a site
+  without this release refuses the document of a page that holds one (warning,
+  page imported without its document).
+- **The Image section takes a size of the editor's choosing.** A fourth width,
+  "A size in pixels" (160 to 2400), sets the width of the picture; with a height
+  (80 to 2000, a box no more stretched than 4:1 or 1:4) the picture sits in a
+  box of those proportions, which it keeps as the screen narrows: it either
+  fills the box around a kept part (horizontal and vertical position, zoom by
+  steps of 10, 100 to 400) or is shown whole in it. The size, the fit and the
+  kept part are for the editor alone: the generator is not offered them (see
+  the entry on rewrites below). A section saved before keeps its exact markup. This
+  release draws the box with CSS (`object-fit`, `object-position`,
+  `aspect-ratio`) and, for a picture of the media library, serves the kept part
+  itself (see the next entry).
+- **A picture that fills a box is served as the part the editor kept.** On
+  publication, the media library gives the zone of the file (`x,y,w,h` of the
+  region of its image route) instead of the whole file, in the proportions of the
+  box: the candidates of the `srcset` are strictly narrower than the zone, the
+  last one is the zone at its own size, WebP and the original format alike, and
+  `width` and `height` are those of the zone. A zone is never outside the file
+  and never upscaled; a zone that is the whole file, a picture shown whole, an
+  address kept elsewhere or a file of unknown size are served as before. The
+  section says the kept part with `data-cms-crop` on the image, which is read
+  and taken out on publication.
+- **A zone written in the address of an image is served as the section's own.**
+  An `<img>` whose address names a zone of the media library
+  (`/image-library/{id}/{x,y,w,h}/…`) is rewritten on publication like the
+  zone of an Image section: `srcset` candidates strictly narrower than the zone,
+  then the zone at its own size, WebP and the original format alike, `width`
+  and `height` of the zone. A zone outside the file, empty, or the whole file
+  is ignored and the picture is served whole; a region other than four
+  integers (`square`, `pct:`) is left to the library. Before, the region of an
+  address was thrown away on publication. The zone of `data-cms-crop` still
+  wins when both are there.
+- **The pictures of the components of the theme and of the components made
+  from a brief can be framed.** Each picture, at the top of the form and in the
+  rows of a list, gets the proportions (the image as it is, 16:9, 4:3, 3:2, 1:1,
+  3:4), a kept part (centre and zoom) and the "Crop the image…" dialog of the
+  Image section. The component never sees these settings: the module hands it the
+  address of the zone of the file (`/image-library/{id}/{x,y,w,h}/max/…`), which the
+  publication turns into its set of widths. A component nobody framed gets the
+  address it always got, so its markup does not change. The component keeps its
+  own frame: if its box is shaped differently from the proportions chosen, the
+  theme crops again. A picture kept elsewhere is drawn as it is, and the dialog
+  says why it cannot crop it. The settings are named after the picture
+  (`photo__proportions`, `photo__focus_x`, `photo__focus_y`, `photo__zoom`) and are
+  never shown to the model.
+- **A rewrite keeps the framing of each picture of a component.** The framing of a
+  picture of a theme or site component is hidden from the model and given back
+  to the section a rewrite replaces, picture by picture: a picture that stayed
+  keeps its framing, one that changed takes the defaults, in the rows of a list
+  too.
+- **The size of an Image section is set in a form that follows the choice.** With
+  "A size in pixels", the width and height fields show, with the proportions
+  16:9, 4:3, 3:2, 1:1 and that of the picture (one click fills the height from
+  the width); the fit shows once a height is set. The kept part (position and
+  zoom) is no longer three bare numbers: it reads as a sentence ("Centre 35 % /
+  20 %, zoom 150 %"), the three fields staying in the form. The caption and the
+  text of the image each have a line of their own. Without the script, every
+  field is shown and the form works as before.
+- **The kept part of an image is set in a dialog of its own.** Next to the
+  sentence that says it, "Crop the image…" opens a dialog above the section: the
+  whole picture with the zone kept lit, what the box will show (made in the
+  browser, no file is asked of the server while the zone moves), the width of the
+  zone in the original against the width shown (sharp, sharp on a standard
+  screen only, or soft), and the three numbers as sliders. The zone is dragged
+  with the mouse or a finger, a click puts its centre there; with the keyboard,
+  the arrows move it by 1 % (10 % with Shift), plus and minus or Page Up and
+  Page Down zoom by 10 %, Home puts the centre back, Escape closes. Confirm
+  writes the three fields of the form, which are saved with the section; Cancel
+  leaves them as they were. The button is off, with its reason, with no image, with
+  an image the media library of the CMS does not hold (removed, or without the
+  tag of the CMS) or with an image whose size cannot be read; an image kept elsewhere takes its centre
+  only (the zoom stays at 100 %). The sentence of the kept part now reads as a
+  statement next to the button, not as a field.
+- **A rewrite or a translation keeps the size and the framing of a picture.**
+  The draft shown to the generator (revision, section written again,
+  translation, and the model of a page type) no longer carries the width in
+  pixels, the height, the fit, the kept part or the zoom, and a width set in
+  pixels reads as the default width: the generator never sees, nor writes,
+  anything of them. What an answer replaces gets them back from the section it
+  replaces when the component and the picture are the same; another picture
+  takes the defaults. A different preset width asked for wins over the size in
+  pixels, which stays in the section. The description of the Image section tells
+  the generator that the exact size and the kept part are the editor's.
+- **The Image section takes proportions for its three widths.** A new setting,
+  "Proportions", offers "Original image" (the default: the markup of before, to
+  the byte), 16:9, 4:3, 3:2, 1:1 and 3:4 for the narrow, content and screen
+  widths. With a ratio, the picture fills a box of that shape whose height
+  follows the width (`aspect-ratio`) around the part kept; "Crop the image…" is
+  there for every width, and with "Original image" a centre and a zoom can still
+  be set (the zone has the proportions of the picture, zoom 100 is the whole of
+  it). A size in pixels keeps its width and height and ignores the proportions.
+  The setting is the editor's: the generator is not offered it.
+- **The pictures of the Columns section take proportions too.** One setting for
+  the whole section, "Proportions of the images": "Band (logos)" (the default,
+  the markup of before to the byte), "Original image", 16:9, 4:3, 3:2, 1:1 and
+  3:4. Outside the band, each picture takes the width of its column, in the
+  shape chosen, filling it around the part kept, and the `sizes` announced is
+  the one of the column. The part kept (centre and zoom) is set column by
+  column, with the same dialog in each row of the list, also in a row added
+  without reloading (the media picker of such a row is now bound too).
+- **A rewrite keeps the part kept of each picture of a list.** The draft shown
+  to the generator leaves out the proportions of the columns and the centre and
+  zoom of each row; an answer gets them back row by row, matched by position,
+  when the component and the picture of the row are the same, and the defaults
+  otherwise.
+- **The back-office documentation, the README and `docs/sections.md` describe the
+  size and the framing of an image**: the widths, the size in pixels, the fit, the
+  dialog and its keys, an image kept elsewhere, and the published pages that keep
+  their files until `thelia_cms:render-published` renders them again.
+
+### Changed
+
+- **A component made by the generator is labelled in the default language of the
+  shop.** Asked from the back office, made from a brief or prototyped from a
+  page, a component takes its label, and the label, help and choice labels of
+  its props, in the default language of the shop, whatever the language of the
+  request: an editor reads them in the forms of the back office. Its example
+  stays in the language of the request. The prompt of the component generator
+  changes once (one sentence of rules, the default language in the request,
+  the labels of the example in one language).
+- **The Image section form reads in the order of the page, with a help written for
+  the editor.** The image, its width, its caption, then the text of the image;
+  each field explains itself in the words of an editor, apart from the
+  instruction the generator reads. The generator's prompt lists the four props in
+  the new order, and the description of the Image section gains one sentence (see
+  the entry on rewrites above).
+
 ### Fixed
 
 - **An SVG icon of the site no longer runs a script when opened at its
   address.** `/site-icon` served the uploaded file with its type alone, so an
   SVG carrying a script ran it with the origin of the shop. The response is now
   sent with `Content-Security-Policy: sandbox`, as the documents of a page are.
+- **The picture of a row of a list takes the whole row.** Its card was squeezed
+  into a half row, which cut the title and the badge, and the sentence that
+  says the kept part sat against the link "Another source: a file or an
+  address".
+- **A choice drawn as buttons takes the whole line of the section form.** The
+  width of the Image section, and the room and the alignment of the appearance,
+  shared a line with a neighbouring field and wrapped their buttons on two rows.
 
 ## [2.11.0] - 2026-11-04
 

@@ -124,7 +124,7 @@ final readonly class CmsMediaAdminController
     }
 
     /**
-     * @return array{id: int, title: string, thumbnail: ?string, url: string, dimensions: ?string, alt: string, described: bool, decorative: bool}
+     * @return array{id: int, title: string, thumbnail: ?string, url: string, dimensions: ?string, width: ?int, height: ?int, alt: string, described: bool, decorative: bool}
      */
     private static function picked(MediaItem $item): array
     {
@@ -134,6 +134,8 @@ final readonly class CmsMediaAdminController
             'thumbnail' => $item->thumbnailUrl,
             'url' => $item->url,
             'dimensions' => $item->dimensions(),
+            'width' => $item->width,
+            'height' => $item->height,
             'alt' => trim((string) $item->alt),
             'described' => $item->isDescribed(),
             'decorative' => $item->decorative,

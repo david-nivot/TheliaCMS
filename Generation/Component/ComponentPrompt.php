@@ -72,10 +72,11 @@ final readonly class ComponentPrompt
     public function userMessage(ComponentRequest $request): string
     {
         $shop = $this->shop->describe($request->locale);
+        $default = $this->shop->defaultLanguage();
         $lines = [
             '# The site',
             '',
-            \sprintf('Shop: %s. Language of the sample: %s (%s).', $shop['store_name'], $shop['language'], $shop['locale']),
+            \sprintf('Shop: %s. Language of the sample: %s (%s). Default language of the shop: %s (%s).', $shop['store_name'], $shop['language'], $shop['locale'], $default['language'], $default['locale']),
             '',
             '# The components the site already has',
             '',
@@ -154,7 +155,7 @@ final readonly class ComponentPrompt
             'required' => ['code', 'label', 'description', 'props', 'sample', 'template', 'css'],
             'properties' => [
                 'code' => $string('PascalCase, 2 to 40 letters and digits, saying what the component is: "PriceTable".'),
-                'label' => $string('The name of the component in a list, in the language of the request: two to four words, such as "Price table". What it does goes in the description.'),
+                'label' => $string('The name of the component in a list, in the default language of the shop: two to four words, such as "Price table". What it does goes in the description.'),
                 'description' => $string('One or two sentences, in English, on what the component is for and when a page uses it: what the generator of pages reads to pick it.'),
                 'props' => $string('The list of the props, as a JSON array written as a string, in the form the rules describe.'),
                 'sample' => $string('The props of the example, as a JSON object written as a string: every prop filled, in the language of the site.'),
@@ -196,6 +197,8 @@ final readonly class ComponentPrompt
             '[{"name": "title", "type": "text", "label": "Heading", "max": 120}, {"name": "steps", "type": "items", "label": "Steps", "min": 2, "max": 8, "items": [{"name": "title", "type": "text", "label": "Step", "required": true, "max": 80}, {"name": "text", "type": "html", "label": "What happens"}]}]',
             '```',
             '',
+            'The `label` of the component, and the `label`, the `help` and the labels of the `choices` of every prop, rows included, are written in the default language of the shop, the one the request names, whatever the language of the request and of the sample: an editor reads them in the forms of the back office. The example above is in English for this text only. A `name` stays a key of lowercase letters, digits and underscores, which no editor reads.',
+            '',
             'Twenty props at most. Every text the component shows is a prop: a heading, a button, a label next to a price. A label that repeats on every item (such as "per month") is a prop of the component, not of each item.',
             '',
             '# Template',
@@ -231,8 +234,10 @@ final readonly class ComponentPrompt
             ...array_map(static fn (string $skill): string => trim($skill)."\n", array_filter([$accessibility, $motion])),
             '# Example',
             '',
+            'For a shop whose default language is French, asked in French:',
+            '',
             '```json',
-            '{"code": "ProcessSteps", "label": "Étapes", "description": "The steps of a process in order, each a short title and a sentence. Use it for how an order, a booking or a service goes.", "props": "[{\"name\": \"title\", \"type\": \"text\", \"label\": \"Heading\", \"max\": 120}, {\"name\": \"steps\", \"type\": \"items\", \"label\": \"Steps\", \"min\": 2, \"max\": 8, \"items\": [{\"name\": \"title\", \"type\": \"text\", \"label\": \"Step\", \"required\": true, \"max\": 80}, {\"name\": \"text\", \"type\": \"text\", \"label\": \"What happens\", \"max\": 300}]}]", "sample": "{\"title\": \"Comment ça marche\", \"steps\": [{\"title\": \"Vous réservez\", \"text\": \"Choisissez un créneau en ligne.\"}, {\"title\": \"Nous confirmons\", \"text\": \"Un e-mail vous le confirme dans l’heure.\"}]}", "template": "<section class=\"steps\">{% if props.title is not empty %}<h2 class=\"steps__title\">{{ props.title }}</h2>{% endif %}<ol class=\"steps__list\">{% for step in props.steps %}<li class=\"step\"><h3 class=\"step__title\">{{ step.title }}</h3>{% if step.text is not empty %}<p class=\"step__text\">{{ step.text }}</p>{% endif %}</li>{% endfor %}</ol></section>", "css": ".steps__list { display: grid; gap: 1.5rem; padding: 0; list-style: none; counter-reset: step; }\n.step { counter-increment: step; padding-top: 1rem; border-top: 2px solid var(--cms-color-accent); }\n.step__title::before { content: counter(step) \". \"; }\n.step__text { color: var(--cms-color-text-muted); }\n@media (min-width: 48rem) { .steps__list { grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); } }"}',
+            '{"code": "ProcessSteps", "label": "Étapes", "description": "The steps of a process in order, each a short title and a sentence. Use it for how an order, a booking or a service goes.", "props": "[{\"name\": \"title\", \"type\": \"text\", \"label\": \"Titre\", \"max\": 120}, {\"name\": \"steps\", \"type\": \"items\", \"label\": \"Étapes\", \"min\": 2, \"max\": 8, \"items\": [{\"name\": \"title\", \"type\": \"text\", \"label\": \"Étape\", \"required\": true, \"max\": 80}, {\"name\": \"text\", \"type\": \"text\", \"label\": \"Ce qui se passe\", \"max\": 300}]}]", "sample": "{\"title\": \"Comment ça marche\", \"steps\": [{\"title\": \"Vous réservez\", \"text\": \"Choisissez un créneau en ligne.\"}, {\"title\": \"Nous confirmons\", \"text\": \"Un e-mail vous le confirme dans l’heure.\"}]}", "template": "<section class=\"steps\">{% if props.title is not empty %}<h2 class=\"steps__title\">{{ props.title }}</h2>{% endif %}<ol class=\"steps__list\">{% for step in props.steps %}<li class=\"step\"><h3 class=\"step__title\">{{ step.title }}</h3>{% if step.text is not empty %}<p class=\"step__text\">{{ step.text }}</p>{% endif %}</li>{% endfor %}</ol></section>", "css": ".steps__list { display: grid; gap: 1.5rem; padding: 0; list-style: none; counter-reset: step; }\n.step { counter-increment: step; padding-top: 1rem; border-top: 2px solid var(--cms-color-accent); }\n.step__title::before { content: counter(step) \". \"; }\n.step__text { color: var(--cms-color-text-muted); }\n@media (min-width: 48rem) { .steps__list { grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); } }"}',
             '```',
         ]);
     }

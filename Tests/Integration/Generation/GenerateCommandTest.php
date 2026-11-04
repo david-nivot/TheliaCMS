@@ -182,6 +182,7 @@ final class GenerateCommandTest extends CmsIntegrationTestCase
                 new GatewayFailures($this->getService(TranslatorInterface::class)),
                 $this->getService(TranslationGraft::class),
                 $this->getService(DocumentChecker::class),
+                $this->getService(\TheliaCMS\Generation\EditorValues::class),
             ),
             $this->getService(CmsPageWriter::class),
             $this->getService(ConsoleRequest::class),

@@ -27,6 +27,13 @@ final class ImageSlotTest extends TestCase
         self::assertSame('100vw', ImageSlot::screen());
     }
 
+    public function testABoxOfPixelsIsItsWidthLessTheMarginsOnANarrowScreen(): void
+    {
+        self::assertSame('min(960px, calc(100vw - 2rem))', ImageSlot::box(960));
+        self::assertTrue(ImageSlot::isValid(ImageSlot::box(960)), 'The rewriter reads what the section writes.');
+        self::assertTrue(ImageSlot::isValid(ImageSlot::box(2400)));
+    }
+
     public function testAColumnIsASharedOfTheBlockLessTheGaps(): void
     {
         self::assertSame('(min-width: 77rem) 23.67rem, (min-width: 48rem) calc((100vw - 2rem - 4rem) / 3), calc(100vw - 2rem)', ImageSlot::column(3));

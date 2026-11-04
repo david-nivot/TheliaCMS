@@ -803,6 +803,96 @@ final class PageGeneratorTest extends CmsIntegrationTestCase
         self::assertSame(1, $edge->turns);
     }
 
+    private const array FRAMED_IMAGE = [
+        'image' => 'https://example.com/tart.jpg',
+        'alt' => 'Une tarte',
+        'caption' => 'Fraîche',
+        'width' => 'custom',
+        'width_px' => 960,
+        'height_px' => 540,
+        'fit' => 'cover',
+        'focus_x' => 35,
+        'focus_y' => 20,
+        'zoom' => 150,
+    ];
+
+    public function testTheDraftTheModelReadsCarriesNoSizeNoFramingAndNoCustomWidth(): void
+    {
+        $page = $this->createPage('Nos services', published: false);
+        $locale = $this->locale();
+        $otherLocale = 'fr_FR' === $locale ? 'en_US' : 'fr_FR';
+        $source = new Document([new Section('photo', ImageSection::NAME, self::FRAMED_IMAGE)]);
+        $answer = self::document([['id' => 'photo', 'component' => ImageSection::NAME, 'props' => ['image' => 'https://example.com/tart.jpg', 'caption' => 'Fresh', 'width' => 'narrow']]]);
+
+        $this->api->answer(FakeAiGateway::response($answer));
+        $this->generator()->generate(GenerationRequest::revision($this->target($page), $locale, $source, new Brief('Plus court.')));
+        $this->api->answer(FakeAiGateway::response(self::section(['id' => 'photo', 'component' => ImageSection::NAME, 'props' => ['image' => 'https://example.com/tart.jpg', 'width' => 'narrow']])));
+        $this->generator()->generate(GenerationRequest::section($this->target($page), $locale, $source, 'photo', new Brief('Plus court.')));
+        $this->api->answer(FakeAiGateway::response($answer));
+        $this->generator()->generate(GenerationRequest::translation(GenerationTarget::page($page, $otherLocale), $otherLocale, $source, $locale));
+
+        self::assertCount(3, $this->api->requests);
+
+        foreach ($this->api->requests as $request) {
+            $message = $request->messages[0]->content;
+
+            self::assertStringContainsString('"image":"https://example.com/tart.jpg"', $message, 'The draft is in the prompt.');
+            self::assertStringContainsString('"width":"narrow"', $message, 'The width the editor typed reads as the default.');
+
+            foreach (['width_px', 'height_px', 'focus_x', 'focus_y', '"zoom"', '"fit"', 'custom', '960', '540'] as $word) {
+                self::assertStringNotContainsString($word, $message);
+            }
+        }
+    }
+
+    public function testARevisionKeepsTheSizeAndTheFramingOfAPictureItDoesNotChange(): void
+    {
+        $page = $this->createPage('Nos services', published: false);
+        $source = new Document([new Section('photo', ImageSection::NAME, self::FRAMED_IMAGE), new Section('other', ImageSection::NAME, [...self::FRAMED_IMAGE, 'image' => 'https://example.com/other.jpg'])]);
+
+        $this->api->answer(FakeAiGateway::response(self::document([
+            ['id' => 'photo', 'component' => ImageSection::NAME, 'props' => ['image' => 'https://example.com/tart.jpg', 'caption' => 'Sortie du four', 'width' => 'narrow']],
+            ['id' => 'other', 'component' => ImageSection::NAME, 'props' => ['image' => 'https://example.com/changed.jpg', 'width' => 'narrow']],
+        ])));
+
+        $result = $this->generator()->generate(GenerationRequest::revision($this->target($page), $this->locale(), $source, new Brief('Une autre photo en bas, une légende en haut.')));
+        [$kept, $changed] = array_map(static fn (Section $section): array => $section->props, $result->document->sections);
+
+        self::assertSame('Sortie du four', $kept['caption']);
+        self::assertSame(['custom', 960, 540, 'cover', 35, 20, 150], [$kept['width'], $kept['width_px'], $kept['height_px'], $kept['fit'], $kept['focus_x'], $kept['focus_y'], $kept['zoom']]);
+        self::assertSame(['narrow', 0, 0, 50, 50, 100], [$changed['width'], $changed['width_px'], $changed['height_px'], $changed['focus_x'], $changed['focus_y'], $changed['zoom']], 'Another picture, so the framing of the old one means nothing.');
+    }
+
+    public function testASectionWrittenAgainKeepsTheSizeAndTheFramingOfAPictureItDoesNotChange(): void
+    {
+        $page = $this->createPage('Nos services', published: false);
+        $source = new Document([new Section('photo', ImageSection::NAME, self::FRAMED_IMAGE, new SectionAppearance('#112233'))]);
+
+        $this->api->answer(FakeAiGateway::response(self::section(['id' => 'photo', 'component' => ImageSection::NAME, 'props' => ['image' => 'https://example.com/tart.jpg', 'caption' => 'Sortie du four', 'width' => 'narrow']])));
+        $kept = $this->generator()->generate(GenerationRequest::section($this->target($page), $this->locale(), $source, 'photo', new Brief('Une autre légende.')))->document->sections[0];
+
+        self::assertSame(['custom', 960, 540, 35, 20, 150], [$kept->props['width'], $kept->props['width_px'], $kept->props['height_px'], $kept->props['focus_x'], $kept->props['focus_y'], $kept->props['zoom']]);
+        self::assertSame('#112233', $kept->appearance->background);
+
+        $this->api->answer(FakeAiGateway::response(self::section(['id' => 'photo', 'component' => ImageSection::NAME, 'props' => ['image' => 'https://example.com/changed.jpg', 'width' => 'narrow']])));
+        $changed = $this->generator()->generate(GenerationRequest::section($this->target($page), $this->locale(), $source, 'photo', new Brief('Une autre photo.')))->document->sections[0];
+
+        self::assertSame(['narrow', 0, 0, 50, 50, 100], [$changed->props['width'], $changed->props['width_px'], $changed->props['height_px'], $changed->props['focus_x'], $changed->props['focus_y'], $changed->props['zoom']]);
+    }
+
+    public function testATranslationKeepsTheSizeAndTheFramingOfThePicture(): void
+    {
+        $page = $this->createPage('Nos services', published: false);
+        $locale = $this->locale();
+        $otherLocale = 'fr_FR' === $locale ? 'en_US' : 'fr_FR';
+        $source = new Document([new Section('photo', ImageSection::NAME, self::FRAMED_IMAGE)]);
+
+        $this->api->answer(FakeAiGateway::response(self::document([['id' => 'photo', 'component' => ImageSection::NAME, 'props' => ['image' => 'https://example.com/tart.jpg', 'alt' => 'A tart', 'caption' => 'Fresh', 'width' => 'full']]])));
+        $props = $this->generator()->generate(GenerationRequest::translation(GenerationTarget::page($page, $otherLocale), $otherLocale, $source, $locale))->document->sections[0]->props;
+
+        self::assertSame(['Fresh', 'custom', 960, 540, 'cover', 35, 20, 150], [$props['caption'], $props['width'], $props['width_px'], $props['height_px'], $props['fit'], $props['focus_x'], $props['focus_y'], $props['zoom']]);
+    }
+
     private function readingOn(): void
     {
         $settings = $this->getService(GeneratorSettings::class);
@@ -846,6 +936,7 @@ final class PageGeneratorTest extends CmsIntegrationTestCase
             new GatewayFailures($this->getService(TranslatorInterface::class)),
             $this->getService(TranslationGraft::class),
             $this->getService(DocumentChecker::class),
+            $this->getService(\TheliaCMS\Generation\EditorValues::class),
         );
     }
 

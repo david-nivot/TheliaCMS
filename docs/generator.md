@@ -410,8 +410,14 @@ may call it through `make_component` (above). The system
 prompt (`ComponentPrompt`), cached, gives the JSON form of the props, the rules
 of the sandbox and of the stylesheet, the colour tokens read from
 `assets/blocks.css`, the accessibility skill and an example; the user message
-gives the shop, the components the catalogue already has, the request and,
-for a change, the component as it is. The answer is constrained to a schema
+gives the shop (with the language of the sample, the one of the request, and
+the default language of the shop), the components the catalogue already has,
+the request and, for a change, the component as it is. The labels an editor
+reads in the back office (the label of the component, the label, help and
+choice labels of each prop) are asked in the default language of the shop,
+whatever the language of the request; the sample stays in the language of the
+request. This holds for a component asked from the back office and for one
+the generator of pages makes from a brief or a page prototypes. The answer is constrained to a schema
 of seven strings (`code`, `label`, `description`, `props` and `sample` as JSON
 written as a string, `template`, `css`). A component the validator refuses,
 a new one whose code is taken, a change that renames its component or that

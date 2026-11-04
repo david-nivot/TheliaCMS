@@ -93,4 +93,75 @@ final class ColumnsSectionTest extends TestCase
 
         (new ColumnsSection())->normalizeProps(['columns' => [['image' => 'javascript:alert(1)'], ['image' => 'http://example.com/a.png']]]);
     }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function threeLogos(): array
+    {
+        return ['columns' => [
+            ['image' => 'https://img.test/a.png', 'text' => 'Un', 'focus_x' => 10, 'focus_y' => 90, 'zoom' => 200],
+            ['image' => 'https://img.test/b.png', 'text' => 'Deux'],
+            ['image' => 'https://img.test/c.png', 'text' => 'Trois', 'focus_x' => 80, 'focus_y' => 20, 'zoom' => 120],
+        ]];
+    }
+
+    /**
+     * The band is the default: a section stored before the proportions, and one
+     * that carries a kept part in its rows, draw the markup of before to the byte.
+     */
+    public function testTheBandDrawsTheMarkupOfBeforeWhateverTheKeptPartOfTheRows(): void
+    {
+        $section = new ColumnsSection();
+        $expected = '<section class="cms-columns cms-columns--3" data-cms-sizes="(min-width: 77rem) 23.67rem, (min-width: 48rem) calc((100vw - 2rem - 4rem) / 3), calc(100vw - 2rem)" data-cms-height="5rem"><div class="cms-columns__grid">'
+            .'<div class="cms-columns__item"><img class="cms-columns__image" src="https://img.test/a.png" alt="" loading="lazy"><p class="cms-columns__text">Un</p></div>'
+            .'<div class="cms-columns__item"><img class="cms-columns__image" src="https://img.test/b.png" alt="" loading="lazy"><p class="cms-columns__text">Deux</p></div>'
+            .'<div class="cms-columns__item"><img class="cms-columns__image" src="https://img.test/c.png" alt="" loading="lazy"><p class="cms-columns__text">Trois</p></div>'
+            .'</div></section>';
+
+        self::assertSame($expected, $section->render($section->normalizeProps(self::threeLogos()), 'fr_FR'));
+        self::assertSame($expected, $section->render($section->normalizeProps(self::threeLogos() + ['proportions' => 'band']), 'fr_FR'));
+    }
+
+    public function testARatioGivesEveryImageTheWidthOfItsColumnAndItsOwnKeptPart(): void
+    {
+        $section = new ColumnsSection();
+        $html = $section->render($section->normalizeProps(self::threeLogos() + ['proportions' => '1:1']), 'fr_FR');
+
+        self::assertStringStartsWith('<section class="cms-columns cms-columns--3" data-cms-sizes="(min-width: 77rem) 23.67rem, (min-width: 48rem) calc((100vw - 2rem - 4rem) / 3), calc(100vw - 2rem)"><div', $html, 'The slot of the column, held to no band.');
+        self::assertStringNotContainsString('data-cms-height', $html);
+        self::assertStringContainsString('<img class="cms-columns__image cms-columns__image--framed" src="https://img.test/a.png" alt="" loading="lazy" style="aspect-ratio:1/1;object-fit:cover;object-position:10% 90%" data-cms-crop="10,90,200,1000,1000">', $html);
+        self::assertStringContainsString('<img class="cms-columns__image cms-columns__image--framed" src="https://img.test/b.png" alt="" loading="lazy" style="aspect-ratio:1/1;object-fit:cover;object-position:50% 50%" data-cms-crop="50,50,100,1000,1000">', $html);
+        self::assertStringContainsString('src="https://img.test/c.png" alt="" loading="lazy" style="aspect-ratio:1/1;object-fit:cover;object-position:80% 20%" data-cms-crop="80,20,120,1000,1000">', $html);
+    }
+
+    public function testTheOriginalProportionsKeepTheShapeOfEachImageAndWriteOnlyItsZoom(): void
+    {
+        $section = new ColumnsSection();
+        $html = $section->render($section->normalizeProps(self::threeLogos() + ['proportions' => 'original']), 'fr_FR');
+
+        self::assertStringContainsString('<img class="cms-columns__image cms-columns__image--framed" src="https://img.test/a.png" alt="" loading="lazy" data-cms-crop="10,90,200,0,0">', $html);
+        self::assertStringContainsString('<img class="cms-columns__image cms-columns__image--framed" src="https://img.test/b.png" alt="" loading="lazy">', $html);
+        self::assertStringNotContainsString('data-cms-height', $html);
+    }
+
+    public function testAZoomOffTheStepsIsRefusedInARowWithItsPosition(): void
+    {
+        try {
+            (new ColumnsSection())->normalizeProps(['columns' => [['text' => 'Un'], ['text' => 'Deux', 'zoom' => 155]]]);
+            self::fail('A zoom off the steps of 10 is refused.');
+        } catch (InvalidDocumentException $exception) {
+            self::assertStringContainsString('item 2', (string) $exception->getMessage());
+        }
+    }
+
+    public function testTheModelIsNotOfferedTheProportionsNorTheKeptPartOfARow(): void
+    {
+        $schema = (new ColumnsSection())->schema()->toJsonSchema();
+        $json = json_encode($schema, \JSON_THROW_ON_ERROR);
+
+        foreach (['proportions', 'focus_x', 'focus_y', 'zoom'] as $name) {
+            self::assertStringNotContainsString('"'.$name.'"', $json);
+        }
+    }
 }

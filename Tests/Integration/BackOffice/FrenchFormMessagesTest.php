@@ -226,13 +226,13 @@ final class FrenchFormMessagesTest extends CmsIntegrationTestCase
             self::assertSame([
                 'La section 1 n’est pas un objet.',
                 'Les propriétés de la section 2 ne sont pas un objet.',
-                'Section 2 : L’apparence n’a pas de réglage « shadow » : seulement background, text, padding et align.',
+                'Section 2 : L’apparence n’a pas de réglage « shadow » : seulement background, text, padding, align, et l’espace de chaque côté réglé dans l’éditeur.',
                 'Section 2 : Le réglage background de l’apparence n’est pas une couleur écrite #rrggbb.',
             ], $exception->translated($this->translator()));
             self::assertSame([
                 'Section 1 is not an object.',
                 'Section 2 has props that are not an object.',
-                'Section 2: The appearance has no setting "shadow": only background, text, padding and align.',
+                'Section 2: The appearance has no setting "shadow": only background, text, padding, align, and the room on each side set in the editor.',
                 'Section 2: The background of the appearance is not a colour written #rrggbb.',
             ], $exception->problems);
         }

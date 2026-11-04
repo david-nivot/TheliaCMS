@@ -16,6 +16,7 @@ namespace TheliaCMS\Generation;
 
 use Thelia\Model\ConfigQuery;
 use Thelia\Model\CurrencyQuery;
+use Thelia\Model\Lang;
 use Thelia\Model\LangQuery;
 
 /**
@@ -41,5 +42,18 @@ final readonly class ShopContext
             'locale' => $locale,
             'currency' => (string) ($currency?->getCode() ?? ''),
         ];
+    }
+
+    /**
+     * The default language of the shop, the one of its back office: what a
+     * label an editor reads in a form is written in.
+     *
+     * @return array{language: string, locale: string}
+     */
+    public function defaultLanguage(): array
+    {
+        $lang = Lang::getDefaultLanguage();
+
+        return ['language' => (string) $lang->getTitle(), 'locale' => (string) $lang->getLocale()];
     }
 }

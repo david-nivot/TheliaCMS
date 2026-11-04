@@ -44,6 +44,27 @@ final class PublishedContentSanitizerTest extends TestCase
      * The sanitizer runs before the rewriter in the publication: an attribute
      * it dropped would never reach the one that reads it.
      */
+    /**
+     * The framing of a picture is the section's own style: it must reach the
+     * published page.
+     */
+    public function testKeepsTheBoxAnImageSectionDraws(): void
+    {
+        $html = (string) $this->sanitizer->html('<figure class="cms-image cms-image--custom" style="width:min(960px, 100% - 2rem)" data-cms-sizes="min(960px, calc(100vw - 2rem))" data-cms-height="540px"><img class="cms-image__img cms-image__img--cover" src="/image-library/7/full/max/0/default.jpg" alt="" loading="lazy" style="aspect-ratio:960/540;object-fit:cover;object-position:35% 20%"></figure>');
+
+        self::assertStringContainsString('width:min(960px, 100% - 2rem)', $html);
+        self::assertStringContainsString('aspect-ratio:960/540;object-fit:cover;object-position:35% 20%', $html);
+        self::assertStringContainsString('cms-image__img--cover', $html);
+    }
+
+    public function testKeepsWhatAnImageSectionKeepsOfItsPicture(): void
+    {
+        $html = (string) $this->sanitizer->html('<figure class="cms-image"><img src="/image-library/7/full/max/0/default.jpg" alt="" data-cms-crop="35,20,150,960,540"></figure><p data-cms-crop="35,20,150,960,540">text</p>');
+
+        self::assertStringContainsString('data-cms-crop="35,20,150,960,540"', $html);
+        self::assertSame(1, substr_count($html, 'data-cms-crop'), 'Only a picture carries it.');
+    }
+
     public function testKeepsTheWidthASectionDeclaresForItsImages(): void
     {
         $html = $this->sanitizer->html('<figure class="cms-image" data-cms-sizes="(max-width: 50rem) calc(100vw - 2rem), 48rem" data-cms-height="5rem"><img src="/image-library/7/full/max/0/default.jpg" alt=""></figure>');

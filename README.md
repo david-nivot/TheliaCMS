@@ -643,6 +643,34 @@ At publication every image becomes a `<picture>` with a WebP alternative, a
 `srcset` bounded by the file's real width and ending on the original, explicit
 `width` and `height`, and lazy loading on everything but the first image.
 
+### Size and framing of an Image section
+
+The Image section is as wide as a column of text, as the content or as the screen,
+or **A size in pixels** (160 to 2400). With that size, a height (80 to 2000, a box
+between 1:4 and 4:1) gives the picture a frame that keeps its proportions as the
+screen narrows: **Fill the frame** crops the picture to it, **Show the whole
+picture** leaves empty bands. The part kept is a centre and a zoom, set in a
+dialog (**Crop the image…**: drag, click, arrow keys, `+` and `-`, three sliders),
+and served by the media library as a zone of the file, in the proportions of the
+frame, never upscaled. A picture kept elsewhere (an `https` address) is framed by CSS
+alone: the centre counts, the zoom does not. The size and the framing are the editor's:
+the generator is not offered them, and a revision, a section written again or a
+translation keeps what the editor set as long as the picture is the same.
+
+For the three widths of the Image section, **Proportions** (the image as it is, 16:9,
+4:3, 3:2, 1:1, 3:4) give the picture a box of that shape and the same dialog sets the part
+kept; the image as it is keeps its markup and only takes a zoom. The Columns section
+has one **Proportions of the images** setting: the band of logos (the default), or a
+picture per column on the width of its column, in a shape, with the part kept set column
+by column. The pictures of the components of the theme and of the
+components made from a brief have the same **Proportions** and **Crop the image…**, picture by
+picture (rows of a list included); the component keeps its own frame, so a box of another
+shape than the proportions chosen is cropped again by the theme, and a picture kept elsewhere
+is drawn as it is. A page
+already published keeps the files it was published with: after replacing a picture in the
+library, `php Thelia thelia_cms:render-published --all` renders what is online again.
+Details in [`docs/sections.md`](docs/sections.md).
+
 ## Menus
 
 Menus live under **CMS > Menus** and a theme calls them by code. `main` and
@@ -1335,8 +1363,8 @@ The catalogue and the shape of a document: [docs/sections.md](docs/sections.md);
 adding a component, step by step, and what the generator does with it:
 [docs/creating-a-component.md](docs/creating-a-component.md).
 
-A section given an appearance (a background, a text colour, space above and
-below) renders inside a band of the whole width,
+A section given an appearance (a background, a text colour, room inside and
+outside it) renders inside a band of the whole width,
 `<div class="cms-section-styled">`, which becomes the child of the content in
 place of the component. A rule of the theme that sets a width on the children
 of `.cms-page-content`, or lays sections out in a grid, has to target

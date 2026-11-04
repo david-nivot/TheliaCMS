@@ -20,6 +20,8 @@ use Symfony\Component\Translation\LocaleSwitcher;
 use Symfony\UX\TwigComponent\ComponentRendererInterface;
 use Thelia\Core\Template\TemplateDefinition;
 use Thelia\Core\Template\TemplateHelperInterface;
+use TheliaCMS\Content\ImageFraming;
+use TheliaCMS\Content\PropSchema;
 use TheliaCMS\Content\SectionHidingInterface;
 use TheliaCMS\Content\SectionProviderInterface;
 
@@ -41,6 +43,7 @@ final readonly class ThemeComponentSections implements SectionProviderInterface,
         private LoggerInterface $logger,
         private ?LocaleSwitcher $localeSwitcher = null,
         private ?Packages $packages = null,
+        private ?ImageFraming $framing = null,
     ) {
     }
 
@@ -57,13 +60,14 @@ final readonly class ThemeComponentSections implements SectionProviderInterface,
                 continue;
             }
 
+            $schema = null === $this->framing ? $read['schema'] : new PropSchema($this->framing->extend($read['schema']->props));
             $twigNames = [];
 
-            foreach ($read['schema']->props as $prop) {
+            foreach ($schema->props as $prop) {
                 $twigNames[$prop->name] = self::twigName($prop->name);
             }
 
-            yield new ThemeComponentSection($component, $read['description'], $read['schema'], $twigNames, $this->renderer, $read['id_lists'], self::example($declaration->examples[$component] ?? []), $this->localeSwitcher, $this->packages);
+            yield new ThemeComponentSection($component, $read['description'], $schema, $twigNames, $this->renderer, $read['id_lists'], self::example($declaration->examples[$component] ?? []), $this->localeSwitcher, $this->packages);
         }
     }
 

@@ -26,6 +26,7 @@ final class DocumentProblemsCatalogueTest extends TestCase
     private const array SOURCES = [
         'Content/Document.php',
         'Content/DocumentValidator.php',
+        'Content/ImageSection.php',
         'Content/PropSchema.php',
         'Content/SectionAppearance.php',
     ];

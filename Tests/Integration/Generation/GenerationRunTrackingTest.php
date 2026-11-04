@@ -461,6 +461,7 @@ final class GenerationRunTrackingTest extends CmsIntegrationTestCase
             $this->failures(),
             $this->getService(TranslationGraft::class),
             $this->getService(DocumentChecker::class),
+            $this->getService(\TheliaCMS\Generation\EditorValues::class),
         );
     }
 

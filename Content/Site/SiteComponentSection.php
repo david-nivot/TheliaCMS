@@ -15,7 +15,7 @@ declare(strict_types=1);
 namespace TheliaCMS\Content\Site;
 
 use Psr\Log\LoggerInterface;
-use TheliaCMS\Content\ImageSource;
+use TheliaCMS\Content\ImageFraming;
 use TheliaCMS\Content\Pipeline\PublishedContentSanitizer;
 use TheliaCMS\Content\Prop;
 use TheliaCMS\Content\PropSchema;
@@ -74,7 +74,10 @@ final readonly class SiteComponentSection implements SectionDefinitionInterface
 
     public function normalizeProps(array $props): array
     {
-        return $this->schema->normalize($props);
+        $props = $this->schema->normalize($props);
+        ImageFraming::assertZoomSteps($this->schema->props, $props);
+
+        return $props;
     }
 
     public function render(array $props, string $locale): string
@@ -101,7 +104,7 @@ final readonly class SiteComponentSection implements SectionDefinitionInterface
 
     /**
      * The props as the template reads them: markup marked safe to print as it
-     * is, an image turned into its address, the rest as stored.
+     * is, an image turned into its address (the part its editor keeps of it), the rest as stored.
      *
      * @param list<Prop>           $schema
      * @param array<string, mixed> $props
@@ -113,11 +116,16 @@ final readonly class SiteComponentSection implements SectionDefinitionInterface
         $values = [];
 
         foreach ($schema as $prop) {
+            // What the editor keeps of a picture is for the address it is given.
+            if (ImageFraming::isFraming($prop)) {
+                continue;
+            }
+
             $value = $props[$prop->name] ?? null;
 
             $values[$prop->name] = match ($prop->type) {
                 PropType::Html => new Markup((string) $value, 'UTF-8'),
-                PropType::Image => ImageSource::of($value),
+                PropType::Image => ImageFraming::source($value, $prop->name, $props),
                 PropType::Items => array_map(
                     static fn (mixed $item): array => self::forTemplate($prop->items, \is_array($item) ? $item : []),
                     \is_array($value) ? array_values($value) : [],

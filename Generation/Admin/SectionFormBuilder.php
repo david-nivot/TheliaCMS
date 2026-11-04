@@ -77,6 +77,9 @@ final readonly class SectionFormBuilder
     /** The child holding the appearance of the section, a name no prop takes. */
     public const string APPEARANCE = 'cms_appearance';
 
+    /** The room button that shows the four precise fields, a value the appearance never stores. */
+    public const string PRECISE_ROOM = 'precise';
+
     /** Names of props whose plain reading would mislead an editor. */
     private const array LABELS = [
         'href' => 'Link',
@@ -123,7 +126,9 @@ final readonly class SectionFormBuilder
 
     /**
      * The appearance of the section, as sent: checked by the appearance
-     * itself, which says what it refuses.
+     * itself, which says what it refuses. The precise fields count only
+     * under the "Precise room" button: another button leaves them out, even
+     * filled, as they are hidden then.
      *
      * @return array<string, mixed>
      */
@@ -131,7 +136,17 @@ final readonly class SectionFormBuilder
     {
         $values = $form->has(self::APPEARANCE) ? $form->get(self::APPEARANCE)->getData() : [];
 
-        return \is_array($values) ? $values : [];
+        if (!\is_array($values)) {
+            return [];
+        }
+
+        if (self::PRECISE_ROOM === ($values['padding'] ?? null)) {
+            unset($values['padding']);
+
+            return $values;
+        }
+
+        return array_diff_key($values, SectionAppearance::SIDES);
     }
 
     /**
@@ -150,10 +165,12 @@ final readonly class SectionFormBuilder
             $paddings[ucfirst($padding)] = $padding;
         }
 
+        $paddings['Precise room'] = self::PRECISE_ROOM;
+
         $group = $builder->create(self::APPEARANCE, FormType::class, [
             'mapped' => false,
             'label' => 'Appearance',
-            'data' => $appearance->toArray(),
+            'data' => self::appearanceData($appearance),
         ]);
         $group->add('background', TextType::class, array_merge_recursive($color, [
             'label' => 'Background',
@@ -166,11 +183,12 @@ final readonly class SectionFormBuilder
             'attr' => ['placeholder' => '#1c1f22'],
         ]));
         $group->add('padding', ChoiceType::class, [
-            'label' => 'Room above and below',
+            'label' => 'Room around the section',
+            'help' => 'Inside the section, the background goes with it. "Precise room" sets each side, inside and outside, in px or rem.',
             'required' => false,
             'placeholder' => "The component's",
             'choices' => $paddings,
-        ] + self::asButtons(['small' => 'space-small', 'medium' => 'space-medium', 'large' => 'space-large']));
+        ] + self::asButtons(['small' => 'space-small', 'medium' => 'space-medium', 'large' => 'space-large', self::PRECISE_ROOM => 'bi-rulers']));
         $group->add('align', ChoiceType::class, [
             'label' => 'Alignment of the text',
             'required' => false,
@@ -178,7 +196,49 @@ final readonly class SectionFormBuilder
             'choices' => ['Left' => 'left', 'Center' => 'center', 'Right' => 'right'],
         ] + self::asButtons(['left' => 'bi-text-left', 'center' => 'bi-text-center', 'right' => 'bi-text-right']));
 
+        $length = static fn (string $label, ?string $help = null): array => [
+            'label' => $label,
+            'help' => $help,
+            'required' => false,
+            'attr' => ['maxlength' => 8, 'placeholder' => '64px', 'inputmode' => 'text', 'autocomplete' => 'off', 'data-cms-spacing' => ''],
+        ];
+        $group->add('padding_top', TextType::class, $length('Inside, top', 'Inside the section, the background goes with it. Written 64px (0 to 320) or 2rem (0 to 20). Empty: the component\'s.'));
+        $group->add('padding_bottom', TextType::class, $length('Inside, bottom'));
+        $group->add('padding_left', TextType::class, $length('Inside, left'));
+        $group->add('padding_right', TextType::class, $length('Inside, right'));
+        $group->add('margin_top', TextType::class, $length('Outside, top', 'Outside the section: above and below, between it and its neighbours; left and right, the band is narrower. Same units. Empty: none. On a phone, a side on the left or the right, inside or outside, takes 5% of the screen at most.'));
+        $group->add('margin_bottom', TextType::class, $length('Outside, bottom'));
+        $group->add('margin_left', TextType::class, $length('Outside, left'));
+        $group->add('margin_right', TextType::class, $length('Outside, right'));
+
         $builder->add($group);
+    }
+
+    /**
+     * What the form shows of an appearance. A precise side, or a room
+     * written as a length, checks "Precise room"; the room for both sides
+     * (a preset as its length) then fills the inside fields left empty:
+     * saving it again draws the same section.
+     *
+     * @return array<string, string>
+     */
+    private static function appearanceData(SectionAppearance $appearance): array
+    {
+        $data = $appearance->toArray();
+        $padding = $data['padding'] ?? null;
+
+        if ([] === array_intersect_key($data, SectionAppearance::SIDES) && (null === $padding || isset(SectionAppearance::PADDINGS[$padding]))) {
+            return $data;
+        }
+
+        if (null !== $padding) {
+            $length = SectionAppearance::PADDINGS[$padding] ?? $padding;
+            $data += ['padding_top' => $length, 'padding_bottom' => $length];
+        }
+
+        $data['padding'] = self::PRECISE_ROOM;
+
+        return $data;
     }
 
     /**
@@ -289,7 +349,7 @@ final readonly class SectionFormBuilder
         $common = [
             'label' => $prop->label,
             'required' => $prop->required,
-            'help' => $prop->help,
+            'help' => $prop->editorHelp ?? $prop->help,
             // The labels and the help come translated from the catalogue.
             'translation_domain' => false,
         ];

@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Content;
 
+use TheliaLibrary\Model\LibraryImage;
 use TheliaLibrary\Model\LibraryImageQuery;
 
 /**
@@ -33,19 +34,62 @@ final readonly class ImageSource
             return $image;
         }
 
+        $library = self::library($image);
+
+        return null === $library ? null : self::address($library, 'full');
+    }
+
+    /**
+     * The address of an image the template of a component prints itself, with
+     * the part its editor keeps: the zone of the file `ImageFrame` computes, in
+     * pixels, which the publication then turns into its set of widths. The
+     * address `of()` gives when nothing is set, so a component nobody framed
+     * draws the same markup as before.
+     *
+     * An image kept elsewhere has no zone to ask for: its address as it is. A
+     * file the library has not measured yet is served whole, the zone needing
+     * its size.
+     */
+    public static function framed(mixed $image, string $proportions, int $focusX, int $focusY, int $zoom): ?string
+    {
+        $whole = self::of($image);
+
+        if (null === $whole || (ImageProportions::ORIGINAL === $proportions && $zoom <= 100)) {
+            return $whole;
+        }
+
+        $box = ImageProportions::ORIGINAL === $proportions ? [0, 0] : ImageProportions::box($proportions);
+        $library = self::library($image);
+
+        if (null === $box || null === $library || null === $library->getWidth() || null === $library->getHeight()) {
+            return $whole;
+        }
+
+        $zone = ImageFrame::zone((int) $library->getWidth(), (int) $library->getHeight(), $box[0], $box[1], $focusX, $focusY, $zoom);
+
+        return null === $zone ? $whole : self::address($library, \sprintf('%d,%d,%d,%d', $zone['x'], $zone['y'], $zone['w'], $zone['h']));
+    }
+
+    private static function library(mixed $image): ?LibraryImage
+    {
+        if (\is_string($image) && PropSchema::isExternalImage($image)) {
+            return null;
+        }
+
         $id = (int) $image;
 
         if ($id <= 0) {
             return null;
         }
 
-        $fileName = LibraryImageQuery::create()->findPk($id)?->getFileName();
+        $library = LibraryImageQuery::create()->findPk($id);
 
-        if (null === $fileName) {
-            return null;
-        }
+        return null === $library || null === $library->getFileName() ? null : $library;
+    }
 
-        return '/image-library/'.$id.'/full/max/0/default.'.strtolower(pathinfo($fileName, \PATHINFO_EXTENSION) ?: 'jpg');
+    private static function address(LibraryImage $library, string $region): string
+    {
+        return '/image-library/'.$library->getId().'/'.$region.'/max/0/default.'.strtolower(pathinfo((string) $library->getFileName(), \PATHINFO_EXTENSION) ?: 'jpg');
     }
 
     /**

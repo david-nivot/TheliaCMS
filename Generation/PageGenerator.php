@@ -121,6 +121,7 @@ final readonly class PageGenerator
         private GatewayFailures $failures,
         private TranslationGraft $graft,
         private DocumentChecker $checker,
+        private EditorValues $editorValues,
         private ObservedStream $streams = new ObservedStream(),
     ) {
     }
@@ -409,8 +410,11 @@ final readonly class PageGenerator
             return $this->graft->graft($request->current, $answer);
         }
 
+        // What only the editor sets (the size and the framing of a picture) is
+        // not in the answer, the model never saw it: it comes back from the
+        // sections the answer replaces.
         if (GenerationRequest::KIND_SECTION !== $request->kind) {
-            return $answer;
+            return GenerationRequest::KIND_REVISION === $request->kind ? $this->editorValues->restore($request->current, $answer) : $answer;
         }
 
         $written = $answer->sections[0];
@@ -420,6 +424,7 @@ final readonly class PageGenerator
         }
 
         $replaced = $request->current->section((string) $request->sectionId);
+        $written = $this->editorValues->restoreSection($replaced, $written);
 
         // The look of the section replaced stays unless the answer sets one:
         // a brief that asks for a colour in words is read by the model, which

@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Content\Pipeline;
 
+use TheliaCMS\Content\ImageFrame;
 use TheliaCMS\Content\ImageSlot;
 use TheliaCMS\Media\MediaFile;
 use TheliaCMS\Media\MediaResolver;
@@ -78,7 +79,7 @@ final readonly class ImageRewriter
         }
 
         // Read, it has done its work: nothing of it goes online.
-        foreach ([ImageSlot::ATTRIBUTE, ImageSlot::HEIGHT_ATTRIBUTE] as $attribute) {
+        foreach ([ImageSlot::ATTRIBUTE, ImageSlot::HEIGHT_ATTRIBUTE, ImageFrame::ATTRIBUTE] as $attribute) {
             foreach (iterator_to_array((new \DOMXPath($document))->query('//*[@'.$attribute.']') ?: []) as $declaring) {
                 if ($declaring instanceof \DOMElement) {
                     $declaring->removeAttribute($attribute);
@@ -111,16 +112,26 @@ final readonly class ImageRewriter
             return;
         }
 
-        $attributes = $this->attributes($media, $this->declaredSizes($image), $this->declaredHeight($image));
+        $zone = $this->declaredZone($image, $media);
+        $attributes = $this->attributes($media, $this->declaredSizes($image), $this->declaredHeight($image), $zone);
 
         foreach ($attributes as $name => $value) {
             $image->setAttribute($name, $value);
         }
 
-        $widths = $this->widthsFor($media->width);
+        if (null !== $zone) {
+            // The file a browser without `srcset` takes is the kept part too.
+            $image->setAttribute('src', $this->url($media, $zone, null, $media->format));
+        } elseif (null !== ImageFrame::region($image->getAttribute('src'))) {
+            // A zone the address named and that was not kept (outside the file,
+            // or the whole of it): never asked of the library, which would refuse it.
+            $image->setAttribute('src', $this->url($media, null, null, $media->format));
+        }
+
+        $widths = $this->widthsFor($zone['w'] ?? $media->width);
         $sizes = $attributes['sizes'] ?? null;
 
-        $this->wrapInPicture($document, $image, $media, $widths, $sizes);
+        $this->wrapInPicture($document, $image, $media, $zone, $widths, $sizes);
     }
 
     /**
@@ -129,28 +140,32 @@ final readonly class ImageRewriter
      * `rewrite()` writes on every image of a page, for a template that draws
      * an image itself, a card of a list for one, and has no HTML to hand over.
      *
-     * @param string|null $sizes  the `sizes` the image is drawn at, in the form of `data-cms-sizes`; invalid or none, the viewport up to the width of the file
-     * @param string|null $height the fixed height it is drawn at, in the form of `data-cms-height`
+     * @param string|null                                $sizes  the `sizes` the image is drawn at, in the form of `data-cms-sizes`; invalid or none, the viewport up to the width of the file
+     * @param string|null                                $height the fixed height it is drawn at, in the form of `data-cms-height`
+     * @param array{x: int, y: int, w: int, h: int}|null $zone   the part of the file that is served, in its pixels; the candidates and the intrinsic size are then those of the zone
      *
      * @return array<string, string> `width` and `height` when the library knows them, `srcset` and `sizes` when it knows the width
      */
-    public function attributes(MediaFile $media, ?string $sizes = null, ?string $height = null): array
+    public function attributes(MediaFile $media, ?string $sizes = null, ?string $height = null, ?array $zone = null): array
     {
         $attributes = [];
 
-        if (null !== $media->width && null !== $media->height) {
+        if (null !== $zone) {
+            $attributes['width'] = (string) $zone['w'];
+            $attributes['height'] = (string) $zone['h'];
+        } elseif (null !== $media->width && null !== $media->height) {
             $attributes['width'] = (string) $media->width;
             $attributes['height'] = (string) $media->height;
         }
 
-        $widths = $this->widthsFor($media->width);
+        $widths = $this->widthsFor($zone['w'] ?? $media->width);
 
         if ([] !== $widths) {
-            $attributes['srcset'] = $this->srcset($media, $widths, $media->format);
+            $attributes['srcset'] = $this->srcset($media, $zone, $widths, $media->format);
             $attributes['sizes'] = $this->sizes(
                 $widths,
                 null !== $sizes && ImageSlot::isValid($sizes) ? trim($sizes) : null,
-                null !== $height && ImageSlot::isValidHeight($height) ? trim($height) : null,
+                null !== $height && null === $zone && ImageSlot::isValidHeight($height) ? trim($height) : null,
                 $media,
             );
         }
@@ -167,6 +182,44 @@ final readonly class ImageRewriter
     private function declaredSizes(\DOMElement $image): ?string
     {
         return $this->nearestDeclaration($image, ImageSlot::ATTRIBUTE, ImageSlot::isValid(...));
+    }
+
+    /**
+     * The part of the file to serve, in the pixels of the file. Null when there
+     * is none, when the library does not know the size of the file, or when the
+     * part is the whole of it: the image is then served as it is.
+     *
+     * Two ways to ask for one. The section of the module says what the editor
+     * chose with `data-cms-crop`, and the zone is computed here, where the size
+     * of the file is known; it is read only when it is what the section could
+     * have written. A component that prints its own address (a component of
+     * the theme, one made from a brief) is given the zone already computed, as
+     * the region of the address: it is kept when it lies inside the file, and
+     * ignored otherwise (`full`), for an address is whatever an author typed.
+     *
+     * @return array{x: int, y: int, w: int, h: int}|null
+     */
+    private function declaredZone(\DOMElement $image, MediaFile $media): ?array
+    {
+        if (null === $media->width || null === $media->height) {
+            return null;
+        }
+
+        $crop = ImageFrame::parse($image->getAttribute(ImageFrame::ATTRIBUTE));
+
+        if (null !== $crop) {
+            return ImageFrame::zone($media->width, $media->height, $crop['boxWidth'], $crop['boxHeight'], $crop['focusX'], $crop['focusY'], $crop['zoom']);
+        }
+
+        $region = ImageFrame::region($image->getAttribute('src'));
+
+        if (null === $region || $region['w'] < 1 || $region['h'] < 1 || $region['x'] + $region['w'] > $media->width || $region['y'] + $region['h'] > $media->height) {
+            return null;
+        }
+
+        $whole = 0 === $region['x'] && 0 === $region['y'] && $region['w'] === $media->width && $region['h'] === $media->height;
+
+        return $whole ? null : $region;
     }
 
     /**
@@ -222,9 +275,10 @@ final readonly class ImageRewriter
      * AVIF is not offered: TheliaLibrary only encodes jpg, png, gif, jp2 and
      * webp. Adding it there is worth an upstream change, not a workaround here.
      *
-     * @param list<int> $widths
+     * @param array{x: int, y: int, w: int, h: int}|null $zone
+     * @param list<int>                                  $widths
      */
-    private function wrapInPicture(\DOMDocument $document, \DOMElement $image, MediaFile $media, array $widths, ?string $sizes): void
+    private function wrapInPicture(\DOMDocument $document, \DOMElement $image, MediaFile $media, ?array $zone, array $widths, ?string $sizes): void
     {
         $parent = $image->parentNode;
 
@@ -236,8 +290,8 @@ final readonly class ImageRewriter
         $source = $document->createElement('source');
         $source->setAttribute('type', 'image/webp');
         $source->setAttribute('srcset', [] !== $widths
-            ? $this->srcset($media, $widths, 'webp')
-            : $this->url($media, null, 'webp'));
+            ? $this->srcset($media, $zone, $widths, 'webp')
+            : $this->url($media, $zone, null, 'webp'));
 
         if (null !== $sizes) {
             $source->setAttribute('sizes', $sizes);
@@ -268,14 +322,15 @@ final readonly class ImageRewriter
     }
 
     /**
-     * @param list<int> $widths ascending, the last one being the original width
+     * @param array{x: int, y: int, w: int, h: int}|null $zone
+     * @param list<int>                                  $widths ascending, the last one being the original width (that of the zone, with one)
      */
-    private function srcset(MediaFile $media, array $widths, string $format): string
+    private function srcset(MediaFile $media, ?array $zone, array $widths, string $format): string
     {
         $original = $widths[array_key_last($widths)];
 
         return implode(', ', array_map(
-            fn (int $width): string => $this->url($media, $width === $original ? null : $width, $format).' '.$width.'w',
+            fn (int $width): string => $this->url($media, $zone, $width === $original ? null : $width, $format).' '.$width.'w',
             $widths,
         ));
     }
@@ -286,9 +341,22 @@ final readonly class ImageRewriter
      * `480,!` as the largest image that fits in that square: a portrait came
      * back 480 high and narrower, though announced as `480w`. Without a known
      * height, the square is kept, which is right for a landscape image only.
+     *
+     * A zone is asked by its pixels, as `x,y,w,h`, and a candidate of it at
+     * both its numbers, never `!`: that is an exact box of the proportions of
+     * the zone, which no browser sees as a different picture, and the zone at
+     * its own size is `max`, never an upscaled one.
+     *
+     * @param array{x: int, y: int, w: int, h: int}|null $zone
      */
-    private function url(MediaFile $media, ?int $width, string $format): string
+    private function url(MediaFile $media, ?array $zone, ?int $width, string $format): string
     {
+        if (null !== $zone) {
+            $size = null === $width ? 'max' : $width.','.max(1, (int) round($width * $zone['h'] / $zone['w']));
+
+            return \sprintf('/image-library/%d/%d,%d,%d,%d/%s/0/default.%s', $media->id, $zone['x'], $zone['y'], $zone['w'], $zone['h'], $size, $format);
+        }
+
         $size = match (true) {
             null === $width => 'max',
             null !== $media->width && $media->width > 0 && null !== $media->height && $media->height > 0 => $width.','.max(1, (int) round($width * $media->height / $media->width)),

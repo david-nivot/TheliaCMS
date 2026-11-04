@@ -17,6 +17,7 @@ namespace TheliaCMS\Content\Pipeline;
 use Symfony\Component\HtmlSanitizer\HtmlSanitizer;
 use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
 use TheliaCMS\Content\DocumentRenderer;
+use TheliaCMS\Content\ImageFrame;
 use TheliaCMS\Content\ImageSlot;
 use TheliaCMS\Content\Theme\ThemeComponentSections;
 
@@ -223,6 +224,10 @@ final readonly class PublishedContentSanitizer
             // ignored there, and the attribute does nothing else.
             ->allowAttribute(ImageSlot::ATTRIBUTE, '*')
             ->allowAttribute(ImageSlot::HEIGHT_ATTRIBUTE, '*')
+            // What an image section keeps of its picture, which the publication
+            // turns into a zone of the file and takes out; any value is let
+            // through, the rewriter reads only what the section writes.
+            ->allowAttribute(ImageFrame::ATTRIBUTE, ['img'])
             // `open` is what an author toggles on a question that should start
             // expanded; without it a `<details>` always comes back closed.
             ->allowAttribute('open', ['details'])

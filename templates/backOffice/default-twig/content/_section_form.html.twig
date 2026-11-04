@@ -37,9 +37,12 @@
                             {{ _self.color(setting) }}
                         {% endfor %}
                     </div>
-                    {% for setting in child|filter(setting => not setting.rendered) %}
+                    {% for setting in child|filter(setting => not setting.rendered and setting.vars.attr['data-cms-spacing'] is not defined) %}
                         {% if setting.vars.attr['data-cms-choice-buttons'] is defined %}
                             {{ _self.choice_buttons(setting) }}
+                            {% if setting.vars.name == 'padding' %}
+                                {{ _self.spacing(child) }}
+                            {% endif %}
                         {% else %}
                             {{ form_row(setting) }}
                         {% endif %}
@@ -100,6 +103,52 @@
 {% endmacro %}
 
 {#
+    The precise room of a section, drawn as the box model of a browser's
+    tools: the outer room (margin) around the inner room (padding) around
+    the content, a field on each side of each box. The group holds the eight
+    fields, named padding_top, padding_bottom, padding_left, padding_right
+    and the same for margin; each keeps its label for a screen reader.
+    Served shown, under the room buttons; the script hides it unless
+    "Precise room" is checked.
+#}
+{% macro spacing(group) %}
+    <fieldset class="mb-3 cms-content__spacing" data-testid="cms-section-spacing" data-cms-precise-room>
+        <legend class="visually-hidden">{{ 'Precise room'|trans({}, 'theliacms') }}</legend>
+        <div class="cms-box cms-box--margin" data-testid="cms-spacing-margin">
+            <span class="cms-box__name" aria-hidden="true">{{ 'Outside'|trans({}, 'theliacms') }}</span>
+            {{ _self.box_side(group.margin_top, 'top') }}
+            {{ _self.box_side(group.margin_left, 'left') }}
+            <div class="cms-box cms-box--padding" data-testid="cms-spacing-padding">
+                <span class="cms-box__name" aria-hidden="true">{{ 'Inside'|trans({}, 'theliacms') }}</span>
+                {{ _self.box_side(group.padding_top, 'top') }}
+                {{ _self.box_side(group.padding_left, 'left') }}
+                <div class="cms-box cms-box--content" aria-hidden="true">{{ 'Content'|trans({}, 'theliacms') }}</div>
+                {{ _self.box_side(group.padding_right, 'right') }}
+                {{ _self.box_side(group.padding_bottom, 'bottom') }}
+            </div>
+            {{ _self.box_side(group.margin_right, 'right') }}
+            {{ _self.box_side(group.margin_bottom, 'bottom') }}
+        </div>
+        <div class="form-text">{{ group.padding_top.vars.help|trans({}, group.padding_top.vars.translation_domain) }}</div>
+        <div class="form-text">{{ group.margin_top.vars.help|trans({}, group.margin_top.vars.translation_domain) }}</div>
+        {% for field in [group.padding_top, group.padding_bottom, group.padding_left, group.padding_right, group.margin_top, group.margin_bottom, group.margin_left, group.margin_right] %}
+            {{ form_errors(field) }}
+        {% endfor %}
+    </fieldset>
+{% endmacro %}
+
+{#
+    One side of a box of the precise room: the field alone, its label read
+    by a screen reader only, the box saying where it stands.
+#}
+{% macro box_side(field, side) %}
+    <div class="cms-box__side cms-box__side--{{ side }}">
+        <label class="visually-hidden" for="{{ field.vars.id }}">{{ field.vars.label|trans({}, field.vars.translation_domain) }}</label>
+        {{ form_widget(field, {attr: field.vars.attr|merge({placeholder: '-', title: field.vars.label|trans({}, field.vars.translation_domain)})}) }}
+    </div>
+{% endmacro %}
+
+{#
     A colour of the appearance: its name, the field the script pairs with a
     swatch, its help under it.
 #}
@@ -127,6 +176,14 @@
         <svg width="40" height="28" viewBox="0 0 40 28" aria-hidden="true">
             <rect x="0.5" y="0.5" width="39" height="27" rx="2" fill="none" stroke="currentColor" opacity=".5"/>
             <rect x="{{ (40 - width) / 2 }}" y="7" width="{{ width }}" height="14" rx="1" fill="currentColor"/>
+        </svg>
+    {% elseif name starts with 'ratio-' %}
+        {# The shape of a proportion, `ratio-16-9`: a rectangle of that ratio in the frame. #}
+        {% set sides = name|slice(6)|split('-') %}
+        {% set shape = (sides[0] / sides[1]) >= 1 ? { w: 24, h: 24 / (sides[0] / sides[1]) } : { w: 22 * (sides[0] / sides[1]), h: 22 } %}
+        <svg width="40" height="28" viewBox="0 0 40 28" aria-hidden="true">
+            <rect x="0.5" y="0.5" width="39" height="27" rx="2" fill="none" stroke="currentColor" opacity=".5"/>
+            <rect x="{{ (40 - shape.w) / 2 }}" y="{{ (28 - shape.h) / 2 }}" width="{{ shape.w }}" height="{{ shape.h }}" rx="1" fill="currentColor"/>
         </svg>
     {% elseif rooms[name] is defined %}
         {% set room = rooms[name] %}

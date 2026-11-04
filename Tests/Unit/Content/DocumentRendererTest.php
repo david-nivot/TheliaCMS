@@ -59,6 +59,18 @@ final class DocumentRendererTest extends TestCase
         );
     }
 
+    public function testThePreciseRoomOfASectionIsWrittenInTheBandAndNothingElseChanges(): void
+    {
+        $document = new Document([
+            new Section('intro', RichTextSection::NAME, ['html' => '<p>Texte</p>'], new SectionAppearance(background: '#f8d7d7', padding_top: '0px', padding_bottom: '64px', margin_top: '2rem')),
+        ]);
+
+        self::assertSame(
+            '<div class="cms-page-content"><div class="cms-section-styled" data-cms-section="intro" style="background-color:#f8d7d7;padding-top:0px;padding-bottom:64px;margin-top:2rem"><div class="cms-richtext"><p>Texte</p></div></div></div>',
+            $this->renderer->render($document, 'fr_FR'),
+        );
+    }
+
     public function testAFragmentWithoutAnElementIsLeftAsItIs(): void
     {
         $document = new Document([new Section('blank', RichTextSection::NAME, ['html' => '   '])]);

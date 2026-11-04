@@ -74,6 +74,17 @@ final class ImageSlot
         return \sprintf('(max-width: %drem) calc(100vw - %drem), %drem', $maxRem + self::MARGIN, self::MARGIN, $maxRem);
     }
 
+    /**
+     * A block of a width the editor chose, in pixels: as wide as that, a
+     * margin on each side of it on a narrow screen (`blocks.css`,
+     * `.cms-image--custom`). One width without a media condition is a valid
+     * `sizes` list.
+     */
+    public static function box(int $widthPx): string
+    {
+        return \sprintf('min(%dpx, calc(100vw - %drem))', $widthPx, self::MARGIN);
+    }
+
     public static function narrow(): string
     {
         return self::block(self::NARROW_WIDTH);
