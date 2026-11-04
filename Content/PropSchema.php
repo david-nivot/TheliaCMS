@@ -73,6 +73,10 @@ final readonly class PropSchema
         $required = [];
 
         foreach ($this->props as $prop) {
+            if ($prop->editorOnly) {
+                continue;
+            }
+
             $properties[$prop->name] = $prop->toJsonSchema();
 
             if ($prop->required) {

@@ -78,6 +78,16 @@ final class SectionFormItemsTest extends TestCase
         self::assertSame('Read more', $form->get('items')->get('0')->get('button_label')->getData(), 'A row stored before it was read as fields keeps its values in the form.');
     }
 
+    public function testTheFormShowsTheHelpWrittenForTheEditor(): void
+    {
+        $asked = Prop::text('caption', 'Caption', help: 'Instruction to the model.')->forEditor(help: 'Words for the editor.');
+        $plain = Prop::text('alt', 'Alt', help: 'Only one help.');
+        $form = $this->builder()->build($this->definition($asked, $plain), new Section('picture', 'cms:image', []), '/save');
+
+        self::assertSame('Words for the editor.', $form->get('caption')->getConfig()->getOption('help'), 'The editor reads the help written for it.');
+        self::assertSame('Only one help.', $form->get('alt')->getConfig()->getOption('help'), 'Without one, the help of the prop.');
+    }
+
     private function builder(): SectionFormBuilder
     {
         return new SectionFormBuilder(
@@ -109,10 +119,13 @@ final class SectionFormItemsTest extends TestCase
         };
     }
 
-    private function definition(Prop $prop): SectionDefinitionInterface
+    private function definition(Prop ...$props): SectionDefinitionInterface
     {
-        return new class($prop) implements SectionDefinitionInterface {
-            public function __construct(private readonly Prop $prop)
+        return new class($props) implements SectionDefinitionInterface {
+            /**
+             * @param list<Prop> $props
+             */
+            public function __construct(private readonly array $props)
             {
             }
 
@@ -133,7 +146,7 @@ final class SectionFormItemsTest extends TestCase
 
             public function schema(): PropSchema
             {
-                return new PropSchema([$this->prop]);
+                return new PropSchema($this->props);
             }
 
             public function sample(): array

@@ -31,6 +31,14 @@ final readonly class Prop
      * With `scalarItems`, the list is stored, and handed to the component, as a
      * list of scalars (`["one", "two"]`): its single item prop, named `value`,
      * is the field of a row of the form, and the row is not part of the value
+     *
+     * What is for the editor alone, never for the model that writes a document:
+     * `editorHelp` is the help the form shows in place of `help` (which stays
+     * the instruction to the model), `editorOnly` leaves the prop out of the
+     * JSON schema and of the catalogue sheet, `editorOnlyChoices` lists the
+     * values of a choice the model is not offered, and `editor` names the
+     * control the form draws the prop with
+     * @param list<string> $editorOnlyChoices
      */
     public function __construct(
         public string $name,
@@ -49,6 +57,10 @@ final readonly class Prop
         public bool $searchable = false,
         public array $icons = [],
         public bool $scalarItems = false,
+        public ?string $editorHelp = null,
+        public bool $editorOnly = false,
+        public array $editorOnlyChoices = [],
+        public ?string $editor = null,
     ) {
         if (1 !== preg_match('/^[a-z][a-z0-9_]*$/', $name)) {
             throw new \InvalidArgumentException(\sprintf('A prop name is lowercase letters, digits and underscores: "%s" given.', $name));
@@ -65,6 +77,48 @@ final readonly class Prop
         if ($scalarItems && (PropType::Items !== $type || 1 !== \count($items) || 'value' !== $items[0]->name)) {
             throw new \InvalidArgumentException(\sprintf('The list of scalars "%s" holds one item prop, named "value".', $name));
         }
+    }
+
+    /**
+     * The same prop with what is for the editor alone (see the constructor).
+     *
+     * @param list<string> $onlyChoices
+     */
+    public function forEditor(?string $help = null, bool $only = false, array $onlyChoices = [], ?string $editor = null): self
+    {
+        return new self(
+            $this->name,
+            $this->type,
+            $this->label,
+            $this->default,
+            $this->required,
+            $this->help,
+            $this->choices,
+            $this->min,
+            $this->max,
+            $this->items,
+            $this->minItems,
+            $this->maxItems,
+            $this->picker,
+            $this->searchable,
+            $this->icons,
+            $this->scalarItems,
+            $help,
+            $only,
+            $onlyChoices,
+            $editor,
+        );
+    }
+
+    /**
+     * The values of a choice the model may write: every one but those kept
+     * for the editor.
+     *
+     * @return list<string>
+     */
+    public function offeredChoices(): array
+    {
+        return array_values(array_diff(array_map(strval(...), array_keys($this->choices)), $this->editorOnlyChoices));
     }
 
     public static function text(string $name, string $label, string $default = '', bool $required = false, int $max = 255, ?string $help = null): self
@@ -160,7 +214,7 @@ final readonly class Prop
             PropType::Boolean => ['type' => 'boolean'],
             // Cast: PHP turns a numeric key such as '1' into an integer, and
             // the API refuses an integer in an enum of strings.
-            PropType::Choice => ['type' => 'string', 'enum' => array_map(strval(...), array_keys($this->choices))],
+            PropType::Choice => ['type' => 'string', 'enum' => $this->offeredChoices()],
             PropType::Image => ['type' => $this->required ? ['integer', 'string'] : ['integer', 'string', 'null']],
             PropType::Url => ['type' => 'string', 'maxLength' => $this->max ?? 2048],
             PropType::Items => [

@@ -289,7 +289,7 @@ final readonly class SectionFormBuilder
         $common = [
             'label' => $prop->label,
             'required' => $prop->required,
-            'help' => $prop->help,
+            'help' => $prop->editorHelp ?? $prop->help,
             // The labels and the help come translated from the catalogue.
             'translation_domain' => false,
         ];

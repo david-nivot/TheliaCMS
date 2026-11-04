@@ -50,7 +50,9 @@ final readonly class CatalogSheet
         $lines = [\sprintf('## `%s` — %s', $definition->name(), $definition->label()), '', $definition->description(), '', 'Props:'];
 
         foreach ($definition->schema()->props as $prop) {
-            $lines[] = self::propLine($prop, '- ');
+            if (!$prop->editorOnly) {
+                $lines[] = self::propLine($prop, '- ');
+            }
         }
 
         $lines[] = '';
@@ -102,7 +104,7 @@ final readonly class CatalogSheet
         }
 
         if (PropType::Items === $prop->type && !$prop->scalarItems) {
-            $items = array_map(static fn (Prop $item): string => self::propLine($item, $indent.'  - '), $prop->items);
+            $items = array_map(static fn (Prop $item): string => self::propLine($item, $indent.'  - '), array_filter($prop->items, static fn (Prop $item): bool => !$item->editorOnly));
             $line .= "\n".implode("\n", $items);
         }
 
@@ -116,7 +118,7 @@ final readonly class CatalogSheet
             PropType::Html => 'html',
             PropType::Integer => \sprintf('integer, %d to %d', $prop->min ?? 0, $prop->max ?? 0),
             PropType::Boolean => 'true or false',
-            PropType::Choice => 'one of '.implode(', ', array_map(static fn (string|int $value): string => '`'.$value.'`', array_keys($prop->choices))),
+            PropType::Choice => 'one of '.implode(', ', array_map(static fn (string $value): string => '`'.$value.'`', $prop->offeredChoices())),
             PropType::Image => 'image id from search_media, an https address the brief gives, or null',
             PropType::Url => 'url',
             PropType::Items => $prop->scalarItems ? self::scalarListOf($prop) : \sprintf('list of %d to %d items', $prop->minItems ?? 0, $prop->maxItems ?? 12),
