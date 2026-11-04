@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Content;
 
+use TheliaCMS\Locale\TranslatableText;
+
 /**
  * The content of a page or of a block in one language: an ordered list of
  * sections, each a component of the catalogue with its props.
@@ -225,11 +227,11 @@ final readonly class Document
         try {
             $decoded = json_decode($json, true, 64, \JSON_THROW_ON_ERROR);
         } catch (\JsonException $exception) {
-            throw InvalidDocumentException::because(['The document is not valid JSON: '.$exception->getMessage()]);
+            throw InvalidDocumentException::because([TranslatableText::of('The document is not valid JSON: %s', $exception->getMessage())]);
         }
 
         if (!\is_array($decoded)) {
-            throw InvalidDocumentException::because(['The document is not a JSON object.']);
+            throw InvalidDocumentException::because([TranslatableText::of('The document is not a JSON object.')]);
         }
 
         return self::fromArray($decoded);
@@ -248,17 +250,17 @@ final readonly class Document
         $version = $document['version'] ?? null;
 
         if (!\is_int($version)) {
-            throw InvalidDocumentException::because(['The document carries no format version.']);
+            throw InvalidDocumentException::because([TranslatableText::of('The document carries no format version.')]);
         }
 
         if ($version > self::VERSION) {
-            throw InvalidDocumentException::because([\sprintf('The document is in format version %d, and this module reads up to version %d.', $version, self::VERSION)]);
+            throw InvalidDocumentException::because([TranslatableText::of('The document is in format version %d, and this module reads up to version %d.', $version, self::VERSION)]);
         }
 
         $sections = $document['sections'] ?? null;
 
         if (!\is_array($sections) || !array_is_list($sections)) {
-            throw InvalidDocumentException::because(['The document holds no list of sections.']);
+            throw InvalidDocumentException::because([TranslatableText::of('The document holds no list of sections.')]);
         }
 
         $problems = [];
@@ -266,7 +268,7 @@ final readonly class Document
 
         foreach ($sections as $index => $section) {
             if (!\is_array($section)) {
-                $problems[] = \sprintf('Section %d is not an object.', $index + 1);
+                $problems[] = TranslatableText::of('Section %d is not an object.', $index + 1);
 
                 continue;
             }
@@ -276,28 +278,28 @@ final readonly class Document
             $props = $section['props'] ?? [];
 
             if (!\is_string($id) || '' === $id) {
-                $problems[] = \sprintf('Section %d has no id.', $index + 1);
+                $problems[] = TranslatableText::of('Section %d has no id.', $index + 1);
             }
 
             if (!\is_string($component) || '' === $component) {
-                $problems[] = \sprintf('Section %d names no component.', $index + 1);
+                $problems[] = TranslatableText::of('Section %d names no component.', $index + 1);
             }
 
             if (!\is_array($props) || array_is_list($props) && [] !== $props) {
-                $problems[] = \sprintf('Section %d has props that are not an object.', $index + 1);
+                $problems[] = TranslatableText::of('Section %d has props that are not an object.', $index + 1);
             }
 
             $appearance = new SectionAppearance();
             $values = $section['appearance'] ?? null;
 
             if (null !== $values && (!\is_array($values) || array_is_list($values) && [] !== $values)) {
-                $problems[] = \sprintf('Section %d has an appearance that is not an object.', $index + 1);
+                $problems[] = TranslatableText::of('Section %d has an appearance that is not an object.', $index + 1);
             } elseif (null !== $values) {
                 try {
                     $appearance = SectionAppearance::fromArray($values);
                 } catch (InvalidDocumentException $exception) {
-                    foreach ($exception->problems as $problem) {
-                        $problems[] = \sprintf('Section %d: %s', $index + 1, $problem);
+                    foreach ($exception->texts as $problem) {
+                        $problems[] = TranslatableText::of('Section %d: %s', $index + 1, $problem);
                     }
                 }
             }

@@ -417,7 +417,7 @@ final readonly class CmsPageContentController
 
             return $this->back($page, $lang);
         } catch (InvalidDocumentException $exception) {
-            foreach ($exception->problems as $problem) {
+            foreach ($exception->translated($this->translator) as $problem) {
                 $this->flash($request, 'danger', $problem);
             }
 

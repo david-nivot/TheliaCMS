@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Content;
 
+use TheliaCMS\Locale\TranslatableText;
+
 /**
  * The props of a section, and what to do with the values it is handed.
  *
@@ -49,7 +51,7 @@ final readonly class PropSchema
             try {
                 $values[$prop->name] = $this->value($prop, \array_key_exists($prop->name, $raw) ? $raw[$prop->name] : null);
             } catch (InvalidDocumentException $exception) {
-                foreach ($exception->problems as $problem) {
+                foreach ($exception->texts as $problem) {
                     $problems[] = $problem;
                 }
             }
@@ -93,7 +95,7 @@ final readonly class PropSchema
     {
         if (null === $value || '' === $value) {
             if ($prop->required) {
-                throw InvalidDocumentException::because([\sprintf('"%s" is required.', $prop->name)]);
+                throw InvalidDocumentException::because([TranslatableText::of('"%s" is required.', $prop->name)]);
             }
 
             return \in_array($prop->type, [PropType::Image, PropType::Reference], true) ? null : $prop->default;
@@ -120,12 +122,12 @@ final readonly class PropSchema
             try {
                 $value = json_decode($value, true, 32, \JSON_THROW_ON_ERROR);
             } catch (\JsonException) {
-                throw InvalidDocumentException::because([\sprintf('"%s" is not valid JSON.', $prop->name)]);
+                throw InvalidDocumentException::because([TranslatableText::of('"%s" is not valid JSON.', $prop->name)]);
             }
         }
 
         if (!\is_array($value) && !\is_scalar($value)) {
-            throw InvalidDocumentException::because([\sprintf('"%s" must be a list, an object or a scalar.', $prop->name)]);
+            throw InvalidDocumentException::because([TranslatableText::of('"%s" must be a list, an object or a scalar.', $prop->name)]);
         }
 
         return $value;
@@ -134,17 +136,17 @@ final readonly class PropSchema
     private function text(Prop $prop, mixed $value): string
     {
         if (!\is_scalar($value)) {
-            throw InvalidDocumentException::because([\sprintf('"%s" must be a string.', $prop->name)]);
+            throw InvalidDocumentException::because([TranslatableText::of('"%s" must be a string.', $prop->name)]);
         }
 
         $text = trim((string) $value);
 
         if (null !== $prop->max && mb_strlen($text) > $prop->max) {
-            throw InvalidDocumentException::because([\sprintf('"%s" is longer than %d characters.', $prop->name, $prop->max)]);
+            throw InvalidDocumentException::because([TranslatableText::of('"%s" is longer than %d characters.', $prop->name, $prop->max)]);
         }
 
         if ('' === $text && $prop->required) {
-            throw InvalidDocumentException::because([\sprintf('"%s" is required.', $prop->name)]);
+            throw InvalidDocumentException::because([TranslatableText::of('"%s" is required.', $prop->name)]);
         }
 
         return $text;
@@ -153,7 +155,7 @@ final readonly class PropSchema
     private function html(Prop $prop, mixed $value): string
     {
         if (!\is_string($value)) {
-            throw InvalidDocumentException::because([\sprintf('"%s" must be a string of markup.', $prop->name)]);
+            throw InvalidDocumentException::because([TranslatableText::of('"%s" must be a string of markup.', $prop->name)]);
         }
 
         return $value;
@@ -162,13 +164,13 @@ final readonly class PropSchema
     private function integer(Prop $prop, mixed $value): int
     {
         if (!\is_int($value) && !(\is_string($value) && 1 === preg_match('/^-?\d+$/', $value))) {
-            throw InvalidDocumentException::because([\sprintf('"%s" must be a whole number.', $prop->name)]);
+            throw InvalidDocumentException::because([TranslatableText::of('"%s" must be a whole number.', $prop->name)]);
         }
 
         $integer = (int) $value;
 
         if ((null !== $prop->min && $integer < $prop->min) || (null !== $prop->max && $integer > $prop->max)) {
-            throw InvalidDocumentException::because([\sprintf('"%s" must be between %d and %d.', $prop->name, $prop->min ?? \PHP_INT_MIN, $prop->max ?? \PHP_INT_MAX)]);
+            throw InvalidDocumentException::because([TranslatableText::of('"%s" must be between %d and %d.', $prop->name, $prop->min ?? \PHP_INT_MIN, $prop->max ?? \PHP_INT_MAX)]);
         }
 
         return $integer;
@@ -184,13 +186,13 @@ final readonly class PropSchema
             return \in_array($value, [1, '1', 'true'], true);
         }
 
-        throw InvalidDocumentException::because([\sprintf('"%s" must be true or false.', $prop->name)]);
+        throw InvalidDocumentException::because([TranslatableText::of('"%s" must be true or false.', $prop->name)]);
     }
 
     private function choice(Prop $prop, mixed $value): string
     {
         if (!\is_scalar($value) || !\array_key_exists((string) $value, $prop->choices)) {
-            throw InvalidDocumentException::because([\sprintf('"%s" must be one of %s.', $prop->name, implode(', ', array_keys($prop->choices)))]);
+            throw InvalidDocumentException::because([TranslatableText::of('"%s" must be one of %s.', $prop->name, implode(', ', array_keys($prop->choices)))]);
         }
 
         return (string) $value;
@@ -203,7 +205,9 @@ final readonly class PropSchema
      */
     private function image(Prop $prop, mixed $value): int|string|null
     {
-        $what = PropType::Image === $prop->type ? 'the id of an image of the media library, or an https address' : 'the id of the item it refers to';
+        $what = PropType::Image === $prop->type
+            ? TranslatableText::of('the id of an image of the media library, or an https address')
+            : TranslatableText::of('the id of the item it refers to');
 
         if (PropType::Image === $prop->type && \is_string($value) && self::isExternalImage($value)) {
             return trim($value);
@@ -216,7 +220,7 @@ final readonly class PropSchema
         }
 
         if (!\is_int($value) && !(\is_string($value) && 1 === preg_match('/^\d+$/', $value))) {
-            throw InvalidDocumentException::because([\sprintf('"%s" must be %s.', $prop->name, $what)]);
+            throw InvalidDocumentException::because([TranslatableText::of('"%s" must be %s.', $prop->name, $what)]);
         }
 
         $id = (int) $value;
@@ -225,14 +229,14 @@ final readonly class PropSchema
         // shows as a placeholder until an image is chosen.
         if (0 === $id) {
             if ($prop->required) {
-                throw InvalidDocumentException::because([\sprintf('"%s" is required.', $prop->name)]);
+                throw InvalidDocumentException::because([TranslatableText::of('"%s" is required.', $prop->name)]);
             }
 
             return null;
         }
 
         if ($id < 0) {
-            throw InvalidDocumentException::because([\sprintf('"%s" must be %s.', $prop->name, $what)]);
+            throw InvalidDocumentException::because([TranslatableText::of('"%s" must be %s.', $prop->name, $what)]);
         }
 
         return $id;
@@ -269,7 +273,7 @@ final readonly class PropSchema
     private function url(Prop $prop, mixed $value): string
     {
         if (!\is_string($value)) {
-            throw InvalidDocumentException::because([\sprintf('"%s" must be an address.', $prop->name)]);
+            throw InvalidDocumentException::because([TranslatableText::of('"%s" must be an address.', $prop->name)]);
         }
 
         $url = trim($value);
@@ -278,11 +282,11 @@ final readonly class PropSchema
         // Anything else — `javascript:` first of all — is not an address a page
         // may send a visitor to.
         if (1 !== preg_match('#^(/(?!/)|\#|https?://|mailto:|tel:)#i', $url)) {
-            throw InvalidDocumentException::because([\sprintf('"%s" must be a path of the site or an absolute http(s), mailto or tel address.', $prop->name)]);
+            throw InvalidDocumentException::because([TranslatableText::of('"%s" must be a path of the site or an absolute http(s), mailto or tel address.', $prop->name)]);
         }
 
         if (null !== $prop->max && \strlen($url) > $prop->max) {
-            throw InvalidDocumentException::because([\sprintf('"%s" is longer than %d characters.', $prop->name, $prop->max)]);
+            throw InvalidDocumentException::because([TranslatableText::of('"%s" is longer than %d characters.', $prop->name, $prop->max)]);
         }
 
         return $url;
@@ -299,12 +303,12 @@ final readonly class PropSchema
             try {
                 $value = json_decode($value, true, 32, \JSON_THROW_ON_ERROR);
             } catch (\JsonException) {
-                throw InvalidDocumentException::because([\sprintf('"%s" is not valid JSON.', $prop->name)]);
+                throw InvalidDocumentException::because([TranslatableText::of('"%s" is not valid JSON.', $prop->name)]);
             }
         }
 
         if (!\is_array($value) || !array_is_list($value)) {
-            throw InvalidDocumentException::because([\sprintf('"%s" must be a list.', $prop->name)]);
+            throw InvalidDocumentException::because([TranslatableText::of('"%s" must be a list.', $prop->name)]);
         }
 
         if ($prop->scalarItems) {
@@ -315,7 +319,7 @@ final readonly class PropSchema
         $count = \count($value);
 
         if ((null !== $prop->minItems && $count < $prop->minItems) || (null !== $prop->maxItems && $count > $prop->maxItems)) {
-            throw InvalidDocumentException::because([\sprintf('"%s" must hold between %d and %d items.', $prop->name, $prop->minItems ?? 0, $prop->maxItems ?? 12)]);
+            throw InvalidDocumentException::because([TranslatableText::of('"%s" must hold between %d and %d items.', $prop->name, $prop->minItems ?? 0, $prop->maxItems ?? 12)]);
         }
 
         $schema = new self($prop->items);
@@ -327,8 +331,8 @@ final readonly class PropSchema
                 try {
                     $items[] = $schema->normalize(['value' => \is_array($item) && \array_key_exists('value', $item) ? $item['value'] : $item])['value'];
                 } catch (InvalidDocumentException $exception) {
-                    foreach ($exception->problems as $problem) {
-                        $problems[] = \sprintf('"%s" item %d: %s', $prop->name, $index + 1, $problem);
+                    foreach ($exception->texts as $problem) {
+                        $problems[] = TranslatableText::of('"%s" item %d: %s', $prop->name, $index + 1, $problem);
                     }
                 }
 
@@ -336,7 +340,7 @@ final readonly class PropSchema
             }
 
             if (!\is_array($item)) {
-                $problems[] = \sprintf('"%s" item %d is not an object.', $prop->name, $index + 1);
+                $problems[] = TranslatableText::of('"%s" item %d is not an object.', $prop->name, $index + 1);
 
                 continue;
             }
@@ -344,8 +348,8 @@ final readonly class PropSchema
             try {
                 $items[] = $schema->normalize(self::rowKeys($item));
             } catch (InvalidDocumentException $exception) {
-                foreach ($exception->problems as $problem) {
-                    $problems[] = \sprintf('"%s" item %d: %s', $prop->name, $index + 1, $problem);
+                foreach ($exception->texts as $problem) {
+                    $problems[] = TranslatableText::of('"%s" item %d: %s', $prop->name, $index + 1, $problem);
                 }
             }
         }

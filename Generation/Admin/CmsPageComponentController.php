@@ -168,7 +168,7 @@ final readonly class CmsPageComponentController
             $document = $current->withSectionAppended($section);
             $this->writer->saveContent($page, $locale, $document);
         } catch (InvalidDocumentException $exception) {
-            foreach ($exception->problems as $problem) {
+            foreach ($exception->translated($this->translator) as $problem) {
                 $this->flash($request, 'danger', $problem);
             }
 

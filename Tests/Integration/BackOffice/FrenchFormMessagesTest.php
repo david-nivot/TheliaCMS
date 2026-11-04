@@ -22,6 +22,12 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\HttpFoundation\Session\Session;
 use Thelia\Model\Lang;
 use Thelia\Model\LangQuery;
+use TheliaCMS\Content\ColumnsSection;
+use TheliaCMS\Content\Document;
+use TheliaCMS\Content\DocumentValidator;
+use TheliaCMS\Content\InvalidDocumentException;
+use TheliaCMS\Content\RichTextSection;
+use TheliaCMS\Content\Section;
 use TheliaCMS\Form\Admin\CmsFormFieldType;
 use TheliaCMS\Form\Admin\CmsFormType;
 use TheliaCMS\Generation\Admin\BriefType;
@@ -171,6 +177,64 @@ final class FrenchFormMessagesTest extends CmsIntegrationTestCase
         } catch (InvalidFieldsException $exception) {
             self::assertSame(['Convives : La valeur est supérieure à 12.'], $exception->translated($this->translator()));
             self::assertSame(['Convives: The value is above 12.'], $exception->problems);
+        }
+    }
+
+    /**
+     * What "Edit by hand" and a refused publication show an editor. The
+     * generator corrects its answer from the same problems: they stay in
+     * English for it.
+     */
+    public function testADocumentRefusedIsReadInFrenchAndKeptInEnglishForTheGenerator(): void
+    {
+        $document = new Document([
+            new Section('Hero!', RichTextSection::NAME, ['html' => '<p>Bonjour</p>']),
+            new Section('cols', ColumnsSection::NAME, ['title' => '', 'columns' => [['image' => 'pas-une-image', 'title' => 'Un', 'text' => 'Deux'], 'pas une colonne']]),
+            new Section('cols', 'cms:missing', []),
+        ]);
+
+        try {
+            $this->getService(DocumentValidator::class)->validate($document);
+            self::fail('The document is refused.');
+        } catch (InvalidDocumentException $exception) {
+            self::assertSame([
+                'Section 1 (« Hero! ») a un identifiant qui n’est pas fait de minuscules, de chiffres, de tirets et de tirets bas, quarante caractères au plus.',
+                'Section 2 (« cols ») : « columns », élément 1 : « image » doit être l’identifiant d’une image de la médiathèque, ou une adresse https.',
+                'Section 2 (« cols ») : « columns », l’élément 2 n’est pas un objet.',
+                'Section 3 (« cols ») reprend l’identifiant de la section 2.',
+                'Section 3 (« cols ») utilise « cms:missing », qui n’est pas un composant du catalogue.',
+            ], $exception->translated($this->translator()));
+            self::assertSame([
+                'Section 1 ("Hero!") has an id that is not lowercase letters, digits, hyphens and underscores, forty characters at most.',
+                'Section 2 ("cols"): "columns" item 1: "image" must be the id of an image of the media library, or an https address.',
+                'Section 2 ("cols"): "columns" item 2 is not an object.',
+                'Section 3 ("cols") repeats the id of section 2.',
+                'Section 3 ("cols") uses "cms:missing", which is not a component of the catalogue.',
+            ], $exception->problems);
+        }
+    }
+
+    public function testADocumentOfTheWrongShapeIsReadInFrench(): void
+    {
+        try {
+            Document::fromArray(['version' => Document::VERSION, 'sections' => [
+                'not a section',
+                ['id' => 'intro', 'component' => RichTextSection::NAME, 'props' => [1], 'appearance' => ['shadow' => true, 'background' => 'red']],
+            ]]);
+            self::fail('The document is refused.');
+        } catch (InvalidDocumentException $exception) {
+            self::assertSame([
+                'La section 1 n’est pas un objet.',
+                'Les propriétés de la section 2 ne sont pas un objet.',
+                'Section 2 : L’apparence n’a pas de réglage « shadow » : seulement background, text, padding et align.',
+                'Section 2 : Le réglage background de l’apparence n’est pas une couleur écrite #rrggbb.',
+            ], $exception->translated($this->translator()));
+            self::assertSame([
+                'Section 1 is not an object.',
+                'Section 2 has props that are not an object.',
+                'Section 2: The appearance has no setting "shadow": only background, text, padding and align.',
+                'Section 2: The background of the appearance is not a colour written #rrggbb.',
+            ], $exception->problems);
         }
     }
 
