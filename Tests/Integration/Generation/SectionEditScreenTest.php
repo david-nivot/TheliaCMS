@@ -122,6 +122,63 @@ final class SectionEditScreenTest extends AdminScreenTestCase
         self::assertStringContainsString('style="color:#1c1f22;text-align:center"', (string) $content?->getDraftHtml());
     }
 
+    public function testThePreciseRoomOfASectionComesBackInTheFormAfterTheSave(): void
+    {
+        $page = $this->pageWith([new Section('intro', 'cms:richtext', ['html' => '<h1>Avant</h1>'], new SectionAppearance(background: '#f8d7d7'))]);
+        $field = static fn (string $name): string => \sprintf('cms_section_intro[cms_appearance][%s]', $name);
+
+        $form = $this->screen($this->url($page))->filter('[data-testid="cms-section-edit-intro"] form[data-cms-section-form]')->form();
+        $form[$field('padding_top')] = '0px';
+        $form[$field('padding_bottom')] = '64PX';
+        $form[$field('margin_top')] = '2rem';
+        $form[$field('margin_bottom')] = '';
+
+        self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()));
+
+        $content = CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($this->locale())->findOne();
+        self::assertSame(
+            ['background' => '#f8d7d7', 'padding_top' => '0px', 'padding_bottom' => '64px', 'margin_top' => '2rem'],
+            Document::fromJson($content?->getDraftDocument())?->section('intro')?->appearance->toArray(),
+        );
+        self::assertStringContainsString('style="background-color:#f8d7d7;padding-top:0px;padding-bottom:64px;margin-top:2rem"', (string) $content?->getDraftHtml());
+
+        $screen = $this->screen($this->url($page));
+        $form = $screen->filter('[data-testid="cms-section-edit-intro"] form[data-cms-section-form]')->form();
+        self::assertSame(['0px', '64px', '2rem', ''], [$form[$field('padding_top')]->getValue(), $form[$field('padding_bottom')]->getValue(), $form[$field('margin_top')]->getValue(), $form[$field('margin_bottom')]->getValue()], 'The form shows what was saved.');
+        self::assertNotNull($screen->filter('[data-testid="cms-section-appearance"]')->attr('open'), 'A section with a precise room has its appearance open.');
+        self::assertCount(0, $screen->filter('[data-testid="cms-choice-padding"] input:checked'), 'No preset stands for a precise room.');
+    }
+
+    public function testARoomWrittenAsALengthForBothSidesIsShownInTheTopAndBottomFields(): void
+    {
+        $page = $this->pageWith([new Section('intro', 'cms:richtext', ['html' => '<h1>Avant</h1>'], new SectionAppearance(padding: '4.5rem'))]);
+        $field = static fn (string $name): string => \sprintf('cms_section_intro[cms_appearance][%s]', $name);
+
+        $form = $this->screen($this->url($page))->filter('[data-testid="cms-section-edit-intro"] form[data-cms-section-form]')->form();
+        self::assertSame('4.5rem', $form[$field('padding_top')]->getValue());
+        self::assertSame('4.5rem', $form[$field('padding_bottom')]->getValue());
+
+        self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()));
+
+        $content = CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($this->locale())->findOne();
+        self::assertStringContainsString('padding-top:4.5rem;padding-bottom:4.5rem', (string) $content?->getDraftHtml());
+    }
+
+    public function testARoomThatIsNoLengthIsRefusedByHand(): void
+    {
+        $page = $this->pageWith([new Section('intro', 'cms:richtext', ['html' => '<h1>Avant</h1>'])]);
+
+        $form = $this->screen($this->url($page))->filter('[data-testid="cms-section-edit-intro"] form[data-cms-section-form]')->form();
+        $values = $form->getPhpValues();
+        $values['cms_section_intro']['cms_appearance']['margin_top'] = 'calc(1px + 1px)';
+
+        self::assertSame(302, $this->send('POST', $form->getUri(), $values));
+
+        $content = CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($this->locale())->findOne();
+        self::assertTrue((bool) Document::fromJson($content?->getDraftDocument())?->section('intro')?->appearance->isEmpty(), 'Nothing was changed.');
+        self::assertStringContainsString('margin_top', $this->screen($this->url($page))->filter('[data-testid="cms-builder-flash-danger"]')->text());
+    }
+
     public function testAnAppearanceThatIsNoColourIsRefusedByHand(): void
     {
         $page = $this->pageWith([new Section('intro', 'cms:richtext', ['html' => '<h1>Avant</h1>'])]);

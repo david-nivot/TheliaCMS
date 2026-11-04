@@ -37,9 +37,14 @@
                             {{ _self.color(setting) }}
                         {% endfor %}
                     </div>
-                    {% for setting in child|filter(setting => not setting.rendered) %}
+                    {% for setting in child|filter(setting => not setting.rendered and setting.vars.attr['data-cms-spacing'] is not defined) %}
+                        {% if setting.vars.name == 'align' %}
+                            {{ _self.spacing(child) }}
+                        {% endif %}
                         {% if setting.vars.attr['data-cms-choice-buttons'] is defined %}
-                            {{ _self.choice_buttons(setting) }}
+                            {# With a precise room written, no button stands for it:
+                               not even "the component's", which it is not. #}
+                            {{ _self.choice_buttons(setting, setting.vars.name == 'padding' and (child.padding_top.vars.value or child.padding_bottom.vars.value)) }}
                         {% else %}
                             {{ form_row(setting) }}
                         {% endif %}
@@ -75,7 +80,7 @@
     above the words. Radio buttons underneath, so the form sends what it
     always sent and the keyboard moves through them as through any radios.
 #}
-{% macro choice_buttons(field) %}
+{% macro choice_buttons(field, none_checked = false) %}
     {% set domain = field.vars.translation_domain %}
     <fieldset class="mb-3" data-cms-choice-buttons data-testid="cms-choice-{{ field.vars.name }}">
         <legend class="form-label fs-6 mb-1">{{ domain is same as(false) ? field.vars.label : field.vars.label|trans({}, domain) }}</legend>
@@ -86,7 +91,7 @@
             {% for option in field %}
                 {% set option_domain = option.vars.translation_domain %}
                 <input type="radio" class="btn-check" id="{{ option.vars.id }}" name="{{ option.vars.full_name }}"
-                       value="{{ option.vars.value }}" {{ option.vars.checked ? 'checked' }} autocomplete="off">
+                       value="{{ option.vars.value }}" {{ option.vars.checked and not none_checked ? 'checked' }} autocomplete="off">
                 <label class="btn btn-outline-secondary d-flex flex-column align-items-center justify-content-center gap-1 py-2" for="{{ option.vars.id }}">
                     {{ _self.icon(option.vars.attr['data-cms-icon']|default('bi-dash-circle')) }}
                     <span class="small lh-sm">{{ option_domain is same as(false) ? option.vars.label : option.vars.label|trans({}, option_domain) }}</span>
@@ -97,6 +102,37 @@
         {{ form_errors(field) }}
     </fieldset>
     {% do field.setRendered %}
+{% endmacro %}
+
+{#
+    The precise room of a section: the inner room (padding) and the outer
+    room (margin), each with a top and a bottom, a length written by hand.
+    The group holds the four fields, named padding_top, padding_bottom,
+    margin_top and margin_bottom.
+#}
+{% macro spacing(group) %}
+    <fieldset class="mb-3 cms-content__spacing" data-testid="cms-section-spacing">
+        <legend class="form-label fs-6 mb-1">{{ 'Precise room'|trans({}, 'theliacms') }}</legend>
+        <div class="cms-content__spacing-groups">
+            {% for kind in ['padding', 'margin'] %}
+                <div class="cms-content__spacing-group" data-testid="cms-spacing-{{ kind }}">
+                    <div class="cms-content__spacing-fields">
+                        {% for side in ['top', 'bottom'] %}
+                            {% set field = group[kind ~ '_' ~ side] %}
+                            <div>
+                                <label class="form-label" for="{{ field.vars.id }}">{{ field.vars.label|trans({}, field.vars.translation_domain) }}</label>
+                                {{ form_widget(field) }}
+                                {{ form_errors(field) }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="form-text">{{ group[kind ~ '_top'].vars.help|trans({}, group[kind ~ '_top'].vars.translation_domain) }}</div>
+                </div>
+                {% do group[kind ~ '_top'].setRendered %}
+                {% do group[kind ~ '_bottom'].setRendered %}
+            {% endfor %}
+        </div>
+    </fieldset>
 {% endmacro %}
 
 {#

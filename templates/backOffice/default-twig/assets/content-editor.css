@@ -380,12 +380,37 @@ body:has(.cms-content) {
 
 .cms-content__edit form[data-cms-section-form] > :is(.mb-3:has(textarea), .mb-3:has([data-cms-long]), .mb-3:has([data-cms-image-field]), fieldset, details, .cms-content__edit-actions),
 .cms-content__item-fields > :is(.mb-3:has(textarea), fieldset, details),
-.cms-content__appearance-fields > :is(.cms-content__colors, fieldset[data-cms-choice-buttons]) {
+.cms-content__appearance-fields > :is(.cms-content__colors, fieldset[data-cms-choice-buttons], .cms-content__spacing) {
     grid-column: 1 / -1;
 }
 
 .cms-content__item-fields > .mb-3:has([data-cms-image-field]) {
     grid-column: 1 / -1;
+}
+
+/* The precise room: the inner room and the outer room side by side, each a
+   top and a bottom, its help under the pair. */
+.cms-content__spacing-groups {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem 1rem;
+}
+
+@container (min-width: 34rem) {
+    .cms-content__spacing-groups {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+.cms-content__spacing-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+}
+
+.cms-content__spacing-fields .form-label {
+    font-size: 0.8125rem;
+    margin-bottom: 0.25rem;
 }
 
 /* A row of one value, a step of a recipe: the value takes the line, under

@@ -153,7 +153,7 @@ final readonly class SectionFormBuilder
         $group = $builder->create(self::APPEARANCE, FormType::class, [
             'mapped' => false,
             'label' => 'Appearance',
-            'data' => $appearance->toArray(),
+            'data' => self::appearanceData($appearance),
         ]);
         $group->add('background', TextType::class, array_merge_recursive($color, [
             'label' => 'Background',
@@ -167,6 +167,7 @@ final readonly class SectionFormBuilder
         ]));
         $group->add('padding', ChoiceType::class, [
             'label' => 'Room above and below',
+            'help' => 'Inside the section, the background goes with it. A precise value below wins for its side.',
             'required' => false,
             'placeholder' => "The component's",
             'choices' => $paddings,
@@ -178,7 +179,37 @@ final readonly class SectionFormBuilder
             'choices' => ['Left' => 'left', 'Center' => 'center', 'Right' => 'right'],
         ] + self::asButtons(['left' => 'bi-text-left', 'center' => 'bi-text-center', 'right' => 'bi-text-right']));
 
+        $length = static fn (string $label, ?string $help = null): array => [
+            'label' => $label,
+            'help' => $help,
+            'required' => false,
+            'attr' => ['maxlength' => 8, 'placeholder' => '64px', 'inputmode' => 'text', 'autocomplete' => 'off', 'data-cms-spacing' => ''],
+        ];
+        $group->add('padding_top', TextType::class, $length('Inside, top', 'Inside the section, the background goes with it. Written 64px (0 to 320) or 2rem (0 to 20). Empty: the component\'s.'));
+        $group->add('padding_bottom', TextType::class, $length('Inside, bottom'));
+        $group->add('margin_top', TextType::class, $length('Outside, top', 'Outside the section, between it and its neighbours. Same units. Empty: none.'));
+        $group->add('margin_bottom', TextType::class, $length('Outside, bottom'));
+
         $builder->add($group);
+    }
+
+    /**
+     * What the form shows of an appearance. A room written as a length for
+     * both sides, which no button stands for, is shown in the fields of the
+     * top and the bottom: saving it again draws the same section.
+     *
+     * @return array<string, string>
+     */
+    private static function appearanceData(SectionAppearance $appearance): array
+    {
+        $data = $appearance->toArray();
+
+        if (isset($data['padding']) && !isset(SectionAppearance::PADDINGS[$data['padding']])) {
+            $data += ['padding_top' => $data['padding'], 'padding_bottom' => $data['padding']];
+            unset($data['padding']);
+        }
+
+        return $data;
     }
 
     /**
