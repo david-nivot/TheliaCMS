@@ -1,6 +1,6 @@
 # Plan: skills that give the same page for the same brief
 
-Status: paused on 2026-10-27, after round 2e. The command additions, the corpus, the bench and
+Status: control played on 2026-11-04 on module 2.10.0 (two rounds, 5.59 USD: noise is two briefs, the code changes since round 2c move nothing beyond it; `results.md`). Paused on 2026-10-27, after round 2e. The command additions, the corpus, the bench and
 the script are done, and rounds 0 and 1 are played: the effort is not the
 lever, the section ids are the largest source of variance
 (`docs/evaluation/determinism/results.md`). Rounds 2a (fixed section ids)

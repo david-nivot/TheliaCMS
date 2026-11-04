@@ -160,6 +160,43 @@ titre).
   2b), et depuis 2b une page 06 réduite à une phrase sans contenu (« Cette
   page présente l'atelier de Thelia. »), le brief ne donnant rien d'autre.
 
+## Contrôle du 2026-11-04 (module 2.10.0)
+
+Depuis `round-2-tiebreak`, le générateur a changé sans toucher aux skills :
+passage au gateway IA du core (2.4.0), plafond de sortie à 48 000 jetons,
+section réécrite seule et traduction greffée sur sa source (G6), page
+contrôlée contre le site avec renvoi en correction (G7), titre et
+description de recherche demandés (G8). Deux manches de contrôle jouent les
+skills de la ronde 2c inchangés, sur le code 2.10.0 : leur écart est le
+bruit, leur écart avec `round-2-tiebreak` y ajoute la dérive du code.
+
+| Ronde | Code | Structure stable (≥ 4/5) | Briefs stables | Coût du tour |
+|---|---|---|---|---|
+| `round-2-tiebreak` | 2.3.0, SDK Claude | 15 / 16 | 7 / 16 | 2,30 USD |
+| `round-3-control` | 2.10.0, gateway du core | 14 / 16 | 6 / 16 | 2,83 USD |
+| `round-3-control-b` | 2.10.0, gateway du core | 15 / 16 | 8 / 16 | 2,76 USD |
+
+- **Bruit.** Entre les deux contrôles, deux briefs changent d'état stable
+  (06 et 13, sur la longueur d'une section). Une règle n'est gardée que si
+  elle en déplace plus de deux.
+- **Dérive du code.** Entre chaque contrôle et `round-2-tiebreak`, trois
+  briefs changent d'état (02 et 06 perdus, 14 gagné ; 02 perdu, 13 et 14
+  gagnés) : au niveau du bruit. Les changements du générateur ne déplacent
+  pas la stabilité.
+- **Coût.** 0,035 USD la page en moyenne contre 0,029 : environ 60 % de
+  sortie en plus (2 400 jetons contre 1 450 sur le brief 01), le premier run
+  à froid à 0,158 USD. Les tours bougent à peine (1,4 au lieu de 1,0 sur
+  05 et 11, 2,6 au lieu de 2,0 sur 06) : les renvois en correction de G7
+  sont rares sur ce corpus.
+- **Ce qui reste.** La longueur des sections fait tomber la plupart des
+  briefs instables (03, 06, 07, 12, 13 dans un contrôle ; 02, 03, 07, 12 dans
+  l'autre), la forme les briefs 01, 05, 08 et 09. L'`intro` varie dans quatre
+  briefs (01, 06, 08, 12), mais seul 06 n'a pas d'autre section instable :
+  une règle sur l'`intro` seule déplacerait au mieux un brief, sous le bruit.
+  Une règle de longueur pour toutes les sections de texte (`intro`, `story`,
+  `features`, `offer`, `contact`) toucherait 7 briefs (01, 03, 06, 07, 08,
+  09, 12).
+
 ## Défauts relevés en marge
 
 - **Note à zéro sous un témoignage.** `Organisms:ReviewCard:Base` dessine
@@ -175,6 +212,8 @@ titre).
   quinze runs des rondes 0 et 1, contre la consigne des skills. Corrigé dans
   `bench.json` et sur le site de dev avant la ronde 2a : la page modèle fixe
   toujours la structure (5/5), sans le bandeau.
-- **Le contrôle des titres ne tourne pas en `--dry-run`.** `HeadingChecker`
-  ne s'exécute qu'à l'enregistrement : ces h1 n'ont produit aucun
-  avertissement dans la sortie de la commande.
+- **Le contrôle des titres ne tournait pas en `--dry-run`.** `HeadingChecker`
+  ne s'exécutait qu'à l'enregistrement : ces h1 n'ont produit aucun
+  avertissement dans la sortie de la commande. Depuis 2.10.0, le contrôle
+  qui suit la validation (`DocumentChecker`) vérifie les titres à chaque
+  génération, `--dry-run` compris, et renvoie un h1 au modèle.
