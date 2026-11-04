@@ -330,6 +330,42 @@ final class ImageRewriterTest extends TestCase
         self::assertSame(2, substr_count($html, 'sizes="(max-width: 1440px) 100vw, 1440px"'), 'The nearest element is the one that knows.');
     }
 
+    public function testAFixedHeightHoldsEachWidthToWhatTheProportionsOfTheFileGive(): void
+    {
+        // 1600 by 900 (the default of the helper): 5rem high is 8.8889rem wide.
+        $html = $this->rewrite(
+            '<div data-cms-sizes="(min-width: 48rem) 20rem, 100vw" data-cms-height="5rem"><img src="/image-library/7/full/max/0/default.jpg" alt=""></div>',
+        );
+
+        self::assertSame(2, substr_count($html, 'sizes="(min-width: 48rem) min(20rem, calc(5rem * 1.7778)), min(100vw, calc(5rem * 1.7778))"'));
+        self::assertStringNotContainsString('data-cms-', $html);
+    }
+
+    public function testAFixedHeightAloneHoldsTheDefaultToo(): void
+    {
+        $html = $this->rewrite('<div data-cms-height="80px"><img src="/image-library/7/full/max/0/default.jpg" alt=""></div>');
+
+        self::assertSame(2, substr_count($html, 'sizes="(max-width: 1440px) min(100vw, calc(80px * 1.7778)), min(1440px, calc(80px * 1.7778))"'));
+    }
+
+    public function testAHeightThatIsNotALengthIsIgnored(): void
+    {
+        $html = $this->rewrite('<div data-cms-height="5rem; color: red"><img src="/image-library/7/full/max/0/default.jpg" alt=""></div>');
+
+        self::assertSame(2, substr_count($html, 'sizes="(max-width: 1440px) 100vw, 1440px"'));
+        self::assertStringNotContainsString('data-cms-height', $html);
+    }
+
+    public function testAHeightIsLeftOutWhenTheLibraryDoesNotKnowTheProportions(): void
+    {
+        $html = $this->rewrite(
+            '<div data-cms-sizes="100vw" data-cms-height="5rem"><img src="/image-library/8/full/max/0/default.jpg" alt=""></div>',
+            new MediaFile(id: 8, format: 'jpg', width: 900),
+        );
+
+        self::assertSame(2, substr_count($html, 'sizes="100vw"'));
+    }
+
     public function testAnImageOutsideEveryDeclarationKeepsTheDefault(): void
     {
         $html = $this->rewrite('<div data-cms-sizes="100vw"></div><img src="/image-library/7/full/max/0/default.jpg" alt="">');

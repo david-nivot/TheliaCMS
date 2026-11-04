@@ -182,8 +182,17 @@ attribute on the element that holds its images:
   and the other.
 
 Declare it for the width the image really has on the page, not for the width of
-the block when the image is smaller (the columns draw their images in a band
-`5rem` high; the width declared is that of the column, an upper bound).
+the block when the image is smaller.
+
+An image drawn at a fixed height, as the logos of the columns are (a band
+`5rem` high, as wide as the proportions of the file make it), says so with a
+second attribute on the same element, `data-cms-height="5rem"` (a plain length
+in `px`, `rem` or `em`). The publication knows the proportions of the file: it
+holds each width of `data-cms-sizes` to the width that height gives, as
+`min(<width>, calc(5rem * <width of the file / its height>))`. Read the same
+way as `data-cms-sizes` (the nearest element), ignored when it is not a length
+or when the library does not know the proportions, and taken out of the
+published page. `ImageSlot::columnBand()` is the one of the columns.
 
 ## Writing a section of your own
 

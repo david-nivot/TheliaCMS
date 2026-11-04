@@ -82,7 +82,7 @@ final readonly class ColumnsSection implements SectionDefinitionInterface
             return '';
         }
 
-        $html = \sprintf('<section class="cms-columns cms-columns--%d"%s>', \count($columns), ImageSlot::attribute(ImageSlot::column(\count($columns))));
+        $html = \sprintf('<section class="cms-columns cms-columns--%d"%s>', \count($columns), ImageSlot::attribute(ImageSlot::column(\count($columns)), ImageSlot::columnBand()));
         $title = trim((string) ($props['title'] ?? ''));
 
         if ('' !== $title) {

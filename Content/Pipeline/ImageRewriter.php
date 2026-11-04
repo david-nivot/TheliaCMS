@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace TheliaCMS\Content\Pipeline;
 
 use TheliaCMS\Content\ImageSlot;
+use TheliaCMS\Media\MediaFile;
 use TheliaCMS\Media\MediaResolver;
 
 /**
@@ -77,9 +78,11 @@ final readonly class ImageRewriter
         }
 
         // Read, it has done its work: nothing of it goes online.
-        foreach (iterator_to_array((new \DOMXPath($document))->query('//*[@'.ImageSlot::ATTRIBUTE.']') ?: []) as $declaring) {
-            if ($declaring instanceof \DOMElement) {
-                $declaring->removeAttribute(ImageSlot::ATTRIBUTE);
+        foreach ([ImageSlot::ATTRIBUTE, ImageSlot::HEIGHT_ATTRIBUTE] as $attribute) {
+            foreach (iterator_to_array((new \DOMXPath($document))->query('//*[@'.$attribute.']') ?: []) as $declaring) {
+                if ($declaring instanceof \DOMElement) {
+                    $declaring->removeAttribute($attribute);
+                }
             }
         }
 
@@ -114,7 +117,7 @@ final readonly class ImageRewriter
         }
 
         $widths = $this->widthsFor($media->width);
-        $sizes = [] === $widths ? null : $this->sizes($widths, $this->declaredSizes($image));
+        $sizes = [] === $widths ? null : $this->sizes($widths, $this->declaredSizes($image), $this->declaredHeight($image), $media);
 
         if (null !== $sizes) {
             $image->setAttribute('srcset', $this->srcset($media->id, $widths, $media->format));
@@ -132,11 +135,27 @@ final readonly class ImageRewriter
      */
     private function declaredSizes(\DOMElement $image): ?string
     {
-        for ($node = $image; $node instanceof \DOMElement; $node = $node->parentNode) {
-            if ($node->hasAttribute(ImageSlot::ATTRIBUTE)) {
-                $declared = trim($node->getAttribute(ImageSlot::ATTRIBUTE));
+        return $this->nearestDeclaration($image, ImageSlot::ATTRIBUTE, ImageSlot::isValid(...));
+    }
 
-                return ImageSlot::isValid($declared) ? $declared : null;
+    /**
+     * The fixed height a section draws its images at, read the same way.
+     */
+    private function declaredHeight(\DOMElement $image): ?string
+    {
+        return $this->nearestDeclaration($image, ImageSlot::HEIGHT_ATTRIBUTE, ImageSlot::isValidHeight(...));
+    }
+
+    /**
+     * @param \Closure(string): bool $isValid
+     */
+    private function nearestDeclaration(\DOMElement $image, string $attribute, \Closure $isValid): ?string
+    {
+        for ($node = $image; $node instanceof \DOMElement; $node = $node->parentNode) {
+            if ($node->hasAttribute($attribute)) {
+                $declared = trim($node->getAttribute($attribute));
+
+                return $isValid($declared) ? $declared : null;
             }
         }
 
@@ -152,15 +171,18 @@ final readonly class ImageRewriter
      *
      * @param non-empty-list<int> $widths ascending, the last one being the original width
      */
-    private function sizes(array $widths, ?string $declared): string
+    private function sizes(array $widths, ?string $declared, ?string $height, MediaFile $media): string
     {
-        if (null !== $declared) {
-            return $declared;
+        $slot = min($widths[array_key_last($widths)], self::WIDEST_SLOT);
+        $sizes = $declared ?? \sprintf('(max-width: %1$dpx) 100vw, %1$dpx', $slot);
+
+        // Drawn at a fixed height, an image is as wide as its proportions say,
+        // and no wider than the slot it sits in.
+        if (null !== $height && null !== $media->width && null !== $media->height && $media->height > 0) {
+            return ImageSlot::bandedTo($sizes, $height, $media->width / $media->height);
         }
 
-        $slot = min($widths[array_key_last($widths)], self::WIDEST_SLOT);
-
-        return \sprintf('(max-width: %1$dpx) 100vw, %1$dpx', $slot);
+        return $sizes;
     }
 
     /**

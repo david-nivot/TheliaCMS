@@ -364,6 +364,9 @@ should read:
   the back office does not look at attributes, and the filter that runs on every
   rendered page lets `data-cms-sizes` through. A component of the theme, or of a
   module, writes it in its own template.
+- Pictures drawn at a fixed height (a row of logos in a band) add
+  `data-cms-height="5rem"` on the same element: each width of the list is then
+  held to what that height gives the picture, from its proportions.
 - The component keeps its layout in its stylesheet; the width declared must follow
   it. A wrong value only makes the browser pick a file too small or too large.
 

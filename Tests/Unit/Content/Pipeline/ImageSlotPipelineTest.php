@@ -40,8 +40,8 @@ final class ImageSlotPipelineTest extends TestCase
     {
         $html = $this->publish((new ColumnsSection())->render(['columns' => array_fill(0, 3, ['image' => 'https://example.com/a.jpg'])], 'fr_FR'));
 
-        self::assertSame(6, substr_count($html, '(min-width: 77rem) 23.67rem, (min-width: 48rem) calc((100vw - 2rem - 4rem) / 3), calc(100vw - 2rem)'), 'Three images, each with its WebP source.');
-        self::assertStringNotContainsString('data-cms-sizes', $html);
+        self::assertSame(6, substr_count($html, '(min-width: 77rem) min(23.67rem, calc(5rem * 1.7778)), (min-width: 48rem) min(calc((100vw - 2rem - 4rem) / 3), calc(5rem * 1.7778)), min(calc(100vw - 2rem), calc(5rem * 1.7778))'), 'Three images, each with its WebP source, held to the band they are drawn in.');
+        self::assertStringNotContainsString('data-cms-', $html);
     }
 
     public function testAComponentOfTheSiteDeclaresItsOwnWidth(): void

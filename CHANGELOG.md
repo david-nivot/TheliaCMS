@@ -31,7 +31,10 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   publication reads and takes out: the image section (`narrow`, `column`,
   `full`) and the columns (one share of the grid, the gaps out) declare theirs,
   so a 1200px picture in one of three columns is announced at a third of the
-  grid, not at 1200px.
+  grid, not at 1200px. The images of the columns are drawn in a band of a
+  fixed height, as wide as their proportions make them: `data-cms-height`
+  says it, and the publication holds the width announced to the one that
+  height gives.
   Components of the site, of a module or of the theme can declare it too, see
   docs/sections.md and docs/creating-a-component.md. The filter that runs on
   every page lets the attribute through. Pages published before keep the old

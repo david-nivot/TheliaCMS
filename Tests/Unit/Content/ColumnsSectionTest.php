@@ -30,7 +30,7 @@ final class ColumnsSectionTest extends TestCase
         ]]);
 
         self::assertSame(
-            '<section class="cms-columns cms-columns--3" data-cms-sizes="(min-width: 77rem) 23.67rem, (min-width: 48rem) calc((100vw - 2rem - 4rem) / 3), calc(100vw - 2rem)"><div class="cms-columns__grid">'
+            '<section class="cms-columns cms-columns--3" data-cms-sizes="(min-width: 77rem) 23.67rem, (min-width: 48rem) calc((100vw - 2rem - 4rem) / 3), calc(100vw - 2rem)" data-cms-height="5rem"><div class="cms-columns__grid">'
             .'<div class="cms-columns__item"><img class="cms-columns__image" src="https://img.logoipsum.com/243.svg" alt="Logoipsum" loading="lazy"><p class="cms-columns__text">Lorem ipsum dolor sit amet.</p></div>'
             .'<div class="cms-columns__item"><img class="cms-columns__image" src="https://img.logoipsum.com/245.svg" alt="" loading="lazy"><p class="cms-columns__text">Consectetur &lt;b&gt;adipiscing&lt;/b&gt; elit.</p></div>'
             .'<div class="cms-columns__item"><h3 class="cms-columns__heading">Sans logo</h3><p class="cms-columns__text">Sed do eiusmod.</p></div>'
@@ -45,7 +45,7 @@ final class ColumnsSectionTest extends TestCase
         $section = new ColumnsSection();
         $html = $section->render($section->normalizeProps(['title' => 'Ils nous font confiance', 'columns' => [['text' => 'Un'], ['text' => 'Deux']]]), 'fr_FR');
 
-        self::assertStringStartsWith('<section class="cms-columns cms-columns--2" data-cms-sizes="(min-width: 77rem) 36.5rem, (min-width: 48rem) calc((100vw - 2rem - 2rem) / 2), calc(100vw - 2rem)"><h2 class="cms-columns__title">Ils nous font confiance</h2>', $html);
+        self::assertStringStartsWith('<section class="cms-columns cms-columns--2" data-cms-sizes="(min-width: 77rem) 36.5rem, (min-width: 48rem) calc((100vw - 2rem - 2rem) / 2), calc(100vw - 2rem)" data-cms-height="5rem"><h2 class="cms-columns__title">Ils nous font confiance</h2>', $html);
     }
 
     /**
@@ -59,6 +59,18 @@ final class ColumnsSectionTest extends TestCase
 
         self::assertStringContainsString('(min-width: 77rem) 17.25rem, (min-width: 48rem) calc((100vw - 2rem - 6rem) / 4), calc(100vw - 2rem)', $html(4));
         self::assertStringContainsString('(min-width: 77rem) 36.5rem, (min-width: 48rem) calc((100vw - 2rem - 2rem) / 2), calc(100vw - 2rem)', $html(2));
+    }
+
+    /**
+     * `.cms-columns__image` is a band `5rem` high, as wide as its proportions
+     * make it: the publication cannot know that without being told.
+     */
+    public function testDeclaresTheBandTheImagesAreDrawnIn(): void
+    {
+        $section = new ColumnsSection();
+        $html = $section->render($section->normalizeProps(['columns' => [['text' => 'Un'], ['text' => 'Deux']]]), 'fr_FR');
+
+        self::assertStringContainsString(' data-cms-height="5rem"', $html);
     }
 
     public function testTwoToFourColumns(): void

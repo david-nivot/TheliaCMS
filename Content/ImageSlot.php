@@ -32,6 +32,16 @@ final class ImageSlot
 {
     public const string ATTRIBUTE = 'data-cms-sizes';
 
+    /**
+     * The fixed height the images under the element are drawn at, with the
+     * width their proportions give: a band of logos of every shape. The
+     * rewriter knows the proportions of the file, the section does not.
+     */
+    public const string HEIGHT_ATTRIBUTE = 'data-cms-height';
+
+    /** The height of the band of an image of the columns (`.cms-columns__image`), in rem. */
+    private const int COLUMN_BAND_HEIGHT = 5;
+
     /** The widest line of text of the content (`.cms-image`, `.cms-columns`), in rem. */
     private const int CONTENT_WIDTH = 75;
 
@@ -131,11 +141,98 @@ final class ImageSlot
         return 0 === $depth;
     }
 
+    public static function columnBand(): string
+    {
+        return \sprintf('%drem', self::COLUMN_BAND_HEIGHT);
+    }
+
+    /**
+     * Whether a value is a plain length, which is all a fixed height is.
+     */
+    public static function isValidHeight(string $height): bool
+    {
+        return 1 === preg_match('/^\d{1,4}(?:\.\d{1,3})?(?:px|rem|em)$/', trim($height));
+    }
+
+    /**
+     * The `sizes` of images drawn at a fixed height: each width of the list
+     * held to the width that height gives them, which is less than the width
+     * of their block as soon as they are wider than tall.
+     *
+     * @param float $ratio the width of the file over its height
+     */
+    public static function bandedTo(string $sizes, string $height, float $ratio): string
+    {
+        $cap = \sprintf('calc(%s * %s)', trim($height), rtrim(rtrim(number_format($ratio, 4, '.', ''), '0'), '.'));
+
+        return implode(', ', array_map(static function (string $entry) use ($cap): string {
+            $tokens = self::topLevelTokens($entry);
+            $width = array_pop($tokens);
+
+            return implode(' ', [...$tokens, \sprintf('min(%s, %s)', $width, $cap)]);
+        }, self::topLevelEntries($sizes)));
+    }
+
+    /**
+     * The entries of a `sizes` list: split on the commas that are not inside
+     * parentheses (`min(a, b)` is one width).
+     *
+     * @return list<string>
+     */
+    private static function topLevelEntries(string $sizes): array
+    {
+        return array_map(trim(...), self::splitOutsideParentheses($sizes, ','));
+    }
+
+    /**
+     * The parts of an entry, a condition then a width, split on the spaces
+     * that are not inside parentheses.
+     *
+     * @return non-empty-list<string>
+     */
+    private static function topLevelTokens(string $entry): array
+    {
+        return array_values(array_filter(self::splitOutsideParentheses($entry, ' '), static fn (string $token): bool => '' !== $token)) ?: [$entry];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function splitOutsideParentheses(string $text, string $separator): array
+    {
+        $parts = [''];
+        $depth = 0;
+
+        foreach (str_split($text) as $character) {
+            if ('(' === $character) {
+                ++$depth;
+            } elseif (')' === $character) {
+                --$depth;
+            }
+
+            if ($separator === $character && 0 === $depth) {
+                $parts[] = '';
+
+                continue;
+            }
+
+            $parts[\count($parts) - 1] .= $character;
+        }
+
+        return $parts;
+    }
+
     /**
      * The attribute to write on the element a section draws its images in.
      */
-    public static function attribute(string $sizes): string
+    public static function attribute(string $sizes, ?string $height = null): string
     {
-        return \sprintf(' %s="%s"', self::ATTRIBUTE, htmlspecialchars($sizes, \ENT_QUOTES | \ENT_HTML5));
+        $attributes = \sprintf(' %s="%s"', self::ATTRIBUTE, htmlspecialchars($sizes, \ENT_QUOTES | \ENT_HTML5));
+
+        if (null !== $height) {
+            $attributes .= \sprintf(' %s="%s"', self::HEIGHT_ATTRIBUTE, htmlspecialchars($height, \ENT_QUOTES | \ENT_HTML5));
+        }
+
+        return $attributes;
     }
 }

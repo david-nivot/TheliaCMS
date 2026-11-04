@@ -222,6 +222,7 @@ final readonly class PublishedContentSanitizer
             // through here: what the rewriter does not read as a width is
             // ignored there, and the attribute does nothing else.
             ->allowAttribute(ImageSlot::ATTRIBUTE, '*')
+            ->allowAttribute(ImageSlot::HEIGHT_ATTRIBUTE, '*')
             // `open` is what an author toggles on a question that should start
             // expanded; without it a `<details>` always comes back closed.
             ->allowAttribute('open', ['details'])
