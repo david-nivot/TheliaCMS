@@ -138,6 +138,10 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Fixed
 
+- **The picture of a row of a list takes the whole row.** Its card was squeezed
+  into a half row, which cut the title and the badge, and the sentence that
+  says the kept part sat against the link "Another source: a file or an
+  address".
 - **A choice drawn as buttons takes the whole line of the section form.** The
   width of the Image section, and the room and the alignment of the appearance,
   shared a line with a neighbouring field and wrapped their buttons on two rows.
