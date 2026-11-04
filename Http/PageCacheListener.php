@@ -18,6 +18,7 @@ use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use TheliaCMS\Http\SharedCache\CoreSharedCache;
+use TheliaCMS\Settings\CmsSettings;
 
 /**
  * Writes the cache headers of a CMS page, once everything else is done with the
@@ -41,6 +42,7 @@ final readonly class PageCacheListener
 
     public function __construct(
         private PageCachePolicy $policy,
+        private CmsSettings $settings,
         private ?CoreSharedCache $sharedCache = null,
     ) {
     }
@@ -53,6 +55,16 @@ final readonly class PageCacheListener
     public function onKernelResponse(ResponseEvent $event): void
     {
         if (!$event->isMainRequest()) {
+            return;
+        }
+
+        // A request that got past the closed site (an address on the allow
+        // list, an administrator) sees the real one. Shared, that page would be
+        // served to everyone in place of the closed site. Any page, the shop's
+        // too: before the shared cache of the core, which refuses a `no-store`.
+        if ($this->settings->isMaintenanceActive()) {
+            $event->getResponse()->headers->set('Cache-Control', 'private, no-store');
+
             return;
         }
 

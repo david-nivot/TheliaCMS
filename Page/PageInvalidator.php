@@ -42,6 +42,7 @@ final readonly class PageInvalidator
         private CmsMenuRepository $menus,
         private CmsPageAdminRepository $tree,
         private SitemapCache $sitemap,
+        private ScheduledChanges $scheduledChanges,
     ) {
     }
 
@@ -82,11 +83,14 @@ final readonly class PageInvalidator
 
     /**
      * Only the order or the content of the lists changed, such as the position
-     * of a page among its siblings. The sitemap is a list of pages too.
+     * of a page among its siblings. The sitemap is a list of pages too. The
+     * dates a page goes online or offline are read again: a write may have
+     * moved them.
      */
     public function listsChanged(): void
     {
         $this->partials->invalidate(PageListPartial::NAME);
         $this->sitemap->invalidate();
+        $this->scheduledChanges->forget();
     }
 }

@@ -34,6 +34,7 @@ use Thelia\Module\BaseModule;
 use TheliaCMS\Content\Section\SectionStories;
 use TheliaCMS\Http\SharedCache\CmsSharedCacheContributor;
 use TheliaCMS\Http\SharedCache\CoreSharedCache;
+use TheliaCMS\Http\SharedCache\SharedMaxAgeCapListener;
 use TheliaCMS\Install\LegalPagesSeeder;
 use TheliaCMS\Install\MenuSeeder;
 use TheliaCMS\Model\CmsPageContentQuery;
@@ -440,6 +441,10 @@ class TheliaCMS extends BaseModule
                 ->autoconfigure(true);
 
             $servicesConfigurator->set(CoreSharedCache::class)
+                ->autowire(true)
+                ->autoconfigure(true);
+
+            $servicesConfigurator->set(SharedMaxAgeCapListener::class)
                 ->autowire(true)
                 ->autoconfigure(true);
         }

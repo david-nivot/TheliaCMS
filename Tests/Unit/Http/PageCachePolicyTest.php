@@ -15,6 +15,8 @@ declare(strict_types=1);
 namespace TheliaCMS\Tests\Unit\Http;
 
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
+use Symfony\Component\Cache\Adapter\TagAwareAdapter;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -22,6 +24,7 @@ use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
 use TheliaCMS\Http\CacheTags;
 use TheliaCMS\Http\PageCachePolicy;
+use TheliaCMS\Page\ScheduledChanges;
 
 /**
  * Answering "yes" here wrongly hands one visitor's page, and the cookie that
@@ -33,7 +36,7 @@ final class PageCachePolicyTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->policy = new PageCachePolicy();
+        $this->policy = new PageCachePolicy(new ScheduledChanges(new TagAwareAdapter(new ArrayAdapter())));
     }
 
     public function testAPlainReadFromSomebodyWithNoSessionMayBeShared(): void
@@ -91,5 +94,43 @@ final class PageCachePolicyTest extends TestCase
         self::assertSame('cms,cms-menu,cms-page-12', $response->headers->get('Cache-Tag'));
         self::assertSame('cms cms-menu cms-page-12', $response->headers->get('Surrogate-Key'));
         self::assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
+    }
+
+    public function testWithNothingScheduledThePageIsKeptForTheWholeTtl(): void
+    {
+        $now = new \DateTimeImmutable('2026-11-03 12:00:00');
+
+        self::assertSame(600, $this->policy->sharedMaxAge(600, null, $now));
+    }
+
+    public function testAChangeBeyondTheTtlChangesNothing(): void
+    {
+        $now = new \DateTimeImmutable('2026-11-03 12:00:00');
+
+        self::assertSame(600, $this->policy->sharedMaxAge(600, $now->modify('+1 hour'), $now));
+    }
+
+    /**
+     * A page that goes offline in two minutes, or that lists one which does,
+     * is kept two minutes, not ten.
+     */
+    public function testAChangeWithinTheTtlShortensIt(): void
+    {
+        $now = new \DateTimeImmutable('2026-11-03 12:00:00');
+
+        self::assertSame(120, $this->policy->sharedMaxAge(600, $now->modify('+120 seconds'), $now));
+    }
+
+    /**
+     * Under a second there is nothing left to share: `s-maxage=0` would still
+     * let a cache store the page and serve it stale.
+     */
+    public function testUnderASecondLeftNothingIsShared(): void
+    {
+        $now = new \DateTimeImmutable('2026-11-03 12:00:00.400000');
+
+        self::assertNull($this->policy->sharedMaxAge(600, new \DateTimeImmutable('2026-11-03 12:00:00.900000'), $now));
+        self::assertNull($this->policy->sharedMaxAge(600, $now, $now));
+        self::assertNull($this->policy->sharedMaxAge(600, $now->modify('-1 minute'), $now));
     }
 }

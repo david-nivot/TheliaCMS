@@ -33,6 +33,22 @@ No `Vary` header is written: the language of a page comes from its address, its
 domain or its `lang` parameter, which a cache keys on already, never from
 `Accept-Language`.
 
+## Scheduled pages and maintenance
+
+A page with a `publish_at` or an `unpublish_at` changes the site when that date
+passes, and nothing is written then, so nothing is purged. Menus, lists and
+breadcrumbs show only the pages online: any page may change on the date of any
+other. So `s-maxage` never runs past the next `publish_at` or `unpublish_at` of
+a visible page of the site, and a page is not shared at all when less than a
+second is left. The next date is read once and kept in `cache.app` until it
+passes or a page is written. A proxy that ignores `s-maxage` keeps the page
+until it is purged.
+
+While the site is closed for maintenance, every answer that gets through (an
+address on the allow list, a signed-in administrator, a page of the shop) is
+`private, no-store`: shared, the real site would be served to everybody in
+place of the closed one.
+
 ## With the shared cache of Thelia
 
 From the Thelia release that brings the shared cache of the public pages, the
@@ -43,7 +59,10 @@ the cookies and writes `Cache-Control` and its own tag header (`xkey` or
 its tags to that header: `cms` and `cms-menu` on every page, `cms-page-12` on
 the page it renders, `cms-partial-<name>` on a page that shows a dynamic block.
 It writes neither `Cache-Tag` nor its own `Cache-Control`
-then, and `http_cache_ttl` is not read: the lifetime is `shared_cache_ttl`.
+then, and `http_cache_ttl` is not read: the lifetime is `shared_cache_ttl`,
+lowered to the next scheduled date of a page (on `s-maxage` and on the
+`Surrogate-Control` the core announces), and nothing is shared while the site
+is closed for maintenance, as above.
 
 Every purge of the module goes to the proxy the core is configured for, so no
 `CachePurgerInterface` has to be written for it. One configured anyway keeps

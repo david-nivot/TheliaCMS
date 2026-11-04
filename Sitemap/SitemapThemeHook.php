@@ -19,6 +19,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
 use Thelia\Core\Hook\Theme\ThemeHookInterface;
 use Thelia\Model\LangQuery;
 use Thelia\Tools\URL;
+use TheliaCMS\Page\ScheduledChanges;
 use TheliaCMS\TheliaCMS;
 
 /**
@@ -43,6 +44,7 @@ final readonly class SitemapThemeHook implements ThemeHookInterface
     public function __construct(
         private SitemapCache $cache,
         private RequestStack $requestStack,
+        private ScheduledChanges $scheduledChanges,
     ) {
     }
 
@@ -83,7 +85,9 @@ final readonly class SitemapThemeHook implements ThemeHookInterface
             $requested,
             $this->requestStack->getMainRequest()?->getHost() ?? 'cli',
             fn (): ?string => $this->xml($urls, $requested, $now),
-            fn (): ?\DateTimeImmutable => $this->nextChange($now),
+            // Pages not online yet are not in the sitemap, so the date they
+            // arrive is not read from it.
+            fn (): ?\DateTimeImmutable => $this->scheduledChanges->nextAfter($now),
         );
     }
 
@@ -180,38 +184,6 @@ final readonly class SitemapThemeHook implements ThemeHookInterface
         }
 
         return $published;
-    }
-
-    /**
-     * The next date a page goes online or offline by itself. Pages not online
-     * yet are not in the sitemap, so they are read here, not above.
-     */
-    private function nextChange(\DateTimeImmutable $now): ?\DateTimeImmutable
-    {
-        $bound = $now->format('Y-m-d H:i:s');
-
-        $statement = Propel::getConnection()->prepare(<<<'SQL'
-            SELECT MIN(CASE WHEN publish_at > :now THEN publish_at END) AS next_publication,
-                   MIN(CASE WHEN unpublish_at > :now_removal THEN unpublish_at END) AS next_removal
-            FROM cms_page
-            WHERE deleted_at IS NULL
-              AND visible = 1
-              AND model = 0
-            SQL);
-        $statement->execute(['now' => $bound, 'now_removal' => $bound]);
-        $row = $statement->fetch(\PDO::FETCH_ASSOC);
-
-        if (!\is_array($row)) {
-            return null;
-        }
-
-        return SitemapBoundary::nextAfter(
-            array_map(
-                static fn (mixed $date): ?\DateTimeImmutable => \is_string($date) ? new \DateTimeImmutable($date) : null,
-                [$row['next_publication'], $row['next_removal']],
-            ),
-            $now,
-        );
     }
 
     /**

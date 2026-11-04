@@ -14,10 +14,12 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Tests\Integration\Http;
 
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
+use Symfony\Component\HttpKernel\KernelEvents;
 use Thelia\Core\SharedCache\SharedCacheContributorInterface;
 use Thelia\Core\SharedCache\SharedCacheInvalidationListener;
 use Thelia\Core\SharedCache\SharedCacheKeyCollector;
@@ -28,6 +30,8 @@ use Thelia\Model\ConfigQuery;
 use TheliaCMS\Http\CachePurger;
 use TheliaCMS\Http\CacheTags;
 use TheliaCMS\Http\PageCacheListener;
+use TheliaCMS\Page\ScheduledChanges;
+use TheliaCMS\Settings\CmsSettings;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
 use TheliaCMS\TheliaCMS;
 
@@ -60,10 +64,12 @@ final class CoreSharedCacheTest extends CmsIntegrationTestCase
         };
         static::getContainer()->set(SharedCachePurgerInterface::class, $this->purger);
         $this->collector()->reset();
+        $this->getService(ScheduledChanges::class)->forget();
     }
 
     protected function tearDown(): void
     {
+        $this->getService(ScheduledChanges::class)->forget();
         ConfigQuery::resetCache();
 
         parent::tearDown();
@@ -106,6 +112,70 @@ final class CoreSharedCacheTest extends CmsIntegrationTestCase
         self::assertSame(implode(',', CacheTags::forPage(12)), $response->headers->get('Cache-Tag'));
     }
 
+    /**
+     * The core shares a page for its own TTL and knows nothing of the dates of
+     * the module: a page leaving in a minute would stay in the proxy for the
+     * whole TTL.
+     */
+    public function testTheCoreSharesAPageNoLongerThanUntilTheNextChange(): void
+    {
+        ConfigQuery::write(SharedCacheMode::CONFIG_KEY, SharedCacheMode::ENABLED->value);
+        ConfigQuery::write(SharedCachePolicy::TTL_CONFIG_KEY, '300');
+        $page = $this->createPage('Page qui part dans une minute');
+        $page->setUnpublishAt($this->secondsFromNow(60))->save();
+
+        $response = $this->respondThroughTheKernel(CacheTags::forPage((int) $page->getId()));
+
+        $sharedMaxAge = $response->headers->getCacheControlDirective('s-maxage');
+        self::assertNotNull($sharedMaxAge, 'The core did not share the page: the test proves nothing.');
+        self::assertLessThanOrEqual(60, (int) $sharedMaxAge);
+        self::assertGreaterThan(40, (int) $sharedMaxAge);
+    }
+
+    public function testTheTtlAnnouncedToTheProxyStopsAtTheNextChangeToo(): void
+    {
+        ConfigQuery::write(SharedCacheMode::CONFIG_KEY, SharedCacheMode::ANNOUNCE->value);
+        ConfigQuery::write(SharedCachePolicy::TTL_CONFIG_KEY, '300');
+        $this->createPage('Page qui arrive dans une minute')->setPublishAt($this->secondsFromNow(60))->save();
+
+        $response = $this->respondThroughTheKernel(CacheTags::forPage(12));
+
+        $announced = $response->headers->get('Surrogate-Control');
+        self::assertNotNull($announced, 'The core announced nothing: the test proves nothing.');
+        self::assertMatchesRegularExpression('/^max-age=(\d+)$/', $announced);
+        self::assertLessThanOrEqual(60, (int) substr($announced, \strlen('max-age=')));
+    }
+
+    /**
+     * Only lowered: a TTL the shop chose shorter than the time left stays.
+     */
+    public function testAShorterTtlOfTheCoreIsKept(): void
+    {
+        ConfigQuery::write(SharedCacheMode::CONFIG_KEY, SharedCacheMode::ENABLED->value);
+        ConfigQuery::write(SharedCachePolicy::TTL_CONFIG_KEY, '30');
+        $this->createPage('Page qui part dans une heure')->setUnpublishAt($this->secondsFromNow(3600))->save();
+
+        $response = $this->respondThroughTheKernel(CacheTags::forPage(12));
+
+        self::assertSame('30', (string) $response->headers->getCacheControlDirective('s-maxage'));
+    }
+
+    public function testTheCoreSharesNothingWhileTheSiteIsUnderMaintenance(): void
+    {
+        ConfigQuery::write(SharedCacheMode::CONFIG_KEY, SharedCacheMode::ENABLED->value);
+        $maintenance = TheliaCMS::getConfigValue(CmsSettings::MAINTENANCE_ACTIVE, '0');
+        TheliaCMS::setConfigValue(CmsSettings::MAINTENANCE_ACTIVE, '1');
+
+        try {
+            $response = $this->respondThroughTheKernel(CacheTags::forPage(12));
+        } finally {
+            TheliaCMS::setConfigValue(CmsSettings::MAINTENANCE_ACTIVE, (string) $maintenance);
+        }
+
+        self::assertFalse($response->headers->hasCacheControlDirective('s-maxage'));
+        self::assertTrue($response->headers->hasCacheControlDirective('no-store'));
+    }
+
     public function testAPurgeOfTheModuleReachesTheProxyOfTheCore(): void
     {
         $this->getService(CachePurger::class)->purge([CacheTags::page(12)]);
@@ -130,6 +200,36 @@ final class CoreSharedCacheTest extends CmsIntegrationTestCase
         );
 
         return $response;
+    }
+
+    /**
+     * Every listener of the response, the core's and the module's, in the
+     * order of their priorities: which one writes last is what is tested.
+     *
+     * @param list<string> $tags
+     */
+    private function respondThroughTheKernel(array $tags): Response
+    {
+        $request = Request::create('/');
+        $request->attributes->set('_view', TheliaCMS::PAGE_VIEW);
+        $request->attributes->set(PageCacheListener::TAGS_ATTRIBUTE, $tags);
+        $response = new Response('<html></html>');
+
+        $this->getService(EventDispatcherInterface::class)->dispatch(
+            new ResponseEvent(static::$kernel, $request, HttpKernelInterface::MAIN_REQUEST, $response),
+            KernelEvents::RESPONSE,
+        );
+
+        return $response;
+    }
+
+    /**
+     * To the second: the column keeps no fraction, and MySQL rounds one where
+     * MariaDB cuts it.
+     */
+    private function secondsFromNow(int $seconds): \DateTimeImmutable
+    {
+        return new \DateTimeImmutable(date('Y-m-d H:i:s', time() + $seconds));
     }
 
     private function collector(): SharedCacheKeyCollector
