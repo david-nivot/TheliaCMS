@@ -37,7 +37,10 @@ final readonly class ImageRewriter
      */
     private const array WIDTHS = [480, 960, 1440];
 
-    private const string SIZES = '(max-width: 1440px) 100vw, 1440px';
+    /**
+     * The widest slot an image is announced to fill: the viewport up to it.
+     */
+    private const int WIDEST_SLOT = 1440;
 
     public function __construct(
         private MediaResolver $library,
@@ -106,10 +109,26 @@ final readonly class ImageRewriter
 
         if ([] !== $widths) {
             $image->setAttribute('srcset', $this->srcset($media->id, $widths, $media->format));
-            $image->setAttribute('sizes', self::SIZES);
+            $image->setAttribute('sizes', $this->sizes($widths));
         }
 
         $this->wrapInPicture($document, $image, $media->id, $widths);
+    }
+
+    /**
+     * The slot is the viewport, up to the width of the file. With the slot
+     * wider than the file, a browser reads a 300px file at the width of the
+     * viewport: an image a theme leaves at its own size (`width: auto`, as
+     * the columns of logos are) comes out stretched and blurred. The candidate
+     * it picks does not change, the file being the largest one offered.
+     *
+     * @param non-empty-list<int> $widths ascending, the last one being the original width
+     */
+    private function sizes(array $widths): string
+    {
+        $slot = min($widths[array_key_last($widths)], self::WIDEST_SLOT);
+
+        return \sprintf('(max-width: %1$dpx) 100vw, %1$dpx', $slot);
     }
 
     /**
@@ -136,7 +155,7 @@ final readonly class ImageRewriter
             : $this->url($imageId, null, 'webp'));
 
         if ([] !== $widths) {
-            $source->setAttribute('sizes', self::SIZES);
+            $source->setAttribute('sizes', $this->sizes($widths));
         }
 
         $parent->replaceChild($picture, $image);

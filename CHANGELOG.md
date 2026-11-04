@@ -7,6 +7,16 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Fixed
+
+- **A published image is no longer announced wider than its file.** Its
+  `sizes` said the viewport up to 1440px whatever the file, so a browser read
+  a 308px pack shot at 1440px: a theme leaving an image at its own size
+  (`width: auto`, as the columns of logos are) showed it stretched and
+  blurred. The slot is now the viewport up to the width of the file, 1440px
+  at most; the candidate picked does not change. Pages published before keep
+  the old value until they are published again.
+
 ## [2.10.0] - 2026-11-04
 
 ### Added

@@ -167,6 +167,31 @@ final class ImageRewriterTest extends TestCase
         self::assertStringContainsString('src="/image-library/8/full/max/0/default.jpg"', $html);
         self::assertStringContainsString('width="900"', $html);
         self::assertStringContainsString('height="600"', $html);
+        self::assertSame(2, substr_count($html, 'sizes="(max-width: 900px) 100vw, 900px"'));
+    }
+
+    /**
+     * A slot wider than the file makes the browser read the file at the width
+     * of the viewport: a 308px pack shot left at `width: auto` came out at
+     * 1440px, blurred.
+     */
+    public function testAnnouncesNoSlotWiderThanTheFile(): void
+    {
+        $html = $this->rewrite(
+            '<img src="/image-library/8/full/max/0/default.jpg" alt="">',
+            new MediaFile(id: 8, format: 'jpg', width: 308, height: 420),
+        );
+
+        self::assertSame(2, substr_count($html, 'sizes="(max-width: 308px) 100vw, 308px"'));
+    }
+
+    public function testAnnouncesTheWidestSlotForAFileWiderThanIt(): void
+    {
+        $html = $this->rewrite(
+            '<img src="/image-library/8/full/max/0/default.jpg" alt="">',
+            new MediaFile(id: 8, format: 'jpg', width: 2400, height: 1600),
+        );
+
         self::assertSame(2, substr_count($html, 'sizes="(max-width: 1440px) 100vw, 1440px"'));
     }
 
