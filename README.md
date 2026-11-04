@@ -1351,8 +1351,8 @@ The catalogue and the shape of a document: [docs/sections.md](docs/sections.md);
 adding a component, step by step, and what the generator does with it:
 [docs/creating-a-component.md](docs/creating-a-component.md).
 
-A section given an appearance (a background, a text colour, space above and
-below) renders inside a band of the whole width,
+A section given an appearance (a background, a text colour, room inside and
+outside it) renders inside a band of the whole width,
 `<div class="cms-section-styled">`, which becomes the child of the content in
 place of the component. A rule of the theme that sets a width on the children
 of `.cms-page-content`, or lays sections out in a grid, has to target

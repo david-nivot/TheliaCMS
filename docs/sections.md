@@ -98,8 +98,18 @@ component (`TheliaCMS\Content\SectionAppearance`):
 |---------|--------|---------------|
 | `background` | `#rrggbb` | `background-color` |
 | `text` | `#rrggbb` | `color` |
-| `padding` | `small`, `medium`, `large` | `padding-block` of 1.5, 3 or 5 rem |
+| `padding` | `small`, `medium`, `large`, or a length | `padding-block` of 1.5, 3 or 5 rem, or of the length |
+| `padding_top`, `padding_bottom` | a length | `padding-top`, `padding-bottom`, after `padding-block`: a side that is set wins for its side |
+| `margin_top`, `margin_bottom` | a length | `margin-top`, `margin-bottom` (outside the band, its background does not follow) |
 | `align` | `left`, `center`, `right` | `text-align` |
+
+A length is a number of two decimals at most followed by `px` (0 to 320) or
+`rem` (0 to 20), such as `64px` or `2rem`: no `calc()`, `var()`, negative
+number, bare number or other unit. The check of the appearance is the only
+barrier, the CSS filter of the rendering does not bound a length. The
+generator's schema and catalogue sheet list the three presets only; a precise
+room is the editor's. A site without this release refuses an imported page
+whose document holds one.
 
 Every setting is optional, and nothing else can be set: an unknown setting or
 a value outside the list rejects the document like a wrong prop. A section
