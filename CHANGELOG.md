@@ -38,6 +38,20 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   20 %, zoom 150 %"), the three fields staying in the form. The caption and the
   text of the image each have a line of their own. Without the script, every
   field is shown and the form works as before.
+- **The kept part of an image is set in a dialog of its own.** Next to the
+  sentence that says it, "Crop the image…" opens a dialog above the section: the
+  whole picture with the zone kept lit, what the box will show (made in the
+  browser, no file is asked of the server while the zone moves), the width of the
+  zone in the original against the width shown (sharp, sharp on a standard
+  screen only, or soft), and the three numbers as sliders. The zone is dragged
+  with the mouse or a finger, a click puts its centre there; with the keyboard,
+  the arrows move it by 1 % (10 % with Shift), plus and minus or Page Up and
+  Page Down zoom by 10 %, Home puts the centre back, Escape closes. Confirm
+  writes the three fields of the form, which are saved with the section; Cancel
+  leaves them as they were. The button is off, with its reason, with no image or
+  an image whose size cannot be read; an image kept elsewhere takes its centre
+  only (the zoom stays at 100 %). The sentence of the kept part now reads as a
+  statement next to the button, not as a field.
 - **`thelia_cms:render-published`**, the published counterpart of
   `thelia_cms:render`: it renders what is online again from the published
   documents (pages and contents of the catalogue), so a change of the module

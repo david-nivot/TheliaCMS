@@ -456,3 +456,15 @@ the pre-existing portrait defect is not larger than described, the test host has
 - The button "Recadrer l'image..." is absent in B: the summary carries an empty `[data-cms-kept-slot]` where phase C puts it (a disabled button that does nothing would only mislead).
 - "Image ratio" reads the natural size of the thumbnail the picker shows (the same proportions as the file); with no image shown it does nothing. Proportions fill the height from the width, clamped to 80-2000; without a width they move the focus to the width field.
 - The caption and the text of the image get `cms-content__field--line` from the script (a line each); without the script they keep the grid.
+
+## Code decisions, phase C1 (2026-11-04)
+
+- The dialog is `assets/image-crop.js` (`CmsImageCrop.bind(root)`, called by `content-editor.js` after `CmsMediaPicker.bind`), its words are `content/_image_crop.html.twig` (a JSON script like the picker's), its CSS a `.cms-crop` block of `content-editor.css`. The asset version of `ContentScreen` includes the new file.
+- The picker JSON gains `width` and `height` (numbers); `media-picker.js` writes on `[data-cms-image-field]` what it shows (`data-cms-image-source` = none, library, external or file; `-url`, `-width`, `-height`) and fires `cms-image-shown`. The button reads these; an external image or a file not yet sent is measured by loading it, and the button stays off with a reason if that fails.
+- The dialog works on its own copy of the three numbers; Confirm writes them to the form (`input` and `change` events), Cancel and Escape write nothing. The sliders are the dialog's, not the form fields (the fields stay hidden behind the summary).
+- The zone is computed in the browser with the arithmetic of `ImageFrame::zone()`, so the frame, the preview and the zone the server serves are the same. An external image (CSS only, `object-position`) uses the `object-fit: cover` placement instead, and its zoom is neither shown nor written.
+- Drag: the frame follows the pointer by where it was grabbed (from its middle when the press is outside it); the focus written is the zone centre, so a zone held against an edge writes the centre it really has. The arrow keys start from that shown centre, for the same reason (a stored focus of 0 with a zone held at the edge would otherwise swallow about 25 presses).
+- The sharpness has three levels, not two: the zone at least twice the width shown ("sharp"), at least once ("sharp on a standard screen, soft on a high-density one"), less ("soft").
+- Button label "Crop the image…" (fr "Recadrer l'image…"), confirm "Confirm" (fr "Valider").
+- Not proved in a browser: a drag by finger (the tool drives the mouse); `touch-action: none` on the stage alone is read in the computed style.
+

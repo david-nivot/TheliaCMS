@@ -182,7 +182,7 @@ final readonly class ContentScreen
     {
         $assets = __DIR__.'/../../templates/backOffice/default-twig/assets/';
 
-        return substr(hash('xxh3', (string) @filemtime($assets.'content-editor.js').(string) @filemtime($assets.'content-editor.css').(string) @filemtime($assets.'media-picker.js')), 0, 12);
+        return substr(hash('xxh3', (string) @filemtime($assets.'content-editor.js').(string) @filemtime($assets.'content-editor.css').(string) @filemtime($assets.'media-picker.js').(string) @filemtime($assets.'image-crop.js')), 0, 12);
     }
 
     /**

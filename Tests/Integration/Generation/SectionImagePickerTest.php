@@ -132,6 +132,30 @@ final class SectionImagePickerTest extends AdminScreenTestCase
         self::assertStringContainsString('%zoom%', $labels['kept']);
     }
 
+    /**
+     * The dialog that crops an image needs the size of the file the picker
+     * shows, and its words and script come with the screen.
+     */
+    public function testTheScreenCarriesTheCropDialogAndThePickerTheSizeOfTheFile(): void
+    {
+        $image = $this->image('Fauteuil');
+        $screen = $this->screen(\sprintf('/admin/cms/pages/%d/content?edit_language_id=%d', $this->pageWith($image->getId())->getId(), Lang::getDefaultLanguage()->getId()));
+
+        self::assertSame(1, $screen->filter('script[data-cms-image-crop-messages]')->count());
+        self::assertSame(1, $screen->filter('script[src*="assets/image-crop.js?v="]')->count());
+
+        $words = json_decode($screen->filter('script[data-cms-image-crop-messages]')->text('', false), true, 512, \JSON_THROW_ON_ERROR);
+
+        foreach (['open', 'title', 'noImage', 'unknownSize', 'sharp', 'fair', 'soft', 'live'] as $key) {
+            self::assertNotSame('', $words[$key] ?? '', $key);
+        }
+
+        $this->client->request('GET', '/admin/cms/media/picker?id='.$image->getId(), [], [], self::XHR);
+        $item = json_decode((string) $this->client->getResponse()->getContent(), true)['items'][0];
+
+        self::assertSame([800, 600], [$item['width'], $item['height']], 'The size of the file, as numbers.');
+    }
+
     public function testTheSizeIsKeptAsTheEditorChoseIt(): void
     {
         $page = $this->pageWith(null);

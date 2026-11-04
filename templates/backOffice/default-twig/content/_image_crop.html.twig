@@ -1,0 +1,29 @@
+{#
+    The dialog that frames the image of a section: its words, and its script,
+    which adds a button to every section form that holds a kept part.
+#}
+<script type="application/json" data-cms-image-crop-messages>{{ {
+        title: 'Crop the image'|trans({}, 'theliacms'),
+        open: 'Crop the image…'|trans({}, 'theliacms'),
+        original: 'Whole image'|trans({}, 'theliacms'),
+        frame: 'Zone kept. Arrow keys move it, plus and minus zoom it.'|trans({}, 'theliacms'),
+        legend: 'Dark: outside the zone. Cross: the centre set.'|trans({}, 'theliacms'),
+        result: 'Result in a box of %w% × %h% px'|trans({}, 'theliacms'),
+        zone: 'Zone kept: %w% × %h% px of the original'|trans({}, 'theliacms'),
+        sharp: 'Sharp: %w% px of the original for %box% px shown, enough for a high-density screen.'|trans({}, 'theliacms'),
+        fair: 'Sharp on a standard screen, soft on a high-density one: %w% px of the original for %box% px shown.'|trans({}, 'theliacms'),
+        soft: 'Soft: %w% px of the original for %box% px shown. Zoom out or choose a larger image.'|trans({}, 'theliacms'),
+        horizontal: 'Horizontal centre'|trans({}, 'theliacms'),
+        vertical: 'Vertical centre'|trans({}, 'theliacms'),
+        zoom: 'Zoom'|trans({}, 'theliacms'),
+        centre: 'Centre'|trans({}, 'theliacms'),
+        reset: 'Reset'|trans({}, 'theliacms'),
+        apply: 'Confirm'|trans({}, 'theliacms'),
+        cancel: 'Cancel'|trans({}, 'theliacms'),
+        live: 'Zone %w% by %h% pixels, centre at %x% percent and %y% percent, zoom %zoom% percent.'|trans({}, 'theliacms'),
+        external: 'This image is kept elsewhere: only its centre can be set, the zoom stays at 100 %.'|trans({}, 'theliacms'),
+        noImage: 'Choose an image to crop it.'|trans({}, 'theliacms'),
+        measuring: 'Reading the size of this image…'|trans({}, 'theliacms'),
+        unknownSize: 'The size of this image could not be read.'|trans({}, 'theliacms'),
+    }|json_encode|raw }}</script>
+<script src="{{ module_asset('TheliaCMS', 'assets/image-crop.js') }}?v={{ assets_version }}" defer></script>

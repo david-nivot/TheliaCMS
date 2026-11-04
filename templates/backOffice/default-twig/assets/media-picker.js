@@ -389,17 +389,30 @@
             remove.hidden = !url;
         }
 
+        // What the field shows, for the dialog that frames the image: where it
+        // comes from, the whole file and its size when the library knows it.
+        function announce(source, url, width, height) {
+            block.setAttribute('data-cms-image-source', source);
+            block.setAttribute('data-cms-image-url', url || '');
+            block.setAttribute('data-cms-image-width', width ? String(width) : '');
+            block.setAttribute('data-cms-image-height', height ? String(height) : '');
+            block.dispatchEvent(new CustomEvent('cms-image-shown', { bubbles: true }));
+        }
+
         function render() {
             if (address && address.value.trim() !== '') {
                 show(address.value.trim(), address.value.trim(), element('span', 'badge text-bg-light', m.external));
                 describe(null);
+                announce('external', address.value.trim(), 0, 0);
 
                 return;
             }
 
             if (file && file.files && file.files[0]) {
-                show(URL.createObjectURL(file.files[0]), file.files[0].name, element('span', 'badge text-bg-info', m.newFile));
+                var local = URL.createObjectURL(file.files[0]);
+                show(local, file.files[0].name, element('span', 'badge text-bg-info', m.newFile));
                 describe(null);
+                announce('file', local, 0, 0);
 
                 return;
             }
@@ -409,6 +422,7 @@
             if (!id) {
                 show(null, '', null);
                 describe(null);
+                announce('none', '', 0, 0);
 
                 return;
             }
@@ -416,17 +430,20 @@
             if (known[id]) {
                 show(known[id].thumbnail || known[id].url, known[id].title, badge(known[id]));
                 describe(known[id]);
+                announce('library', known[id].url, known[id].width, known[id].height);
 
                 return;
             }
 
             show(null, '…', null);
+            announce('none', '', 0, 0);
             getJson(withParameters(endpoint, { id: id })).then(function (answer) {
                 if (answer && answer.items && answer.items[0]) {
                     known[id] = answer.items[0];
                     render();
                 } else {
                     show(null, m.gone, null);
+                    announce('none', '', 0, 0);
                 }
             });
         }

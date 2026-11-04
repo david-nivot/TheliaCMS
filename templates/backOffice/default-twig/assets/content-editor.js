@@ -456,7 +456,7 @@
     // field of the form is there and the form works; with it, the pixels show
     // only for "A size in pixels", the proportions are one click, and the kept
     // part (three numbers the form still sends) reads as a sentence. The
-    // button that frames the image comes later, in the slot left for it.
+    // button that frames the image is image-crop.js, in the slot left for it.
     function bindImageDimensions(root) {
         root.querySelectorAll("form[data-cms-section-form]").forEach(function (form) {
             if (form.hasAttribute("data-cms-dimensions-bound")) {
@@ -1545,6 +1545,12 @@
         // form asks for too.
         if (window.CmsMediaPicker) {
             window.CmsMediaPicker.bind(root);
+        }
+
+        // The button that frames the image, in the slot of the summary of the
+        // kept part, once the picker has drawn the image it frames.
+        if (window.CmsImageCrop) {
+            window.CmsImageCrop.bind(root);
         }
 
         // A reference is picked from the list its source answers: a select for a
