@@ -53,6 +53,11 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   says why it cannot crop it. The settings are named after the picture
   (`photo__proportions`, `photo__focus_x`, `photo__focus_y`, `photo__zoom`) and are
   never shown to the model.
+- **A rewrite keeps the framing of each picture of a component.** The framing of a
+  picture of a theme or site component is hidden from the model and given back
+  to the section a rewrite replaces, picture by picture: a picture that stayed
+  keeps its framing, one that changed takes the defaults, in the rows of a list
+  too.
 - **The size of an Image section is set in a form that follows the choice.** With
   "A size in pixels", the width and height fields show, with the proportions
   16:9, 4:3, 3:2, 1:1 and that of the picture (one click fills the height from

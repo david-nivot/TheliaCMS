@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace TheliaCMS\Generation;
 
 use TheliaCMS\Content\Document;
+use TheliaCMS\Content\ImageFraming;
 use TheliaCMS\Content\InvalidDocumentException;
 use TheliaCMS\Content\Prop;
 use TheliaCMS\Content\PropType;
@@ -80,11 +81,14 @@ final readonly class EditorValues
 
         $props = $written->props;
         $held = null !== $replaced && $replaced->component === $written->component ? $this->normalized($definition, $replaced->props) : [];
-        $kept = null !== $replaced && $replaced->component === $written->component && $this->sameImages($definition->schema()->props, $held, $written->props);
+        $sameComponent = null !== $replaced && $replaced->component === $written->component;
+        $kept = $sameComponent && $this->sameImages($definition->schema()->props, $held, $written->props);
 
         foreach ($definition->schema()->props as $prop) {
             if ($prop->editorOnly) {
-                $props = self::put($props, $prop, $kept && \array_key_exists($prop->name, $held) ? $held[$prop->name] : $prop->default);
+                // The framing of one picture of a component follows that picture alone.
+                $keep = null === ($image = ImageFraming::imageOf($prop)) ? $kept : $sameComponent && self::comparable($held[$image] ?? null) === self::comparable($written->props[$image] ?? null);
+                $props = self::put($props, $prop, $keep && \array_key_exists($prop->name, $held) ? $held[$prop->name] : $prop->default);
 
                 continue;
             }
@@ -190,9 +194,13 @@ final readonly class EditorValues
             $held = $heldRows[$position] ?? null;
             $held = \is_array($held) && $this->sameImages($prop->items, $held, $row) ? $held : null;
 
+            $source = \is_array($heldRows[$position] ?? null) ? $heldRows[$position] : null;
+
             foreach ($prop->items as $item) {
                 if ($item->editorOnly) {
-                    $row[$item->name] = null !== $held && \array_key_exists($item->name, $held) ? $held[$item->name] : $item->default;
+                    $image = ImageFraming::imageOf($item);
+                    $keep = null === $image ? null !== $held : null !== $source && self::comparable($source[$image] ?? null) === self::comparable($row[$image] ?? null);
+                    $row[$item->name] = $keep && null !== $source && \array_key_exists($item->name, $source) ? $source[$item->name] : $item->default;
                 }
             }
 

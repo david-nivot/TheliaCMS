@@ -17,11 +17,15 @@ namespace TheliaCMS\Tests\Unit\Generation;
 use PHPUnit\Framework\TestCase;
 use TheliaCMS\Content\ColumnsSection;
 use TheliaCMS\Content\Document;
+use TheliaCMS\Content\ImageFraming;
 use TheliaCMS\Content\ImageSection;
+use TheliaCMS\Content\Prop;
+use TheliaCMS\Content\PropSchema;
 use TheliaCMS\Content\RichTextSection;
 use TheliaCMS\Content\Section;
 use TheliaCMS\Content\SectionAppearance;
 use TheliaCMS\Content\SectionCatalog;
+use TheliaCMS\Content\SectionDefinitionInterface;
 use TheliaCMS\Generation\EditorValues;
 
 /**
@@ -196,6 +200,95 @@ final class EditorValuesTest extends TestCase
 
         self::assertSame('band', $props['proportions']);
         self::assertSame([50, 50, 100], [$props['columns'][0]['focus_x'], $props['columns'][0]['focus_y'], $props['columns'][0]['zoom']]);
+    }
+
+    public function testTheFramingOfAPictureOfAComponentFollowsThatPictureAlone(): void
+    {
+        $replaced = new Document([new Section('cards', 'Site:Cards', ['left' => 11, 'right' => 22, 'left__zoom' => 200, 'left__focus_x' => 10, 'right__zoom' => 300, 'right__focus_x' => 90])]);
+        $answer = new Document([new Section('cards', 'Site:Cards', ['left' => 11, 'right' => 33])]);
+
+        $props = $this->valuesWithCards()->restore($replaced, $answer)->sections[0]->props;
+
+        self::assertSame(200, $props['left__zoom'], 'The picture that stayed keeps its framing.');
+        self::assertSame(10, $props['left__focus_x']);
+        self::assertSame(100, $props['right__zoom'], 'A new picture makes the old framing meaningless.');
+        self::assertSame(50, $props['right__focus_x']);
+    }
+
+    public function testTheModelReadsNoFramingOfAComponent(): void
+    {
+        $document = new Document([new Section('cards', 'Site:Cards', ['left' => 11, 'right' => 22, 'left__zoom' => 200, 'right__proportions' => '16:9', 'rows' => [['picture' => 5, 'picture__zoom' => 300]]])]);
+
+        $shown = $this->valuesWithCards()->forModel($document)->sections[0]->props;
+
+        self::assertSame(['left' => 11, 'right' => 22, 'rows' => [['picture' => 5]]], $shown);
+    }
+
+    public function testTheFramingOfARowFollowsThePictureOfThatRow(): void
+    {
+        $replaced = new Document([new Section('cards', 'Site:Cards', ['left' => 1, 'right' => 2, 'rows' => [['picture' => 5, 'picture__zoom' => 300], ['picture' => 6, 'picture__zoom' => 200]]])]);
+        $answer = new Document([new Section('cards', 'Site:Cards', ['left' => 1, 'right' => 2, 'rows' => [['picture' => 5], ['picture' => 7]]])]);
+
+        $rows = $this->valuesWithCards()->restore($replaced, $answer)->sections[0]->props['rows'];
+
+        self::assertSame(300, $rows[0]['picture__zoom']);
+        self::assertSame(100, $rows[1]['picture__zoom']);
+    }
+
+    private function valuesWithCards(): EditorValues
+    {
+        $framing = new ImageFraming();
+        $section = self::sectionOf('Site:Cards', new PropSchema($framing->extend([
+            Prop::image('left', 'Left'),
+            Prop::image('right', 'Right'),
+            Prop::items('rows', 'Rows', [Prop::image('picture', 'Picture')], 0, 4),
+        ])));
+
+        return new EditorValues(new SectionCatalog([$section]));
+    }
+
+    private static function sectionOf(string $name, PropSchema $schema): SectionDefinitionInterface
+    {
+        return new class($name, $schema) implements SectionDefinitionInterface {
+            public function __construct(private string $name, private PropSchema $schema)
+            {
+            }
+
+            public function name(): string
+            {
+                return $this->name;
+            }
+
+            public function label(): string
+            {
+                return $this->name;
+            }
+
+            public function description(): string
+            {
+                return '';
+            }
+
+            public function schema(): PropSchema
+            {
+                return $this->schema;
+            }
+
+            public function sample(): array
+            {
+                return [];
+            }
+
+            public function normalizeProps(array $props): array
+            {
+                return $this->schema->normalize($props);
+            }
+
+            public function render(array $props, string $locale): string
+            {
+                return '';
+            }
+        };
     }
 
     private function values(): EditorValues
