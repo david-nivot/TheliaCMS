@@ -904,6 +904,8 @@ return [
     'Text colour' => 'Text colour',
     'Room around the section' => 'Room around the section',
     'Precise room' => 'Precise room',
+    'Inside' => 'Inside',
+    'Outside' => 'Outside',
     'Inside, top' => 'Inside, top',
     'Inside, bottom' => 'Inside, bottom',
     'Outside, top' => 'Outside, top',

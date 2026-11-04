@@ -103,37 +103,49 @@
 {% endmacro %}
 
 {#
-    The precise room of a section: the inner room (padding) and the outer
-    room (margin), each with a top, a bottom, a left and a right, a length
-    written by hand. The group holds the eight fields, named padding_top,
-    padding_bottom, padding_left, padding_right and the same for margin.
-    Served shown, under the room buttons;
-    the script hides it unless "Precise room" is checked.
+    The precise room of a section, drawn as the box model of a browser's
+    tools: the outer room (margin) around the inner room (padding) around
+    the content, a field on each side of each box. The group holds the eight
+    fields, named padding_top, padding_bottom, padding_left, padding_right
+    and the same for margin; each keeps its label for a screen reader.
+    Served shown, under the room buttons; the script hides it unless
+    "Precise room" is checked.
 #}
 {% macro spacing(group) %}
     <fieldset class="mb-3 cms-content__spacing" data-testid="cms-section-spacing" data-cms-precise-room>
         <legend class="visually-hidden">{{ 'Precise room'|trans({}, 'theliacms') }}</legend>
-        <div class="cms-content__spacing-groups">
-            {% for kind in ['padding', 'margin'] %}
-                <div class="cms-content__spacing-group" data-testid="cms-spacing-{{ kind }}">
-                    <div class="cms-content__spacing-fields">
-                        {% for side in ['top', 'bottom', 'left', 'right'] %}
-                            {% set field = group[kind ~ '_' ~ side] %}
-                            <div>
-                                <label class="form-label" for="{{ field.vars.id }}">{{ field.vars.label|trans({}, field.vars.translation_domain) }}</label>
-                                {{ form_widget(field) }}
-                                {{ form_errors(field) }}
-                            </div>
-                        {% endfor %}
-                    </div>
-                    <div class="form-text">{{ group[kind ~ '_top'].vars.help|trans({}, group[kind ~ '_top'].vars.translation_domain) }}</div>
-                </div>
-                {% for side in ['top', 'bottom', 'left', 'right'] %}
-                    {% do group[kind ~ '_' ~ side].setRendered %}
-                {% endfor %}
-            {% endfor %}
+        <div class="cms-box cms-box--margin" data-testid="cms-spacing-margin">
+            <span class="cms-box__name" aria-hidden="true">{{ 'Outside'|trans({}, 'theliacms') }}</span>
+            {{ _self.box_side(group.margin_top, 'top') }}
+            {{ _self.box_side(group.margin_left, 'left') }}
+            <div class="cms-box cms-box--padding" data-testid="cms-spacing-padding">
+                <span class="cms-box__name" aria-hidden="true">{{ 'Inside'|trans({}, 'theliacms') }}</span>
+                {{ _self.box_side(group.padding_top, 'top') }}
+                {{ _self.box_side(group.padding_left, 'left') }}
+                <div class="cms-box cms-box--content" aria-hidden="true">{{ 'Content'|trans({}, 'theliacms') }}</div>
+                {{ _self.box_side(group.padding_right, 'right') }}
+                {{ _self.box_side(group.padding_bottom, 'bottom') }}
+            </div>
+            {{ _self.box_side(group.margin_right, 'right') }}
+            {{ _self.box_side(group.margin_bottom, 'bottom') }}
         </div>
+        <div class="form-text">{{ group.padding_top.vars.help|trans({}, group.padding_top.vars.translation_domain) }}</div>
+        <div class="form-text">{{ group.margin_top.vars.help|trans({}, group.margin_top.vars.translation_domain) }}</div>
+        {% for field in [group.padding_top, group.padding_bottom, group.padding_left, group.padding_right, group.margin_top, group.margin_bottom, group.margin_left, group.margin_right] %}
+            {{ form_errors(field) }}
+        {% endfor %}
     </fieldset>
+{% endmacro %}
+
+{#
+    One side of a box of the precise room: the field alone, its label read
+    by a screen reader only, the box saying where it stands.
+#}
+{% macro box_side(field, side) %}
+    <div class="cms-box__side cms-box__side--{{ side }}">
+        <label class="visually-hidden" for="{{ field.vars.id }}">{{ field.vars.label|trans({}, field.vars.translation_domain) }}</label>
+        {{ form_widget(field, {attr: field.vars.attr|merge({placeholder: '-', title: field.vars.label|trans({}, field.vars.translation_domain)})}) }}
+    </div>
 {% endmacro %}
 
 {#

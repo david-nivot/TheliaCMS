@@ -904,6 +904,8 @@ return [
     'Text colour' => 'Couleur du texte',
     'Room around the section' => 'Espace autour de la section',
     'Precise room' => 'Marges précises',
+    'Inside' => 'Intérieur',
+    'Outside' => 'Extérieur',
     'Inside, top' => 'Intérieur, haut',
     'Inside, bottom' => 'Intérieur, bas',
     'Outside, top' => 'Extérieur, haut',

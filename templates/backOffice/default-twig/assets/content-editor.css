@@ -388,29 +388,73 @@ body:has(.cms-content) {
     grid-column: 1 / -1;
 }
 
-/* The precise room: the inner room, then the outer room, each a top, a
-   bottom, a left and a right on one line, its help under them. */
-.cms-content__spacing-groups {
+/* The precise room, drawn as the box model of a browser's tools: the outer
+   room around the inner room around the content, a field on each side. Each
+   box is a grid of three by three: the top and the bottom in the middle
+   column, the left and the right on each side of the box it holds. */
+.cms-box {
+    position: relative;
     display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0.75rem;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: ". top ." "left inner right" ". bottom .";
+    align-items: center;
+    gap: 0.25rem;
+    padding: 1.5rem 0.5rem 0.5rem;
+    border: 1px dashed var(--bs-secondary-color, #495057);
+    border-radius: 0.25rem;
 }
 
-.cms-content__spacing-fields {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.5rem;
+.cms-box--margin {
+    background: rgba(246, 178, 107, 0.3);
 }
 
-@container (min-width: 34rem) {
-    .cms-content__spacing-fields {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
+.cms-box--padding {
+    grid-area: inner;
+    background: rgba(147, 196, 125, 0.35);
 }
 
-.cms-content__spacing-fields .form-label {
+.cms-box--content {
+    grid-area: inner;
+    display: block;
+    padding: 0.75rem 0.5rem;
+    border-style: solid;
+    background: rgba(111, 168, 220, 0.3);
     font-size: 0.8125rem;
-    margin-bottom: 0.25rem;
+    text-align: center;
+    color: var(--bs-secondary-color, #495057);
+}
+
+.cms-box__name {
+    position: absolute;
+    top: 0.25rem;
+    left: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--bs-secondary-color, #495057);
+}
+
+.cms-box__side--top {
+    grid-area: top;
+    justify-self: center;
+}
+
+.cms-box__side--bottom {
+    grid-area: bottom;
+    justify-self: center;
+}
+
+.cms-box__side--left {
+    grid-area: left;
+}
+
+.cms-box__side--right {
+    grid-area: right;
+}
+
+.cms-box__side .form-control {
+    width: 5.5rem;
+    padding: 0.125rem 0.25rem;
+    font-size: 0.8125rem;
+    text-align: center;
 }
 
 /* A row of one value, a step of a recipe: the value takes the line, under
