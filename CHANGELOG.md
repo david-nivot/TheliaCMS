@@ -9,6 +9,16 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Added
 
+- **The Image section takes a size of the editor's choosing.** A fourth width,
+  "A size in pixels" (160 to 2400), sets the width of the picture; with a height
+  (80 to 2000, a box no more stretched than 4:1 or 1:4) the picture sits in a
+  box of those proportions, which it keeps as the screen narrows: it either
+  fills the box around a kept part (horizontal and vertical position, zoom by
+  steps of 10, 100 to 400) or is shown whole in it. The size, the fit and the
+  kept part are for the editor alone: the generator is not offered them and the
+  prompt is unchanged. A section saved before keeps its exact markup. This
+  release draws the box with CSS (`object-fit`, `object-position`,
+  `aspect-ratio`); the zone served by the media library follows.
 - **`thelia_cms:render-published`**, the published counterpart of
   `thelia_cms:render`: it renders what is online again from the published
   documents (pages and contents of the catalogue), so a change of the module

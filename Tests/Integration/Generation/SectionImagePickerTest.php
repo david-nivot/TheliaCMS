@@ -88,9 +88,38 @@ final class SectionImagePickerTest extends AdminScreenTestCase
     {
         $buttons = $this->dialog($this->pageWith(null))->filter('[data-testid="cms-choice-width"]');
 
-        self::assertSame(3, $buttons->filter('input[type="radio"].btn-check')->count(), 'Narrow, column, full: no "none" for a width.');
+        self::assertSame(4, $buttons->filter('input[type="radio"].btn-check')->count(), 'Narrow, column, full, a size in pixels: no "none" for a width.');
         self::assertSame('narrow', $buttons->filter('input:checked')->attr('value'));
         self::assertSame(3, $buttons->filter('label svg')->count(), 'Each width drawn as its shape.');
+        self::assertSame(1, $buttons->filter('label i.bi-rulers')->count(), 'The size in pixels has the pictogram of a ruler.');
+    }
+
+    public function testTheFormFollowsTheOrderOfThePageAndSpeaksToTheEditor(): void
+    {
+        $dialog = $this->dialog($this->pageWith(null));
+        $names = $dialog->filter('form[data-cms-section-form] [name^="cms_section_picture["]')->each(static fn (Crawler $field): string => (string) $field->attr('name'));
+        $order = array_values(array_unique(array_map(static fn (string $name): string => explode(']', substr($name, \strlen('cms_section_picture[')))[0], $names)));
+        $visible = array_values(array_intersect($order, ['image', 'width', 'width_px', 'height_px', 'fit', 'focus_x', 'focus_y', 'zoom', 'caption', 'alt']));
+
+        self::assertSame(['image', 'width', 'width_px', 'height_px', 'fit', 'focus_x', 'focus_y', 'zoom', 'caption', 'alt'], $visible);
+        self::assertStringContainsString('How wide the picture is on the page', $dialog->filter('[data-testid="cms-choice-width"]')->text(), 'The help written for the editor, not the instruction to the model.');
+        self::assertStringNotContainsString('wider only when the brief asks', $dialog->filter('[data-testid="cms-choice-width"]')->text());
+        self::assertSame(1, $dialog->filter('[data-testid="cms-choice-fit"][data-cms-choice-buttons]')->count(), 'The fit is a choice of buttons, which take the whole line.');
+    }
+
+    public function testTheSizeIsKeptAsTheEditorChoseIt(): void
+    {
+        $page = $this->pageWith(null);
+        $form = $this->dialog($page)->filter('form[data-cms-section-form]')->form();
+        $values = $form->getPhpValues();
+        $values['cms_section_picture'] = ['image' => (string) $this->image('Fauteuil')->getId(), 'alt' => 'Une image', 'width' => 'custom', 'width_px' => '960', 'height_px' => '540', 'fit' => 'cover', 'focus_x' => '35', 'focus_y' => '20', 'zoom' => '150'] + $values['cms_section_picture'];
+
+        self::assertSame(302, $this->send('POST', $form->getUri(), $values));
+
+        $content = CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($this->locale())->findOne();
+        $props = Document::fromJson($content?->getDraftDocument())?->section('picture')->props ?? [];
+
+        self::assertSame(['custom', 960, 540, 'cover', 35, 20, 150], [$props['width'], $props['width_px'], $props['height_px'], $props['fit'], $props['focus_x'], $props['focus_y'], $props['zoom']]);
     }
 
     private function save(CmsPage $page, string $imageId): ?int

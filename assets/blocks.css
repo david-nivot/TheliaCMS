@@ -295,6 +295,21 @@
     width: 100%;
   }
 
+  /* A width the editor set, in pixels: the width is on the figure
+     (`min(Wpx, 100% - 2rem)`), the proportions, the part kept and the fit
+     are on the image, whose height follows its width. */
+  .cms-image--custom {
+    margin: 0 auto;
+  }
+
+  .cms-image__img--cover {
+    object-fit: cover;
+  }
+
+  .cms-image__img--contain {
+    object-fit: contain;
+  }
+
   .cms-image picture,
   .cms-image__img {
     display: block;

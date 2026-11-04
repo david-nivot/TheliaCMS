@@ -433,3 +433,14 @@ the pre-existing portrait defect is not larger than described, the test host has
 2. Pixels, ratio kept: width 160-2400, height 80-2000, ratio between 1:4 and 4:1; under the chosen width the image shrinks with its ratio (`aspect-ratio`). Height is editable in the "custom" mode only; the three presets stay.
 3. The crop screen is a **dedicated dialog** above the drawer (not the panel unfolded in the drawer recommended above): more room for a large picture; keyboard: arrows move the point, +/- the zoom.
 4. The other recommendations are kept as written: an external https image is cropped by CSS only (zoom off); no new JS library; the schema of the section is reordered (image, width, caption, text of the image), which moves four lines of the generator prompt; the model sets the presets only, never pixels nor a crop.
+
+## Code decisions, phase A (2026-11-04)
+
+- Commit titles are `type(hors-ticket): message` (the repository has no ticket), not `type(scope)` as the table of section 7 says.
+- `Prop::forEditor(help, only, onlyChoices, editor)` sets the four editor fields on a built prop (a wither), instead of four more parameters on each factory.
+- `Prop::offeredChoices()` is the one place that removes the editor-only values of a choice, for the JSON schema and the sheet.
+- The bounds are the section's, checked in `ImageSection::normalizeProps()` whatever the width: width 0 or 160-2400, height 0 or 80-2000, ratio 1:4 to 4:1 when both are set, zoom by steps of 10. A preset width with a height is stored but drawn as the preset.
+- The fit is a choice drawn as buttons (`bi-crop`, `bi-aspect-ratio`); the custom width has the pictogram `bi-rulers`.
+- `data-cms-crop` is not written yet: the box is drawn by CSS alone (`aspect-ratio`, `object-fit`, `object-position`); zoom has no effect before phase B.
+- Contain declares `data-cms-height="{height_px}px"` on the figure, as planned, for the rewriter of phase B.
+- The asset version of `ContentScreen.php` is derived from the mtime of the files: nothing to bump by hand.
