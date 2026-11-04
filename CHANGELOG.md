@@ -21,6 +21,12 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Fixed
 
+- **The editor of a free text no longer offers an image, the HTML source, the
+  preview or a h1.** The `html` fields of a section form ask the Tiptap module
+  (1.1.0 or later; before, its global toolbar applies) for a reduced toolbar and
+  headings from h2 to h4. Whatever the editor, a `<h1>` in a `html` prop is now
+  stored as a `<h2>`, attributes kept, when it is typed by hand, generated or
+  imported; images already in a text are left alone.
 - **A published image is announced at the width it is drawn at.** Its
   `sizes` said the viewport up to 1440px whatever the file, so a browser read
   a 308px pack shot at 1440px: a theme leaving an image at its own size

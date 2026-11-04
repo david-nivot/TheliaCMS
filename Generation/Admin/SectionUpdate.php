@@ -83,11 +83,13 @@ final readonly class SectionUpdate
             return $exception->translated($this->translator);
         }
 
-        $document = $current->withSection($section
-            ->withProps($this->forms->propsFrom((array) $form->getData(), $definition->schema()->props))
-            ->withAppearance($appearance));
-
         try {
+            // Normalised here, so that the ledger keeps what the draft keeps
+            // (a h1 typed in a free text is a h2 in both).
+            $document = $current->withSection($section
+                ->withProps($definition->normalizeProps($this->forms->propsFrom((array) $form->getData(), $definition->schema()->props)))
+                ->withAppearance($appearance));
+
             $save($document);
         } catch (InvalidDocumentException $exception) {
             return $exception->translated($this->translator);

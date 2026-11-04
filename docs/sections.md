@@ -60,7 +60,7 @@ document, and becomes the JSON schema a generator is constrained with.
 | Type | Holds | Checked |
 |---|---|---|
 | `text` | a line of plain text, printed escaped | length |
-| `html` | markup, printed as is, filtered by the writer on the rendered page | that it is a string |
+| `html` | markup, printed as is, filtered by the writer on the rendered page | that it is a string; a `<h1>` becomes a `<h2>`, attributes kept |
 | `integer` | a whole number | range |
 | `boolean` | true or false | |
 | `choice` | one of a closed list | membership |
@@ -69,6 +69,18 @@ document, and becomes the JSON schema a generator is constrained with.
 | `items` | a list of objects, each shaped by item props | count, and each item |
 | `reference` | the id of an item of the site: a page, a menu, a form, a product | a positive id |
 | `json` | a list or an object the component does not describe further | that it is one |
+
+The editor of a `html` prop (Tiptap, when installed) offers a reduced toolbar:
+undo and redo, bold, italic, underline, headings, paragraph, both lists, link
+and unlink, with headings limited to h2 to h4. There is no image, no HTML
+source, no preview and no h1: the title of the page is the page's, an image
+belongs to an image section, and markup a writer cannot see is how a page
+breaks. The toolbar and the levels are set per field by the attributes
+`data-tiptap-toolbar` and `data-tiptap-headings`, which need Tiptap 1.1.0;
+before that version Tiptap ignores them and its global toolbar applies. The
+server does not depend on it: whatever way a `html` prop is written (by hand,
+generated, imported), a `<h1>` is stored as a `<h2>` with its attributes, and an
+image already in a text stays.
 
 Unknown props are dropped, missing ones get their default, wrong ones are
 refused.
