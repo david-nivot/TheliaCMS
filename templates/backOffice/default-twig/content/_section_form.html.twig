@@ -128,6 +128,14 @@
             <rect x="0.5" y="0.5" width="39" height="27" rx="2" fill="none" stroke="currentColor" opacity=".5"/>
             <rect x="{{ (40 - width) / 2 }}" y="7" width="{{ width }}" height="14" rx="1" fill="currentColor"/>
         </svg>
+    {% elseif name starts with 'ratio-' %}
+        {# The shape of a proportion, `ratio-16-9`: a rectangle of that ratio in the frame. #}
+        {% set sides = name|slice(6)|split('-') %}
+        {% set shape = (sides[0] / sides[1]) >= 1 ? { w: 24, h: 24 / (sides[0] / sides[1]) } : { w: 22 * (sides[0] / sides[1]), h: 22 } %}
+        <svg width="40" height="28" viewBox="0 0 40 28" aria-hidden="true">
+            <rect x="0.5" y="0.5" width="39" height="27" rx="2" fill="none" stroke="currentColor" opacity=".5"/>
+            <rect x="{{ (40 - shape.w) / 2 }}" y="{{ (28 - shape.h) / 2 }}" width="{{ shape.w }}" height="{{ shape.h }}" rx="1" fill="currentColor"/>
+        </svg>
     {% elseif rooms[name] is defined %}
         {% set room = rooms[name] %}
         <svg width="40" height="28" viewBox="0 0 40 28" aria-hidden="true">

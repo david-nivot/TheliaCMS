@@ -457,6 +457,16 @@ final class ImageRewriterTest extends TestCase
         self::assertStringNotContainsString('^', $html);
     }
 
+    public function testTheZoomOfAPictureShownWholeServesAZoneOfItsOwnProportions(): void
+    {
+        // 1600 by 900 at zoom 200, centred: 800 by 450 from x = 400, y = 225.
+        $html = $this->rewrite('<img class="cms-image__img" src="/image-library/7/full/max/0/default.jpg" alt="" data-cms-crop="50,50,200,0,0">');
+
+        self::assertStringContainsString('src="/image-library/7/400,225,800,450/max/0/default.jpg"', $html);
+        self::assertStringContainsString('width="800" height="450"', $html);
+        self::assertStringNotContainsString('data-cms-crop', $html);
+    }
+
     public function testTheCandidatesOfAZoneAreStrictlyUnderItsWidthThenItsOwnSize(): void
     {
         // 1600 by 900 at zoom 100 in a 4:3 box: 1200 by 900 from x = 200; 480 and 960 stay below it.

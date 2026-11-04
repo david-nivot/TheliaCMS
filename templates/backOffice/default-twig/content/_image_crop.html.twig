@@ -9,6 +9,8 @@
         frame: 'Zone kept. Arrow keys move it, plus and minus zoom it.'|trans({}, 'theliacms'),
         legend: 'Dark: outside the zone. Cross: the centre set.'|trans({}, 'theliacms'),
         result: 'Result in a box of %w% × %h% px'|trans({}, 'theliacms'),
+        resultRatio: 'Result in proportions %ratio%'|trans({}, 'theliacms'),
+        resultOriginal: 'Result in the proportions of the image'|trans({}, 'theliacms'),
         zone: 'Zone kept: %w% × %h% px of the original'|trans({}, 'theliacms'),
         sharp: 'Sharp: %w% px of the original for %box% px shown, enough for a high-density screen.'|trans({}, 'theliacms'),
         fair: 'Sharp on a standard screen, soft on a high-density one: %w% px of the original for %box% px shown.'|trans({}, 'theliacms'),
@@ -26,6 +28,7 @@
         gone: 'This image is not in the media library of the CMS: choose one there to crop it.'|trans({}, 'theliacms'),
         looking: 'Looking for this image…'|trans({}, 'theliacms'),
         measuring: 'Reading the size of this image…'|trans({}, 'theliacms'),
+        originalElsewhere: 'The part kept of a picture kept elsewhere can only be set when the proportions are a ratio.'|trans({}, 'theliacms'),
         unknownSize: 'The size of this image could not be read.'|trans({}, 'theliacms'),
     }|json_encode|raw }}</script>
 <script src="{{ module_asset('TheliaCMS', 'assets/image-crop.js') }}?v={{ assets_version }}" defer></script>

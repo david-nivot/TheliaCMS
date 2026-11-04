@@ -1,9 +1,10 @@
 /*
  * The part of an image a section keeps, set in a dialog of its own.
  *
- * The form of an Image section holds three numbers, `focus_x`, `focus_y` and
- * `zoom`, that content-editor.js reads as a sentence. This adds the button
- * that sets them: it opens one dialog for the screen, above the drawer of the
+ * A picture a section keeps a part of holds three numbers, `focus_x`, `focus_y`
+ * and `zoom`: in the form of an Image section, in each row of the columns.
+ * content-editor.js reads them as a sentence. This adds the button that sets
+ * them: it opens one dialog for the screen, above the drawer of the
  * section, with the whole image, the zone kept, and what the box will show.
  *
  * Nothing is asked of the server while the zone moves: the image shown is the
@@ -14,8 +15,13 @@
  * An image kept elsewhere is framed by CSS alone: only its centre can be set,
  * and the zoom stays at 100 %.
  *
- * content-editor.js calls `CmsImageCrop.bind(root)` on every form it enhances,
- * once the slot for the button (`[data-cms-kept-slot]`) is there.
+ * content-editor.js calls `CmsImageCrop.bind(root)` on every form it enhances
+ * and on every row it adds, once the slot for the button
+ * (`[data-cms-kept-slot]`) is there. The slot says which element holds the
+ * picture and the three numbers (`cmsCropScope`) and, for a picture, the box
+ * it fills (`cmsCropBox(image)`: `{boxWidth, boxHeight, shown, ratio}`, or null
+ * when there is nothing to crop; `ratio` is null for a box in pixels, the ratio
+ * written `16:9`, or `original`).
  */
 (function () {
     'use strict';
@@ -191,7 +197,7 @@
         document.body.appendChild(dialog);
 
         // What the dialog works on, set on every opening.
-        var state = { x: 50, y: 50, zoom: 100, boxWidth: 0, boxHeight: 0, width: 0, height: 0, served: true, apply: null, opener: null };
+        var state = { x: 50, y: 50, zoom: 100, boxWidth: 0, boxHeight: 0, shown: 0, width: 0, height: 0, served: true, apply: null, opener: null };
         var drag = null;
 
         function zone() {
@@ -254,8 +260,8 @@
                 zoneText.textContent = say(m.zone, { w: Math.round(area.w), h: Math.round(area.h) });
                 // The zone against the width it is shown at, and against twice
                 // that on a screen of high density.
-                var level = area.w >= state.boxWidth * 2 ? 'sharp' : (area.w >= state.boxWidth ? 'fair' : 'soft');
-                sharpness.textContent = say(m[level], { w: Math.round(area.w), box: state.boxWidth });
+                var level = area.w >= state.shown * 2 ? 'sharp' : (area.w >= state.shown ? 'fair' : 'soft');
+                sharpness.textContent = say(m[level], { w: Math.round(area.w), box: state.shown });
                 sharpness.setAttribute('data-level', level);
                 sharpness.hidden = false;
             } else {
@@ -386,6 +392,7 @@
                 state.zoom = options.zoom;
                 state.boxWidth = options.boxWidth;
                 state.boxHeight = options.boxHeight;
+                state.shown = options.shown;
                 state.width = options.width;
                 state.height = options.height;
                 state.served = options.served;
@@ -394,12 +401,14 @@
 
                 picture.src = options.url;
                 shown.src = options.url;
-                resultTitle.textContent = say(m.result, { w: options.boxWidth, h: options.boxHeight });
+                resultTitle.textContent = options.ratio === null
+                    ? say(m.result, { w: options.boxWidth, h: options.boxHeight })
+                    : (options.ratio === 'original' ? m.resultOriginal : say(m.resultRatio, { ratio: options.ratio }));
                 // The stage takes the proportions of the picture before it loads.
                 stage.style.aspectRatio = options.width + ' / ' + options.height;
                 stage.style.setProperty('--cms-crop-ratio', String(options.width / options.height));
                 preview.style.aspectRatio = options.boxWidth + ' / ' + options.boxHeight;
-                preview.style.maxWidth = options.boxWidth + 'px';
+                preview.style.maxWidth = options.shown + 'px';
                 zooming.row.hidden = !options.served;
                 note.textContent = options.served ? '' : m.external;
                 note.hidden = options.served;
@@ -415,25 +424,34 @@
     }
 
     // The button, in the slot content-editor.js leaves in the summary.
-    function bindForm(form) {
-        var slot = form.querySelector('[data-cms-kept-slot]');
-        var field = form.querySelector('[data-cms-image-field]');
+    function bindSlot(slot) {
+        var scope = slot.cmsCropScope;
+        var boxOf = slot.cmsCropBox;
+
+        if (!scope || typeof boxOf !== 'function') {
+            return;
+        }
+
+        // The picture is the one the picker draws in the scope; the picker of a row
+        // added without reloading is bound just before this, but is looked for
+        // when it is asked, not once.
+        function fieldOf() {
+            return scope.querySelector('[data-cms-image-field]');
+        }
 
         function named(name) {
-            return form.querySelector('[name$="[' + name + ']"]');
+            return scope.querySelector('[name$="[' + name + ']"]');
         }
 
         var focusX = named('focus_x');
         var focusY = named('focus_y');
         var zoom = named('zoom');
-        var widthPixels = named('width_px');
-        var heightPixels = named('height_px');
 
-        if (!slot || !field || !focusX || !focusY || !zoom || !widthPixels || !heightPixels) {
+        if (!focusX || !focusY || !zoom) {
             return;
         }
 
-        form.setAttribute('data-cms-crop-bound', '');
+        slot.setAttribute('data-cms-crop-bound', '');
 
         var button = element('button', 'btn btn-sm btn-outline-primary');
         button.type = 'button';
@@ -448,6 +466,12 @@
         var measured = {};
 
         function image() {
+            var field = fieldOf();
+
+            if (!field) {
+                return { source: 'none' };
+            }
+
             var source = field.getAttribute('data-cms-image-source') || 'none';
             var url = field.getAttribute('data-cms-image-url') || '';
             var width = parseInt(field.getAttribute('data-cms-image-width') || '0', 10);
@@ -493,6 +517,14 @@
                 why = m.looking;
             } else if (!(one.width > 0 && one.height > 0)) {
                 why = one.failed ? m.unknownSize : m.measuring;
+            } else {
+                var box = boxOf(one);
+
+                // A picture kept elsewhere is only cropped by CSS, which has nothing to do
+                // with a box of its own proportions.
+                if (box && box.ratio === 'original' && one.source !== 'library') {
+                    why = m.originalElsewhere;
+                }
             }
 
             button.disabled = why !== '';
@@ -519,10 +551,9 @@
 
         button.addEventListener('click', function () {
             var one = image();
-            var boxWidth = number(widthPixels, 0);
-            var boxHeight = number(heightPixels, 0);
+            var box = button.disabled ? null : boxOf(one);
 
-            if (button.disabled || !(boxWidth > 0 && boxHeight > 0)) {
+            if (!box || !(box.boxWidth > 0 && box.boxHeight > 0)) {
                 return;
             }
 
@@ -531,8 +562,10 @@
                 width: one.width,
                 height: one.height,
                 served: one.source === 'library',
-                boxWidth: boxWidth,
-                boxHeight: boxHeight,
+                boxWidth: box.boxWidth,
+                boxHeight: box.boxHeight,
+                shown: box.shown,
+                ratio: box.ratio,
                 x: number(focusX, 50),
                 y: number(focusY, 50),
                 zoom: number(zoom, 100),
@@ -548,9 +581,12 @@
             });
         });
 
-        form.addEventListener('cms-image-shown', sync);
-        form.addEventListener('input', sync);
-        form.addEventListener('change', sync);
+        // The form too: the proportions that give the box are set outside a row.
+        [scope, scope.closest('form') === scope ? null : scope.closest('form')].forEach(function (listened) {
+            if (listened) {
+                ['cms-image-shown', 'input', 'change'].forEach(function (name) { listened.addEventListener(name, sync); });
+            }
+        });
         sync();
     }
 
@@ -569,7 +605,7 @@
             return;
         }
 
-        (root || document).querySelectorAll('form[data-cms-section-form]:not([data-cms-crop-bound])').forEach(bindForm);
+        (root || document).querySelectorAll('[data-cms-kept-slot]:not([data-cms-crop-bound])').forEach(bindSlot);
     }
 
     window.CmsImageCrop = { bind: bind };

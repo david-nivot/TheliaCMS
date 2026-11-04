@@ -1538,4 +1538,12 @@ return [
     'Reading the size of this image…' => 'Lecture de la taille de cette image…',
     'The size of this image could not be read.' => 'La taille de cette image n’a pas pu être lue.',
     'Confirm' => 'Valider',
+    'Original image' => 'Image d’origine',
+    'The shape the picture is shown in, at the width above. "Original image" keeps its own; the others crop it to fit, around the part you keep.' => 'La forme dans laquelle l’image s’affiche, à la largeur choisie au-dessus. « Image d’origine » garde la sienne ; les autres la recadrent pour y tenir, autour de la partie que vous gardez.',
+    'Proportions of the images' => 'Proportions des images',
+    'Band (logos)' => 'Bande (logos)',
+    '"Band" shows each picture whole in a strip of the same height, as a row of logos. The other choices give every picture the width of its column, in this shape.' => '« Bande » montre chaque image entière dans une bande de même hauteur, comme une rangée de logos. Les autres choix donnent à chaque image la largeur de sa colonne, dans cette forme.',
+    'Result in proportions %ratio%' => 'Résultat aux proportions %ratio%',
+    'Result in the proportions of the image' => 'Résultat aux proportions de l’image',
+    'The part kept of a picture kept elsewhere can only be set when the proportions are a ratio.' => 'La partie gardée d’une image hébergée ailleurs ne se règle que lorsque les proportions sont un rapport (16:9, 4:3…).',
 ];

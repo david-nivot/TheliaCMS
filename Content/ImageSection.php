@@ -90,6 +90,16 @@ final readonly class ImageSection implements SectionDefinitionInterface
                 help: $this->trans('How wide the picture is on the page. Narrow suits most photos; "A size in pixels" sets the width, and the height if you want a frame.'),
                 onlyChoices: [self::CUSTOM],
             ),
+            Prop::choice('proportions', $this->trans('Proportions'), [
+                ImageProportions::ORIGINAL => $this->trans('Original image'),
+                ...array_combine(ImageProportions::ratios(), ImageProportions::ratios()),
+            ], ImageProportions::ORIGINAL, icons: [
+                ImageProportions::ORIGINAL => 'bi-image',
+                ...array_combine(ImageProportions::ratios(), array_map(static fn (string $ratio): string => 'ratio-'.str_replace(':', '-', $ratio), ImageProportions::ratios())),
+            ])->forEditor(
+                help: $this->trans('The shape the picture is shown in, at the width above. "Original image" keeps its own; the others crop it to fit, around the part you keep.'),
+                only: true,
+            ),
             Prop::integer('width_px', $this->trans('Width in pixels'), 0, 0, self::MAX_WIDTH)
                 ->forEditor(help: $this->trans('Between 160 and 2400. On a narrow screen the picture shrinks and keeps its proportions.'), only: true),
             Prop::integer('height_px', $this->trans('Height in pixels'), 0, 0, self::MAX_HEIGHT)
@@ -158,15 +168,49 @@ final readonly class ImageSection implements SectionDefinitionInterface
             return $this->renderBox($props, $source, $widthPixels, $locale);
         }
 
+        [$imageClass, $imageStyle] = $this->preset($props);
+
         $html = \sprintf(
-            '<figure class="cms-image cms-image--%s"%s><img class="cms-image__img" src="%s" alt="%s" loading="lazy">',
+            '<figure class="cms-image cms-image--%s"%s><img class="%s" src="%s" alt="%s" loading="lazy"%s>',
             $width,
             ImageSlot::attribute(self::slot($width)),
+            $imageClass,
             self::escape($source),
             self::escape(ImageSource::alt($props['image'] ?? null, (string) ($props['alt'] ?? ''), $locale)),
+            $imageStyle,
         );
 
         return $html.$this->caption($props).'</figure>';
+    }
+
+    /**
+     * The class and the attributes the proportions put on the picture of a
+     * preset width. A ratio gives the box its shape (the height follows the
+     * width) and the picture fills it around the part kept; the picture as it
+     * is has no box, and only a zoom is written, for the publication to serve
+     * the zoomed zone. Nothing for the picture as it is, whole: the markup
+     * stays what it always was.
+     *
+     * @param array<string, mixed> $props
+     *
+     * @return array{string, string} the class and the attributes
+     */
+    private function preset(array $props): array
+    {
+        $focusX = (int) ($props['focus_x'] ?? 50);
+        $focusY = (int) ($props['focus_y'] ?? 50);
+        $zoom = (int) ($props['zoom'] ?? 100);
+        $proportions = $props['proportions'] ?? ImageProportions::ORIGINAL;
+        $box = ImageProportions::box($proportions);
+
+        if (null !== $box) {
+            return [
+                'cms-image__img cms-image__img--cover',
+                \sprintf(' style="aspect-ratio:%s;object-fit:cover;object-position:%d%% %d%%"', ImageProportions::aspectRatio($proportions), $focusX, $focusY).ImageFrame::attribute($focusX, $focusY, $zoom, $box[0], $box[1]),
+            ];
+        }
+
+        return ['cms-image__img', $zoom > 100 ? ImageFrame::attribute($focusX, $focusY, $zoom, 0, 0) : ''];
     }
 
     /**

@@ -98,6 +98,23 @@ final class ImageFrameTest extends TestCase
         self::assertSame(['focusX' => 35, 'focusY' => 20, 'zoom' => 150, 'boxWidth' => 960, 'boxHeight' => 540], ImageFrame::parse('35,20,150,960,540'));
     }
 
+    public function testABoxOfZeroIsTheProportionsOfThePictureItself(): void
+    {
+        self::assertSame(['focusX' => 20, 'focusY' => 80, 'zoom' => 150, 'boxWidth' => 0, 'boxHeight' => 0], ImageFrame::parse('20,80,150,0,0'));
+        self::assertNull(ImageFrame::parse('20,80,150,0,540'), 'One side alone is no box.');
+        self::assertNull(ImageFrame::parse('20,80,150,960,0'));
+    }
+
+    public function testThePictureZoomedKeepsItsOwnProportions(): void
+    {
+        // 1600 by 1000 at 150: a zone 1066 by 666 (the proportions of the picture), centred on 30 % / 70 %.
+        $zone = ImageFrame::zone(1600, 1000, 0, 0, 30, 70, 150);
+
+        self::assertSame(ImageFrame::zone(1600, 1000, 1600, 1000, 30, 70, 150), $zone);
+        self::assertSame(['x' => 0, 'y' => 334, 'w' => 1066, 'h' => 666], $zone);
+        self::assertNull(ImageFrame::zone(1600, 1000, 0, 0, 30, 70, 100), 'Zoom 100 is the whole picture.');
+    }
+
     #[DataProvider('attributesThatAreNotFromTheSection')]
     public function testAnAttributeTheSectionCouldNotHaveWrittenIsIgnored(string $value): void
     {

@@ -95,7 +95,7 @@ final class ImageSectionTest extends TestCase
     {
         $props = (new ImageSection())->schema()->props;
 
-        self::assertSame(['image', 'width', 'width_px', 'height_px', 'fit', 'focus_x', 'focus_y', 'zoom', 'caption', 'alt'], array_map(static fn (Prop $prop): string => $prop->name, $props));
+        self::assertSame(['image', 'width', 'proportions', 'width_px', 'height_px', 'fit', 'focus_x', 'focus_y', 'zoom', 'caption', 'alt'], array_map(static fn (Prop $prop): string => $prop->name, $props));
     }
 
     public function testTheEditorReadsItsOwnHelpAndTheModelTheInstruction(): void
@@ -115,7 +115,7 @@ final class ImageSectionTest extends TestCase
     {
         $section = new ImageSection();
         $old = ['image' => 'https://example.com/tarte.jpg', 'alt' => 'Une tarte', 'caption' => 'Sortie du four', 'width' => 'column'];
-        $neutral = $old + ['width_px' => 0, 'height_px' => 0, 'fit' => 'cover', 'focus_x' => 50, 'focus_y' => 50, 'zoom' => 100];
+        $neutral = $old + ['proportions' => 'original', 'width_px' => 0, 'height_px' => 0, 'fit' => 'cover', 'focus_x' => 50, 'focus_y' => 50, 'zoom' => 100];
         $expected = '<figure class="cms-image cms-image--column" data-cms-sizes="(max-width: 77rem) calc(100vw - 2rem), 75rem"><img class="cms-image__img" src="https://example.com/tarte.jpg" alt="Une tarte" loading="lazy"><figcaption class="cms-image__caption">Sortie du four</figcaption></figure>';
 
         self::assertSame($expected, $section->render($section->normalizeProps($old), 'fr_FR'));
@@ -137,6 +137,68 @@ final class ImageSectionTest extends TestCase
             '<figure class="cms-image cms-image--custom" style="width:min(960px, 100% - 2rem)" data-cms-sizes="min(960px, calc(100vw - 2rem))" data-cms-height="540px"><img class="cms-image__img cms-image__img--contain" src="https://example.com/a.jpg" alt="" loading="lazy" style="aspect-ratio:960/540;object-fit:contain"></figure>',
             $this->drawn(['width' => 'custom', 'width_px' => 960, 'height_px' => 540, 'fit' => 'contain']),
         );
+    }
+
+    /**
+     * @param array<string, mixed> $props
+     */
+    #[DataProvider('framedPresets')]
+    public function testAPresetWidthWithARatioFillsABoxOfThatShapeAroundTheKeptPart(array $props, string $expected): void
+    {
+        self::assertSame($expected, $this->drawn($props));
+    }
+
+    /**
+     * @return iterable<string, array{0: array<string, mixed>, 1: string}>
+     */
+    public static function framedPresets(): iterable
+    {
+        yield 'as wide as the content, 16:9' => [
+            ['width' => 'column', 'proportions' => '16:9', 'focus_x' => 30, 'focus_y' => 70, 'zoom' => 150],
+            '<figure class="cms-image cms-image--column" data-cms-sizes="(max-width: 77rem) calc(100vw - 2rem), 75rem"><img class="cms-image__img cms-image__img--cover" src="https://example.com/a.jpg" alt="" loading="lazy" style="aspect-ratio:16/9;object-fit:cover;object-position:30% 70%" data-cms-crop="30,70,150,1600,900"></figure>',
+        ];
+        yield 'narrow, 1:1' => [
+            ['width' => 'narrow', 'proportions' => '1:1'],
+            '<figure class="cms-image cms-image--narrow" data-cms-sizes="(max-width: 50rem) calc(100vw - 2rem), 48rem"><img class="cms-image__img cms-image__img--cover" src="https://example.com/a.jpg" alt="" loading="lazy" style="aspect-ratio:1/1;object-fit:cover;object-position:50% 50%" data-cms-crop="50,50,100,1000,1000"></figure>',
+        ];
+        yield 'the whole screen, 3:4' => [
+            ['width' => 'full', 'proportions' => '3:4'],
+            '<figure class="cms-image cms-image--full" data-cms-sizes="100vw"><img class="cms-image__img cms-image__img--cover" src="https://example.com/a.jpg" alt="" loading="lazy" style="aspect-ratio:3/4;object-fit:cover;object-position:50% 50%" data-cms-crop="50,50,100,1200,1600"></figure>',
+        ];
+    }
+
+    public function testTheOriginalProportionsWithAZoomWriteOnlyTheZoomForThePublicationToServe(): void
+    {
+        self::assertSame(
+            '<figure class="cms-image cms-image--narrow" data-cms-sizes="(max-width: 50rem) calc(100vw - 2rem), 48rem"><img class="cms-image__img" src="https://example.com/a.jpg" alt="" loading="lazy" data-cms-crop="20,80,150,0,0"></figure>',
+            $this->drawn(['width' => 'narrow', 'proportions' => 'original', 'focus_x' => 20, 'focus_y' => 80, 'zoom' => 150]),
+        );
+    }
+
+    public function testTheOriginalProportionsWithoutAZoomDrawTheMarkupOfBefore(): void
+    {
+        self::assertSame($this->drawn(['width' => 'column']), $this->drawn(['width' => 'column', 'proportions' => 'original', 'focus_x' => 20, 'focus_y' => 80, 'zoom' => 100]), 'A centre alone changes nothing to a picture shown whole.');
+    }
+
+    public function testTheProportionsAreLeftToTheBoxOfASizeInPixels(): void
+    {
+        $sized = ['width' => 'custom', 'width_px' => 960, 'height_px' => 540];
+
+        self::assertSame($this->drawn($sized), $this->drawn($sized + ['proportions' => '1:1']));
+    }
+
+    public function testAnUnknownProportionIsRefused(): void
+    {
+        $this->expectException(InvalidDocumentException::class);
+
+        (new ImageSection())->normalizeProps(['image' => 'https://example.com/a.jpg', 'proportions' => '21:9']);
+    }
+
+    public function testTheModelIsNotOfferedTheProportions(): void
+    {
+        $schema = (new ImageSection())->schema()->toJsonSchema();
+
+        self::assertArrayNotHasKey('proportions', (array) $schema['properties']);
     }
 
     public function testACustomWidthAloneKeepsTheHeightOfThePicture(): void

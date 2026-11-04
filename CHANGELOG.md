@@ -63,6 +63,15 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   takes the defaults. A different preset width asked for wins over the size in
   pixels, which stays in the section. The description of the Image section tells
   the generator that the exact size and the kept part are the editor's.
+- **The Image section takes proportions for its three widths.** A new setting,
+  "Proportions", offers "Original image" (the default: the markup of before, to
+  the byte), 16:9, 4:3, 3:2, 1:1 and 3:4 for the narrow, content and screen
+  widths. With a ratio, the picture fills a box of that shape whose height
+  follows the width (`aspect-ratio`) around the part kept; "Crop the image…" is
+  there for every width, and with "Original image" a centre and a zoom can still
+  be set (the zone has the proportions of the picture, zoom 100 is the whole of
+  it). A size in pixels keeps its width and height and ignores the proportions.
+  The setting is the editor's: the generator is not offered it.
 - **The back-office documentation, the README and `docs/sections.md` describe the
   size and the framing of an image**: the widths, the size in pixels, the fit, the
   dialog and its keys, an image kept elsewhere, and the published pages that keep

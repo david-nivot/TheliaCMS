@@ -24,7 +24,9 @@ namespace TheliaCMS\Content;
  *
  * The section says what the editor chose with `data-cms-crop` on the `<img>`
  * (`focus x, focus y, zoom, box width, box height`); the rewriter, which knows
- * the size of the file, asks `zone()` and takes the attribute out.
+ * the size of the file, asks `zone()` and takes the attribute out. A box of
+ * `0,0` is the proportions of the picture itself: the zone is then the picture
+ * zoomed, with no crop.
  */
 final class ImageFrame
 {
@@ -53,11 +55,14 @@ final class ImageFrame
 
         [, $focusX, $focusY, $zoom, $boxWidth, $boxHeight] = array_map('intval', $numbers);
 
-        $withinBounds = $focusX <= 100 && $focusY <= 100
-            && $zoom >= 100 && $zoom <= 400 && 0 === $zoom % ImageSection::ZOOM_STEP
-            && $boxWidth >= ImageSection::MIN_WIDTH && $boxWidth <= ImageSection::MAX_WIDTH
+        $ownProportions = 0 === $boxWidth && 0 === $boxHeight;
+        $boxWithinBounds = $boxWidth >= ImageSection::MIN_WIDTH && $boxWidth <= ImageSection::MAX_WIDTH
             && $boxHeight >= ImageSection::MIN_HEIGHT && $boxHeight <= ImageSection::MAX_HEIGHT
             && $boxWidth <= $boxHeight * ImageSection::MAX_RATIO && $boxHeight <= $boxWidth * ImageSection::MAX_RATIO;
+
+        $withinBounds = $focusX <= 100 && $focusY <= 100
+            && $zoom >= 100 && $zoom <= 400 && 0 === $zoom % ImageSection::ZOOM_STEP
+            && ($ownProportions || $boxWithinBounds);
 
         return $withinBounds ? ['focusX' => $focusX, 'focusY' => $focusY, 'zoom' => $zoom, 'boxWidth' => $boxWidth, 'boxHeight' => $boxHeight] : null;
     }
@@ -71,10 +76,17 @@ final class ImageFrame
      * is never outside the original: the library refuses a zone that starts
      * past an edge.
      *
+     * A box of `0, 0` is the proportions of the picture itself.
+     *
      * @return array{x: int, y: int, w: int, h: int}|null null when the zone is the whole picture, which is served as it is
      */
     public static function zone(int $originalWidth, int $originalHeight, int $boxWidth, int $boxHeight, int $focusX, int $focusY, int $zoom): ?array
     {
+        if (0 === $boxWidth && 0 === $boxHeight) {
+            $boxWidth = $originalWidth;
+            $boxHeight = $originalHeight;
+        }
+
         if ($originalWidth < 1 || $originalHeight < 1 || $boxWidth < 1 || $boxHeight < 1) {
             return null;
         }

@@ -597,6 +597,14 @@ body:has(.cms-content) {
     grid-column: 1 / -1;
 }
 
+/* The kept part of the picture of a row of the columns: on the line of the
+   row, under its picture, a little tighter than the one of a form. */
+.cms-content__item-fields > .cms-content__kept {
+    grid-column: 1 / -1;
+    margin: -0.25rem 0 0.5rem;
+    font-size: 0.75rem;
+}
+
 /* The two colours of the appearance on one line, their fields level. */
 .cms-content__colors {
     display: grid;

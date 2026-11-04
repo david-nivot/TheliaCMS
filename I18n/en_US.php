@@ -1538,4 +1538,12 @@ return [
     'Reading the size of this image…' => 'Reading the size of this image…',
     'The size of this image could not be read.' => 'The size of this image could not be read.',
     'Confirm' => 'Confirm',
+    'Original image' => 'Original image',
+    'The shape the picture is shown in, at the width above. "Original image" keeps its own; the others crop it to fit, around the part you keep.' => 'The shape the picture is shown in, at the width above. "Original image" keeps its own; the others crop it to fit, around the part you keep.',
+    'Proportions of the images' => 'Proportions of the images',
+    'Band (logos)' => 'Band (logos)',
+    '"Band" shows each picture whole in a strip of the same height, as a row of logos. The other choices give every picture the width of its column, in this shape.' => '"Band" shows each picture whole in a strip of the same height, as a row of logos. The other choices give every picture the width of its column, in this shape.',
+    'Result in proportions %ratio%' => 'Result in proportions %ratio%',
+    'Result in the proportions of the image' => 'Result in the proportions of the image',
+    'The part kept of a picture kept elsewhere can only be set when the proportions are a ratio.' => 'The part kept of a picture kept elsewhere can only be set when the proportions are a ratio.',
 ];
