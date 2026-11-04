@@ -132,6 +132,26 @@ final class SectionEditScreenTest extends AdminScreenTestCase
         self::assertStringContainsString('#rrggbb', $this->screen($this->url($page))->filter('[data-testid="cms-builder-flash-danger"]')->text());
     }
 
+    /**
+     * The document refuses it in English for the generator; the editor reads
+     * the same problem in the language of the back office.
+     */
+    public function testWhatTheDocumentRefusesByHandReadsInTheLanguageOfTheBackOffice(): void
+    {
+        $page = $this->pageWith([new Section('intro', 'cms:richtext', ['html' => '<h1>Avant</h1>'])]);
+        $inFrench = $this->url($page).'&lang=fr_FR';
+
+        $form = $this->screen($inFrench)->filter('[data-testid="cms-section-edit-intro"] form[data-cms-section-form]')->form();
+        $values = $form->getPhpValues();
+        $values['cms_section_intro']['cms_appearance']['background'] = 'red';
+
+        self::assertSame(302, $this->send('POST', $form->getUri(), $values));
+
+        $flash = $this->screen($inFrench)->filter('[data-testid="cms-builder-flash-danger"]')->text();
+        self::assertStringContainsString('Le réglage background de l’apparence n’est pas une couleur écrite #rrggbb.', $flash);
+        self::assertStringNotContainsString('The background of the appearance', $flash, 'The generator reads it in English, not the editor.');
+    }
+
     public function testASectionIsRemovedByHandAndTheLedgerSaysSo(): void
     {
         $page = $this->pageWith([

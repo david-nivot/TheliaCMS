@@ -80,7 +80,7 @@ final readonly class SectionUpdate
         try {
             $appearance = SectionAppearance::fromArray(SectionFormBuilder::appearanceFrom($form));
         } catch (InvalidDocumentException $exception) {
-            return $exception->problems;
+            return $exception->translated($this->translator);
         }
 
         $document = $current->withSection($section
@@ -90,7 +90,7 @@ final readonly class SectionUpdate
         try {
             $save($document);
         } catch (InvalidDocumentException $exception) {
-            return $exception->problems;
+            return $exception->translated($this->translator);
         }
 
         $this->log->recordManual($subject->target, $subject->locale, $document->toJson(), \sprintf('Section "%s" edited by hand.', $section->id));
@@ -119,7 +119,7 @@ final readonly class SectionUpdate
         try {
             $save($document);
         } catch (InvalidDocumentException $exception) {
-            return $exception->problems;
+            return $exception->translated($this->translator);
         }
 
         $this->log->recordManual($subject->target, $subject->locale, $document->toJson(), \sprintf('Section "%s" removed by hand.', $section->id));
@@ -156,7 +156,7 @@ final readonly class SectionUpdate
         try {
             $save($document);
         } catch (InvalidDocumentException $exception) {
-            return $exception->problems;
+            return $exception->translated($this->translator);
         }
 
         $this->log->recordManual($subject->target, $subject->locale, $document->toJson(), $dropped
@@ -190,7 +190,7 @@ final readonly class SectionUpdate
             $document = $current->withSectionAppended($section);
             $save($document);
         } catch (InvalidDocumentException $exception) {
-            return $exception->problems;
+            return $exception->translated($this->translator);
         }
 
         $this->log->recordManual($subject->target, $subject->locale, $document->toJson(), \sprintf('Section "%s" added by hand (%s).', $section->id, $name));
@@ -225,7 +225,7 @@ final readonly class SectionUpdate
         try {
             $save($document);
         } catch (InvalidDocumentException $exception) {
-            return $exception->problems;
+            return $exception->translated($this->translator);
         }
 
         $this->log->recordManual($subject->target, $subject->locale, $document->toJson(), \sprintf('Section "%s" duplicated by hand as "%s".', $section->id, $copy->id));

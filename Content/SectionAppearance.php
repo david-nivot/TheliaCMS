@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Content;
 
+use TheliaCMS\Locale\TranslatableText;
+
 /**
  * How a section stands out from the page, beyond what its component draws:
  * a background, a colour of text, more room around it, an alignment. A
@@ -49,7 +51,7 @@ final readonly class SectionAppearance
 
         foreach (array_keys($values) as $key) {
             if (!\in_array($key, ['background', 'text', 'padding', 'align'], true)) {
-                $problems[] = \sprintf('The appearance has no setting "%s": only background, text, padding and align.', $key);
+                $problems[] = TranslatableText::of('The appearance has no setting "%s": only background, text, padding and align.', $key);
             }
         }
 
@@ -111,7 +113,7 @@ final readonly class SectionAppearance
     }
 
     /**
-     * @param list<string> $problems
+     * @param list<TranslatableText> $problems
      */
     private static function color(mixed $value, string $setting, array &$problems): ?string
     {
@@ -122,7 +124,7 @@ final readonly class SectionAppearance
         $color = \is_string($value) ? strtolower(trim($value)) : '';
 
         if (1 !== preg_match(self::COLOR_PATTERN, $color)) {
-            $problems[] = \sprintf('The %s of the appearance is not a colour written #rrggbb.', $setting);
+            $problems[] = TranslatableText::of('The %s of the appearance is not a colour written #rrggbb.', $setting);
 
             return null;
         }
@@ -131,8 +133,8 @@ final readonly class SectionAppearance
     }
 
     /**
-     * @param list<string> $allowed
-     * @param list<string> $problems
+     * @param list<string>           $allowed
+     * @param list<TranslatableText> $problems
      */
     private static function oneOf(mixed $value, string $setting, array $allowed, array &$problems): ?string
     {
@@ -141,7 +143,7 @@ final readonly class SectionAppearance
         }
 
         if (!\is_string($value) || !\in_array($value, $allowed, true)) {
-            $problems[] = \sprintf('The %s of the appearance is none of %s.', $setting, implode(', ', $allowed));
+            $problems[] = TranslatableText::of('The %s of the appearance is none of %s.', $setting, implode(', ', $allowed));
 
             return null;
         }
