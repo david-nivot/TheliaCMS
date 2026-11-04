@@ -72,7 +72,8 @@
             {{ cms_page_documents_block(cms_page) }}
             {{ theme_hook('cmspage.content.after', {page: cms_page}) }}
         </article>
-        {% set ai_label = ai_provenance_label(cms_page.provenance, cms_page.locale) %}
+        {# The sentence for the reader, empty unless CMS > Settings shows it. #}
+        {% set ai_label = cms_ai_label(cms_page.provenance, cms_page.locale) %}
         {% if ai_label %}
             <p class="cms-page__ai-label">{{ ai_label }}</p>
         {% endif %}

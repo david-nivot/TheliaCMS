@@ -21,6 +21,7 @@ use Thelia\Domain\Ai\AiGatewayInterface;
 use Thelia\Model\ConfigQuery;
 use Thelia\Model\Lang;
 use TheliaCMS\Content\Document;
+use TheliaCMS\Generation\GeneratorSettings;
 use TheliaCMS\Model\CmsPageContent;
 use TheliaCMS\Model\CmsPageContentQuery;
 use TheliaCMS\Model\CmsPageGenerationQuery;
@@ -64,7 +65,7 @@ final class ProvenanceTest extends AdminScreenTestCase
         self::assertStringContainsString('data-ai-usage="theliacms.page_generation"', $served);
         self::assertStringContainsString('data-ai-model="fake-model"', $served);
         self::assertStringContainsString('data-ai-generated-at="2026-10-28T10:00:00+00:00"', $served);
-        self::assertStringContainsString('cms-page__ai-label', $served, 'A sentence a visitor can read, next to the page.');
+        self::assertStringNotContainsString('cms-page__ai-label', $served, 'The sentence for the visitor is off by default: the mark for machines is enough.');
         self::assertStringContainsString('Écrit par le générateur', $served);
 
         $stored = CmsPageContentQuery::create()->filterByPageId($generated->getId())->findOne();
@@ -75,6 +76,53 @@ final class ProvenanceTest extends AdminScreenTestCase
 
         $row = CmsPageGenerationQuery::create()->filterByTargetId($generated->getId())->orderById('desc')->findOne();
         self::assertStringContainsString('"usage":"theliacms.page_generation"', (string) $row?->getProvenance(), 'The row of the ledger keeps the mark of its call.');
+    }
+
+    public function testASiteThatShowsTheSentenceGetsItUnderAGeneratedPageOnly(): void
+    {
+        $handWritten = $this->createPage('Écrite à la main');
+        $generated = $this->createPage('Écrite par le générateur', published: false);
+        $this->generate($generated->getId(), withMark: true);
+        $this->publish($generated->getId());
+
+        $settings = $this->getService(GeneratorSettings::class);
+        $settings->saveAiLabel(true);
+
+        try {
+            self::assertStringContainsString('<p class="cms-page__ai-label">', $this->served((int) $generated->getId()), 'A sentence a visitor can read, after the article.');
+            self::assertStringNotContainsString('cms-page__ai-label', $this->served((int) $handWritten->getId()), 'A page a person wrote has none.');
+        } finally {
+            $settings->saveAiLabel(false);
+        }
+    }
+
+    public function testTheEditorTakesTheMarkOffAReviewedPage(): void
+    {
+        $page = $this->createPage('Relue', published: false);
+        $this->generate($page->getId(), withMark: true);
+        $this->publish($page->getId());
+        self::assertStringContainsString('data-ai-generated="true"', $this->served((int) $page->getId()));
+        $draftBefore = CmsPageRevisionQuery::create()->filterByPageId($page->getId())->filterByProvenance(null, Criteria::ISNOTNULL)->count();
+
+        $url = \sprintf('/admin/cms/pages/%d?edit_language_id=%d', $page->getId(), Lang::getDefaultLanguage()->getId());
+        $form = $this->screen($url)->filter('[data-testid="cms-page-remove-ai-mark"]')->form();
+        self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()));
+
+        $content = $this->content($page->getId());
+        self::assertNull($content?->getDraftProvenance(), 'The draft is no longer marked.');
+        self::assertNull($content?->getPublishedProvenance(), 'Nor what is online.');
+        self::assertStringNotContainsString('data-ai-generated', $this->served((int) $page->getId()));
+        self::assertSame($draftBefore, CmsPageRevisionQuery::create()->filterByPageId($page->getId())->filterByProvenance(null, Criteria::ISNOTNULL)->count(), 'The revisions keep theirs: putting one back brings its mark back.');
+        self::assertCount(0, $this->screen($url)->filter('[data-testid="cms-page-remove-ai-mark"]'), 'Nothing left to remove, no button.');
+        self::assertFalse($this->writer()->removeProvenance($page, $this->locale()));
+    }
+
+    public function testAPageWrittenByHandOffersNoMarkToRemove(): void
+    {
+        $page = $this->createPage('Écrite à la main');
+        $url = \sprintf('/admin/cms/pages/%d?edit_language_id=%d', $page->getId(), Lang::getDefaultLanguage()->getId());
+
+        self::assertCount(0, $this->screen($url)->filter('[data-testid="cms-page-remove-ai-mark"]'));
     }
 
     public function testAShopThatTurnedTheMarkOffGetsNoMark(): void
