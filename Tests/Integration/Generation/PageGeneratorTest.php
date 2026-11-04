@@ -286,7 +286,7 @@ final class PageGeneratorTest extends CmsIntegrationTestCase
 
     public function testARefusalOfTheGatewayIsAFailureAndTheDraftIsLeftAsItIs(): void
     {
-        $page = $this->createPage('Page en panne', html: '<h1>Avant</h1>', published: false);
+        $page = $this->createPage('Page en panne', html: '<h2>Avant</h2>', published: false);
         $this->api->answer(new AiBudgetExceededException(PageGenerator::USAGE));
 
         try {
@@ -298,7 +298,7 @@ final class PageGeneratorTest extends CmsIntegrationTestCase
         }
 
         self::assertSame(GenerationLog::STATUS_FAILED, $this->lastStatus($page));
-        self::assertStringContainsString('<h1>Avant</h1>', (string) CmsPageContentQuery::create()->filterByPageId($page->getId())->findOne()?->getDraftHtml(), 'The draft is untouched.');
+        self::assertStringContainsString('<h2>Avant</h2>', (string) CmsPageContentQuery::create()->filterByPageId($page->getId())->findOne()?->getDraftHtml(), 'The draft is untouched.');
     }
 
     public function testAModelThatKeepsCallingToolsStopsAtTheCeiling(): void
@@ -335,7 +335,7 @@ final class PageGeneratorTest extends CmsIntegrationTestCase
 
     public function testARevisionSendsTheCurrentDocumentAndAsksForTheWholeOneBack(): void
     {
-        $page = $this->createPage('Page revue', html: '<h1>Avant</h1>', published: false);
+        $page = $this->createPage('Page revue', html: '<h2>Avant</h2>', published: false);
         $content = CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($this->locale())->findOne();
         $current = Document::fromJson($content?->getDraftDocument());
 
@@ -347,7 +347,7 @@ final class PageGeneratorTest extends CmsIntegrationTestCase
 
         self::assertSame('<h2>Après</h2>', $result->document->sections[0]->props['html']);
         self::assertStringContainsString('# The document the page holds today', $this->api->requests[0]->messages[0]->content);
-        self::assertStringContainsString('<h1>Avant</h1>', $this->api->requests[0]->messages[0]->content);
+        self::assertStringContainsString('<h2>Avant</h2>', $this->api->requests[0]->messages[0]->content);
         self::assertSame('revision', CmsPageGenerationQuery::create()->filterByTargetId($page->getId())->findOne()?->getKind());
     }
 
@@ -708,20 +708,20 @@ final class PageGeneratorTest extends CmsIntegrationTestCase
     {
         $page = $this->createPage('Nos services', published: false);
         $locale = $this->locale();
-        $wrong = FakeAiGateway::response(self::document([['id' => 'intro', 'component' => RichTextSection::NAME, 'props' => ['html' => '<h1>Nos services</h1><h2>Suite</h2>']]]));
+        $wrong = FakeAiGateway::response(self::document([['id' => 'intro', 'component' => RichTextSection::NAME, 'props' => ['html' => '<h2>Nos services</h2><h4>Suite</h4>']]]));
         $right = FakeAiGateway::response(self::document([['id' => 'intro', 'component' => RichTextSection::NAME, 'props' => ['html' => '<h2>Nos services</h2><h3>Suite</h3>']]]));
 
         $this->api->answer($wrong)->answer($right);
         $mended = $this->generator()->generate(GenerationRequest::fromBrief(GenerationTarget::page($page, $locale), $locale, new Brief('Nos services.')));
 
-        self::assertSame(2, $mended->turns, 'A level 1 heading under the title of the page goes back.');
-        self::assertStringContainsString('level 1 heading', $this->api->requests[1]->messages[2]->content);
+        self::assertSame(2, $mended->turns, 'A jump of heading level goes back.');
+        self::assertStringContainsString('level 2 to level 4', $this->api->requests[1]->messages[2]->content);
         self::assertSame([], $mended->leftOut);
 
         $this->api->answer($wrong)->answer($wrong)->answer($wrong);
         $left = $this->generator()->generate(GenerationRequest::fromBrief(GenerationTarget::page($page, $locale), $locale, new Brief('Nos services.')));
 
-        self::assertSame('<h1>Nos services</h1><h2>Suite</h2>', $left->document->sections[0]->props['html'], 'A heading is not rewritten by the module: the page keeps it, and the editor is told.');
+        self::assertSame('<h2>Nos services</h2><h4>Suite</h4>', $left->document->sections[0]->props['html'], 'A heading is not rewritten by the module: the page keeps it, and the editor is told.');
         self::assertCount(1, $left->leftOut);
         self::assertStringContainsString(\sprintf('%s', 'fr_FR' === $locale ? 'La structure des titres de la page est à revoir' : 'The headings of the page need a look'), $left->leftOut[0]);
     }
