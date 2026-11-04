@@ -42,7 +42,7 @@ final class PageListImageTest extends CmsIntegrationTestCase
         $props = $section?->normalizeProps(['type' => 'default', 'limit' => 48]) ?? [];
         $html = (string) $this->getService(PartialRenderer::class)->renderOne(PageListPartial::NAME, $props, $this->locale(), cache: false);
 
-        self::assertStringContainsString(\sprintf('srcset="/image-library/%1$d/full/480,!/0/default.jpg 480w, /image-library/%1$d/full/960,!/0/default.jpg 960w, /image-library/%1$d/full/max/0/default.jpg 1200w"', $id), $html);
+        self::assertStringContainsString(\sprintf('srcset="/image-library/%1$d/full/480,320/0/default.jpg 480w, /image-library/%1$d/full/960,640/0/default.jpg 960w, /image-library/%1$d/full/max/0/default.jpg 1200w"', $id), $html);
         self::assertStringContainsString('sizes="(min-width: 64rem) 25vw, (min-width: 40rem) 50vw, 100vw"', $html);
         self::assertStringContainsString('width="1200"', $html);
         self::assertStringContainsString('height="800"', $html);
@@ -56,7 +56,7 @@ final class PageListImageTest extends CmsIntegrationTestCase
         );
 
         self::assertSame('(min-width: 64rem) 25vw, 50vw', $attributes['sizes']);
-        self::assertStringContainsString('/image-library/7/full/1440,!/0/default.webp 1440w', $attributes['srcset'], 'The format of the file is kept.');
+        self::assertStringContainsString('/image-library/7/full/1440,960/0/default.webp 1440w', $attributes['srcset'], 'The format of the file is kept.');
         self::assertSame('2400', $attributes['width']);
 
         self::assertSame([], $this->getService(CmsExtension::class)->imageAttributes(null));

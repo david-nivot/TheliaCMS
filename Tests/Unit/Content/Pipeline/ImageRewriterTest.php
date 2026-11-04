@@ -28,7 +28,7 @@ final class ImageRewriterTest extends TestCase
 
         self::assertStringContainsString('<picture>', $html);
         self::assertStringContainsString('<source type="image/webp"', $html);
-        self::assertStringContainsString('/image-library/7/full/480,!/0/default.webp 480w', $html);
+        self::assertStringContainsString('/image-library/7/full/480,270/0/default.webp 480w', $html);
         self::assertStringContainsString('alt="A photo"', $html);
     }
 
@@ -101,11 +101,11 @@ final class ImageRewriterTest extends TestCase
         );
 
         self::assertSame(
-            ['/image-library/8/full/480,!/0/default.jpg 480w', '/image-library/8/full/max/0/default.jpg 900w'],
+            ['/image-library/8/full/480,320/0/default.jpg 480w', '/image-library/8/full/max/0/default.jpg 900w'],
             $this->candidates($this->imageSrcset($html)),
         );
         self::assertSame(
-            ['/image-library/8/full/480,!/0/default.webp 480w', '/image-library/8/full/max/0/default.webp 900w'],
+            ['/image-library/8/full/480,320/0/default.webp 480w', '/image-library/8/full/max/0/default.webp 900w'],
             $this->candidates($this->sourceSrcset($html)),
         );
     }
@@ -118,11 +118,11 @@ final class ImageRewriterTest extends TestCase
         );
 
         self::assertSame(
-            ['/image-library/8/full/480,!/0/default.jpg 480w', '/image-library/8/full/max/0/default.jpg 960w'],
+            ['/image-library/8/full/480,320/0/default.jpg 480w', '/image-library/8/full/max/0/default.jpg 960w'],
             $this->candidates($this->imageSrcset($html)),
         );
         self::assertSame(
-            ['/image-library/8/full/480,!/0/default.webp 480w', '/image-library/8/full/max/0/default.webp 960w'],
+            ['/image-library/8/full/480,320/0/default.webp 480w', '/image-library/8/full/max/0/default.webp 960w'],
             $this->candidates($this->sourceSrcset($html)),
         );
     }
@@ -139,21 +139,56 @@ final class ImageRewriterTest extends TestCase
 
         self::assertSame(
             [
-                '/image-library/8/full/480,!/0/default.jpg 480w',
-                '/image-library/8/full/960,!/0/default.jpg 960w',
-                '/image-library/8/full/1440,!/0/default.jpg 1440w',
+                '/image-library/8/full/480,320/0/default.jpg 480w',
+                '/image-library/8/full/960,640/0/default.jpg 960w',
+                '/image-library/8/full/1440,960/0/default.jpg 1440w',
                 '/image-library/8/full/max/0/default.jpg 2400w',
             ],
             $this->candidates($this->imageSrcset($html)),
         );
         self::assertSame(
             [
-                '/image-library/8/full/480,!/0/default.webp 480w',
-                '/image-library/8/full/960,!/0/default.webp 960w',
-                '/image-library/8/full/1440,!/0/default.webp 1440w',
+                '/image-library/8/full/480,320/0/default.webp 480w',
+                '/image-library/8/full/960,640/0/default.webp 960w',
+                '/image-library/8/full/1440,960/0/default.webp 1440w',
                 '/image-library/8/full/max/0/default.webp 2400w',
             ],
             $this->candidates($this->sourceSrcset($html)),
+        );
+    }
+
+    /**
+     * A candidate announced at 480w is 480 wide: a portrait asked as `480,!`
+     * came back fitted in a 480 square, 339 wide for a 1920 by 2715 file.
+     */
+    public function testAsksACandidateOfAPortraitAtItsWidthAndTheHeightOfItsProportions(): void
+    {
+        $html = $this->rewrite(
+            '<img src="/image-library/8/full/max/0/default.jpg" alt="">',
+            new MediaFile(id: 8, format: 'jpg', width: 1920, height: 2715),
+        );
+
+        self::assertSame(
+            [
+                '/image-library/8/full/480,679/0/default.jpg 480w',
+                '/image-library/8/full/960,1358/0/default.jpg 960w',
+                '/image-library/8/full/1440,2036/0/default.jpg 1440w',
+                '/image-library/8/full/max/0/default.jpg 1920w',
+            ],
+            $this->candidates($this->imageSrcset($html)),
+        );
+    }
+
+    public function testKeepsTheSquareOfTheImageRouteWhenTheHeightIsUnknown(): void
+    {
+        $html = $this->rewrite(
+            '<img src="/image-library/8/full/max/0/default.jpg" alt="">',
+            new MediaFile(id: 8, format: 'jpg', width: 900),
+        );
+
+        self::assertSame(
+            ['/image-library/8/full/480,!/0/default.jpg 480w', '/image-library/8/full/max/0/default.jpg 900w'],
+            $this->candidates($this->imageSrcset($html)),
         );
     }
 
@@ -412,7 +447,7 @@ final class ImageRewriterTest extends TestCase
      */
     private function candidates(string $srcset): array
     {
-        // Candidates are separated by ", "; the ",!" inside a URL has no space.
+        // Candidates are separated by ", "; the "," inside a URL has no space.
         return explode(', ', $srcset);
     }
 

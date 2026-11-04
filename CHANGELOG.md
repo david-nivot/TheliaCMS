@@ -21,6 +21,13 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Fixed
 
+- **A portrait image is no longer served narrower than announced.** Each
+  candidate of its `srcset` asked the image route for a width alone, which it
+  fits in a square: the `480w` file of a 1920 by 2715 portrait was 339 pixels
+  wide, and looked blurred once stretched. Candidates now ask for the width and
+  the height of the image's proportions. Pages already published keep the old
+  addresses until they are published again, or rendered again with
+  `thelia_cms:render-published`.
 - **A published image is announced at the width it is drawn at.** Its
   `sizes` said the viewport up to 1440px whatever the file, so a browser read
   a 308px pack shot at 1440px: a theme leaving an image at its own size
