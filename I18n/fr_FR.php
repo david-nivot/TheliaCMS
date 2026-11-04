@@ -908,7 +908,7 @@ return [
     'Inside, bottom' => 'Intérieur, bas',
     'Outside, top' => 'Extérieur, haut',
     'Outside, bottom' => 'Extérieur, bas',
-    'Inside the section, the background goes with it. A precise value below wins for its side.' => 'À l’intérieur de la section : le fond s’étend avec. Une valeur précise plus bas l’emporte pour son côté.',
+    'Inside the section, the background goes with it. "Precise room" sets each side, inside and outside, in px or rem.' => 'À l’intérieur de la section : le fond s’étend avec. « Marges précises » règle chaque côté, à l’intérieur et à l’extérieur, en px ou en rem.',
     'Inside the section, the background goes with it. Written 64px (0 to 320) or 2rem (0 to 20). Empty: the component\'s.' => 'À l’intérieur de la section : le fond s’étend avec. Écrite 64px (0 à 320) ou 2rem (0 à 20). Vide : celle du composant.',
     'Outside the section, between it and its neighbours. Same units. Empty: none.' => 'À l’extérieur de la section, entre elle et ses voisines. Mêmes unités. Vide : aucune.',
     'Alignment of the text' => 'Alignement du texte',

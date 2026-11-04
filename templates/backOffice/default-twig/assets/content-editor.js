@@ -510,6 +510,31 @@
         return checked ? checked.value : "";
     }
 
+    // The precise room of a section: its four fields show while "Precise
+    // room" is checked among the room buttons, as the pixels of an image
+    // show for "A size in pixels". Hidden, they are not read on save.
+    function bindPreciseRoom(root) {
+        root.querySelectorAll("[data-cms-precise-room]").forEach(function (fields) {
+            var form = fields.closest("form");
+            var rooms = form ? form.querySelectorAll('input[type="radio"][name$="[cms_appearance][padding]"]') : [];
+
+            if (fields.hasAttribute("data-cms-precise-room-bound") || !rooms.length) {
+                return;
+            }
+
+            fields.setAttribute("data-cms-precise-room-bound", "");
+
+            function show() {
+                fields.hidden = checkedValue(rooms) !== "precise";
+            }
+
+            Array.prototype.forEach.call(rooms, function (radio) {
+                radio.addEventListener("change", show);
+            });
+            show();
+        });
+    }
+
     // The size and the framing of an image section. Without this script every
     // field of the form is there and the form works; with it, the pixels show
     // only for "A size in pixels", the proportions are one click, and the kept
@@ -1776,6 +1801,7 @@
         });
 
         bindImageDimensions(root);
+        bindPreciseRoom(root);
         bindColumnsFraming(root);
         bindPictureFraming(root);
 

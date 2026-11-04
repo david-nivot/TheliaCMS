@@ -108,7 +108,9 @@ A length is a number of two decimals at most followed by `px` (0 to 320) or
 number, bare number or other unit. The check of the appearance is the only
 barrier, the CSS filter of the rendering does not bound a length. The
 generator's schema and catalogue sheet list the three presets only; a precise
-room is the editor's. A site without this release refuses an imported page
+room is the editor's: "Edit by hand" shows its four fields under the room
+button "Precise room" only, and another button leaves them out of the save. A
+site without this release refuses an imported page
 whose document holds one.
 
 Every setting is optional, and nothing else can be set: an unknown setting or

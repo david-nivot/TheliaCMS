@@ -77,6 +77,9 @@ final readonly class SectionFormBuilder
     /** The child holding the appearance of the section, a name no prop takes. */
     public const string APPEARANCE = 'cms_appearance';
 
+    /** The room button that shows the four precise fields, a value the appearance never stores. */
+    public const string PRECISE_ROOM = 'precise';
+
     /** Names of props whose plain reading would mislead an editor. */
     private const array LABELS = [
         'href' => 'Link',
@@ -123,7 +126,9 @@ final readonly class SectionFormBuilder
 
     /**
      * The appearance of the section, as sent: checked by the appearance
-     * itself, which says what it refuses.
+     * itself, which says what it refuses. The precise fields count only
+     * under the "Precise room" button: another button leaves them out, even
+     * filled, as they are hidden then.
      *
      * @return array<string, mixed>
      */
@@ -131,7 +136,17 @@ final readonly class SectionFormBuilder
     {
         $values = $form->has(self::APPEARANCE) ? $form->get(self::APPEARANCE)->getData() : [];
 
-        return \is_array($values) ? $values : [];
+        if (!\is_array($values)) {
+            return [];
+        }
+
+        if (self::PRECISE_ROOM === ($values['padding'] ?? null)) {
+            unset($values['padding']);
+
+            return $values;
+        }
+
+        return array_diff_key($values, SectionAppearance::SIDES);
     }
 
     /**
@@ -150,6 +165,8 @@ final readonly class SectionFormBuilder
             $paddings[ucfirst($padding)] = $padding;
         }
 
+        $paddings['Precise room'] = self::PRECISE_ROOM;
+
         $group = $builder->create(self::APPEARANCE, FormType::class, [
             'mapped' => false,
             'label' => 'Appearance',
@@ -167,11 +184,11 @@ final readonly class SectionFormBuilder
         ]));
         $group->add('padding', ChoiceType::class, [
             'label' => 'Room above and below',
-            'help' => 'Inside the section, the background goes with it. A precise value below wins for its side.',
+            'help' => 'Inside the section, the background goes with it. "Precise room" sets each side, inside and outside, in px or rem.',
             'required' => false,
             'placeholder' => "The component's",
             'choices' => $paddings,
-        ] + self::asButtons(['small' => 'space-small', 'medium' => 'space-medium', 'large' => 'space-large']));
+        ] + self::asButtons(['small' => 'space-small', 'medium' => 'space-medium', 'large' => 'space-large', self::PRECISE_ROOM => 'bi-rulers']));
         $group->add('align', ChoiceType::class, [
             'label' => 'Alignment of the text',
             'required' => false,
@@ -194,20 +211,28 @@ final readonly class SectionFormBuilder
     }
 
     /**
-     * What the form shows of an appearance. A room written as a length for
-     * both sides, which no button stands for, is shown in the fields of the
-     * top and the bottom: saving it again draws the same section.
+     * What the form shows of an appearance. A precise side, or a room
+     * written as a length, checks "Precise room"; the room for both sides
+     * (a preset as its length) then fills the inside fields left empty:
+     * saving it again draws the same section.
      *
      * @return array<string, string>
      */
     private static function appearanceData(SectionAppearance $appearance): array
     {
         $data = $appearance->toArray();
+        $padding = $data['padding'] ?? null;
 
-        if (isset($data['padding']) && !isset(SectionAppearance::PADDINGS[$data['padding']])) {
-            $data += ['padding_top' => $data['padding'], 'padding_bottom' => $data['padding']];
-            unset($data['padding']);
+        if ([] === array_intersect_key($data, SectionAppearance::SIDES) && (null === $padding || isset(SectionAppearance::PADDINGS[$padding]))) {
+            return $data;
         }
+
+        if (null !== $padding) {
+            $length = SectionAppearance::PADDINGS[$padding] ?? $padding;
+            $data += ['padding_top' => $length, 'padding_bottom' => $length];
+        }
+
+        $data['padding'] = self::PRECISE_ROOM;
 
         return $data;
     }

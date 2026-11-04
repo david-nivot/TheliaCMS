@@ -908,7 +908,7 @@ return [
     'Inside, bottom' => 'Inside, bottom',
     'Outside, top' => 'Outside, top',
     'Outside, bottom' => 'Outside, bottom',
-    'Inside the section, the background goes with it. A precise value below wins for its side.' => 'Inside the section, the background goes with it. A precise value below wins for its side.',
+    'Inside the section, the background goes with it. "Precise room" sets each side, inside and outside, in px or rem.' => 'Inside the section, the background goes with it. "Precise room" sets each side, inside and outside, in px or rem.',
     'Inside the section, the background goes with it. Written 64px (0 to 320) or 2rem (0 to 20). Empty: the component\'s.' => 'Inside the section, the background goes with it. Written 64px (0 to 320) or 2rem (0 to 20). Empty: the component\'s.',
     'Outside the section, between it and its neighbours. Same units. Empty: none.' => 'Outside the section, between it and its neighbours. Same units. Empty: none.',
     'Alignment of the text' => 'Alignment of the text',

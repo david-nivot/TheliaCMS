@@ -127,7 +127,10 @@ final class SectionEditScreenTest extends AdminScreenTestCase
         $page = $this->pageWith([new Section('intro', 'cms:richtext', ['html' => '<h1>Avant</h1>'], new SectionAppearance(background: '#f8d7d7'))]);
         $field = static fn (string $name): string => \sprintf('cms_section_intro[cms_appearance][%s]', $name);
 
-        $form = $this->screen($this->url($page))->filter('[data-testid="cms-section-edit-intro"] form[data-cms-section-form]')->form();
+        $screen = $this->screen($this->url($page));
+        self::assertCount(1, $screen->filter('[data-testid="cms-section-edit-intro"] [data-testid="cms-section-spacing"][data-cms-precise-room]:not([hidden])'), 'The precise fields are served shown; the script hides them until their button.');
+        $form = $screen->filter('[data-testid="cms-section-edit-intro"] form[data-cms-section-form]')->form();
+        $form[$field('padding')] = SectionFormBuilder::PRECISE_ROOM;
         $form[$field('padding_top')] = '0px';
         $form[$field('padding_bottom')] = '64PX';
         $form[$field('margin_top')] = '2rem';
@@ -146,7 +149,36 @@ final class SectionEditScreenTest extends AdminScreenTestCase
         $form = $screen->filter('[data-testid="cms-section-edit-intro"] form[data-cms-section-form]')->form();
         self::assertSame(['0px', '64px', '2rem', ''], [$form[$field('padding_top')]->getValue(), $form[$field('padding_bottom')]->getValue(), $form[$field('margin_top')]->getValue(), $form[$field('margin_bottom')]->getValue()], 'The form shows what was saved.');
         self::assertNotNull($screen->filter('[data-testid="cms-section-appearance"]')->attr('open'), 'A section with a precise room has its appearance open.');
-        self::assertCount(0, $screen->filter('[data-testid="cms-choice-padding"] input:checked'), 'No preset stands for a precise room.');
+        self::assertSame(SectionFormBuilder::PRECISE_ROOM, $form[$field('padding')]->getValue(), 'A precise room checks its button.');
+    }
+
+    public function testAPresetLeavesThePreciseFieldsOutOfTheSave(): void
+    {
+        $page = $this->pageWith([new Section('intro', 'cms:richtext', ['html' => '<h1>Avant</h1>'], new SectionAppearance(padding_top: '64px', margin_bottom: '2rem'))]);
+        $field = static fn (string $name): string => \sprintf('cms_section_intro[cms_appearance][%s]', $name);
+
+        $form = $this->screen($this->url($page))->filter('[data-testid="cms-section-edit-intro"] form[data-cms-section-form]')->form();
+        $form[$field('padding')] = 'medium';
+
+        self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()));
+
+        $content = CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($this->locale())->findOne();
+        self::assertSame(['padding' => 'medium'], Document::fromJson($content?->getDraftDocument())?->section('intro')?->appearance->toArray(), 'The hidden fields, still filled, are not saved.');
+    }
+
+    public function testAPresetBesideAPreciseSideIsShownAsItsLength(): void
+    {
+        $page = $this->pageWith([new Section('intro', 'cms:richtext', ['html' => '<h1>Avant</h1>'], new SectionAppearance(padding: 'medium', padding_top: '64px'))]);
+        $field = static fn (string $name): string => \sprintf('cms_section_intro[cms_appearance][%s]', $name);
+
+        $form = $this->screen($this->url($page))->filter('[data-testid="cms-section-edit-intro"] form[data-cms-section-form]')->form();
+        self::assertSame(SectionFormBuilder::PRECISE_ROOM, $form[$field('padding')]->getValue());
+        self::assertSame(['64px', '3rem'], [$form[$field('padding_top')]->getValue(), $form[$field('padding_bottom')]->getValue()]);
+
+        self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()));
+
+        $content = CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($this->locale())->findOne();
+        self::assertSame(['padding_top' => '64px', 'padding_bottom' => '3rem'], Document::fromJson($content?->getDraftDocument())?->section('intro')?->appearance->toArray(), 'Saved again, the section keeps its room.');
     }
 
     public function testARoomWrittenAsALengthForBothSidesIsShownInTheTopAndBottomFields(): void
@@ -155,6 +187,7 @@ final class SectionEditScreenTest extends AdminScreenTestCase
         $field = static fn (string $name): string => \sprintf('cms_section_intro[cms_appearance][%s]', $name);
 
         $form = $this->screen($this->url($page))->filter('[data-testid="cms-section-edit-intro"] form[data-cms-section-form]')->form();
+        self::assertSame(SectionFormBuilder::PRECISE_ROOM, $form[$field('padding')]->getValue());
         self::assertSame('4.5rem', $form[$field('padding_top')]->getValue());
         self::assertSame('4.5rem', $form[$field('padding_bottom')]->getValue());
 
@@ -170,6 +203,7 @@ final class SectionEditScreenTest extends AdminScreenTestCase
 
         $form = $this->screen($this->url($page))->filter('[data-testid="cms-section-edit-intro"] form[data-cms-section-form]')->form();
         $values = $form->getPhpValues();
+        $values['cms_section_intro']['cms_appearance']['padding'] = SectionFormBuilder::PRECISE_ROOM;
         $values['cms_section_intro']['cms_appearance']['margin_top'] = 'calc(1px + 1px)';
 
         self::assertSame(302, $this->send('POST', $form->getUri(), $values));
