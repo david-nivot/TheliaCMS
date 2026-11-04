@@ -40,9 +40,9 @@ use TheliaCMS\TheliaCMS;
  *
  * There is no CSRF token here, and that is deliberate: the form is public, so
  * the token would be handed to anyone who asks for the page, and it would
- * protect nothing while breaking every cached rendering of it. What actually
- * has to hold is that the submission is not automated, which is what the trap
- * field, the signed stamp and the rate limit are for.
+ * protect nothing. What actually has to hold is that the submission is not
+ * automated and not replayed, which is what the trap field, the signed stamp
+ * spent by the message it carried and the rate limit are for.
  */
 final readonly class CmsFormSubmitController
 {
@@ -107,6 +107,17 @@ final readonly class CmsFormSubmitController
                 'Too many messages have been sent from here. Try again in %minutes% minutes.',
                 ['%minutes%' => $this->rateLimiter->waitingMinutes()],
             ));
+
+            return $back;
+        }
+
+        // Spent here, once the message is about to be kept: a message sent back
+        // for a mistyped field goes again with the stamp of the same display.
+        // A stamp that already carried a message is a replay, told what a robot
+        // is told.
+        if (!$this->rateLimiter->spendsStamp($code, (string) AntiSpam::stampOf($input))) {
+            $this->logger->info('Thelia CMS: a submission of the "{form}" form was dropped, its stamp had already carried a message.', ['form' => $code]);
+            $this->flash->sent($code);
 
             return $back;
         }

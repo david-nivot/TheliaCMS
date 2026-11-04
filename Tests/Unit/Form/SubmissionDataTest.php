@@ -91,24 +91,4 @@ final class SubmissionDataTest extends TestCase
         self::assertNotSame($fingerprints->of('203.0.113.7'), $fingerprints->of('203.0.113.8'));
         self::assertStringNotContainsString('203.0.113', $fingerprints->of('203.0.113.7'));
     }
-
-    /**
-     * The core rate-limiting column was sized for a dotted IPv4 and holds no
-     * IPv6 address at all, so what goes in it is a short hash.
-     */
-    public function testTheRateLimitBucketFitsTheCoreColumn(): void
-    {
-        $fingerprints = new VisitorFingerprint('a secret nobody else has');
-
-        self::assertSame(15, \strlen($fingerprints->bucket('2001:db8::1')));
-        self::assertSame(15, \strlen($fingerprints->bucket('203.0.113.7')));
-        self::assertNotSame($fingerprints->bucket('2001:db8::1'), $fingerprints->bucket('2001:db8::2'));
-    }
-
-    public function testAVisitorBehindNoAddressStillGetsABucket(): void
-    {
-        $fingerprints = new VisitorFingerprint('a secret nobody else has');
-
-        self::assertSame(15, \strlen($fingerprints->bucket(null)));
-    }
 }

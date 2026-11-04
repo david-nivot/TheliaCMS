@@ -22,8 +22,13 @@ use TheliaCMS\Model\CmsForm;
 use TheliaCMS\TheliaCMS;
 
 /**
- * Sends a submission on to the people who have to read it, and optionally back
- * to the person who wrote it.
+ * Sends a submission on to the people who have to read it, and optionally a
+ * receipt to the person who wrote it.
+ *
+ * The receipt carries the text of the site and nothing of the answers. Its
+ * address is typed by whoever posts the form: a receipt that repeated what was
+ * posted would let anyone make the shop write any text, in its own name, to an
+ * address of their choosing.
  *
  * `sendSimpleEmailMessage` rather than the templated path of the core: that one
  * needs a session and a parser to resolve a message template, so it is not safe
@@ -64,28 +69,19 @@ final readonly class SubmissionMailer
         );
     }
 
-    /**
-     * @param list<Answer> $answers
-     */
-    public function sendReceipt(CmsForm $form, array $answers, string $locale): void
+    public function sendReceipt(CmsForm $form, string $to, string $locale): void
     {
-        $to = $this->emailOf($answers);
-
-        if (null === $to) {
-            return;
-        }
-
         $form->setLocale($locale);
 
         $subject = trim((string) $form->getReceiptSubject());
-        $intro = trim((string) $form->getReceiptBody());
+        $text = trim((string) $form->getReceiptBody());
+        $text = '' !== $text ? $text : $this->trans('Thank you for writing to us. We have received your message.', [], $locale);
 
-        $this->send(
+        $this->deliver(
             to: [$to => ''],
             subject: '' !== $subject ? $subject : $this->trans('We have received your message', [], $locale),
-            intro: '' !== $intro ? $intro : $this->trans('Thank you for writing to us. Here is a copy of what you sent.', [], $locale),
-            answers: $answers,
-            locale: $locale,
+            htmlBody: \sprintf('<p>%s</p>', nl2br(htmlspecialchars($text, \ENT_QUOTES | \ENT_SUBSTITUTE))),
+            textBody: $text,
             replyTo: [],
         );
     }
@@ -97,17 +93,19 @@ final readonly class SubmissionMailer
      */
     private function send(array $to, string $subject, string $intro, array $answers, string $locale, array $replyTo): void
     {
+        $this->deliver($to, $subject, $this->htmlBody($intro, $answers, $locale), $this->textBody($intro, $answers, $locale), $replyTo);
+    }
+
+    /**
+     * @param array<string, string> $to
+     * @param array<string, string> $replyTo
+     */
+    private function deliver(array $to, string $subject, string $htmlBody, string $textBody, array $replyTo): void
+    {
         $from = [(string) ConfigQuery::getStoreEmail() => (string) ConfigQuery::getStoreName()];
 
         try {
-            $this->mailer->sendSimpleEmailMessage(
-                $from,
-                $to,
-                $subject,
-                $this->htmlBody($intro, $answers, $locale),
-                $this->textBody($intro, $answers, $locale),
-                replyTo: $replyTo,
-            );
+            $this->mailer->sendSimpleEmailMessage($from, $to, $subject, $htmlBody, $textBody, replyTo: $replyTo);
         } catch (\Throwable $throwable) {
             // The visitor is told their message went through, because as far as
             // the site is concerned it did: it is stored. A mail server that is

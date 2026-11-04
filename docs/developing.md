@@ -140,6 +140,18 @@ shows how to test an update, outside a transaction.
   nobody. `AiGatewayInterface` and `ReadUrlTool` are public for that. A service is
   replaced once per kernel: install a delegating fake in `setUp()` and change
   what it delegates to.
+- The test database has no shop address (`store_email` is empty): every mail
+  fails on its sender, and `SubmissionMailer` logs the failure rather than
+  throw, so a test that expects a mail sees none without an error. Write
+  `store_email` in `setUp()`, and read what was sent from the message logger of
+  Symfony (`mailer.message_logger_listener`), which sees a mail whether the
+  shop sends it at once or through a queue (`FormSubmissionTest`).
+- A race between two requests only shows with real processes, each on its own
+  connection: one PHP process runs one query at a time. `SenderBurstTest` forks
+  with `pcntl`, opens a connection per child from the Propel configuration,
+  keeps the inherited one referenced and ends each child with `SIGKILL`, so
+  that no destructor closes the socket the parent still uses. It runs outside
+  a transaction and is skipped without `pcntl`.
 - The translator of Thelia takes its language from the session, not from its
   own locale: `setLocale()` changes nothing. A test that reads a message in
   French sets the language of the session of the test request

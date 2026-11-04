@@ -294,6 +294,22 @@ CREATE TABLE `cms_form_submission`
 ) ENGINE=InnoDB CHARACTER SET='utf8mb4' COLLATE='utf8mb4_general_ci' ROW_FORMAT=DYNAMIC;
 
 -- ---------------------------------------------------------------------
+-- cms_form_throttle
+-- ---------------------------------------------------------------------
+
+DROP TABLE IF EXISTS `cms_form_throttle`;
+
+CREATE TABLE `cms_form_throttle`
+(
+    `scope` VARCHAR(16) NOT NULL,
+    `subject` CHAR(64) NOT NULL,
+    `hits` INTEGER DEFAULT 0 NOT NULL,
+    `expires_at` DATETIME NOT NULL,
+    PRIMARY KEY (`scope`,`subject`),
+    INDEX `idx_cms_form_throttle_expires_at` (`expires_at`)
+) ENGINE=InnoDB CHARACTER SET='utf8mb4' COLLATE='utf8mb4_general_ci' ROW_FORMAT=DYNAMIC;
+
+-- ---------------------------------------------------------------------
 -- cms_script
 -- ---------------------------------------------------------------------
 

@@ -30,6 +30,7 @@ final readonly class SubmissionStore
     public function __construct(
         private SubmissionMailer $mailer,
         private VisitorFingerprint $fingerprints,
+        private SubmissionRateLimiter $rateLimiter,
     ) {
     }
 
@@ -54,8 +55,12 @@ final readonly class SubmissionStore
 
         $this->mailer->notifyRecipients($record, $definition, $submission->answers, $locale);
 
-        if (1 === (int) $record->getSendReceipt()) {
-            $this->mailer->sendReceipt($record, $submission->answers, $locale);
+        $to = $submission->email();
+
+        // Past the ceiling the copy is skipped without a word: the message is
+        // kept and the recipients told, which is all the visitor asked for.
+        if (1 === (int) $record->getSendReceipt() && null !== $to && $this->rateLimiter->allowsReceiptTo($to)) {
+            $this->mailer->sendReceipt($record, $to, $locale);
         }
     }
 }

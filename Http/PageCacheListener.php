@@ -15,9 +15,12 @@ declare(strict_types=1);
 namespace TheliaCMS\Http;
 
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
+use Symfony\Component\HttpKernel\EventListener\AbstractSessionListener;
 use Symfony\Component\HttpKernel\KernelEvents;
 use TheliaCMS\Http\SharedCache\CoreSharedCache;
+use TheliaCMS\Partial\Definition\FormPartial;
 use TheliaCMS\Settings\CmsSettings;
 
 /**
@@ -80,16 +83,25 @@ final readonly class PageCacheListener
         // module under its own tags as well.
         if (null !== $this->sharedCache && $this->sharedCache->isActive()) {
             $this->sharedCache->tag(array_values(array_unique([CacheTags::SITE, CacheTags::MENUS, ...$tags, ...$shown])));
-
-            return;
+        } elseif ([] !== $tags) {
+            // Only a page of the module is given headers of its own: a page of
+            // the shop that shows a list of pages stays what the shop made it.
+            $this->policy->apply($event->getResponse(), $request, array_values(array_unique([...$tags, ...$shown])));
         }
 
-        // Only a page of the module is given headers of its own: a page of the
-        // shop that shows a list of pages stays what the shop made it.
-        if ([] === $tags) {
-            return;
+        // A page showing a form is nobody else's, the shop's pages included: each
+        // display carries a stamp that carries one message, so a copy served to a
+        // second visitor would drop their message as a replay. `no-store` is also
+        // what keeps the shared cache of the core, which runs after this, from
+        // sharing it.
+        if (\in_array(CacheTags::partial(FormPartial::NAME), [...$tags, ...$shown], true)) {
+            $this->keepPrivate($event->getResponse());
         }
+    }
 
-        $this->policy->apply($event->getResponse(), $request, array_values(array_unique([...$tags, ...$shown])));
+    private function keepPrivate(Response $response): void
+    {
+        $response->headers->remove(AbstractSessionListener::NO_AUTO_CACHE_CONTROL_HEADER);
+        $response->headers->set('Cache-Control', 'private, no-store');
     }
 }
