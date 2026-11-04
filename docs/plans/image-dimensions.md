@@ -479,6 +479,18 @@ the pre-existing portrait defect is not larger than described, the test host has
 - Crop dialog, leftovers of C1: the tracks of the three sliders were already drawn at `c4058df`; the focus ring of the zone was outside the frame and so cut by the stage on the edges it touched, it is now inside (`outline-offset: -6px`). The button reads the real reason for an image the CMS library does not hold (`data-cms-image-source` gains `gone` and `loading`).
 - No capture of the dialog was added to the back-office documentation (the other screens have one per language and the admin was driven in French only); the text describes it.
 
+## Code decisions, phase D (2026-11-04)
+
+- Titles `type(hors-ticket): message`. Four commits: the Image section (with the shared script, stylesheet and catalogue strings), the Columns section (with its integration tests), the generator, the documentation.
+- `Content/ImageProportions` holds the choices: `original`, `band` (columns only) and the ratios `16:9`, `4:3`, `3:2`, `1:1`, `3:4`. A ratio is written to the picture as a box of the Image section's bounds (1600x900, 1600x1200, 1500x1000, 1000x1000, 1200x1600) in `data-cms-crop`, so the rewriter and `ImageFrame::zone()` need nothing new for it.
+- The picture as it is: `data-cms-crop` with a box of `0,0` (the proportions of the picture itself). `ImageFrame::parse()` accepts it, `zone()` reads it as the size of the original, so zoom 100 is the whole picture (`full`) and the zone of a zoom keeps the shape of the picture. It is written only with a zoom over 100: a centre alone changes nothing, and a section that is not zoomed keeps its markup to the byte. An external picture takes no zone: with `original`, the dialog is off with a reason.
+- Image section: `proportions` is an editor-only choice after `width`, drawn as buttons (pictograms of the module for the ratios). With `width = custom` it is ignored and hidden: the box is width x height. "Fill / Show the whole picture" stays a pixel-size setting only: a ratio always fills. With a size in pixels and no height, no dialog (as before).
+- The dialog is available for every preset width. The width shown, for the sharpness line, is what `blocks.css` gives the width (768, 1200 and 1440 px) or, in a column, a share of 1200 px less the gaps; the box of a ratio is only its shape.
+- Columns: `proportions` (editor-only, top level, default `band`) and, in each row, `focus_x`, `focus_y`, `zoom` (editor-only). `band` keeps the markup and the `data-cms-height` of before. Otherwise the section drops `data-cms-height`, the image gets `cms-columns__image--framed` (width of the column, `height: auto`) and, for a ratio, `aspect-ratio`, `object-fit: cover`, `object-position` and `data-cms-crop`. `sizes` is the column's. A zoom off the steps of 10 in a row is refused by `ColumnsSection::normalizeProps()`.
+- Script: `content-editor.js` creates the summary and the slot of the dialog (`keptSummary`) for the Image form and for each row of the columns; the slot carries its scope and a function that gives the box (`cmsCropBox`). `image-crop.js` binds every slot, not every form. A row added without reloading dispatches `cms-item-added`; the add button now also binds the media picker on the new row (it was not bound before: an image of an added row stayed a number field).
+- Generator: `EditorValues` hides the editor-only props of the rows of a list and restores them row by row, matched by position, when the component and the pictures of the row (compared as strings, an id written as a number or a string being the same picture) are unchanged; defaults otherwise, and for a row the replaced list did not have. A scalar list has no such props.
+- Not done: no capture of the dialog in the back-office documentation (text only); a duplicated row does not exist in the list form, so "added" is the only case.
+
 ## Done (2026-11-04)
 
 Delivered on `feat/image-dimensions`, in the order of the table of section 7 (titles `type(hors-ticket): message`):
@@ -488,6 +500,7 @@ Delivered on `feat/image-dimensions`, in the order of the table of section 7 (ti
 - `ImageFrame` and the zone served by TheliaLibrary at publication (`data-cms-crop`, `srcset` of `x,y,w,h` regions, WebP alike); the portrait defect of `n,!` fixed for all images.
 - The form of the dimensions that follows the choice, and the crop dialog (pointer, keyboard, sliders, sharpness).
 - The generator: draft without editor-only props, framing kept by a revision, a section written again and a translation, one sentence in the description.
+- Phase D: proportions for the three widths of the Image section, proportions and per-column kept part of the Columns section, editor-only props of the rows of a list hidden from the model and restored by `EditorValues`.
 - Bench `docs/evaluation/images` (`--frame`, `make-quadrants.php`, `measure.js`), README, `docs/sections.md`, back-office documentation (fr, en), CHANGELOG.
 
 Not delivered, or not proved:
@@ -495,4 +508,4 @@ Not delivered, or not proved:
 - The determinism bench (`docs/evaluation/determinism`) was not rerun (paid calls). To replay: the briefs that ask for a picture (the order of the Image lines of the catalogue and the new sentence move the cached prefix), and the briefs of revision, section and translation over a draft that holds an Image section (the JSON of the draft is lighter).
 - A drag by finger (the tool drives the mouse); the cache of derivatives under `web/image-library/` before and after a session of dragging (not counted); a check on the lowest 2.x of TheliaLibrary (tested on 2.2.1); the interplay with `fix/css-filter-csp` when both branches meet.
 - No capture of the dialog in the back-office documentation.
-- Editor-only props inside the rows of a list are neither hidden from the model nor restored (no component has any).
+- Phase D (proportions of the Image section, Columns section, editor-only props of list rows) is delivered in four commits; see its code decisions above.

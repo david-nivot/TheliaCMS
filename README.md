@@ -655,7 +655,14 @@ and served by the media library as a zone of the file, in the proportions of the
 frame, never upscaled. A picture kept elsewhere (an `https` address) is framed by CSS
 alone: the centre counts, the zoom does not. The size and the framing are the editor's:
 the generator is not offered them, and a revision, a section written again or a
-translation keeps what the editor set as long as the picture is the same. A page
+translation keeps what the editor set as long as the picture is the same.
+
+For the three widths of the Image section, **Proportions** (the image as it is, 16:9,
+4:3, 3:2, 1:1, 3:4) give the picture a box of that shape and the same dialog sets the part
+kept; the image as it is keeps its markup and only takes a zoom. The Columns section
+has one **Proportions of the images** setting: the band of logos (the default), or a
+picture per column on the width of its column, in a shape, with the part kept set column
+by column. A page
 already published keeps the files it was published with: after replacing a picture in the
 library, `php Thelia thelia_cms:render-published --all` renders what is online again.
 Details in [`docs/sections.md`](docs/sections.md).

@@ -191,6 +191,30 @@ shows what the server serves. An address kept elsewhere is framed by CSS alone
 (`object-fit`, `object-position` from the focus); its zoom cannot be honoured, and
 the dialog does not offer it. A picture shown whole (`contain`) is served as before.
 
+### Proportions, for the three widths and for the columns
+
+`proportions` (editor-only choice of `cms:image`, after `width`): `original` (default),
+`16:9`, `4:3`, `3:2`, `1:1`, `3:4`. A ratio writes, on the `<img>` of a preset width,
+`aspect-ratio`, `object-fit: cover`, `object-position` and `data-cms-crop` with a box of
+that shape taken from `ImageProportions` (1600x900, 1600x1200, 1500x1000, 1000x1000,
+1200x1600: inside the bounds of the box above). `original` writes nothing, so the markup
+is the one of before, except with a zoom over 100: `data-cms-crop="x,y,zoom,0,0"`, a box of
+`0,0` meaning the proportions of the picture itself (`ImageFrame::zone()` then uses the
+size of the original, `parse()` accepts it), and the rewriter serves the zoomed zone.
+With `width = custom` the proportions are ignored (the box is width x height) and the form
+hides them. The dialog is offered for every preset width; with a size in pixels, as before,
+only with a height and the fill.
+
+`cms:columns` has the same choice at the top level of its props, with `band` in
+place of the default `original`. `band` is the strip of 5 rem of before (`data-cms-height`
+on the section, no framing). Any other value drops `data-cms-height`, gives each image the
+class `cms-columns__image--framed` (the width of its column, `height: auto`) and, for a
+ratio, the box of the rows above; `sizes` stays that of the column. Each row of the list has
+its own `focus_x`, `focus_y` and `zoom` (editor-only, in the row, zoom by steps of 10 checked
+by `ColumnsSection::normalizeProps()`). `Generation/EditorValues` hides the editor-only props
+of the rows from the model and puts them back row by row (same position, same component, same
+picture), the defaults otherwise.
+
 A published page keeps the files it was published with: after the picture is
 replaced in the library, or after a change of the module, `thelia_cms:render-published`
 renders what is online again (README, "Rendering what is online again").
