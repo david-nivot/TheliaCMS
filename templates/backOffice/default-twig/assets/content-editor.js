@@ -452,6 +452,143 @@
      * Binds the behaviour of the screen to one copy of its markup: the one
      * the page was loaded with, then each one `refresh()` puts in its place.
      */
+    // The size and the framing of an image section. Without this script every
+    // field of the form is there and the form works; with it, the pixels show
+    // only for "A size in pixels", the proportions are one click, and the kept
+    // part (three numbers the form still sends) reads as a sentence. The
+    // button that frames the image comes later, in the slot left for it.
+    function bindImageDimensions(root) {
+        root.querySelectorAll("form[data-cms-section-form]").forEach(function (form) {
+            if (form.hasAttribute("data-cms-dimensions-bound")) {
+                return;
+            }
+
+            function field(name) {
+                return form.querySelector('[name$="[' + name + ']"]');
+            }
+
+            function rowOf(element) {
+                return element.closest(".cms-content__field") || element.closest(".mb-3") || element.parentElement;
+            }
+
+            var widthPixels = field("width_px");
+            var heightPixels = field("height_px");
+            var focusX = field("focus_x");
+            var focusY = field("focus_y");
+            var zoom = field("zoom");
+            var modes = form.querySelectorAll('input[type="radio"][name$="[width]"]');
+            var fits = form.querySelectorAll('input[type="radio"][name$="[fit]"]');
+
+            if (!widthPixels || !heightPixels || !focusX || !focusY || !zoom || !modes.length || !fits.length) {
+                return;
+            }
+
+            form.setAttribute("data-cms-dimensions-bound", "");
+
+            var widthRow = rowOf(widthPixels);
+            var heightRow = rowOf(heightPixels);
+            var fitRow = fits[0].closest("fieldset");
+
+            // The caption and the text of the image each keep a line of their own.
+            ["caption", "alt"].forEach(function (name) {
+                var input = field(name);
+
+                if (input) {
+                    rowOf(input).classList.add("cms-content__field--line");
+                }
+            });
+
+            // The proportions: they only fill the height from the width.
+            var ratios = document.createElement("div");
+            ratios.className = "cms-content__ratios";
+            ratios.setAttribute("role", "group");
+            ratios.setAttribute("aria-label", labels.ratios || "Proportions");
+            ratios.setAttribute("data-cms-ratios", "");
+
+            function setHeight(height) {
+                heightPixels.value = String(Math.max(80, Math.min(2000, Math.round(height))));
+                heightPixels.dispatchEvent(new Event("input", { bubbles: true }));
+                heightPixels.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+
+            function ratioButton(text, ratio) {
+                var button = document.createElement("button");
+                button.type = "button";
+                button.className = "btn btn-sm btn-outline-secondary";
+                button.textContent = text;
+                button.addEventListener("click", function () {
+                    var width = parseInt(widthPixels.value, 10);
+
+                    if (!(width > 0)) {
+                        widthPixels.focus();
+
+                        return;
+                    }
+
+                    var value = ratio();
+
+                    if (value > 0) {
+                        setHeight(width / value);
+                    }
+                });
+                ratios.appendChild(button);
+            }
+
+            [[16, 9], [4, 3], [3, 2], [1, 1]].forEach(function (pair) {
+                ratioButton(pair[0] + ":" + pair[1], function () { return pair[0] / pair[1]; });
+            });
+            ratioButton(labels.imageRatio || "Ratio of the image", function () {
+                // The picture the picker shows: its thumbnail keeps the proportions.
+                var picture = form.querySelector("[data-cms-image-field] img:not([hidden])");
+
+                return picture && picture.naturalWidth > 0 ? picture.naturalWidth / picture.naturalHeight : 0;
+            });
+            heightRow.after(ratios);
+
+            // The kept part, said in words; the three fields stay in the form.
+            var summary = document.createElement("div");
+            summary.className = "cms-content__kept";
+            summary.setAttribute("data-cms-kept", "");
+            var summaryText = document.createElement("span");
+            summaryText.setAttribute("data-cms-kept-text", "");
+            var slot = document.createElement("span");
+            slot.setAttribute("data-cms-kept-slot", "");
+            summary.append(summaryText, slot);
+            fitRow.after(summary);
+
+            function valueOf(input, fallback) {
+                var number = parseInt(input.value, 10);
+
+                return isNaN(number) ? fallback : number;
+            }
+
+            function show() {
+                var custom = Array.prototype.some.call(modes, function (mode) { return mode.checked && mode.value === "custom"; });
+                var framed = custom && valueOf(heightPixels, 0) > 0;
+                var fill = !Array.prototype.some.call(fits, function (fit) { return fit.checked && fit.value === "contain"; });
+
+                widthRow.hidden = !custom;
+                heightRow.hidden = !custom;
+                ratios.hidden = !custom;
+                fitRow.hidden = !framed;
+                summary.hidden = !(framed && fill);
+
+                [focusX, focusY, zoom].forEach(function (input) {
+                    rowOf(input).hidden = true;
+                });
+
+                summaryText.textContent = (labels.kept || "Centre %x% % / %y% %, zoom %zoom% %")
+                    .replace("%x%", String(valueOf(focusX, 50)))
+                    .replace("%y%", String(valueOf(focusY, 50)))
+                    .replace("%zoom%", String(valueOf(zoom, 100)));
+            }
+
+            form.addEventListener("input", show);
+            form.addEventListener("change", show);
+            show();
+        });
+    }
+
     function enhance(root) {
         var progress = root.querySelector("[data-cms-progress]");
         var steps = root.querySelector("[data-cms-progress-steps]");
@@ -1401,6 +1538,8 @@
 
             refresh();
         });
+
+        bindImageDimensions(root);
 
         // An image field is drawn by media-picker.js, which a new section
         // form asks for too.

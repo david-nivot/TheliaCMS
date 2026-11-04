@@ -30,6 +30,14 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   address kept elsewhere or a file of unknown size are served as before. The
   section says the kept part with `data-cms-crop` on the image, which is read
   and taken out on publication.
+- **The size of an Image section is set in a form that follows the choice.** With
+  "A size in pixels", the width and height fields show, with the proportions
+  16:9, 4:3, 3:2, 1:1 and that of the picture (one click fills the height from
+  the width); the fit shows once a height is set. The kept part (position and
+  zoom) is no longer three bare numbers: it reads as a sentence ("Centre 35 % /
+  20 %, zoom 150 %"), the three fields staying in the form. The caption and the
+  text of the image each have a line of their own. Without the script, every
+  field is shown and the form works as before.
 - **`thelia_cms:render-published`**, the published counterpart of
   `thelia_cms:render`: it renders what is online again from the published
   documents (pages and contents of the catalogue), so a change of the module

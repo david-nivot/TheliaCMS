@@ -107,6 +107,31 @@ final class SectionImagePickerTest extends AdminScreenTestCase
         self::assertSame(1, $dialog->filter('[data-testid="cms-choice-fit"][data-cms-choice-buttons]')->count(), 'The fit is a choice of buttons, which take the whole line.');
     }
 
+    /**
+     * The script hides the pixels, the framing and the kept part and writes a
+     * sentence for the last: served, every field is there and none is hidden,
+     * and the words the script needs reach it with the screen.
+     */
+    public function testWithoutTheScriptEveryDimensionFieldIsServedAndShown(): void
+    {
+        $screen = $this->screen(\sprintf('/admin/cms/pages/%d/content?edit_language_id=%d', $this->pageWith(null)->getId(), Lang::getDefaultLanguage()->getId()));
+        $form = $screen->filter('[data-testid="cms-section-edit-picture"] form[data-cms-section-form]');
+
+        foreach (['width_px', 'height_px', 'fit', 'focus_x', 'focus_y', 'zoom', 'caption', 'alt'] as $name) {
+            self::assertGreaterThan(0, $form->filter('[name="cms_section_picture['.$name.']"]')->count(), $name.' is in the form.');
+        }
+
+        self::assertSame(0, $form->filter('[hidden]')->count(), 'Nothing is hidden before the script runs.');
+
+        $labels = json_decode((string) $screen->filter('[data-cms-content]')->attr('data-cms-content-labels'), true, 512, \JSON_THROW_ON_ERROR);
+
+        foreach (['ratios', 'imageRatio', 'kept'] as $key) {
+            self::assertArrayHasKey($key, $labels);
+        }
+
+        self::assertStringContainsString('%zoom%', $labels['kept']);
+    }
+
     public function testTheSizeIsKeptAsTheEditorChoseIt(): void
     {
         $page = $this->pageWith(null);
