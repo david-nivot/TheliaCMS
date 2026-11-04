@@ -1114,7 +1114,7 @@ profile under **Configuration > Administrators**.
 | Resource | Covers |
 |---|---|
 | `admin.cms.page` | the page tree, the content screen, editing a section by hand, publication |
-| `admin.cms.generate` | asking the generator to write, from a brief or for a change. It costs money, so it is a right of its own; the seeded Editor profile has it |
+| `admin.cms.generate` | asking the generator to write, from a brief or for a change, a component of the site included (which also takes `admin.cms.settings` and `admin.cms.custom-code`). It costs money, so it is a right of its own; the seeded Editor profile has it |
 | `admin.cms.menu` | the menus and their entries |
 | `admin.cms.media` | the media library |
 | `admin.cms.custom-code` | `<iframe>` in published content, beyond the standard allow list |

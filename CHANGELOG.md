@@ -22,7 +22,6 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   the section until its rule names `.cms-section-styled > …` too. Found on a
   site where a section given a background spread over the whole screen. See
   docs/sections.md, "What a theme does with the band".
-
 - **A row of the ledger from the start of a call.** A generation (page,
   catalogue item, text or component) writes its row, `running`, before the
   first request, touches it at every turn, and completes it with the outcome.
@@ -67,6 +66,15 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   rather than moving with every refused attempt. The rows the module kept in
   the core `form_firewall` table are deleted by the update. Needs the update
   of the module to 2.10.0 or later to create the table.
+- **Translations of a page run under a usage of their own,
+  `theliacms.page_translation`, declared at the standard range.** A
+  translation only writes texts again, and went to the advanced range of the
+  pages. The usage is on by default, like the others; a site that wants the
+  stronger model for translations raises its range in the AI settings of
+  Thelia. A budget, a rate limit or a model pinned on
+  `theliacms.page_generation` no longer covers translations: set them on the
+  new usage. Content translated from now on carries the new usage in its AI
+  mark (`data-ai-usage`).
 
 ### Removed
 
@@ -76,6 +84,12 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Fixed
 
+- **The two reasoning effort fields of CMS > Settings say which models read
+  them.** Their help promised a time spent thinking, while only Anthropic
+  models read the effort, and think freely at the two highest values only;
+  another provider ignores it. The field of the texts had no help at all.
+  Setting the effort by range of models is asked of Thelia
+  (thelia/thelia#4264).
 - **A stream cut half way is asked again once**, as the same conversation,
   instead of failing the call: a provider that drops after the first tokens
   (retryable failure, or a stream that ends without its last event) costs one
@@ -161,6 +175,12 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   that does not pass is dropped whole, the rest is kept as written. What a page
   already published keeps until it is published again; on the test site, none
   of the 38 `style` attributes and 5 component stylesheets stored changes.
+- **Asking the generator for a component of the site takes the generator
+  right.** The components screen asked only for the settings and the custom
+  code rights, so an administrator without `admin.cms.generate` could spend
+  the budget of the generator there. The request and change forms are hidden
+  without it; keeping, copying and deleting a component, which call no model,
+  still take the two rights alone.
 
 ## [2.9.0] - 2026-11-03
 

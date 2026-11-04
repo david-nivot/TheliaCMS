@@ -169,6 +169,10 @@ shows how to test an update, outside a transaction.
   language of the back office for the rest of the session
   (`SectionEditScreenTest::testWhatTheDocumentRefusesByHandReadsInTheLanguageOfTheBackOffice`,
   `MediaSheetScreenTest`).
+- The theme of the back office prints the help of a form field inside its
+  label (`label[for="<id>"] .bo-form-label__help`), not in a `#<id>_help`
+  element: a test that looks for the latter reads an empty string
+  (`GeneratorSettingsScreenTest::testTheEffortSaysWhichModelsReadIt`).
 - The French guillemets of `I18n/fr_FR.php` take a plain space (`« %s »`), not
   a no-break space: an expectation typed with one fails on every message.
 - A provider that cuts an answer at the output limit reports that limit as the
@@ -196,8 +200,9 @@ shows how to test an update, outside a transaction.
 ## Calling the AI layer
 
 - Every call goes through `Thelia\Domain\Ai\AiGatewayInterface`, under one of
-  the three usages the generators declare with `#[AsAiUsage]`
-  (`theliacms.page_generation`, `theliacms.text`, `theliacms.component`). The
+  the four usages the generators declare with `#[AsAiUsage]`
+  (`theliacms.page_generation`, `theliacms.page_translation`, `theliacms.text`,
+  `theliacms.component`). The
   provider, the key, the model and the budget are the core's: nothing here
   knows a provider SDK, and the options a provider reads travel in
   `providerOptions` (`effort`, read by Anthropic models, ignored by the others).

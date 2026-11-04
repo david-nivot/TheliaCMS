@@ -40,6 +40,9 @@ use TheliaCMS\TheliaCMS;
  */
 final class CmsSettingsType extends AbstractType
 {
+    /** Only the adapter of Anthropic in the core reads the effort; the models think freely at the two highest only. */
+    private const string EFFORT_HELP = 'Read by Anthropic models only; other providers ignore it. From low to high, it sets the care the answer gets; very high and maximum also let the model think before it writes. More effort costs more and takes longer.';
+
     public function __construct(
         private readonly IpAllowlist $allowlist,
         private readonly TranslatorInterface $translator,
@@ -118,7 +121,7 @@ final class CmsSettingsType extends AbstractType
                     'Very high' => 'xhigh',
                     'Maximum: slow, for a demanding brief' => 'max',
                 ],
-                'help' => 'How long the model thinks before it writes. More effort costs more and takes longer.',
+                'help' => self::EFFORT_HELP,
             ])
             ->add('generatorMaxTokens', IntegerType::class, [
                 'label' => 'Longest answer, in tokens',
@@ -134,6 +137,7 @@ final class CmsSettingsType extends AbstractType
                     'Very high' => 'xhigh',
                     'Maximum' => 'max',
                 ],
+                'help' => self::EFFORT_HELP,
             ])
             ->add('textMaxTokens', IntegerType::class, [
                 'label' => 'Longest answer, in tokens',
