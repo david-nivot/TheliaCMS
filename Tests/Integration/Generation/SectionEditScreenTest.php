@@ -97,7 +97,7 @@ final class SectionEditScreenTest extends AdminScreenTestCase
         self::assertSame('manual', $row?->getKind());
         self::assertSame('done', $row?->getStatus());
         self::assertSame('0.000000', $row?->getCostUsd());
-        self::assertStringContainsString('Après', (string) $row?->getDocument());
+        self::assertStringContainsString('<h2>Après</h2>', (string) $row?->getDocument(), 'The ledger keeps what the draft keeps.');
 
         $screen = $this->screen($this->url($page));
         self::assertSame(1, $screen->filter('[data-testid="cms-builder-flash-success"]')->count());
