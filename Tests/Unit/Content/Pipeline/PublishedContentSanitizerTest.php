@@ -41,6 +41,18 @@ final class PublishedContentSanitizerTest extends TestCase
     }
 
     /**
+     * The sanitizer runs before the rewriter in the publication: an attribute
+     * it dropped would never reach the one that reads it.
+     */
+    public function testKeepsTheWidthASectionDeclaresForItsImages(): void
+    {
+        $html = $this->sanitizer->html('<figure class="cms-image" data-cms-sizes="(max-width: 50rem) calc(100vw - 2rem), 48rem" data-cms-height="5rem"><img src="/image-library/7/full/max/0/default.jpg" alt=""></figure>');
+
+        self::assertStringContainsString('data-cms-sizes="(max-width: 50rem) calc(100vw - 2rem), 48rem"', (string) $html);
+        self::assertStringContainsString('data-cms-height="5rem"', (string) $html);
+    }
+
+    /**
      * @return iterable<string, array{0: string, 1: string}>
      */
     public static function hostileHtml(): iterable

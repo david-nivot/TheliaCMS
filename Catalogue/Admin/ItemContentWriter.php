@@ -38,6 +38,7 @@ use TheliaCMS\Model\CmsItemContentQuery;
 use TheliaCMS\Model\CmsItemRevision;
 use TheliaCMS\Model\CmsItemRevisionQuery;
 use TheliaCMS\Page\Admin\CmsActivityLog;
+use TheliaCMS\Page\Admin\PublishedRendering;
 use TheliaCMS\Security\CmsResources;
 use TheliaCMS\Settings\CmsSettings;
 
@@ -253,6 +254,50 @@ final readonly class ItemContentWriter
             $locale,
             $withCustomCode ? ' (custom code allowed)' : '',
         ));
+    }
+
+    /**
+     * The published counterpart of `CmsPageWriter::renderPublishedAgain()`:
+     * what is online is rendered again from the published document, and only
+     * the published HTML is written (see there for what is left alone).
+     *
+     * @param bool $write false for a dry run
+     *
+     * @throws InvalidDocumentException  when the document is no longer accepted by the catalogue
+     * @throws EmptyItemContentException when the new rendering would show nothing
+     */
+    public function renderPublishedAgain(CatalogueItemType $type, int $id, string $locale, bool $write = true): PublishedRendering
+    {
+        $content = $this->contents->find($type, $id, $locale);
+        $document = Document::fromJson($content?->getPublishedDocument());
+
+        if (null === $content || null === $document || null === $content->getPublishedAt()) {
+            return PublishedRendering::NotOnline;
+        }
+
+        $stored = $content->getPublishedHtml();
+        $html = $this->images->rewrite(
+            $this->sanitizer->html($this->normalizer->html($this->renderer->render($this->validator->validate($document), $locale)), $this->mayPublishCustomCode()),
+        );
+
+        if ($html === $stored) {
+            return PublishedRendering::Unchanged;
+        }
+
+        if ($this->sanitizer->customCodeCount($html) < $this->sanitizer->customCodeCount($stored)) {
+            return PublishedRendering::KeptForCustomCode;
+        }
+
+        if ($this->emptiness->isEmpty($html)) {
+            throw EmptyItemContentException::for($type, $id, $locale);
+        }
+
+        if ($write) {
+            $content->setPublishedHtml($html)->keepUpdateDateUnchanged()->save();
+            $this->httpCache->purge([$type->cacheKey($id)]);
+        }
+
+        return PublishedRendering::Rendered;
     }
 
     /**

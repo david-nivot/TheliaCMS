@@ -19,17 +19,20 @@ use Thelia\Domain\Localization\Service\LangService;
 use Thelia\Model\Lang;
 use TheliaCMS\Content\ExampleRenderingInterface;
 use TheliaCMS\Content\Partial\PartialSection;
+use TheliaCMS\Content\Pipeline\ImageRewriter;
 use TheliaCMS\Content\SectionCatalog;
 use TheliaCMS\Front\ThemeTemplateRenderer;
 use TheliaCMS\Http\CacheTags;
 use TheliaCMS\Http\ShownTags;
 use TheliaCMS\Locale\AlternateUrls;
+use TheliaCMS\Media\MediaFile;
 use TheliaCMS\Menu\CmsMenuProvider;
 use TheliaCMS\Page\Document\PageDocumentBlock;
 use TheliaCMS\Page\Document\PageDocumentLink;
 use TheliaCMS\Page\Document\PageDocumentLinks;
 use TheliaCMS\Page\Field\FieldFormatter;
 use TheliaCMS\Page\PageCard;
+use TheliaCMS\Page\PageImage;
 use TheliaCMS\Page\PageListQuery;
 use TheliaCMS\Page\PageTypeRepository;
 use TheliaCMS\Page\PublishedPage;
@@ -64,6 +67,7 @@ final class CmsExtension extends AbstractExtension
         private readonly PageDocumentLinks $documentLinks,
         private readonly PageDocumentBlock $documentBlock,
         private readonly ThemeTemplateRenderer $templates,
+        private readonly ImageRewriter $images,
     ) {
     }
 
@@ -89,7 +93,34 @@ final class CmsExtension extends AbstractExtension
             new TwigFunction('cms_page_documents', $this->pageDocuments(...)),
             new TwigFunction('cms_page_documents_block', $this->pageDocumentsBlock(...), ['is_safe' => ['html']]),
             new TwigFunction('cms_is_home', $this->isHome(...)),
+            new TwigFunction('cms_image_attributes', $this->imageAttributes(...)),
         ];
+    }
+
+    /**
+     * The attributes that make the image of a card responsive, as a page gets
+     * them when it is published: `width`, `height`, `srcset` and `sizes`. A
+     * theme prints them on its own `<img>`; none for an image without a
+     * library file behind it.
+     *
+     * `sizes` is the width the image is drawn at, in the form of
+     * `data-cms-sizes` (`(min-width: 64rem) 25vw, 50vw`); left out, the
+     * viewport up to the width of the file. `height` is the fixed height it
+     * is drawn at, if it has one.
+     *
+     * @return array<string, string>
+     */
+    public function imageAttributes(?PageImage $image, ?string $sizes = null, ?string $height = null): array
+    {
+        if (null === $image) {
+            return [];
+        }
+
+        return $this->images->attributes(
+            new MediaFile($image->id, strtolower(pathinfo($image->url, \PATHINFO_EXTENSION) ?: 'jpg'), $image->width, $image->height),
+            $sizes,
+            $height,
+        );
     }
 
     /**

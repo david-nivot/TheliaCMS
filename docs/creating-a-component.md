@@ -308,7 +308,7 @@ What the generator writes, and what the site checks
   `iframe`, `form`, `on…` attribute or `javascript:`. What it draws is
   filtered like a page that goes online, wherever it is drawn: a draft, the
   preview, the toolkit. An element or an attribute that filter takes out
-  (`input`, `select`, a `data- attribute no controller of the theme reads) is
+  (`input`, `select`, a `data-` attribute no controller of the theme reads, `data-cms-sizes` apart: see below) is
   refused when the component is made, in every branch of the template
   (`SiteComponentValidator::dropped()`): taken out silently, it left a
   component that showed and did nothing.
@@ -337,6 +337,38 @@ section named, draft and published); keeping one draws the drafts using it
 again, and the published pages change at their next publication. A component
 a page holds cannot be deleted. The kept components travel with the export of
 the site and are checked again on import.
+
+## The width of the images of a component
+
+Whichever way a component is made, a picture of the media library in its markup
+is published with a `srcset` and a `sizes` (`Content/Pipeline/ImageRewriter.php`).
+Without a word from the component, `sizes` says "the viewport, up to the width
+of the file": a component that draws its pictures in a third of the page, or in
+a fixed frame, has them downloaded larger than needed. It says so by putting
+`data-cms-sizes` on the element that holds them, with the `sizes` the browser
+should read:
+
+```twig
+<div class="cms-site cms-site--logo-wall" data-cms-sizes="(min-width: 64rem) 20vw, 50vw">
+    {% for item in props.logos %}<img src="{{ item.image }}" alt="{{ item.name }}">{% endfor %}
+</div>
+```
+
+- It applies to every image under the element; the nearest declaration wins, so
+  one element can hold two kinds of picture.
+- Only a list of widths is read (`px`, `rem`, `em`, `vw`, `vh`, `calc()`,
+  `min()`, `max()`, `clamp()`, conditions on `min-width` and `max-width`): see
+  "The width of the images" in `docs/sections.md`. The attribute is out of the
+  page once published.
+- It works the same in the three ways above: the sandbox of a component made in
+  the back office does not look at attributes, and the filter that runs on every
+  rendered page lets `data-cms-sizes` through. A component of the theme, or of a
+  module, writes it in its own template.
+- Pictures drawn at a fixed height (a row of logos in a band) add
+  `data-cms-height="5rem"` on the same element: each width of the list is then
+  held to what that height gives the picture, from its proportions.
+- The component keeps its layout in its stylesheet; the width declared must follow
+  it. A wrong value only makes the browser pick a file too small or too large.
 
 ## What the generator does with it
 

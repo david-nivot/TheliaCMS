@@ -1,0 +1,149 @@
+{
+ "format": "thelia-cms",
+ "version": 3,
+ "generated_at": "2026-11-04T00:00:00+01:00",
+ "module_version": "2.10.0",
+ "locales": [
+  "fr_FR"
+ ],
+ "page_types": [],
+ "components": [],
+ "catalogue_contents": [],
+ "menus": [],
+ "forms": [],
+ "settings": {},
+ "media": [
+  {
+   "id": 13,
+   "file_name": "030855842e72e9a7c808.jpg"
+  },
+  {
+   "id": 14,
+   "file_name": "604eda0b3f7f823809f0.jpg"
+  },
+  {
+   "id": 15,
+   "file_name": "1ded8a56df03e03d9ca0.jpg"
+  },
+  {
+   "id": 16,
+   "file_name": "e33b7b7e230c4878f6a4.jpg"
+  },
+  {
+   "id": 17,
+   "file_name": "f7e610c610b12f9f65f0.jpg"
+  },
+  {
+   "id": 18,
+   "file_name": "7c6b910d1289a8d9ee42.jpg"
+  },
+  {
+   "id": 19,
+   "file_name": "1bd3b2a8c0373600a72f.jpg"
+  },
+  {
+   "id": 20,
+   "file_name": "e419c3494c3dd79960b5.jpg"
+  },
+  {
+   "id": 21,
+   "file_name": "4d472dac0c872af2dc2f.jpg"
+  },
+  {
+   "id": 22,
+   "file_name": "032367832e532f74d5c8.jpg"
+  },
+  {
+   "id": 23,
+   "file_name": "43143678cd4a900364e2.jpg"
+  },
+  {
+   "id": 24,
+   "file_name": "48b7dde3bc19843fd361.jpg"
+  },
+  {
+   "id": 25,
+   "file_name": "9134704e622ff96f3a90.jpg"
+  },
+  {
+   "id": 26,
+   "file_name": "30039488ac29380fe7e8.jpg"
+  },
+  {
+   "id": 27,
+   "file_name": "26aa7f34f7ac992f4f67.jpg"
+  },
+  {
+   "id": 28,
+   "file_name": "5b676c27201e0f197995.jpg"
+  },
+  {
+   "id": 29,
+   "file_name": "6805ec2a7791e1f1eea2.jpg"
+  },
+  {
+   "id": 30,
+   "file_name": "205341ebf268a8d81133.jpg"
+  },
+  {
+   "id": 31,
+   "file_name": "2811a80ff40d0963e6e7.jpg"
+  },
+  {
+   "id": 32,
+   "file_name": "554797c854898dbc4698.jpg"
+  },
+  {
+   "id": 33,
+   "file_name": "4c01e9a9b65fb23c61ad.jpg"
+  }
+ ],
+ "pages": [
+  {
+   "uid": "img-test-sections",
+   "parent": null,
+   "position": 90,
+   "visible": true,
+   "page_type": "default",
+   "model": false,
+   "fields": [],
+   "tag": null,
+   "tag_color": null,
+   "tag_text_color": null,
+   "image_id": null,
+   "publish_at": null,
+   "unpublish_at": null,
+   "translations": {
+    "fr_FR": {
+     "title": "Image test img-test-sections",
+     "slug": "img-test-sections",
+     "fixed_url": null,
+     "chapo": null,
+     "description": null,
+     "meta_title": null,
+     "meta_description": null,
+     "og_title": null,
+     "og_description": null,
+     "og_image_id": null,
+     "twitter_card": null,
+     "canonical": null,
+     "noindex": true,
+     "nofollow": true,
+     "fields": []
+    }
+   },
+   "contents": {
+    "fr_FR": {
+     "draft_document": "{\"version\": 1, \"sections\": [{\"id\": \"h-intro\", \"component\": \"cms:richtext\", \"props\": {\"html\": \"<h2>Image sizes bench</h2>\"}}, {\"id\": \"h-image\", \"component\": \"cms:richtext\", \"props\": {\"html\": \"<h2>Image sections</h2>\"}}, {\"id\": \"image-full-2400\", \"component\": \"cms:image\", \"props\": {\"image\": 29, \"alt\": \"Full 2400\", \"caption\": \"\", \"width\": \"full\"}}, {\"id\": \"image-full-308\", \"component\": \"cms:image\", \"props\": {\"image\": 13, \"alt\": \"Full 308\", \"caption\": \"\", \"width\": \"full\"}}, {\"id\": \"image-column-1200\", \"component\": \"cms:image\", \"props\": {\"image\": 22, \"alt\": \"Column 1200\", \"caption\": \"\", \"width\": \"column\"}}, {\"id\": \"image-narrow-2400\", \"component\": \"cms:image\", \"props\": {\"image\": 30, \"alt\": \"Narrow 2400\", \"caption\": \"\", \"width\": \"narrow\"}}, {\"id\": \"image-narrow-1200\", \"component\": \"cms:image\", \"props\": {\"image\": 23, \"alt\": \"Narrow 1200\", \"caption\": \"\", \"width\": \"narrow\"}}, {\"id\": \"image-narrow-900\", \"component\": \"cms:image\", \"props\": {\"image\": 18, \"alt\": \"Narrow 900\", \"caption\": \"\", \"width\": \"narrow\"}}, {\"id\": \"image-narrow-308\", \"component\": \"cms:image\", \"props\": {\"image\": 14, \"alt\": \"Narrow 308\", \"caption\": \"\", \"width\": \"narrow\"}}, {\"id\": \"image-narrow-external\", \"component\": \"cms:image\", \"props\": {\"image\": \"https://img.logoipsum.com/243.svg\", \"alt\": \"External logo\", \"caption\": \"\", \"width\": \"narrow\"}}, {\"id\": \"h-columns\", \"component\": \"cms:richtext\", \"props\": {\"html\": \"<h2>Columns</h2>\"}}, {\"id\": \"columns-2\", \"component\": \"cms:columns\", \"props\": {\"title\": \"\", \"columns\": [{\"image\": 24, \"image_alt\": \"Test image\", \"title\": \"Column 1\", \"text\": \"A short text.\"}, {\"image\": 19, \"image_alt\": \"Test image\", \"title\": \"Column 2\", \"text\": \"A short text.\"}]}}, {\"id\": \"columns-3\", \"component\": \"cms:columns\", \"props\": {\"title\": \"\", \"columns\": [{\"image\": 25, \"image_alt\": \"Test image\", \"title\": \"Column 1\", \"text\": \"A short text.\"}, {\"image\": 20, \"image_alt\": \"Test image\", \"title\": \"Column 2\", \"text\": \"A short text.\"}, {\"image\": 15, \"image_alt\": \"Test image\", \"title\": \"Column 3\", \"text\": \"A short text.\"}]}}, {\"id\": \"columns-3-external\", \"component\": \"cms:columns\", \"props\": {\"title\": \"\", \"columns\": [{\"image\": \"https://img.logoipsum.com/243.svg\", \"image_alt\": \"Test image\", \"title\": \"Column 1\", \"text\": \"A short text.\"}, {\"image\": 26, \"image_alt\": \"Test image\", \"title\": \"Column 2\", \"text\": \"A short text.\"}, {\"image\": 31, \"image_alt\": \"Test image\", \"title\": \"Column 3\", \"text\": \"A short text.\"}]}}, {\"id\": \"columns-4\", \"component\": \"cms:columns\", \"props\": {\"title\": \"\", \"columns\": [{\"image\": 32, \"image_alt\": \"Test image\", \"title\": \"Column 1\", \"text\": \"A short text.\"}, {\"image\": 27, \"image_alt\": \"Test image\", \"title\": \"Column 2\", \"text\": \"A short text.\"}, {\"image\": 21, \"image_alt\": \"Test image\", \"title\": \"Column 3\", \"text\": \"A short text.\"}, {\"image\": 16, \"image_alt\": \"Test image\", \"title\": \"Column 4\", \"text\": \"A short text.\"}]}}, {\"id\": \"h-html\", \"component\": \"cms:richtext\", \"props\": {\"html\": \"<h2>Free text</h2>\"}}, {\"id\": \"html-1200\", \"component\": \"cms:richtext\", \"props\": {\"html\": \"<p>A picture in free text.</p><p><img src=\\\"/image-library/28/full/max/0/default.jpg\\\" alt=\\\"Free text 1200\\\"></p>\"}}, {\"id\": \"html-308\", \"component\": \"cms:richtext\", \"props\": {\"html\": \"<p><img src=\\\"/image-library/17/full/max/0/default.jpg\\\" alt=\\\"Free text 308\\\"></p>\"}}, {\"id\": \"h-site\", \"component\": \"cms:richtext\", \"props\": {\"html\": \"<h2>Component of the site</h2>\"}}, {\"id\": \"site-scroller\", \"component\": \"Site:ScrollingImageFrame\", \"props\": {\"image\": 33, \"alt\": \"Scroller 2400\", \"direction\": \"horizontal\", \"speed\": \"slow\", \"height\": 320, \"pause_label\": \"\"}}]}",
+     "draft_html": null,
+     "draft_provenance": null,
+     "published_document": null,
+     "published_html": null,
+     "published_provenance": null,
+     "published_at": null,
+     "updated_at": "2026-11-04T00:00:00+01:00"
+    }
+   }
+  }
+ ]
+}

@@ -147,6 +147,53 @@ The band carries the section's id in `data-cms-section`, as the first element
 of a section without an appearance does; a script of the theme that looks a
 section up by its id finds the band.
 
+## The width of the images
+
+A page is published with a `srcset` and a `sizes` on every image of the media
+library (`Content/Pipeline/ImageRewriter.php`, once, when the page goes
+online). The browser picks the file from `sizes`, which says how wide the image
+is drawn, and only the section knows that: the publication sees the final
+markup and nothing of the layout. A section therefore declares it, with an
+attribute on the element that holds its images:
+
+```html
+<figure class="cms-image cms-image--narrow"
+        data-cms-sizes="(max-width: 50rem) calc(100vw - 2rem), 48rem">
+```
+
+- `data-cms-sizes` is the value of `sizes` as the browser reads it: a list of
+  `(media condition) width` entries, then a default width, in `px`, `rem`, `em`,
+  `vw` or `vh`, with `calc()`, `min()`, `max()` and `clamp()`. The conditions
+  are on `min-width` and `max-width`. Anything else (a `url()`, a `var()`, a
+  quote, a percentage, unbalanced parentheses, over 300 characters) is not a
+  width and is ignored.
+- An image takes the value of the nearest element above it that carries the
+  attribute, itself included; an invalid value counts as none and the elements
+  further up are not asked.
+- The attribute is taken out of the published page. It stays in a draft or a
+  preview, where it does nothing.
+- An image under no declaration keeps the default: the viewport, up to the width
+  of its file and 1440px at most (`(max-width: 1440px) 100vw, 1440px` for a
+  file of 1440px or more). Free text, and a component that declares nothing, are
+  in that case.
+- `TheliaCMS\Content\ImageSlot` writes the values of the sections of the module
+  (`narrow()`, `content()`, `screen()`, `column($count)`) and says whether a
+  value is acceptable. They follow the widths of `assets/blocks.css`: change one
+  and the other.
+
+Declare it for the width the image really has on the page, not for the width of
+the block when the image is smaller.
+
+An image drawn at a fixed height, as the logos of the columns are (a band
+`5rem` high, as wide as the proportions of the file make it), says so with a
+second attribute on the same element, `data-cms-height="5rem"` (a plain length
+in `px`, `rem` or `em`). The publication knows the proportions of the file: it
+holds each width of `data-cms-sizes` to the width that height gives, as
+`min(<width>, calc(5rem * <width of the file / its height>))`. Read the same
+way as `data-cms-sizes` (the nearest element), ignored when it is not a length
+or when the library does not know the proportions, and taken out of the
+published page. `ImageSlot::columnBand()` is the one of the columns.
+
 ## Writing a section of your own
 
 The first way is a component of the theme, opened in one line of

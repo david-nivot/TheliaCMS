@@ -424,7 +424,7 @@ final class ContentScreenTest extends AdminScreenTestCase
         self::assertSame('read_url', array_column($this->api->requests[0]->tools, 'name')[array_key_last(array_column($this->api->requests[0]->tools, 'name'))], 'The site the change cites can be read for its logos.');
 
         $html = (string) CmsPageContentQuery::create()->filterByPageId($page->getId())->findOne()?->getDraftHtml();
-        self::assertStringContainsString('<section data-cms-section="logos" class="cms-columns cms-columns--3">', $html);
+        self::assertStringContainsString('<section data-cms-section="logos" class="cms-columns cms-columns--3"', $html);
         self::assertSame(3, substr_count($html, 'src="https://img.logoipsum.com/'), 'The logos of elsewhere are kept by the sanitizer.');
     }
 
@@ -471,7 +471,7 @@ final class ContentScreenTest extends AdminScreenTestCase
         self::assertStringContainsString('`cms:image`', (string) $this->api->requests[0]->system, 'The model is offered the image section.');
 
         $html = (string) CmsPageContentQuery::create()->filterByPageId($page->getId())->findOne()?->getDraftHtml();
-        self::assertStringContainsString('<figure data-cms-section="photo" class="cms-image cms-image--narrow">', $html);
+        self::assertStringContainsString('<figure data-cms-section="photo" class="cms-image cms-image--narrow"', $html);
         self::assertStringContainsString('src="https://example.com/tarte.jpg"', $html, 'The picture of elsewhere is kept by the sanitizer.');
         self::assertStringContainsString('<figcaption class="cms-image__caption">Tout juste sortie du four</figcaption>', $html);
     }

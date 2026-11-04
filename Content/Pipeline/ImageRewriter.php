@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Content\Pipeline;
 
+use TheliaCMS\Content\ImageSlot;
+use TheliaCMS\Media\MediaFile;
 use TheliaCMS\Media\MediaResolver;
 
 /**
@@ -37,7 +39,10 @@ final readonly class ImageRewriter
      */
     private const array WIDTHS = [480, 960, 1440];
 
-    private const string SIZES = '(max-width: 1440px) 100vw, 1440px';
+    /**
+     * The widest slot an image is announced to fill: the viewport up to it.
+     */
+    private const int WIDEST_SLOT = 1440;
 
     public function __construct(
         private MediaResolver $library,
@@ -72,6 +77,15 @@ final readonly class ImageRewriter
             $this->rewriteImage($document, $image, 0 === $position);
         }
 
+        // Read, it has done its work: nothing of it goes online.
+        foreach ([ImageSlot::ATTRIBUTE, ImageSlot::HEIGHT_ATTRIBUTE] as $attribute) {
+            foreach (iterator_to_array((new \DOMXPath($document))->query('//*[@'.$attribute.']') ?: []) as $declaring) {
+                if ($declaring instanceof \DOMElement) {
+                    $declaring->removeAttribute($attribute);
+                }
+            }
+        }
+
         return $this->innerHtml($document, $root);
     }
 
@@ -97,19 +111,109 @@ final readonly class ImageRewriter
             return;
         }
 
+        $attributes = $this->attributes($media, $this->declaredSizes($image), $this->declaredHeight($image));
+
+        foreach ($attributes as $name => $value) {
+            $image->setAttribute($name, $value);
+        }
+
+        $widths = $this->widthsFor($media->width);
+        $sizes = $attributes['sizes'] ?? null;
+
+        $this->wrapInPicture($document, $image, $media->id, $widths, $sizes);
+    }
+
+    /**
+     * The attributes of an image of the library that make it responsive: the
+     * intrinsic size, the set of widths and what they are chosen by. What
+     * `rewrite()` writes on every image of a page, for a template that draws
+     * an image itself, a card of a list for one, and has no HTML to hand over.
+     *
+     * @param string|null $sizes  the `sizes` the image is drawn at, in the form of `data-cms-sizes`; invalid or none, the viewport up to the width of the file
+     * @param string|null $height the fixed height it is drawn at, in the form of `data-cms-height`
+     *
+     * @return array<string, string> `width` and `height` when the library knows them, `srcset` and `sizes` when it knows the width
+     */
+    public function attributes(MediaFile $media, ?string $sizes = null, ?string $height = null): array
+    {
+        $attributes = [];
+
         if (null !== $media->width && null !== $media->height) {
-            $image->setAttribute('width', (string) $media->width);
-            $image->setAttribute('height', (string) $media->height);
+            $attributes['width'] = (string) $media->width;
+            $attributes['height'] = (string) $media->height;
         }
 
         $widths = $this->widthsFor($media->width);
 
         if ([] !== $widths) {
-            $image->setAttribute('srcset', $this->srcset($media->id, $widths, $media->format));
-            $image->setAttribute('sizes', self::SIZES);
+            $attributes['srcset'] = $this->srcset($media->id, $widths, $media->format);
+            $attributes['sizes'] = $this->sizes(
+                $widths,
+                null !== $sizes && ImageSlot::isValid($sizes) ? trim($sizes) : null,
+                null !== $height && ImageSlot::isValidHeight($height) ? trim($height) : null,
+                $media,
+            );
         }
 
-        $this->wrapInPicture($document, $image, $media->id, $widths);
+        return $attributes;
+    }
+
+    /**
+     * The `sizes` the section of the image declared, on the nearest element
+     * that carries the attribute. A value that is not a list of widths counts
+     * as no declaration, and the elements further up are not asked: the
+     * nearest one is the one that knows.
+     */
+    private function declaredSizes(\DOMElement $image): ?string
+    {
+        return $this->nearestDeclaration($image, ImageSlot::ATTRIBUTE, ImageSlot::isValid(...));
+    }
+
+    /**
+     * The fixed height a section draws its images at, read the same way.
+     */
+    private function declaredHeight(\DOMElement $image): ?string
+    {
+        return $this->nearestDeclaration($image, ImageSlot::HEIGHT_ATTRIBUTE, ImageSlot::isValidHeight(...));
+    }
+
+    /**
+     * @param \Closure(string): bool $isValid
+     */
+    private function nearestDeclaration(\DOMElement $image, string $attribute, \Closure $isValid): ?string
+    {
+        for ($node = $image; $node instanceof \DOMElement; $node = $node->parentNode) {
+            if ($node->hasAttribute($attribute)) {
+                $declared = trim($node->getAttribute($attribute));
+
+                return $isValid($declared) ? $declared : null;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * What a section says it draws the image at; else, the viewport up to the
+     * width of the file. With the slot wider than the file, a browser reads a
+     * 300px file at the width of the viewport: an image a theme leaves at its
+     * own size (`width: auto`) comes out stretched and blurred. The candidate
+     * it picks does not change, the file being the largest one offered.
+     *
+     * @param non-empty-list<int> $widths ascending, the last one being the original width
+     */
+    private function sizes(array $widths, ?string $declared, ?string $height, MediaFile $media): string
+    {
+        $slot = min($widths[array_key_last($widths)], self::WIDEST_SLOT);
+        $sizes = $declared ?? \sprintf('(max-width: %1$dpx) 100vw, %1$dpx', $slot);
+
+        // Drawn at a fixed height, an image is as wide as its proportions say,
+        // and no wider than the slot it sits in.
+        if (null !== $height && null !== $media->width && null !== $media->height && $media->height > 0) {
+            return ImageSlot::bandedTo($sizes, $height, $media->width / $media->height);
+        }
+
+        return $sizes;
     }
 
     /**
@@ -120,7 +224,7 @@ final readonly class ImageRewriter
      *
      * @param list<int> $widths
      */
-    private function wrapInPicture(\DOMDocument $document, \DOMElement $image, int $imageId, array $widths): void
+    private function wrapInPicture(\DOMDocument $document, \DOMElement $image, int $imageId, array $widths, ?string $sizes): void
     {
         $parent = $image->parentNode;
 
@@ -135,8 +239,8 @@ final readonly class ImageRewriter
             ? $this->srcset($imageId, $widths, 'webp')
             : $this->url($imageId, null, 'webp'));
 
-        if ([] !== $widths) {
-            $source->setAttribute('sizes', self::SIZES);
+        if (null !== $sizes) {
+            $source->setAttribute('sizes', $sizes);
         }
 
         $parent->replaceChild($picture, $image);

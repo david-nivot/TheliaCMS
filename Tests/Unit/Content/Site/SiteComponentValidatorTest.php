@@ -186,6 +186,18 @@ final class SiteComponentValidatorTest extends TestCase
         self::assertSame($template, (new SiteComponentValidator())->validate(PriceTable::component($template))->template);
     }
 
+    /**
+     * A component says the width its pictures are drawn at, as the sections of
+     * the module do: the sandbox reads no attribute, and the filter of the page
+     * keeps this one for the publication to read.
+     */
+    public function testAComponentMayDeclareTheWidthOfItsImages(): void
+    {
+        $template = '<section class="faq" data-cms-sizes="(min-width: 64rem) 20vw, 50vw">{% for plan in props.plans %}<img src="{{ plan.price }}" alt="{{ plan.name }}">{% endfor %}</section>';
+
+        self::assertSame($template, (new SiteComponentValidator())->validate(PriceTable::component($template))->template);
+    }
+
     public function testTheSectionDrawsTheComponentInsideItsClassAndAFailingTemplateDrawsNothing(): void
     {
         $component = PriceTable::component();

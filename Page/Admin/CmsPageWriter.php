@@ -408,6 +408,56 @@ final readonly class CmsPageWriter
     }
 
     /**
+     * Renders what is online again from the published document, for a
+     * rendering the module changed since the page was published (the `sizes`
+     * of its images, say). Only the published HTML is written: the draft, the
+     * kept versions, the date of the publication, the search entry and the
+     * activity log stay as they are, and none of the publication checks runs,
+     * a page online being online whatever those would say today.
+     *
+     * Like `renderDraftAgain()`, it holds nobody's right to custom code.
+     *
+     * @param bool $write false for a dry run: the outcome is the same, nothing is written
+     *
+     * @throws InvalidDocumentException  when the document is no longer accepted by the catalogue
+     * @throws EmptyPageContentException when the new rendering would show nothing
+     */
+    public function renderPublishedAgain(CmsPage $page, string $locale, bool $write = true): PublishedRendering
+    {
+        $content = $this->contentFor($page, $locale);
+        $document = Document::fromJson($content->getPublishedDocument());
+
+        if (null === $document || null === $content->getPublishedAt()) {
+            return PublishedRendering::NotOnline;
+        }
+
+        $stored = $content->getPublishedHtml();
+        $html = $this->images->rewrite(
+            $this->sanitizer->html($this->normalizer->html($this->renderer->render($this->validator->validate($document), $locale)), $this->mayPublishCustomCode()),
+        );
+
+        if ($html === $stored) {
+            return PublishedRendering::Unchanged;
+        }
+
+        if ($this->sanitizer->customCodeCount($html) < $this->sanitizer->customCodeCount($stored)) {
+            return PublishedRendering::KeptForCustomCode;
+        }
+
+        if ($this->emptiness->isEmpty($html)) {
+            throw EmptyPageContentException::for((int) $page->getId(), $locale);
+        }
+
+        if ($write) {
+            // `updated_at` follows the draft: this is not an edit.
+            $content->setPublishedHtml($html)->keepUpdateDateUnchanged()->save();
+            $this->invalidator->contentChanged((int) $page->getId());
+        }
+
+        return PublishedRendering::Rendered;
+    }
+
+    /**
      * Promotes the draft to the published snapshot and takes a revision, in one
      * transaction: a half-published page would be served to visitors.
      *

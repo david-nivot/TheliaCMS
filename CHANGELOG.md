@@ -7,6 +7,45 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **`thelia_cms:render-published`**, the published counterpart of
+  `thelia_cms:render`: it renders what is online again from the published
+  documents (pages and contents of the catalogue), so a change of the module
+  reaches pages already published without publishing them again. Only the
+  published HTML is written, and only where it changed; the drafts, the kept
+  versions, the date of the publication, the activity log and the checks of a
+  publication are left alone, and the cache of a changed page is purged as a
+  publication does. `--page`, `--all`, `--locale`, `--dry-run`, `--url`. See the
+  README, "Rendering what is online again".
+
+### Fixed
+
+- **A published image is announced at the width it is drawn at.** Its
+  `sizes` said the viewport up to 1440px whatever the file, so a browser read
+  a 308px pack shot at 1440px: a theme leaving an image at its own size
+  (`width: auto`, as the columns of logos are) showed it stretched and
+  blurred. Two changes. The default is now the viewport up to the width of the
+  file, 1440px at most (the candidate picked does not change). And a section
+  says the width of its images itself, with a `data-cms-sizes` attribute the
+  publication reads and takes out: the image section (`narrow`, `column`,
+  `full`) and the columns (one share of the grid, the gaps out) declare theirs,
+  so a 1200px picture in one of three columns is announced at a third of the
+  grid, not at 1200px. The images of the columns are drawn in a band of a
+  fixed height, as wide as their proportions make them: `data-cms-height`
+  says it, and the publication holds the width announced to the one that
+  height gives. The generator of site components is taught both attributes
+  (when to put them, with an example), so a component it makes declares the
+  width of its pictures. The image of a card of the list of pages is served
+  with its set of widths and its size, not at full size for every visitor
+  (`cms_image_attributes()`, for a theme that draws its cards itself); the
+  list is cached, so an update shows in it after the next page published.
+  Components of the site, of a module or of the theme can declare it too, see
+  docs/sections.md and docs/creating-a-component.md. The filter that runs on
+  every page lets the attribute through. Pages published before keep the old
+  `sizes` until they are rendered again: after the update, run
+  `php Thelia thelia_cms:render-published --all` (see below).
+
 ## [2.10.0] - 2026-11-04
 
 ### Added
