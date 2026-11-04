@@ -140,6 +140,14 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Changed
 
+- **A component made by the generator is labelled in the default language of the
+  shop.** Asked from the back office, made from a brief or prototyped from a
+  page, a component takes its label, and the label, help and choice labels of
+  its props, in the default language of the shop, whatever the language of the
+  request: an editor reads them in the forms of the back office. Its example
+  stays in the language of the request. The prompt of the component generator
+  changes once (one sentence of rules, the default language in the request,
+  the labels of the example in one language).
 - **The Image section form reads in the order of the page, with a help written for
   the editor.** The image, its width, its caption, then the text of the image;
   each field explains itself in the words of an editor, apart from the
