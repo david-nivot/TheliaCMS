@@ -17,6 +17,7 @@ namespace TheliaCMS\Tests\Unit\Content;
 use PHPUnit\Framework\TestCase;
 use TheliaCMS\Content\ImageSection;
 use TheliaCMS\Content\InvalidDocumentException;
+use TheliaCMS\Content\Prop;
 
 final class ImageSectionTest extends TestCase
 {
@@ -77,5 +78,25 @@ final class ImageSectionTest extends TestCase
         $this->expectException(InvalidDocumentException::class);
 
         (new ImageSection())->normalizeProps(['image' => 'https://example.com/a.png', 'width' => 'huge']);
+    }
+
+    /**
+     * The order of the schema is the order of the form and of the lines of the
+     * prompt: the picture, how wide it is, what is written under it, then the
+     * text for those who do not see it.
+     */
+    public function testThePropsAreInTheOrderOfTheForm(): void
+    {
+        $props = (new ImageSection())->schema()->props;
+
+        self::assertSame(['image', 'width', 'caption', 'alt'], array_map(static fn (Prop $prop): string => $prop->name, $props));
+    }
+
+    public function testTheEditorReadsItsOwnHelpAndTheModelTheInstruction(): void
+    {
+        foreach ((new ImageSection())->schema()->props as $prop) {
+            self::assertNotNull($prop->editorHelp, $prop->name.' has a help written for the editor.');
+            self::assertNotSame($prop->help, $prop->editorHelp, $prop->name.': the help of the editor is not the instruction to the model.');
+        }
     }
 }

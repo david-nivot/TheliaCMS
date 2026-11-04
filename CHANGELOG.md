@@ -19,6 +19,14 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   publication does. `--page`, `--all`, `--locale`, `--dry-run`, `--url`. See the
   README, "Rendering what is online again".
 
+### Changed
+
+- **The Image section form reads in the order of the page, with a help written for
+  the editor.** The image, its width, its caption, then the text of the image;
+  each field explains itself in the words of an editor, apart from the
+  instruction the generator reads. The generator's prompt lists the four props in
+  the new order and says nothing more.
+
 ### Fixed
 
 - **A choice drawn as buttons takes the whole line of the section form.** The

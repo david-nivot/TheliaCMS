@@ -55,9 +55,8 @@ final readonly class ImageSection implements SectionDefinitionInterface
     public function schema(): PropSchema
     {
         return new PropSchema([
-            Prop::image('image', $this->trans('Image'), help: $this->trans('An image of the media library, or the https address of a picture kept elsewhere.')),
-            Prop::text('alt', $this->trans('Text of the image'), help: $this->trans('For a picture kept elsewhere: what it shows, for a reader who does not see it. An image of the media library is described in the library.')),
-            Prop::text('caption', $this->trans('Caption'), help: $this->trans('Under the image; none when empty.')),
+            Prop::image('image', $this->trans('Image'), help: $this->trans('An image of the media library, or the https address of a picture kept elsewhere.'))
+                ->forEditor(help: $this->trans('The picture shown on the page: one of the media library, or the address of a picture kept elsewhere.')),
             Prop::choice('width', $this->trans('Width'), [
                 'narrow' => $this->trans('Narrow, as a column of text'),
                 'column' => $this->trans('As wide as the content'),
@@ -66,7 +65,11 @@ final readonly class ImageSection implements SectionDefinitionInterface
                 'narrow' => 'width-narrow',
                 'column' => 'width-column',
                 'full' => 'width-full',
-            ]),
+            ])->forEditor(help: $this->trans('How wide the picture is on the page. Narrow suits most photos.')),
+            Prop::text('caption', $this->trans('Caption'), help: $this->trans('Under the image; none when empty.'))
+                ->forEditor(help: $this->trans('A line of text under the picture. Leave it empty for none.')),
+            Prop::text('alt', $this->trans('Text of the image'), help: $this->trans('For a picture kept elsewhere: what it shows, for a reader who does not see it. An image of the media library is described in the library.'))
+                ->forEditor(help: $this->trans('What the picture shows, for people who cannot see it. Only needed for a picture kept elsewhere: a picture of the media library is described in the library.')),
         ]);
     }
 
