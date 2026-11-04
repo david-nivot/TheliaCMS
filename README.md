@@ -1290,6 +1290,21 @@ shows in it without republishing the page that lists it. A theme takes the
 markup over with `cms/partials/page-list.html.twig`. From PHP, the list comes
 from `PublishedPageRepository::ofType($type, $locale, $query)`.
 
+The image of a card is given its `width`, `height`, `srcset` and `sizes` by
+`cms_image_attributes(card.image, sizes)`, the attributes a published page gets
+on its images, as a list to print on the theme's own `<img>`:
+
+```twig
+<img src="{{ card.image.url }}" alt="{{ card.image.alt }}" loading="lazy"
+     {% for name, value in cms_image_attributes(card.image, '(min-width: 64rem) 25vw, 50vw') %}{{ name }}="{{ value }}" {% endfor %}>
+```
+
+`sizes` is the width the theme draws the image at (the form of `data-cms-sizes`,
+see `docs/sections.md`); left out, the browser is told the viewport up to the
+width of the file, which is never blurry but downloads the largest file. The list
+of the module is a section that is cached: after an update that changes its
+markup, a page published or any change of a page empties it.
+
 The description of a type travels with the site export; an import keeps the
 fields of a type the site has described already, and says so.
 
@@ -1378,6 +1393,7 @@ the update to 2.7.0 `cms_tag.text_color`.
 | `cms_item_content(type, id, locale)` | the published document of a product, a category, a content, a folder or a store (`dealer`), as markup, or an empty string. The locale defaults to the one being served. |
 | `cms_page_documents(page, locale)` | the files a page offers to download, each with `id`, `title`, `description`, `url`, `extension`, `size` and `originalName`: see [Documents of a page](#documents-of-a-page). |
 | `cms_page_documents_block(page, locale)` | the same files drawn as markup (empty string without a file), from the `cms-page-documents.html.twig` of the theme or of the module, with the one variable `cms_page_documents_block` (`documents`, `page`, `heading`): see [Documents of a page](#documents-of-a-page). |
+| `cms_image_attributes(image, sizes, height)` | `width`, `height`, `srcset` and `sizes` of the image of a card, as a published page gets them on its images; `sizes` and `height` are optional: see [Templates of pages](#templates-of-pages). |
 | `cms_is_home(id)` | whether the page of this id is the one the module shows as the home page (setting `home_page_id`). |
 
 Except for `cms_item_content()`, whose document is markup by nature, they

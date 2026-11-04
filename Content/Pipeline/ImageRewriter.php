@@ -111,20 +111,51 @@ final readonly class ImageRewriter
             return;
         }
 
-        if (null !== $media->width && null !== $media->height) {
-            $image->setAttribute('width', (string) $media->width);
-            $image->setAttribute('height', (string) $media->height);
+        $attributes = $this->attributes($media, $this->declaredSizes($image), $this->declaredHeight($image));
+
+        foreach ($attributes as $name => $value) {
+            $image->setAttribute($name, $value);
         }
 
         $widths = $this->widthsFor($media->width);
-        $sizes = [] === $widths ? null : $this->sizes($widths, $this->declaredSizes($image), $this->declaredHeight($image), $media);
-
-        if (null !== $sizes) {
-            $image->setAttribute('srcset', $this->srcset($media->id, $widths, $media->format));
-            $image->setAttribute('sizes', $sizes);
-        }
+        $sizes = $attributes['sizes'] ?? null;
 
         $this->wrapInPicture($document, $image, $media->id, $widths, $sizes);
+    }
+
+    /**
+     * The attributes of an image of the library that make it responsive: the
+     * intrinsic size, the set of widths and what they are chosen by. What
+     * `rewrite()` writes on every image of a page, for a template that draws
+     * an image itself, a card of a list for one, and has no HTML to hand over.
+     *
+     * @param string|null $sizes  the `sizes` the image is drawn at, in the form of `data-cms-sizes`; invalid or none, the viewport up to the width of the file
+     * @param string|null $height the fixed height it is drawn at, in the form of `data-cms-height`
+     *
+     * @return array<string, string> `width` and `height` when the library knows them, `srcset` and `sizes` when it knows the width
+     */
+    public function attributes(MediaFile $media, ?string $sizes = null, ?string $height = null): array
+    {
+        $attributes = [];
+
+        if (null !== $media->width && null !== $media->height) {
+            $attributes['width'] = (string) $media->width;
+            $attributes['height'] = (string) $media->height;
+        }
+
+        $widths = $this->widthsFor($media->width);
+
+        if ([] !== $widths) {
+            $attributes['srcset'] = $this->srcset($media->id, $widths, $media->format);
+            $attributes['sizes'] = $this->sizes(
+                $widths,
+                null !== $sizes && ImageSlot::isValid($sizes) ? trim($sizes) : null,
+                null !== $height && ImageSlot::isValidHeight($height) ? trim($height) : null,
+                $media,
+            );
+        }
+
+        return $attributes;
     }
 
     /**

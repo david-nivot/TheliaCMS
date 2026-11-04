@@ -5,7 +5,11 @@
     Plain markup with `cms-*` class names only: the theme owns the
     appearance. A theme writing its own reads `pages`, each one a `card`
     (TheliaCMS\Page\PageCard: title, url, chapo, image, fields) and the
-    `fields` of the card written for a visitor.
+    `fields` of the card written for a visitor. `cms_image_attributes(card.image,
+    sizes)` gives an image its `width`, `height`, `srcset` and `sizes`. The
+    `sizes` below is a guess at a grid of cards (a quarter of the page, then a
+    half, then the whole width): a theme that draws them otherwise passes the
+    width it really uses; left out, it is the viewport up to the width of the file.
 #}
 <section class="cms-page-list cms-page-list--{{ type.code }}">
     {% if title %}
@@ -22,8 +26,7 @@
                     <article class="cms-page-card">
                         {% if card.image %}
                             <img class="cms-page-card__image" src="{{ card.image.url }}" alt="{{ card.image.alt ?? '' }}"
-                                 {% if card.image.width %}width="{{ card.image.width }}"{% endif %}
-                                 {% if card.image.height %}height="{{ card.image.height }}"{% endif %}
+                                 {% for name, value in cms_image_attributes(card.image, '(min-width: 64rem) 25vw, (min-width: 40rem) 50vw, 100vw') %}{{ name }}="{{ value }}" {% endfor %}
                                  loading="lazy" decoding="async">
                         {% endif %}
                         <h3 class="cms-page-card__title"><a class="cms-page-card__link" href="{{ card.url }}">{{ card.title }}</a></h3>
