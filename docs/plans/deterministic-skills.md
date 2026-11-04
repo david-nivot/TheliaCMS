@@ -1,6 +1,6 @@
 # Plan: skills that give the same page for the same brief
 
-Status: control played on 2026-11-04 on module 2.10.0 (two rounds, 5.59 USD: noise is two briefs, the code changes since round 2c move nothing beyond it; `results.md`). Paused on 2026-10-27, after round 2e. The command additions, the corpus, the bench and
+Status: stopped on 2026-11-04 by decision, after the control: the next candidate, a length range for every text section (`intro`, `story`, `features`, `offer`, `contact`; 7 briefs, about 4 USD), moves to the roadmap as a quality improvement. Control played on 2026-11-04 on module 2.10.0 (two rounds, 5.59 USD: noise is two briefs, the code changes since round 2c move nothing beyond it; `results.md`). Paused on 2026-10-27, after round 2e. The command additions, the corpus, the bench and
 the script are done, and rounds 0 and 1 are played: the effort is not the
 lever, the section ids are the largest source of variance
 (`docs/evaluation/determinism/results.md`). Rounds 2a (fixed section ids)
