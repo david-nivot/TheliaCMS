@@ -48,8 +48,9 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   the arrows move it by 1 % (10 % with Shift), plus and minus or Page Up and
   Page Down zoom by 10 %, Home puts the centre back, Escape closes. Confirm
   writes the three fields of the form, which are saved with the section; Cancel
-  leaves them as they were. The button is off, with its reason, with no image or
-  an image whose size cannot be read; an image kept elsewhere takes its centre
+  leaves them as they were. The button is off, with its reason, with no image, with
+  an image the media library of the CMS does not hold (removed, or without the
+  tag of the CMS) or with an image whose size cannot be read; an image kept elsewhere takes its centre
   only (the zoom stays at 100 %). The sentence of the kept part now reads as a
   statement next to the button, not as a field.
 - **A rewrite or a translation keeps the size and the framing of a picture.**

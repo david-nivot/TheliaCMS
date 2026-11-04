@@ -1532,6 +1532,8 @@ return [
     'Reset' => 'Réinitialiser',
     'Zone %w% by %h% pixels, centre at %x% percent and %y% percent, zoom %zoom% percent.' => 'Zone de %w% sur %h% pixels, centre à %x% pour cent et %y% pour cent, zoom %zoom% pour cent.',
     'This image is kept elsewhere: only its centre can be set, the zoom stays at 100 %.' => 'Cette image est gardée ailleurs : seul son centre se règle, le zoom reste à 100 %.',
+    'This image is not in the media library of the CMS: choose one there to crop it.' => 'Cette image n’est pas dans la médiathèque du CMS : choisissez-en une pour la recadrer.',
+    'Looking for this image…' => 'Recherche de cette image…',
     'Choose an image to crop it.' => 'Choisissez une image pour la recadrer.',
     'Reading the size of this image…' => 'Lecture de la taille de cette image…',
     'The size of this image could not be read.' => 'La taille de cette image n’a pas pu être lue.',

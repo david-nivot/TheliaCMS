@@ -453,8 +453,10 @@
             var width = parseInt(field.getAttribute('data-cms-image-width') || '0', 10);
             var height = parseInt(field.getAttribute('data-cms-image-height') || '0', 10);
 
-            if (source === 'none' || url === '') {
-                return { source: 'none' };
+            // Not an image to crop: none chosen, one still being looked up, one
+            // the media library of the CMS does not hold (removed, or without its tag).
+            if (source === 'none' || source === 'gone' || source === 'loading' || url === '') {
+                return { source: source === 'gone' || source === 'loading' ? source : 'none' };
             }
 
             if (!(width > 0 && height > 0) && measured[url]) {
@@ -485,6 +487,10 @@
 
             if (one.source === 'none') {
                 why = m.noImage;
+            } else if (one.source === 'gone') {
+                why = m.gone;
+            } else if (one.source === 'loading') {
+                why = m.looking;
             } else if (!(one.width > 0 && one.height > 0)) {
                 why = one.failed ? m.unknownSize : m.measuring;
             }

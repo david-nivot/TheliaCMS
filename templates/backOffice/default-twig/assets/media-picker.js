@@ -436,14 +436,14 @@
             }
 
             show(null, '…', null);
-            announce('none', '', 0, 0);
+            announce('loading', '', 0, 0);
             getJson(withParameters(endpoint, { id: id })).then(function (answer) {
                 if (answer && answer.items && answer.items[0]) {
                     known[id] = answer.items[0];
                     render();
                 } else {
                     show(null, m.gone, null);
-                    announce('none', '', 0, 0);
+                    announce('gone', '', 0, 0);
                 }
             });
         }

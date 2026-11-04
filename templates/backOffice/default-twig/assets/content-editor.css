@@ -1156,9 +1156,11 @@ body:has(.cms-content) {
     cursor: move;
 }
 
+/* Inside the frame: a zone held against an edge of the picture would have its
+   ring cut there by the stage, and drawn outside it on the other two sides. */
 .cms-crop__frame:focus-visible {
     outline: 3px solid var(--bs-primary, #0d6efd);
-    outline-offset: 1px;
+    outline-offset: -6px;
 }
 
 .cms-crop__mark {
