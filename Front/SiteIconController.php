@@ -46,6 +46,11 @@ final readonly class SiteIconController
         $response = new BinaryFileResponse($path);
         $response->headers->set('Content-Type', (string) $this->icon->mimeTypeOf($path));
 
+        // An SVG icon is a document that may carry a script, and this address
+        // is public. Opened on its own, it never gets the origin of the site:
+        // no script, no cookie, no storage. A raster icon is unaffected.
+        $response->headers->set('Content-Security-Policy', 'sandbox');
+
         // The same file for everybody, asked for on every page: it is cached
         // for a day, and a browser that already has it revalidates on the date.
         $response->setPublic();

@@ -7,6 +7,13 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Fixed
+
+- **An SVG icon of the site no longer runs a script when opened at its
+  address.** `/site-icon` served the uploaded file with its type alone, so an
+  SVG carrying a script ran it with the origin of the shop. The response is now
+  sent with `Content-Security-Policy: sandbox`, as the documents of a page are.
+
 ## [2.11.0] - 2026-11-04
 
 ### Added
