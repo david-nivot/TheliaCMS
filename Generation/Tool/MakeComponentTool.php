@@ -160,6 +160,11 @@ final class MakeComponentTool implements ResetInterface
             {
                 $this->observer->onCorrection($round, $problems);
             }
+
+            public function onCut(): void
+            {
+                $this->observer->onCut();
+            }
         };
     }
 }

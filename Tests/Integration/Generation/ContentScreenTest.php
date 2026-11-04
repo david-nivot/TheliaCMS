@@ -22,6 +22,7 @@ use Thelia\Core\Security\AccessManager;
 use Thelia\Domain\Ai\AiFinishReason;
 use Thelia\Domain\Ai\AiGatewayInterface;
 use Thelia\Domain\Ai\AiToolCall;
+use Thelia\Domain\Ai\Exception\AiProviderUnavailableException;
 use Thelia\Model\Lang;
 use Thelia\Model\LangQuery;
 use Thelia\Model\ModuleConfigQuery;
@@ -29,6 +30,10 @@ use Thelia\Test\FixtureFactory;
 use TheliaCMS\Content\Document;
 use TheliaCMS\Content\Section;
 use TheliaCMS\Content\SectionAppearance;
+use TheliaCMS\Generation\Brief;
+use TheliaCMS\Generation\GenerationLog;
+use TheliaCMS\Generation\GenerationRequest;
+use TheliaCMS\Generation\GenerationTarget;
 use TheliaCMS\Generation\GeneratorSettings;
 use TheliaCMS\Generation\Tool\ReadUrlTool;
 use TheliaCMS\Model\CmsPageContentQuery;
@@ -307,6 +312,58 @@ final class ContentScreenTest extends AdminScreenTestCase
         self::assertSame(1, $screen->filter('[data-testid="cms-builder-flash-warning"]')->count(), 'A refusal is a warning, with the figures of the call.');
         self::assertSame('false', $screen->filter('[data-testid="cms-builder-flash-warning"]')->attr('data-cms-toast-permanent-value'), 'A warning without details goes away by itself.');
         self::assertStringContainsString('<h1>Refused</h1>', (string) CmsPageContentQuery::create()->filterByPageId($page->getId())->findOne()?->getDraftHtml(), 'The draft was left as it was.');
+    }
+
+    public function testTheHistoryLineSaysWhatTheCallNeeded(): void
+    {
+        $page = $this->createPage('Details', published: false);
+        $unknown = self::document([['id' => 'x', 'component' => 'Cms:Nothing', 'props' => []]]);
+        $this->api
+            ->answer(FakeAiGateway::response(toolCalls: [new AiToolCall('toolu_1', 'search_pages', ['query' => 'a']), new AiToolCall('toolu_2', 'search_pages', ['query' => 'b'])]))
+            ->answer(FakeAiGateway::response($unknown))
+            ->answer(FakeAiGateway::response(self::document([['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h1>Details</h1>']]])));
+
+        $form = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-content-brief"] form')->form();
+        $form['cms_brief[text]'] = 'A page with details.';
+        $this->send('POST', $form->getUri(), $form->getPhpValues());
+
+        $line = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-content-history-details"]');
+
+        self::assertSame(1, $line->count());
+        self::assertMatchesRegularExpression('/^1 correction\(s\), search_pages ×2, effort \w+$/', trim($line->text()));
+    }
+
+    public function testARunningCallAndAnInterruptedOneHaveTheirOwnLabelsInTheHistory(): void
+    {
+        $page = $this->createPage('Labels', published: false);
+        $log = $this->getService(GenerationLog::class);
+        $target = GenerationTarget::page($page, $this->locale());
+        $request = GenerationRequest::fromBrief($target, $this->locale(), new Brief('A brief.'));
+        $log->begin($request, 'prompt');
+        $dead = $log->begin($request, 'prompt');
+        CmsPageGenerationQuery::create()->filterById($dead)->update(['UpdatedAt' => date('Y-m-d H:i:s', time() - 3600)]);
+
+        $badges = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-content-history"] tbody .badge')->each(static fn (Crawler $badge): string => trim($badge->text()));
+
+        self::assertSame(['Interrupted', 'Running'], $badges, 'The latest call first: the one that died, then the one still running.');
+    }
+
+    public function testACutAnswerAskedAgainIsAnEventOfTheStream(): void
+    {
+        $page = $this->createPage('Cut', published: false);
+        $this->api
+            ->cutAfter(['{"version"'], new AiProviderUnavailableException('anthropic-main', true, 'overloaded_error'))
+            ->answer(FakeAiGateway::response(self::document([['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h1>Cut</h1><p>Done.</p>']]])));
+
+        $form = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-content-brief"] form')->form();
+        $form['cms_brief[text]'] = 'A page cut once.';
+
+        $this->client->request('POST', $form->getUri(), $form->getPhpValues(), [], [...self::XHR, 'HTTP_ACCEPT' => 'text/event-stream']);
+        $events = self::events((string) $this->client->getInternalResponse()->getContent());
+        $names = array_values(array_filter(array_column($events, 'event'), static fn (string $name): bool => 'delta' !== $name));
+
+        self::assertSame(['start', 'cut', 'turn', 'done'], $names, 'The screen says the answer was cut and is asked again.');
+        self::assertStringContainsString('cut half way', $events[array_search('cut', array_column($events, 'event'), true)]['data']['message']);
     }
 
     public function testAChangeKeepsTheSectionsItDoesNotConcern(): void

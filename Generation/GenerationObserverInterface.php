@@ -33,6 +33,12 @@ interface GenerationObserverInterface
     public function onText(int $characters): void;
 
     /**
+     * The answer was cut half way and is asked again, once. What was written
+     * of it is dropped: the text that follows starts over.
+     */
+    public function onCut(): void;
+
+    /**
      * The document was refused by the site and sent back for correction.
      *
      * @param list<string> $problems

@@ -110,7 +110,7 @@
                         // One line that counts up rather than a list that scrolls.
                         delta = delta || addStep("");
                         delta.textContent = data.message;
-                    } else if (name === "correction") {
+                    } else if (name === "correction" || name === "cut") {
                         delta = null;
                         addStep(data.message, "text-warning-emphasis");
                     } else if (name === "done" || (name === "error" && data.redirect)) {

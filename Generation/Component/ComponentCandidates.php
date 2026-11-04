@@ -30,6 +30,8 @@ final readonly class ComponentCandidates
 {
     public function find(int $logId): ?ComponentCandidate
     {
+        GenerationLog::interruptStale(GenerationTarget::TYPE_COMPONENT);
+
         $row = CmsPageGenerationQuery::create()
             ->filterById($logId)
             ->filterByTargetType(GenerationTarget::TYPE_COMPONENT)
@@ -45,6 +47,8 @@ final readonly class ComponentCandidates
      */
     public function history(int $componentId, int $limit = 20): array
     {
+        GenerationLog::interruptStale(GenerationTarget::TYPE_COMPONENT, $componentId);
+
         return array_map(self::fromRow(...), iterator_to_array(
             CmsPageGenerationQuery::create()
                 ->filterByTargetType(GenerationTarget::TYPE_COMPONENT)

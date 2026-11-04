@@ -37,6 +37,7 @@ use TheliaCMS\Generation\Ai\GatewayFailures;
 use TheliaCMS\Generation\Ai\GeneratorToolDefinitions;
 use TheliaCMS\Generation\Ai\ObservedStream;
 use TheliaCMS\Generation\Ai\SentBackAnswer;
+use TheliaCMS\Generation\Ai\StreamCutException;
 use TheliaCMS\Generation\Tool\GeneratorTools;
 use TheliaCMS\Generation\Tool\MakeComponentTool;
 use TheliaCMS\Generation\Tool\ReadUrlTool;
@@ -49,8 +50,14 @@ use TheliaCMS\Page\Field\InvalidFieldsException;
  * One conversation per request: the system prompt, the brief, then as many
  * turns as the model needs to use its tools, and the document. A document
  * the validator refuses goes back once with every problem listed; a second
- * refusal is an error. Every outcome is written to the ledger before it is
- * returned or thrown.
+ * refusal is an error. A row of the ledger is written before the first
+ * request, `running`, and every outcome completes it before the result is
+ * returned or thrown: a call that dies leaves a row that is read back as
+ * interrupted. A second call for the same page in the same language is
+ * refused while one runs.
+ *
+ * An answer cut half way is asked again, once, as the same conversation: it
+ * counts neither as a turn nor as a correction.
  *
  * The tools are the ones of the site, and `read_url` when the site allowed
  * the reading of pages and the brief cites one: this server reads it, at the
@@ -71,6 +78,9 @@ final readonly class PageGenerator
 
     /** How many times a refused document is sent back for correction. */
     private const int CORRECTIONS = 2;
+
+    /** How many times an answer cut half way is asked again. */
+    private const int RETRIES = 1;
 
     /** A ceiling on the tool turns, so a model that keeps searching stops. */
     private const int MAX_TURNS = 12;
@@ -107,6 +117,13 @@ final readonly class PageGenerator
      */
     public function generate(GenerationRequest $request, ?GenerationObserverInterface $observer = null): GenerationResult
     {
+        $running = $this->log->runningFor($request->target, $request->locale);
+
+        if (null !== $running) {
+            // No row for a refusal: the call that runs is the one the ledger shows.
+            throw $this->failures->alreadyRunning($running->getCreatedAt() ?? new \DateTimeImmutable(), $this->log->starterOf($running));
+        }
+
         $started = hrtime(true);
         $model = '';
         $prompt = $this->prompts->userMessage($request);
@@ -131,6 +148,7 @@ final readonly class PageGenerator
         // The fields of the page travel in the envelope, as a string like the
         // props: the grammar stays the same size whatever the type defines.
         $fieldsAsked = $request->fieldsAsked();
+        $effort = $request->effort ?? $this->settings->effort();
         $conversation = new AiRequest(
             self::USAGE,
             [AiMessage::user($prompt)],
@@ -138,7 +156,7 @@ final readonly class PageGenerator
             outputSchema: new AiOutputSchema('cms_page', $this->schema->strict($request->keptComponents(), !$fieldsAsked->isEmpty())),
             tools: $tools,
             maxOutputTokens: $this->settings->maxTokens(),
-            providerOptions: ['anthropic' => ['effort' => $request->effort ?? $this->settings->effort()]],
+            providerOptions: ['anthropic' => ['effort' => $effort]],
             correlationId: CorrelationId::new('theliacms', $request->target->type, $request->target->id),
         );
         $usage = new Usage();
@@ -147,16 +165,22 @@ final readonly class PageGenerator
         $provenance = null;
         $turns = 0;
         $corrections = 0;
+        $retries = 0;
+        /** @var array<string, int> $toolCounts */
+        $toolCounts = [];
         $finishReason = null;
         /** @var list<WebPageRead> $reads */
         $reads = [];
         /** @var list<UntrustedContent> $pages the pages read, handed to the model as data of a third party */
         $pages = [];
 
+        // The row exists from here: whatever happens next completes it.
+        $rowId = $this->log->begin($request, $prompt);
+
         // A closure over references: the tokens, the turns and the pages read
         // are what they are when the outcome is written, not when the call
         // started.
-        $record = function (string $status, ?string $error = null, ?string $document = null, array $leftOut = []) use ($request, $prompt, &$model, $started, &$usage, &$costUsd, &$coreLogId, &$provenance, &$turns, &$finishReason, &$reads): int {
+        $record = function (string $status, ?string $error = null, ?string $document = null, array $leftOut = []) use ($request, $prompt, $rowId, $effort, &$model, $started, &$usage, &$costUsd, &$coreLogId, &$provenance, &$turns, &$finishReason, &$reads, &$corrections, &$retries, &$toolCounts): int {
             return $this->log->record(
                 $request,
                 $status,
@@ -175,6 +199,8 @@ final readonly class PageGenerator
                 $reads,
                 $leftOut,
                 GenerationLog::STATUS_DONE === $status ? $provenance : null,
+                $rowId,
+                new RunDetails($effort, $corrections, $retries, $toolCounts),
             );
         };
 
@@ -188,8 +214,27 @@ final readonly class PageGenerator
                     // Read as a stream: the screen shows the text as it is
                     // written, and a long answer no longer looks like a hang.
                     $response = $this->streams->read($this->gateway->stream($conversation), $observer);
+                } catch (StreamCutException $cut) {
+                    // Paid for what arrived, whether it is asked again or not.
+                    $coreLogId = $cut->coreLogId ?? $coreLogId;
+                    $costUsd += $this->failures->costOf($cut->coreLogId);
+
+                    if ($retries >= self::RETRIES) {
+                        throw $this->failures->exceptionForCut($cut);
+                    }
+
+                    ++$retries;
+
+                    $this->logger->warning('TheliaCMS: the answer of the model was cut half way and is asked again: {message}', ['message' => $cut->getMessage(), 'exception' => $cut]);
+                    $observer?->onCut();
+                    --$turns;
+                    $this->log->touch($rowId, $model, $usage, $turns, (int) ((hrtime(true) - $started) / 1_000_000), $costUsd, $coreLogId);
+
+                    continue;
                 } catch (AiExceptionInterface $exception) {
-                    $coreLogId = $this->failures->logIdOf($exception) ?? $coreLogId;
+                    $failedLogId = $this->failures->logIdOf($exception);
+                    $coreLogId = $failedLogId ?? $coreLogId;
+                    $costUsd += $this->failures->costOf($failedLogId);
 
                     throw $this->failures->exceptionFor($exception);
                 }
@@ -203,7 +248,10 @@ final readonly class PageGenerator
                 $this->failures->assertUsable($response, $this->settings->maxTokens(), 'raise the limit of the generator or ask for a shorter page.');
 
                 if ($response->hasToolCalls()) {
-                    $observer?->onTurn($turns, array_map(static fn (AiToolCall $call): string => $call->name, $response->toolCalls));
+                    $names = array_map(static fn (AiToolCall $call): string => $call->name, $response->toolCalls);
+                    $toolCounts = RunDetails::counted($toolCounts, $names);
+                    $this->log->touch($rowId, $model, $usage, $turns, (int) ((hrtime(true) - $started) / 1_000_000), $costUsd, $coreLogId);
+                    $observer?->onTurn($turns, $names);
                     $madeBefore = \count($this->componentMaker->made());
                     $results = $this->toolResults($response->toolCalls, $request, [] !== $addresses, $addresses, $reads, $pages, $mayMakeComponents, $observer);
                     // A component made this turn is a name the schema did not
@@ -216,6 +264,7 @@ final readonly class PageGenerator
                     continue;
                 }
 
+                $this->log->touch($rowId, $model, $usage, $turns, (int) ((hrtime(true) - $started) / 1_000_000), $costUsd, $coreLogId);
                 $observer?->onTurn($turns, []);
 
                 try {
@@ -265,6 +314,20 @@ final readonly class PageGenerator
             // cannot take among them: the same ledger row, the same words.
             $failure = $this->failures->exceptionFor($exception);
             $failure->logId = $record(GenerationLog::STATUS_FAILED, $failure->getMessage());
+
+            throw $failure;
+        } catch (\Throwable $exception) {
+            // Anything else (Propel, a TypeError in a tool): the editor gets
+            // a sentence, the log gets the exception with its trace, and the
+            // row says `failed` rather than staying `running`.
+            $this->logger->error('TheliaCMS: the generation stopped on an unexpected error: {message}', ['message' => $exception->getMessage(), 'exception' => $exception]);
+            $failure = $this->failures->unexpected($exception);
+
+            try {
+                $failure->logId = $record(GenerationLog::STATUS_FAILED, $failure->getMessage());
+            } catch (\Throwable $recording) {
+                $this->logger->error('TheliaCMS: the failed generation could not be written to the ledger: {message}', ['message' => $recording->getMessage(), 'exception' => $recording]);
+            }
 
             throw $failure;
         }

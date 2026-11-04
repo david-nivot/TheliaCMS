@@ -123,4 +123,8 @@ final class RecordingObserver implements GenerationObserverInterface
     public function onCorrection(int $round, array $problems): void
     {
     }
+
+    public function onCut(): void
+    {
+    }
 }

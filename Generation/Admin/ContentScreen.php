@@ -274,7 +274,7 @@ final readonly class ContentScreen
     }
 
     /**
-     * @return array{id: int, date: \DateTimeInterface|null, kind: string, status: string, status_class: string, cost: string, duration: string, turns: int, error: string|null, pages: list<array{url: string, read: bool, error: string|null, tokens: int|null}>, left_out: list<string>}
+     * @return array{id: int, date: \DateTimeInterface|null, kind: string, status: string, status_class: string, cost: string, duration: string, turns: int, details: string, error: string|null, pages: list<array{url: string, read: bool, error: string|null, tokens: int|null}>, left_out: list<string>}
      */
     private function row(CmsPageGeneration $row): array
     {
@@ -286,11 +286,14 @@ final readonly class ContentScreen
             'status_class' => match ($row->getStatus()) {
                 GenerationLog::STATUS_DONE => 'text-bg-success',
                 GenerationLog::STATUS_REFUSED, GenerationLog::STATUS_INVALID => 'text-bg-warning',
+                GenerationLog::STATUS_RUNNING => 'text-bg-info',
+                GenerationLog::STATUS_INTERRUPTED => 'text-bg-secondary',
                 default => 'text-bg-danger',
             },
             'cost' => number_format((float) $row->getCostUsd(), 3, '.', ''),
             'duration' => number_format(((int) $row->getDurationMs()) / 1000, 1, '.', ''),
             'turns' => (int) $row->getTurns(),
+            'details' => $this->detailsLabel($row),
             'error' => $row->getError(),
             'pages' => array_map(fn (WebPageRead $page): array => [
                 'url' => $page->url,
@@ -351,6 +354,16 @@ final readonly class ContentScreen
                 'message' => $this->translator->trans('The model answered with a document the site cannot store, twice (%figures%). Nothing was changed; try again or reword the brief.', ['%figures%' => $figures], TheliaCMS::DOMAIN_NAME),
                 'details' => [(string) $row->getError()],
             ],
+            GenerationLog::STATUS_RUNNING => [
+                'type' => 'info',
+                'message' => $this->translator->trans('The generation is still running (%figures%). Come back to this page in a moment.', ['%figures%' => $figures], TheliaCMS::DOMAIN_NAME),
+                'details' => [],
+            ],
+            GenerationLog::STATUS_INTERRUPTED => [
+                'type' => 'danger',
+                'message' => $this->translator->trans('The generation was interrupted before it ended (%figures%). Nothing was changed; try again.', ['%figures%' => $figures], TheliaCMS::DOMAIN_NAME),
+                'details' => [],
+            ],
             default => [
                 'type' => 'danger',
                 'message' => $this->translator->trans('The generation failed (%figures%). Nothing was changed.', ['%figures%' => $figures], TheliaCMS::DOMAIN_NAME),
@@ -390,6 +403,33 @@ final readonly class ContentScreen
         }, [], TheliaCMS::DOMAIN_NAME);
     }
 
+    /**
+     * What a call needed, on one line: "2 corrections, 1 retry, read_url ×2,
+     * effort high". Empty for a call that needed nothing of the kind.
+     */
+    private function detailsLabel(CmsPageGeneration $row): string
+    {
+        $parts = [];
+
+        if ((int) $row->getCorrections() > 0) {
+            $parts[] = $this->translator->trans('%count% correction(s)', ['%count%' => (int) $row->getCorrections()], TheliaCMS::DOMAIN_NAME);
+        }
+
+        if ((int) $row->getRetries() > 0) {
+            $parts[] = $this->translator->trans('%count% retry(ies)', ['%count%' => (int) $row->getRetries()], TheliaCMS::DOMAIN_NAME);
+        }
+
+        foreach (GenerationLog::toolsOf($row) as $name => $count) {
+            $parts[] = $count > 1 ? $name.' ×'.$count : $name;
+        }
+
+        if (null !== $row->getEffort() && '' !== $row->getEffort()) {
+            $parts[] = $this->translator->trans('effort %effort%', ['%effort%' => $row->getEffort()], TheliaCMS::DOMAIN_NAME);
+        }
+
+        return implode(', ', $parts);
+    }
+
     private function statusLabel(string $status): string
     {
         return $this->translator->trans(match ($status) {
@@ -397,6 +437,8 @@ final readonly class ContentScreen
             GenerationLog::STATUS_REFUSED => 'Declined',
             GenerationLog::STATUS_INVALID => 'Refused by the site',
             GenerationLog::STATUS_FAILED => 'Failed',
+            GenerationLog::STATUS_RUNNING => 'Running',
+            GenerationLog::STATUS_INTERRUPTED => 'Interrupted',
             default => $status,
         }, [], TheliaCMS::DOMAIN_NAME);
     }

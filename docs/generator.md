@@ -210,13 +210,15 @@ the signed preview link of the draft.
   the order of the shop; a select lets the editor choose when there are
   several. The brief form stays at hand for a page written on its own.
 - **History**: the calls of the ledger for this page and language, with their
-  outcome, turns, duration and cost, and what each one left out of the brief.
+  outcome, turns, duration and cost, what each one left out of the brief, and
+  what it needed ("2 corrections, 1 retry, read_url ×2, effort high"). A call
+  that runs or that died shows `Running` or `Interrupted`.
 - **Publish**: the usual pipeline, with the heading check.
 
 Every action is a form that posts and comes back with a message, so the
 screen works without its script. With it, the forms post in the background
 and the progress of the call is shown as it runs: the answer is a stream of
-server-sent events (`start`, `turn`, `delta`, `correction`, `done`, `error`),
+server-sent events (`start`, `turn`, `delta`, `correction`, `cut`, `done`, `error`),
 written by `Generation\Admin\GenerationStream` as the generator reports each
 turn, and every few hundred characters of the answer, to its
 `GenerationObserverInterface`: the generator reads the answer of the AI layer as a
@@ -265,7 +267,8 @@ Opening the screen takes the page right; asking the generator takes
 
 ## The ledger
 
-Every call writes a row of `cms_page_generation`, whatever its outcome: the
+Every call writes a row of `cms_page_generation`, from its start to whatever
+its outcome (see "The life of a call" below): the
 page and the language, the kind of request (brief, revision, section), the
 prompt, the model, the tokens read, written and cached, the turns, the cost in
 US dollars as the usage log of the
@@ -281,6 +284,47 @@ their retention*). What the
 answer said the page leaves out is kept as a JSON list of sentences
 (`left_out`), at most ten of 300 characters. `GenerationLog::history()` is what a page screen reads;
 `spentSince()` what a budget alert reads.
+
+### The life of a call
+
+- **Statuses.** `running` (written before the first request, touched at every
+  turn so `updated_at` moves, and holding the tokens, turns and cost so far),
+  then `done`, `refused` (the model or a safety check declined), `invalid` (a
+  document the site cannot store, after the corrections), `failed`, or
+  `interrupted`. The row is completed in place: one call, one row.
+- **Failed.** Every exit writes its outcome: the known failures of the AI layer
+  and of the generator, and any other error (Propel, a `TypeError` in a tool),
+  which is logged with its trace, written `failed` with a sentence for the
+  editor, and rethrown as a `GenerationException` with the error as previous.
+  A `$save` of the screen that fails after the row says `done` is logged and
+  answered with an error event; the row stays `done`.
+- **Interrupted.** A `running` row not touched for 30 minutes
+  (`GenerationLog::STALE_AFTER`) is a call whose process died (memory limit,
+  killed worker). Nothing watches it: the ledger writes `interrupted` when it
+  reads it (`history()`, `find()`, the guard, and the component candidates),
+  leaving `updated_at` at the last sign of life. Its cost is what the last
+  touch recorded.
+- **One call at a time.** A page or catalogue item call is refused while a
+  fresh `running` row exists for the same target type, id and language: a
+  `GenerationUnavailableException` without a row, "A generation is already
+  running for this page in this language (started at … by …)". Texts and
+  components are not guarded (new components all share the id 0). It is a
+  check then an insert, with no lock: two calls a few milliseconds apart can
+  both pass.
+- **A stream cut half way is asked again once.** `ObservedStream` tells a cut
+  (a retryable `AiProviderUnavailableException` after at least one event, or a
+  stream that ends without `StreamCompleted`) from a failure before any event,
+  which the core has already retried by itself and which stays a failure. On
+  the first cut the generator sends the same conversation again; it counts as
+  neither a turn nor a correction, and the observer is told (`onCut()`, the
+  `cut` event). A second cut fails with the usual message. Texts are read as a
+  whole, not as a stream: they are never cut.
+- **Cost of a request that failed or was cut.** When a core exception names a
+  usage log row (`logId`), its cost (`Thelia\Model\AiUsageLog::getCost()`, priced
+  from the tokens received) is added to the cost of the call.
+- **What it needed**: `effort` (what was asked of the model), `corrections`
+  (documents sent back), `retries` (cut answers asked again) and `tools` (a JSON
+  object `{name: count}`).
 
 ## Components made in the back office
 
@@ -340,6 +384,8 @@ a page online.
 Nothing in the test suites reaches a provider: the generators take the
 gateway of the core (`AiGatewayInterface`), and the tests hand them
 `Tests/Support/FakeAiGateway`, which answers from a queue and keeps every
-request for the assertions.
+request for the assertions; `cutAfter()` queues a stream that gives some
+events and then fails, as a provider dropping half way does
+(`GenerationRunTrackingTest`).
 The quality of what the real model writes is measured by hand, against a
 rubric: `docs/evaluation/`.
