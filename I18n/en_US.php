@@ -1485,4 +1485,10 @@ return [
     'another editor' => 'another editor',
     'The answer was cut half way: the model is asked again.' => 'The answer was cut half way: the model is asked again.',
     'The AI gateway closed the stream before answering.' => 'The AI gateway closed the stream before answering.',
+    'An image of the section "%section%" is not in the media library: it is left out.' => 'An image of the section "%section%" is not in the media library: it is left out.',
+    'A link of the section "%section%" (%address%) leads to no page of the site: it is left out.' => 'A link of the section "%section%" (%address%) leads to no page of the site: it is left out.',
+    'The section "%section%" names a record the site does not hold: it is left out.' => 'The section "%section%" names a record the site does not hold: it is left out.',
+    'The section "%section%" is unchanged: what it named is not on the site.' => 'The section "%section%" is unchanged: what it named is not on the site.',
+    'The section "%section%" is left out: what it named is not on the site.' => 'The section "%section%" is left out: what it named is not on the site.',
+    'The headings of the page need a look before it is published: %problem%' => 'The headings of the page need a look before it is published: %problem%',
 ];

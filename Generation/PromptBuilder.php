@@ -16,6 +16,7 @@ namespace TheliaCMS\Generation;
 
 use TheliaCMS\Catalogue\CatalogueItem;
 use TheliaCMS\Catalogue\CatalogueItemType;
+use TheliaCMS\Content\DocumentSchema;
 use TheliaCMS\Page\Field\FieldDefinition;
 use TheliaCMS\Page\Field\FieldKind;
 use TheliaCMS\Skill\Skill;
@@ -102,6 +103,10 @@ final readonly class PromptBuilder
 
         array_push($lines, ...$this->typeLines($request));
 
+        if ($request->seoAsked()) {
+            array_push($lines, ...self::seoLines($request));
+        }
+
         // The brief of the page wins; the brief of its type says how every
         // page of the type sounds when the page says nothing.
         $typeBrief = $target->typeBrief();
@@ -129,9 +134,9 @@ final readonly class PromptBuilder
 
         $lines[] = match ($request->kind) {
             GenerationRequest::KIND_BRIEF => "# The brief\n\nWrite the whole page from this brief:\n\n".$request->brief->text,
-            GenerationRequest::KIND_TRANSLATION => \sprintf("# The task\n\nWrite this document in %s (`%s`): the same sections in the same order with the same ids and components, every text written for a reader of that language rather than word for word, and every image, reference, address and figure kept as it is. Change nothing else.", $shop['language'], $shop['locale']),
+            GenerationRequest::KIND_TRANSLATION => \sprintf("# The task\n\nWrite this document in %s (`%s`): the same sections in the same order with the same ids and components, every text written for a reader of that language rather than word for word. Only the texts of your answer are read: every image, reference, address, figure and choice is taken from the source, whatever you write. Change nothing else.", $shop['language'], $shop['locale']),
             GenerationRequest::KIND_REVISION => "# The change asked\n\nAnswer with the whole document again, changed as asked and nothing else: keep every section the change does not concern exactly as it is, ids included.\n\n".$request->brief->text,
-            GenerationRequest::KIND_SECTION => \sprintf("# The change asked\n\nWrite the section `%s` again as asked, and answer with the whole document: every other section exactly as it is, ids included.\n\n%s", $request->sectionId, $request->brief->text),
+            GenerationRequest::KIND_SECTION => \sprintf("# The change asked\n\nWrite the section `%s` again as asked, and answer with that section alone, with the id `%s`: the document above is there for context, the other sections are not part of your answer.\n\n%s", $request->sectionId, $request->sectionId, $request->brief->text),
             default => $request->brief->text,
         };
 
@@ -261,6 +266,24 @@ final readonly class PromptBuilder
         return $lines;
     }
 
+    /**
+     * @return list<string>
+     */
+    private static function seoLines(GenerationRequest $request): array
+    {
+        return [
+            '# What search engines show',
+            '',
+            \sprintf(
+                'Also propose `meta_title` (%d characters at most) and `meta_description` (%d characters at most), plain text in the language of the page, %s. A longer one is ignored, and the page keeps the ones its editor wrote: leave one out rather than write it badly.',
+                DocumentSchema::META_TITLE_LENGTH,
+                DocumentSchema::META_DESCRIPTION_LENGTH,
+                GenerationRequest::KIND_TRANSLATION === $request->kind ? 'written from the translated texts' : 'written from the page you write',
+            ),
+            '',
+        ];
+    }
+
     private function fieldLine(FieldDefinition $field, int|float|string|bool|null $value, string $locale): string
     {
         $kind = match ($field->kind) {
@@ -320,9 +343,20 @@ final readonly class PromptBuilder
      *
      * @param list<string> $problems
      */
-    public static function correction(array $problems): string
+    public static function correction(array $problems, bool $section = false): string
     {
-        return "The document you answered with cannot be stored. Fix every problem below and answer with the whole document again:\n\n- ".implode("\n- ", $problems);
+        return \sprintf("The %s you answered with cannot be stored. Fix every problem below and answer with the %s again:\n\n- ", $section ? 'section' : 'document', $section ? 'section alone' : 'whole document').implode("\n- ", $problems);
+    }
+
+    /**
+     * The message that sends back a document that is well formed but names
+     * what the site does not hold, or whose headings would not publish.
+     *
+     * @param list<string> $problems
+     */
+    public static function checkCorrection(array $problems, bool $section = false): string
+    {
+        return \sprintf("The %s you answered with is well formed, but it does not fit the site. Fix every problem below, taking ids and addresses from the tools and leaving out what they do not give, and answer with the %s again:\n\n- ", $section ? 'section' : 'document', $section ? 'section alone' : 'whole document').implode("\n- ", $problems);
     }
 
     private static function role(): string

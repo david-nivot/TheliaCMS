@@ -211,6 +211,43 @@ final readonly class CmsPageWriter
     }
 
     /**
+     * Writes the title and the description search engines show, as the
+     * generator proposed them, in the language given: only where the page
+     * holds none yet, so what an editor wrote is never replaced. Like the
+     * other settings of a page, they are live as soon as they are saved.
+     *
+     * @param array<string, string> $proposed `meta_title` and `meta_description`
+     *
+     * @return list<string> the columns written
+     */
+    public function saveSeo(CmsPage $page, string $locale, array $proposed): array
+    {
+        $page->setLocale($locale);
+        $written = [];
+
+        if ('' === trim((string) $page->getMetaTitle()) && '' !== ($proposed['meta_title'] ?? '')) {
+            $page->setMetaTitle($proposed['meta_title']);
+            $written[] = 'meta_title';
+        }
+
+        if ('' === trim((string) $page->getMetaDescription()) && '' !== ($proposed['meta_description'] ?? '')) {
+            $page->setMetaDescription($proposed['meta_description']);
+            $written[] = 'meta_description';
+        }
+
+        if ([] === $written) {
+            return [];
+        }
+
+        $page->setUpdatedBy($this->securityContext->getAdminUser()?->getId())->save();
+
+        $this->invalidator->contentChanged((int) $page->getId());
+        $this->activityLog->record('UPDATE', (int) $page->getId(), \sprintf('CMS page #%d %s written in %s', $page->getId(), implode(' and ', $written), $locale));
+
+        return $written;
+    }
+
+    /**
      * Keeps the draft as it is before a generation replaces it: a revision
      * labelled "draft", which `restoreDraft()` puts back. An empty draft is
      * not worth keeping.

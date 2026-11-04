@@ -86,6 +86,66 @@ read back and checked by the validator against the full schema of each
 component, and a document it refuses is sent back with every problem listed,
 twice at most; a third refusal is an error the editor sees.
 
+A document the validator accepts is well formed, not true: the model may write
+an image id nobody uploaded, a form that does not exist, a `/contact` the site
+does not answer. `Generation\DocumentChecker` runs after the validator, for every
+kind of request, and looks up:
+
+- an image id in the media library (an https address is never fetched: the check
+  makes no call outside the site);
+- a reference in the table its prop names, from the picker of the prop (product,
+  category, folder, menu, form, page), a form or a page in the bin counting for
+  nothing;
+- an internal address (a path of the site): the home page, a page of the CMS that
+  is online and reachable, a URL the core rewrote, or else a path the router
+  resolves to a route of the shop (`/login`, `/checkout/cart`). The catch-all view
+  route of Flexy (`flexy_view`, `DocumentChecker::CATCH_ALL_ROUTES`) takes any
+  path, so a path only it takes counts when the active front theme has that view
+  (`/contact`, `/sale`) and does not declare it internal (`/base`,
+  `/checkout-cart`), the test the core's `ViewRenderer` makes; a site without
+  Flexy excludes no route;
+- the headings of the rendered document, as the theme draws it under the title of
+  the page (`HeadingChecker`, `underTitle`), like the publication does.
+
+What the document held before the request (a revision, a section) is not the
+model's, and is not checked; a translation copies its images, references and
+addresses from its source, so only its headings are. A problem goes back to the
+model as a correction, in the same count as a document refused (two at most).
+Past it the generation still succeeds, because the page is paid for: an image, a
+reference or an address is emptied, a row of a list that cannot do without it is
+dropped, a section that cannot do without it is left out (a section written alone
+is kept as it was), and one sentence per problem is added to what the page leaves
+out, in the language of the page. A heading problem changes nothing in the
+document: it is said, and the editor mends it where it shows. A problem of shape
+keeps failing the generation after the corrections, as before.
+
+A page written from a brief and a page translated are also asked for the title
+and the description search engines show: two optional properties of the
+envelope, `meta_title` (60 characters at most) and `meta_description` (155), read
+as plain text on one line. They are written to `cms_page_i18n`, in the language
+of the call, only where the page holds none yet in that language
+(`CmsPageWriter::saveSeo()`): what an editor wrote is never replaced, and they
+are live as soon as saved, like the fields of the page type. One that is empty or
+longer than its limit is ignored: it is no reason for a correction turn, and the
+page does without. A change, a section and an item of the catalogue (whose meta
+belong to the core) are not asked for them. `thelia_cms:generate` prints them on
+a line of their own, as JSON, and writes them unless `--dry-run`.
+
+Two requests are held tighter than a brief. A **section asked again** is
+constrained to one section, the shape of an item of `sections`, and its prompt
+says to answer with that section alone, the whole document staying in the
+context. The answer must carry the id asked (another id is sent back as a
+correction); its component is free; the appearance is the one of the section it
+replaces unless the answer sets one (a brief asking for a colour in words);
+`Document::withSection()` grafts it in the document, which goes through the
+validator once more. A **translation** is written onto its source
+(`Generation\TranslationGraft`): the sections, their order, ids and components
+are the source's, and any difference is sent back as a correction; only the
+`text` and `html` props are read from the answer, in the rows of a list too,
+and `json` too, since it may hold text; an `image`, a `reference`, a `url`, an
+`integer`, a `boolean` and a `choice` are copied from the source whatever the
+model wrote, and so is the appearance.
+
 While it writes, the model may ask the site:
 
 | Tool | Answers |
@@ -195,8 +255,9 @@ the signed preview link of the draft.
   last written from in this language (kept in the ledger, column `brief`),
   so a page is written again from its own brief, corrected.
 - **The sections of the draft**: each one numbered and quoted by its title,
-  with a form to rewrite that section alone; the others are kept as they
-  are, ids included. A section is also removed by hand, after confirmation.
+  with a form to rewrite that section alone; the model answers with that
+  section only, grafted in the document, so the others are kept as they are,
+  ids included. A section is also removed by hand, after confirmation.
   The number of a section is shown on it in the preview when the pointer is
   on its row, and the row is lit when the pointer is on the section; the
   label of a row scrolls the preview to the section. The renderer puts
@@ -217,8 +278,9 @@ the signed preview link of the draft.
 - **Written from another language**: when the page holds nothing in the
   language on screen and a draft in another, the stage offers to write this
   language from it (`GenerationRequest::translation`): the same sections,
-  components, ids, images and references, the texts written for the new
-  reader rather than word for word. One language is picked by default, in
+  components, ids, images and references (copied from the source, not read
+  from the answer), the texts written for the new reader rather than word for
+  word. One language is picked by default, in
   the order of the shop; a select lets the editor choose when there are
   several. The brief form stays at hand for a page written on its own.
 - **History**: the calls of the ledger for this page and language, with their

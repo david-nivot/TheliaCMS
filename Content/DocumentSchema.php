@@ -31,6 +31,11 @@ namespace TheliaCMS\Content;
  */
 final readonly class DocumentSchema
 {
+    /** How long the title and the description a search engine shows may be: past it, a generated one is ignored. */
+    public const int META_TITLE_LENGTH = 60;
+
+    public const int META_DESCRIPTION_LENGTH = 155;
+
     public function __construct(
         private SectionCatalog $catalog,
     ) {
@@ -76,18 +81,14 @@ final readonly class DocumentSchema
      * @param bool         $withFields whether the answer also writes the values of
      *                                 the fields of the page, as a JSON object written
      *                                 as a string like the props (docs/adr/0009)
+     * @param bool         $withSeo    whether the answer may also propose the title and
+     *                                 the description a search engine shows for the page
      *
      * @return array<string, mixed>
      */
-    public function strict(array $kept = [], bool $withFields = false): array
+    public function strict(array $kept = [], bool $withFields = false, bool $withSeo = false): array
     {
-        $names = $this->catalog->offeredNames();
-
-        foreach ($kept as $name) {
-            if (!\in_array($name, $names, true) && null !== $this->catalog->find($name)) {
-                $names[] = $name;
-            }
-        }
+        $names = $this->namesWith($kept);
 
         $schema = [
             'type' => 'object',
@@ -96,17 +97,7 @@ final readonly class DocumentSchema
                 'sections' => [
                     'type' => 'array',
                     'description' => 'The sections of the page, in order.',
-                    'items' => [
-                        'type' => 'object',
-                        'properties' => [
-                            'id' => ['type' => 'string', 'description' => 'Unique in the page: lowercase letters, digits, hyphens and underscores, saying what the section is.'],
-                            'component' => ['type' => 'string', 'enum' => $names, 'description' => 'The name of a component of the catalogue.'],
-                            'props' => ['type' => 'string', 'description' => 'The props of the component, as a JSON object written as a string, with the keys and the values the catalogue describes for this component.'],
-                            'appearance' => self::appearance(),
-                        ],
-                        'required' => ['id', 'component', 'props'],
-                        'additionalProperties' => false,
-                    ],
+                    'items' => self::sectionItem($names),
                 ],
             ],
             'required' => ['version', 'sections'],
@@ -121,6 +112,17 @@ final readonly class DocumentSchema
             'description' => 'Only when the page leaves out something the brief asked for: one short sentence each, in the language of the page, saying what is missing and why — an image the media library does not hold and the brief gives no https address of, a product the search does not find, a page that could not be read.',
         ];
 
+        if ($withSeo) {
+            $schema['properties']['meta_title'] = [
+                'type' => 'string',
+                'description' => \sprintf('Optional. The title a search engine shows for the page, in the language of the page, plain text of %d characters at most (longer is ignored): what the page is about, not the title of the page again word for word.', self::META_TITLE_LENGTH),
+            ];
+            $schema['properties']['meta_description'] = [
+                'type' => 'string',
+                'description' => \sprintf('Optional. The description a search engine shows for the page, in the language of the page, plain text of %d characters at most (longer is ignored): what a visitor finds on the page.', self::META_DESCRIPTION_LENGTH),
+            ];
+        }
+
         if ($withFields) {
             $schema['properties']['fields'] = [
                 'type' => 'string',
@@ -130,6 +132,58 @@ final readonly class DocumentSchema
         }
 
         return $schema;
+    }
+
+    /**
+     * The schema a section written alone is held to: the shape of one item of
+     * `sections`, nothing around it. What a request to write one section again
+     * is constrained with, the rest of the document staying what it is.
+     *
+     * @param list<string> $kept components the site no longer offers that the document uses
+     *
+     * @return array<string, mixed>
+     */
+    public function strictSection(array $kept = []): array
+    {
+        return self::sectionItem($this->namesWith($kept));
+    }
+
+    /**
+     * @param list<string> $kept
+     *
+     * @return list<string>
+     */
+    private function namesWith(array $kept): array
+    {
+        $names = $this->catalog->offeredNames();
+
+        foreach ($kept as $name) {
+            if (!\in_array($name, $names, true) && null !== $this->catalog->find($name)) {
+                $names[] = $name;
+            }
+        }
+
+        return $names;
+    }
+
+    /**
+     * @param list<string> $names
+     *
+     * @return array<string, mixed>
+     */
+    private static function sectionItem(array $names): array
+    {
+        return [
+            'type' => 'object',
+            'properties' => [
+                'id' => ['type' => 'string', 'description' => 'Unique in the page: lowercase letters, digits, hyphens and underscores, saying what the section is.'],
+                'component' => ['type' => 'string', 'enum' => $names, 'description' => 'The name of a component of the catalogue.'],
+                'props' => ['type' => 'string', 'description' => 'The props of the component, as a JSON object written as a string, with the keys and the values the catalogue describes for this component.'],
+                'appearance' => self::appearance(),
+            ],
+            'required' => ['id', 'component', 'props'],
+            'additionalProperties' => false,
+        ];
     }
 
     /**

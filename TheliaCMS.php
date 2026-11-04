@@ -377,6 +377,7 @@ class TheliaCMS extends BaseModule
                 __DIR__.'/Generation/GenerationRequest.php',
                 __DIR__.'/Generation/GenerationResult.php',
                 __DIR__.'/Generation/GenerationTarget.php',
+                __DIR__.'/Generation/DocumentProblem.php',
                 __DIR__.'/Generation/Admin/ContentSubject.php',
                 __DIR__.'/Generation/Admin/GenerationOutcome.php',
                 __DIR__.'/Generation/Usage.php',

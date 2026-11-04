@@ -9,6 +9,13 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Added
 
+- **The generator proposes the title and the description search engines show.**
+  A page written from a brief, and a page translated, are asked for
+  `meta_title` (60 characters) and `meta_description` (155), two optional
+  properties of the answer, and write them to the page in the language of the
+  call only where it holds none yet: an editor's text is never replaced. One
+  that is empty or too long is ignored, with no correction turn. Items of the
+  catalogue, changes and sections are not asked. See docs/generator.md.
 - **A Content-Security-Policy for the pages of the module**, under CMS >
   Settings > Security headers: where pictures and fonts may come from, and that
   only the site may frame a page. Off by default; report-only first, the
@@ -84,6 +91,28 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Fixed
 
+- **A generated page is checked against the site before it is kept.** The
+  validator only reads the shape: an image id nobody uploaded, a form that does
+  not exist or a guessed `/contact` went through, and a level 1 heading under
+  the title of the page was found at publication. A step after the validator
+  (`Generation\DocumentChecker`, every kind of request) now looks up the images of
+  the media library, the records a reference names, the internal addresses
+  (CMS pages online, URLs of the core, routes of the shop such as `/login`, views of the front theme such as `/contact`) and the headings of the rendering. A
+  problem goes back to the model within the existing limit of corrections; past
+  it the value is emptied (a row or a section that cannot do without it is
+  dropped) and the page says it leaves it out, the generation still succeeding.
+  A translation, which copies them from its source, is checked on its headings
+  only.
+- **A section written again is a section, a translation is grafted on its
+  source.** Asking the generator to write one section again made it answer
+  with the whole document, taken as the new one without checking the others;
+  now the answer is one section (the id asked, any component), grafted in the
+  document keeping the appearance of the section it replaces (unless the
+  answer sets one), and the document goes through the validator again. A
+  translation keeps the order, ids and components of its source (a difference
+  is sent back for correction) and takes from the answer only the `text`,
+  `html` and `json` props, the rows of a list included: images, references,
+  addresses, figures, switches and choices are copied from the source.
 - **The two reasoning effort fields of CMS > Settings say which models read
   them.** Their help promised a time spent thinking, while only Anthropic
   models read the effort, and think freely at the two highest values only;

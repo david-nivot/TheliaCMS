@@ -583,18 +583,6 @@ parameters:
 			path: Tests/Integration/Generation/ContentScreenTest.php
 
 		-
-			message: '#^Parameter \#1 \$sections of static method TheliaCMS\\Tests\\Integration\\Generation\\ContentScreenTest\:\:document\(\) expects list\<array\{id\: string, component\: string, props\: array\<string, mixed\>\}\>, array\{array\{id\: ''content'', component\: ''cms\:richtext'', props\: array\{html\: ''\<h1\>Partners\</h1\>\<p…''\}\}, array\{id\: ''logos'', component\: ''cms\:columns'', props\: non\-empty\-string\}\} given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Tests/Integration/Generation/ContentScreenTest.php
-
-		-
-			message: '#^Parameter \#1 \$sections of static method TheliaCMS\\Tests\\Integration\\Generation\\ContentScreenTest\:\:document\(\) expects list\<array\{id\: string, component\: string, props\: array\<string, mixed\>\}\>, array\{array\{id\: ''content'', component\: ''cms\:richtext'', props\: array\{html\: ''\<h2\>Apple pie\</h2\>…''\}\}, array\{id\: ''photo'', component\: ''cms\:image'', props\: non\-empty\-string\}\} given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Tests/Integration/Generation/ContentScreenTest.php
-
-		-
 			message: '#^Using nullsafe property access on non\-nullable type TheliaCMS\\Content\\Section\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1

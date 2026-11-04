@@ -462,13 +462,18 @@ final readonly class CmsPageContentController
             // The generator may make a component of the site for this page
             // when whoever asks may make one; the settings have the last word.
             $generation->withComponentMaking($this->componentPermission->mayMake()),
-            function (Document $document, ?array $fields = null, ?AiProvenance $provenance = null) use ($page, $locale): void {
+            function (Document $document, ?array $fields = null, ?AiProvenance $provenance = null, array $seo = []) use ($page, $locale): void {
                 // The draft the answer replaces is kept first: it can be put back.
                 $this->writer->keepDraft($page, $locale);
                 $this->writer->saveContent($page, $locale, $document, $provenance);
 
                 if (null !== $fields && [] !== $fields) {
                     $this->writer->saveFields($page, $locale, $fields);
+                }
+
+                // Only where the page has none in this language.
+                if ([] !== $seo) {
+                    $this->writer->saveSeo($page, $locale, $seo);
                 }
             },
             $this->screenUrl($page, $lang),

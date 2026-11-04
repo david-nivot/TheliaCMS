@@ -1485,4 +1485,10 @@ return [
     'another editor' => 'un autre rédacteur',
     'The answer was cut half way: the model is asked again.' => 'La réponse a été coupée en cours de route : le modèle est interrogé de nouveau.',
     'The AI gateway closed the stream before answering.' => 'La passerelle IA a fermé le flux avant de répondre.',
+    'An image of the section "%section%" is not in the media library: it is left out.' => 'Une image de la section "%section%" n\'est pas dans la médiathèque : elle est retirée.',
+    'A link of the section "%section%" (%address%) leads to no page of the site: it is left out.' => 'Un lien de la section "%section%" (%address%) ne mène à aucune page du site : il est retiré.',
+    'The section "%section%" names a record the site does not hold: it is left out.' => 'La section "%section%" désigne un élément que le site ne contient pas : il est retiré.',
+    'The section "%section%" is unchanged: what it named is not on the site.' => 'La section "%section%" est inchangée : ce qu\'elle désignait n\'est pas sur le site.',
+    'The section "%section%" is left out: what it named is not on the site.' => 'La section "%section%" est retirée : ce qu\'elle désignait n\'est pas sur le site.',
+    'The headings of the page need a look before it is published: %problem%' => 'La structure des titres de la page est à revoir avant la publication : %problem%',
 ];

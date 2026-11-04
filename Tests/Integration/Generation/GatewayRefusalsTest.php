@@ -44,6 +44,7 @@ use TheliaCMS\Generation\Brief;
 use TheliaCMS\Generation\Component\ComponentGenerator;
 use TheliaCMS\Generation\Component\ComponentPrompt;
 use TheliaCMS\Generation\Component\ComponentRequest;
+use TheliaCMS\Generation\DocumentChecker;
 use TheliaCMS\Generation\GenerationException;
 use TheliaCMS\Generation\GenerationLog;
 use TheliaCMS\Generation\GenerationRefusedException;
@@ -62,6 +63,7 @@ use TheliaCMS\Generation\Text\TextSanitizer;
 use TheliaCMS\Generation\Tool\GeneratorTools;
 use TheliaCMS\Generation\Tool\MakeComponentTool;
 use TheliaCMS\Generation\Tool\ReadUrlTool;
+use TheliaCMS\Generation\TranslationGraft;
 use TheliaCMS\Model\CmsPageGenerationQuery;
 use TheliaCMS\Skill\SkillRepository;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
@@ -184,7 +186,7 @@ final class GatewayRefusalsTest extends CmsIntegrationTestCase
     {
         $page = $this->createPage('Nos services', published: false);
         $request = GenerationRequest::fromBrief(GenerationTarget::page($page, $this->locale()), $this->locale(), new Brief('Une page de services.'));
-        $document = json_encode(['version' => 1, 'sections' => [['id' => 'hero', 'component' => 'cms:richtext', 'props' => json_encode(['html' => '<h1>Nos services</h1>'])]]], \JSON_THROW_ON_ERROR);
+        $document = json_encode(['version' => 1, 'sections' => [['id' => 'hero', 'component' => 'cms:richtext', 'props' => json_encode(['html' => '<h2>Nos services</h2>'])]]], \JSON_THROW_ON_ERROR);
 
         $this->api
             ->streamed([], FakeAiGateway::response('', toolCalls: [new AiToolCall('toolu_1', 'search_pages', ['query' => 'tarif'])]))
@@ -259,6 +261,8 @@ final class GatewayRefusalsTest extends CmsIntegrationTestCase
             $this->getService(GenerationLog::class),
             new NullLogger(),
             $this->failures(),
+            $this->getService(TranslationGraft::class),
+            $this->getService(DocumentChecker::class),
         );
     }
 

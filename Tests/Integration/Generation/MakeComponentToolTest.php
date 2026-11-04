@@ -30,6 +30,7 @@ use TheliaCMS\Generation\Ai\GatewayFailures;
 use TheliaCMS\Generation\Ai\GeneratorToolDefinitions;
 use TheliaCMS\Generation\Brief;
 use TheliaCMS\Generation\Component\ComponentPrompt;
+use TheliaCMS\Generation\DocumentChecker;
 use TheliaCMS\Generation\GenerationLog;
 use TheliaCMS\Generation\GenerationRequest;
 use TheliaCMS\Generation\GenerationTarget;
@@ -39,6 +40,7 @@ use TheliaCMS\Generation\PromptBuilder;
 use TheliaCMS\Generation\Tool\GeneratorTools;
 use TheliaCMS\Generation\Tool\MakeComponentTool;
 use TheliaCMS\Generation\Tool\ReadUrlTool;
+use TheliaCMS\Generation\TranslationGraft;
 use TheliaCMS\Model\CmsComponentQuery;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Model\CmsPageGenerationQuery;
@@ -110,7 +112,7 @@ final class MakeComponentToolTest extends CmsIntegrationTestCase
             // The nested call: the component itself.
             ->answer(FakeAiGateway::response(ComponentPrompt::json($component), logId: 77))
             ->answer(FakeAiGateway::response(self::document([
-                ['id' => 'intro', 'component' => 'cms:richtext', 'props' => ['html' => '<h1>Nos formules</h1>']],
+                ['id' => 'intro', 'component' => 'cms:richtext', 'props' => ['html' => '<h2>Nos formules</h2>']],
                 ['id' => 'plans', 'component' => 'Site:PriceTable', 'props' => ['title' => 'Trois formules', 'plans' => [['name' => 'Studio', 'price' => '9 €'], ['name' => 'Pro', 'price' => '29 €', 'featured' => true]]]],
             ])));
 
@@ -221,6 +223,8 @@ final class MakeComponentToolTest extends CmsIntegrationTestCase
             $this->getService(GenerationLog::class),
             new NullLogger(),
             new GatewayFailures($this->getService(TranslatorInterface::class)),
+            $this->getService(TranslationGraft::class),
+            $this->getService(DocumentChecker::class),
         );
     }
 
