@@ -139,4 +139,32 @@ final class ImageFrameTest extends TestCase
         yield 'a negative number' => ['-1,20,150,960,540'];
         yield 'empty' => [''];
     }
+
+    /**
+     * @return iterable<string, array{string, array{x: int, y: int, w: int, h: int}|null}>
+     */
+    public static function addresses(): iterable
+    {
+        yield 'a zone' => ['/image-library/12/160,0,800,450/max/0/default.jpg', ['x' => 160, 'y' => 0, 'w' => 800, 'h' => 450]];
+        yield 'a zone and a size' => ['/image-library/12/1,2,3,4/480,270/0/default.webp', ['x' => 1, 'y' => 2, 'w' => 3, 'h' => 4]];
+        yield 'the whole picture' => ['/image-library/12/full/max/0/default.jpg', null];
+        yield 'a square' => ['/image-library/12/square/max/0/default.jpg', null];
+        yield 'a percentage' => ['/image-library/12/pct:10,10,50,50/max/0/default.jpg', null];
+        yield 'three numbers' => ['/image-library/12/1,2,3/max/0/default.jpg', null];
+        yield 'five numbers' => ['/image-library/12/1,2,3,4,5/max/0/default.jpg', null];
+        yield 'a decimal' => ['/image-library/12/1.5,2,3,4/max/0/default.jpg', null];
+        yield 'a negative number' => ['/image-library/12/-1,2,3,4/max/0/default.jpg', null];
+        yield 'too long a number' => ['/image-library/12/1,2,3,444444/max/0/default.jpg', null];
+        yield 'another route' => ['/elsewhere/12/1,2,3,4/max/0/default.jpg', null];
+        yield 'no region' => ['/image-library/12', null];
+    }
+
+    /**
+     * @param array{x: int, y: int, w: int, h: int}|null $expected
+     */
+    #[DataProvider('addresses')]
+    public function testTheRegionOfAnAddressOfTheLibraryIsFourIntegersOrNothing(string $address, ?array $expected): void
+    {
+        self::assertSame($expected, ImageFrame::region($address));
+    }
 }

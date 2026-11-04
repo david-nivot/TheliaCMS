@@ -30,6 +30,16 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   address kept elsewhere or a file of unknown size are served as before. The
   section says the kept part with `data-cms-crop` on the image, which is read
   and taken out on publication.
+- **A zone written in the address of an image is served as the section's own.**
+  An `<img>` whose address names a zone of the media library
+  (`/image-library/{id}/{x,y,w,h}/…`) is rewritten on publication like the
+  zone of an Image section: `srcset` candidates strictly narrower than the zone,
+  then the zone at its own size, WebP and the original format alike, `width`
+  and `height` of the zone. A zone outside the file, empty, or the whole file
+  is ignored and the picture is served whole; a region other than four
+  integers (`square`, `pct:`) is left to the library. Before, the region of an
+  address was thrown away on publication. The zone of `data-cms-crop` still
+  wins when both are there.
 - **The size of an Image section is set in a form that follows the choice.** With
   "A size in pixels", the width and height fields show, with the proportions
   16:9, 4:3, 3:2, 1:1 and that of the picture (one click fills the height from

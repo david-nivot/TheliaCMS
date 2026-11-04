@@ -122,6 +122,10 @@ final readonly class ImageRewriter
         if (null !== $zone) {
             // The file a browser without `srcset` takes is the kept part too.
             $image->setAttribute('src', $this->url($media, $zone, null, $media->format));
+        } elseif (null !== ImageFrame::region($image->getAttribute('src'))) {
+            // A zone the address named and that was not kept (outside the file,
+            // or the whole of it): never asked of the library, which would refuse it.
+            $image->setAttribute('src', $this->url($media, null, null, $media->format));
         }
 
         $widths = $this->widthsFor($zone['w'] ?? $media->width);
@@ -181,22 +185,41 @@ final readonly class ImageRewriter
     }
 
     /**
-     * The part of the file the section asked to keep, in the pixels of the
-     * file. Null when there is none, when the attribute is not what the section
-     * writes, when the library does not know the size of the file, or when the
+     * The part of the file to serve, in the pixels of the file. Null when there
+     * is none, when the library does not know the size of the file, or when the
      * part is the whole of it: the image is then served as it is.
+     *
+     * Two ways to ask for one. The section of the module says what the editor
+     * chose with `data-cms-crop`, and the zone is computed here, where the size
+     * of the file is known; it is read only when it is what the section could
+     * have written. A component that prints its own address (a component of
+     * the theme, one made from a brief) is given the zone already computed, as
+     * the region of the address: it is kept when it lies inside the file, and
+     * ignored otherwise (`full`), for an address is whatever an author typed.
      *
      * @return array{x: int, y: int, w: int, h: int}|null
      */
     private function declaredZone(\DOMElement $image, MediaFile $media): ?array
     {
-        $crop = ImageFrame::parse($image->getAttribute(ImageFrame::ATTRIBUTE));
-
-        if (null === $crop || null === $media->width || null === $media->height) {
+        if (null === $media->width || null === $media->height) {
             return null;
         }
 
-        return ImageFrame::zone($media->width, $media->height, $crop['boxWidth'], $crop['boxHeight'], $crop['focusX'], $crop['focusY'], $crop['zoom']);
+        $crop = ImageFrame::parse($image->getAttribute(ImageFrame::ATTRIBUTE));
+
+        if (null !== $crop) {
+            return ImageFrame::zone($media->width, $media->height, $crop['boxWidth'], $crop['boxHeight'], $crop['focusX'], $crop['focusY'], $crop['zoom']);
+        }
+
+        $region = ImageFrame::region($image->getAttribute('src'));
+
+        if (null === $region || $region['w'] < 1 || $region['h'] < 1 || $region['x'] + $region['w'] > $media->width || $region['y'] + $region['h'] > $media->height) {
+            return null;
+        }
+
+        $whole = 0 === $region['x'] && 0 === $region['y'] && $region['w'] === $media->width && $region['h'] === $media->height;
+
+        return $whole ? null : $region;
     }
 
     /**

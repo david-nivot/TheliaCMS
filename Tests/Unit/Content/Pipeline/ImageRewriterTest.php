@@ -492,6 +492,70 @@ final class ImageRewriterTest extends TestCase
         self::assertStringNotContainsString('data-cms-crop', $html);
     }
 
+    public function testTheZoneAnAddressNamesIsServedAsTheSectionsOfTheModuleAre(): void
+    {
+        // A component of the theme prints the address it is given: the zone is in it already.
+        $html = $this->rewrite('<img class="card__image" src="/image-library/7/160,0,800,450/max/0/default.jpg" alt="">');
+
+        self::assertStringContainsString('src="/image-library/7/160,0,800,450/max/0/default.jpg"', $html);
+        self::assertStringContainsString('srcset="/image-library/7/160,0,800,450/480,270/0/default.jpg 480w, /image-library/7/160,0,800,450/max/0/default.jpg 800w"', $html);
+        self::assertStringContainsString('<source type="image/webp" srcset="/image-library/7/160,0,800,450/480,270/0/default.webp 480w, /image-library/7/160,0,800,450/max/0/default.webp 800w"', $html);
+        self::assertStringContainsString('width="800" height="450"', $html);
+        self::assertStringNotContainsString('/full/', $html);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function zonesOutOfTheFile(): iterable
+    {
+        yield 'past the right edge' => ['/image-library/7/900,0,800,450/max/0/default.jpg'];
+        yield 'past the bottom edge' => ['/image-library/7/0,600,800,450/max/0/default.jpg'];
+        yield 'empty' => ['/image-library/7/10,10,0,450/max/0/default.jpg'];
+        yield 'beyond the picture' => ['/image-library/7/5000,0,10,10/max/0/default.jpg'];
+    }
+
+    #[DataProvider('zonesOutOfTheFile')]
+    public function testAZoneOutOfTheFileIsIgnoredAndTheWholePictureIsServed(string $address): void
+    {
+        $html = $this->rewrite('<img src="'.$address.'" alt="">');
+
+        self::assertStringContainsString('/image-library/7/full/480,270/0/default.jpg 480w', $html);
+        self::assertStringContainsString('width="1600" height="900"', $html);
+        self::assertStringContainsString('src="/image-library/7/full/max/0/default.jpg"', $html, 'The address a browser without srcset takes is no zone the library would refuse.');
+        self::assertStringNotContainsString($address, $html);
+    }
+
+    public function testARegionOtherThanAZoneIsLeftToTheLibrary(): void
+    {
+        $html = $this->rewrite('<img src="/image-library/7/pct:10,10,50,50/max/0/default.jpg" alt="">');
+
+        self::assertStringContainsString('src="/image-library/7/pct:10,10,50,50/max/0/default.jpg"', $html);
+        self::assertStringContainsString('/image-library/7/full/480,270/0/default.jpg 480w', $html);
+    }
+
+    public function testAZoneThatIsTheWholePictureIsServedAsTheImageIsWhateverTheAddressSays(): void
+    {
+        $html = $this->rewrite('<img src="/image-library/7/0,0,1600,900/max/0/default.jpg" alt="">');
+
+        self::assertStringContainsString('/image-library/7/full/480,270/0/default.jpg 480w', $html);
+    }
+
+    public function testTheZoneTheSectionDeclaresWinsOverTheOneInTheAddress(): void
+    {
+        $html = $this->rewrite('<img src="/image-library/7/0,0,800,450/max/0/default.jpg" alt="" data-cms-crop="35,20,200,960,540">');
+
+        self::assertStringContainsString('src="/image-library/7/160,0,800,450/max/0/default.jpg"', $html);
+    }
+
+    public function testAZoneOfAnImageWhoseSizeIsUnknownIsNotTrusted(): void
+    {
+        $html = $this->rewrite('<img src="/image-library/7/160,0,800,450/max/0/default.jpg" alt="">', new MediaFile(id: 7, format: 'jpg'));
+
+        self::assertStringContainsString('src="/image-library/7/full/max/0/default.jpg"', $html);
+        self::assertStringNotContainsString('160,0,800,450', $html);
+    }
+
     /**
      * @return iterable<string, array{string}>
      */

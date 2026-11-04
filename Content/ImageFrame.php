@@ -68,6 +68,24 @@ final class ImageFrame
     }
 
     /**
+     * The zone an address of the media library names: `x,y,w,h` in the region
+     * segment of `/image-library/{id}/{region}/...`. Null for `full`, for any
+     * other region (`square`, `pct:...`) and for an address that is not the
+     * library's: only four integers are read, and whether they lie inside the
+     * picture is for the caller, who knows its size.
+     *
+     * @return array{x: int, y: int, w: int, h: int}|null
+     */
+    public static function region(string $address): ?array
+    {
+        if (1 !== preg_match('#^/image-library/\d+/(\d{1,5}),(\d{1,5}),(\d{1,5}),(\d{1,5})/#', trim($address), $numbers)) {
+            return null;
+        }
+
+        return ['x' => (int) $numbers[1], 'y' => (int) $numbers[2], 'w' => (int) $numbers[3], 'h' => (int) $numbers[4]];
+    }
+
+    /**
      * The zone of the original, in its pixels, that fills the box.
      *
      * The largest zone of the box proportions, shrunk by the zoom, centred on
