@@ -631,6 +631,40 @@ final readonly class CmsPageWriter
     }
 
     /**
+     * Takes the mark of a generated content off the page in one language, for
+     * the draft and for what is online: the editor states that a person
+     * reviewed the text and answers for it. The previous drafts keep theirs,
+     * so putting one back brings its mark back.
+     *
+     * @return bool false when the page carried no mark in this language
+     */
+    public function removeProvenance(CmsPage $page, string $locale): bool
+    {
+        $content = CmsPageContentQuery::create()
+            ->filterByPageId($page->getId())
+            ->filterByLocale($locale)
+            ->findOne();
+
+        if (null === $content || (null === $content->getDraftProvenance() && null === $content->getPublishedProvenance())) {
+            return false;
+        }
+
+        $wasOnline = null !== $content->getPublishedProvenance();
+
+        $content->setDraftProvenance(null)
+            ->setPublishedProvenance(null)
+            ->save();
+
+        if ($wasOnline) {
+            $this->invalidator->contentChanged((int) $page->getId());
+        }
+
+        $this->activityLog->record('UPDATE', (int) $page->getId(), \sprintf('CMS page #%d: AI mark removed in %s', $page->getId(), $locale));
+
+        return true;
+    }
+
+    /**
      * Soft delete, cascading down the subtree.
      *
      * The cascade is done here rather than by a database constraint: a real

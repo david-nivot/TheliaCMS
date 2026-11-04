@@ -84,6 +84,7 @@ final readonly class CmsSettingsController
             'generatorMaxTokens' => $this->generator->maxTokens(),
             'generatorWebFetch' => $this->generator->webFetch(),
             'generatorComponentMaking' => $this->generator->componentMaking(),
+            'aiLabel' => $this->generator->showsAiLabel(),
             'textEffort' => $this->generator->textEffort(),
             'textMaxTokens' => $this->generator->textMaxTokens(),
         ], [
@@ -135,6 +136,7 @@ final readonly class CmsSettingsController
             webFetch: (bool) $data['generatorWebFetch'],
             componentMaking: (bool) $data['generatorComponentMaking'],
         );
+        $this->generator->saveAiLabel((bool) $data['aiLabel']);
         $this->generator->saveText(
             effort: (string) $data['textEffort'],
             maxTokens: (int) $data['textMaxTokens'],

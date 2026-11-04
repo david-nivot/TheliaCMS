@@ -143,6 +143,10 @@
                                 {{ form_row(form.generatorComponentMaking, { row_attr: { class: 'mb-1' } }) }}
                                 <p class="text-muted small" data-testid="cms-settings-component-making-help">{{ form.generatorComponentMaking.vars.help|trans({}, 'theliacms') }}</p>
                             </div>
+                            <div class="col-12">
+                                {{ form_row(form.aiLabel, { row_attr: { class: 'mb-1' } }) }}
+                                <p class="text-muted small" data-testid="cms-settings-ai-label-help">{{ form.aiLabel.vars.help|trans({}, 'theliacms') }}</p>
+                            </div>
                         </div>
 
                         <div class="border-top pt-3 mb-3" data-testid="cms-settings-generator-text">

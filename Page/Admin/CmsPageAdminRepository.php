@@ -244,6 +244,19 @@ final readonly class CmsPageAdminRepository
         return $choices;
     }
 
+    /**
+     * Whether the draft or what is online in this language carries the mark
+     * of a generated content.
+     */
+    public function isAiMarked(CmsPage $page, string $locale): bool
+    {
+        return CmsPageContentQuery::create()
+            ->filterByPageId($page->getId())
+            ->filterByLocale($locale)
+            ->where('(CmsPageContent.DraftProvenance IS NOT NULL OR CmsPageContent.PublishedProvenance IS NOT NULL)')
+            ->exists();
+    }
+
     public function statusOf(CmsPage $page, string $locale): PageStatus
     {
         $content = CmsPageContentQuery::create()

@@ -31,6 +31,10 @@ final readonly class GeneratorSettings
     /** Whether the generator writing a page may make a component of the site when the catalogue lacks one. */
     public const string COMPONENT_MAKING = 'generator_component_making';
 
+    // The sentence a visitor reads under a generated page. The machine-readable
+    // mark does not depend on it: the core sets that one, usage by usage.
+    public const string AI_LABEL = 'generator_ai_label';
+
     // A text written from a brief in a rich-text field: a paragraph does not
     // need the effort, nor the length, of a whole page.
     public const string TEXT_EFFORT = 'generator_text_effort';
@@ -92,6 +96,16 @@ final readonly class GeneratorSettings
     public function componentMaking(): bool
     {
         return '1' === (string) TheliaCMS::getConfigValue(self::COMPONENT_MAKING, '0');
+    }
+
+    public function showsAiLabel(): bool
+    {
+        return '1' === (string) TheliaCMS::getConfigValue(self::AI_LABEL, '0');
+    }
+
+    public function saveAiLabel(bool $shown): void
+    {
+        TheliaCMS::setConfigValue(self::AI_LABEL, $shown ? '1' : '0');
     }
 
     public function textEffort(): string

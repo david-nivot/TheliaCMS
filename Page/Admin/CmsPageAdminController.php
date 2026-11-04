@@ -262,6 +262,19 @@ final readonly class CmsPageAdminController
         return $this->backToEdit($id, $lang);
     }
 
+    #[Route('/{id}/remove-ai-mark', name: 'remove_ai_mark', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function removeAiMark(Request $request, int $id): Response
+    {
+        $this->denyUnless(AccessManager::UPDATE);
+        $lang = $this->editLang($request);
+
+        if ($this->writer->removeProvenance($this->livePageOrFail($id), $lang->getLocale())) {
+            $this->flash($request, 'success', $this->translate('The AI mark has been removed from this page in this language.'));
+        }
+
+        return $this->backToEdit($id, $lang);
+    }
+
     #[Route('/{id}/visibility', name: 'visibility', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function toggleVisibility(Request $request, int $id): Response
     {
@@ -402,6 +415,7 @@ final readonly class CmsPageAdminController
             'status' => $page->isNew() ? PageStatus::Draft : $this->pages->statusOf($page, $locale),
             'edit_locale' => $locale,
             'edit_language_id' => $lang->getId(),
+            'ai_marked' => !$page->isNew() && $this->pages->isAiMarked($page, $locale),
             'is_home' => !$page->isNew() && (int) $page->getId() === (int) TheliaCMS::getConfigValue('home_page_id', 0),
             'preview_url' => $page->isNew() ? null : $page->getUrl($locale),
             'documents' => $page->isNew() ? [] : $this->documentRows->forPage((int) $page->getId(), $locale),
