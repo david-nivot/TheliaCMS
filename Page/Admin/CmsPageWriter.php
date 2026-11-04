@@ -38,7 +38,6 @@ use TheliaCMS\Model\CmsPageContent;
 use TheliaCMS\Model\CmsPageContentQuery;
 use TheliaCMS\Model\CmsPageQuery;
 use TheliaCMS\Model\CmsPageRevision;
-use TheliaCMS\Model\CmsPageRevisionQuery;
 use TheliaCMS\Model\CmsPageSearch;
 use TheliaCMS\Model\CmsPageSearchQuery;
 use TheliaCMS\Model\Map\CmsPageI18nTableMap;
@@ -60,15 +59,6 @@ use TheliaCMS\TheliaCMS;
  */
 final readonly class CmsPageWriter
 {
-    /** Revisions kept per (page, locale) before the oldest ones are dropped. */
-    private const int REVISION_RETENTION = 20;
-
-    /** Drafts a generation replaced, kept per (page, locale) to put one back. */
-    private const int DRAFT_RETENTION = 5;
-
-    /** The label of a revision holding a draft, rather than a publication. */
-    public const string DRAFT_LABEL = 'draft';
-
     public function __construct(
         private CmsUrlService $urls,
         private SecurityContext $securityContext,
@@ -89,6 +79,7 @@ final readonly class CmsPageWriter
         private PageFields $fields,
         private PageTypeRepository $types,
         private PageDocumentWriter $documents,
+        private PageVersions $versions,
     ) {
     }
 
@@ -248,30 +239,12 @@ final readonly class CmsPageWriter
     }
 
     /**
-     * Keeps the draft as it is before a generation replaces it: a revision
-     * labelled "draft", which `restoreDraft()` puts back. An empty draft is
-     * not worth keeping.
+     * Keeps the draft as it is before a generation replaces it, which
+     * `restoreDraft()` puts back.
      */
     public function keepDraft(CmsPage $page, string $locale): void
     {
-        $content = CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($locale)->findOne();
-        $document = $content instanceof CmsPageContent ? $this->documentOf($content->getDraftDocument()) : null;
-
-        if (!$document instanceof Document || $document->isEmpty()) {
-            return;
-        }
-
-        (new CmsPageRevision())
-            ->setPageId($page->getId())
-            ->setLocale($locale)
-            ->setDocument($content->getDraftDocument())
-            ->setHtml($content->getDraftHtml())
-            ->setProvenance($content->getDraftProvenance())
-            ->setLabel(self::DRAFT_LABEL)
-            ->setCreatedBy($this->securityContext->getAdminUser()?->getId())
-            ->save();
-
-        $this->prune($page, $locale, self::DRAFT_LABEL, self::DRAFT_RETENTION);
+        $this->versions->keepDraft($page, $locale);
     }
 
     /**
@@ -281,14 +254,7 @@ final readonly class CmsPageWriter
      */
     public function previousDrafts(CmsPage $page, string $locale): array
     {
-        $drafts = [];
-
-        foreach ($this->draftRevisions($page, $locale)->orderByCreatedAt(Criteria::DESC)->orderById(Criteria::DESC)->find() as $revision) {
-            $document = $this->documentOf($revision->getDocument());
-            $drafts[] = ['id' => (int) $revision->getId(), 'date' => $revision->getCreatedAt(), 'sections' => $document instanceof Document ? \count($document->sections) : 0];
-        }
-
-        return $drafts;
+        return $this->versions->drafts($page, $locale);
     }
 
     /**
@@ -300,7 +266,7 @@ final readonly class CmsPageWriter
      */
     public function restoreDraft(CmsPage $page, string $locale, int $revisionId): void
     {
-        $revision = $this->draftRevisions($page, $locale)->filterById($revisionId)->findOne();
+        $revision = $this->versions->draft($page, $locale, $revisionId);
         $document = $revision instanceof CmsPageRevision ? Document::fromJson($revision->getDocument()) : null;
 
         if (!$document instanceof Document) {
@@ -311,45 +277,6 @@ final readonly class CmsPageWriter
         $this->saveContent($page, $locale, $document);
         // The draft put back brings its own mark, or none.
         $this->contentFor($page, $locale)->setDraftProvenance($revision->getProvenance())->save();
-    }
-
-    private function draftRevisions(CmsPage $page, string $locale): CmsPageRevisionQuery
-    {
-        return CmsPageRevisionQuery::create()->filterByPageId($page->getId())->filterByLocale($locale)->filterByLabel(self::DRAFT_LABEL);
-    }
-
-    /**
-     * The document a revision holds; null when it no longer reads, which
-     * only an older row could.
-     */
-    private function documentOf(?string $json): ?Document
-    {
-        try {
-            return Document::fromJson($json);
-        } catch (InvalidDocumentException) {
-            return null;
-        }
-    }
-
-    /**
-     * Drops the oldest revisions of one kind beyond what is kept: the
-     * publications and the drafts are counted apart.
-     */
-    private function prune(CmsPage $page, string $locale, ?string $label, int $keep, ?ConnectionInterface $connection = null): void
-    {
-        $obsolete = CmsPageRevisionQuery::create()
-            ->filterByPageId($page->getId())
-            ->filterByLocale($locale)
-            ->filterByLabel($label, null === $label ? Criteria::ISNULL : Criteria::EQUAL)
-            ->orderByCreatedAt(Criteria::DESC)
-            ->orderById(Criteria::DESC)
-            ->offset($keep)
-            ->limit(1000)
-            ->find($connection);
-
-        foreach ($obsolete as $revision) {
-            $revision->delete($connection);
-        }
     }
 
     /**
@@ -487,7 +414,7 @@ final readonly class CmsPageWriter
                 ->save($connection);
 
             $this->indexForSearch($page, $locale, $html, $connection);
-            $this->snapshot($page, $locale, $content, $connection);
+            $this->versions->keepPublication($page, $locale, $content, $connection);
 
             $connection->commit();
 
@@ -1109,19 +1036,5 @@ final readonly class CmsPageWriter
 
         $index->setContent(trim($page->getTitle().' '.$this->searchText->extract($html)))
             ->save($connection);
-    }
-
-    private function snapshot(CmsPage $page, string $locale, CmsPageContent $content, ConnectionInterface $connection): void
-    {
-        (new CmsPageRevision())
-            ->setPageId($page->getId())
-            ->setLocale($locale)
-            ->setDocument($content->getPublishedDocument())
-            ->setHtml($content->getPublishedHtml())
-            ->setProvenance($content->getPublishedProvenance())
-            ->setCreatedBy($this->securityContext->getAdminUser()?->getId())
-            ->save($connection);
-
-        $this->prune($page, $locale, null, self::REVISION_RETENTION, $connection);
     }
 }
