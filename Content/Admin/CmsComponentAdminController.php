@@ -94,6 +94,7 @@ final readonly class CmsComponentAdminController
             'components' => $components,
             'may_update' => $this->isGranted(AccessManager::UPDATE),
             'may_make' => $this->permission->mayMake(),
+            'may_ask' => $this->permission->mayAsk(),
             'toolkit_url' => $toolkitUrl,
         ]));
     }

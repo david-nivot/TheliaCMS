@@ -59,15 +59,28 @@ use TheliaCMS\Page\Field\InvalidFieldsException;
  */
 #[AsAiUsage(
     id: 'theliacms.page_generation',
-    purpose: 'Write a page of the site, or change, translate or rewrite a section of it, from a brief typed by the editor.',
+    purpose: 'Write a page of the site, or change or rewrite a section of it, from a brief typed by the editor.',
     audience: AiAudience::Admin,
     tier: AiTier::Advanced,
+    capabilities: [AiCapability::StructuredOutput, AiCapability::Tools, AiCapability::Streaming],
+    transparency: AiTransparency::Generative,
+)]
+// A translation keeps the sections, the components and the images of its
+// source and only writes its texts again: a usage of its own, at a lighter
+// tier, which the merchant may raise or budget apart in the AI settings.
+#[AsAiUsage(
+    id: 'theliacms.page_translation',
+    purpose: 'Translate a page of the site, or the content of a catalogue item, from another language of the site.',
+    audience: AiAudience::Admin,
+    tier: AiTier::Standard,
     capabilities: [AiCapability::StructuredOutput, AiCapability::Tools, AiCapability::Streaming],
     transparency: AiTransparency::Generative,
 )]
 final readonly class PageGenerator
 {
     public const string USAGE = 'theliacms.page_generation';
+
+    public const string TRANSLATION_USAGE = 'theliacms.page_translation';
 
     /** How many times a refused document is sent back for correction. */
     private const int CORRECTIONS = 2;
@@ -132,7 +145,7 @@ final readonly class PageGenerator
         // props: the grammar stays the same size whatever the type defines.
         $fieldsAsked = $request->fieldsAsked();
         $conversation = new AiRequest(
-            self::USAGE,
+            GenerationRequest::KIND_TRANSLATION === $request->kind ? self::TRANSLATION_USAGE : self::USAGE,
             [AiMessage::user($prompt)],
             implode("\n\n", array_column($this->prompts->system(), 'text')),
             outputSchema: new AiOutputSchema('cms_page', $this->schema->strict($request->keptComponents(), !$fieldsAsked->isEmpty())),

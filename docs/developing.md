@@ -200,8 +200,9 @@ shows how to test an update, outside a transaction.
 ## Calling the AI layer
 
 - Every call goes through `Thelia\Domain\Ai\AiGatewayInterface`, under one of
-  the three usages the generators declare with `#[AsAiUsage]`
-  (`theliacms.page_generation`, `theliacms.text`, `theliacms.component`). The
+  the four usages the generators declare with `#[AsAiUsage]`
+  (`theliacms.page_generation`, `theliacms.page_translation`, `theliacms.text`,
+  `theliacms.component`). The
   provider, the key, the model and the budget are the core's: nothing here
   knows a provider SDK, and the options a provider reads travel in
   `providerOptions` (`effort`, read by Anthropic models, ignored by the others).

@@ -87,7 +87,7 @@ final readonly class CmsSiteComponentController
     public function new(): Response
     {
         return $this->render('new.html.twig', [
-            'may_make' => $this->mayMake(),
+            'may_ask' => $this->permission->mayAsk(),
         ]);
     }
 
@@ -100,7 +100,9 @@ final readonly class CmsSiteComponentController
     #[Route('/generate', name: 'generate', methods: ['POST'])]
     public function generate(Request $request): Response
     {
-        $this->denyUnlessMayMake();
+        if (!$this->permission->mayAsk()) {
+            throw new AccessDeniedHttpException($this->translate('Asking the generator for a component takes the generator, the settings and the custom code permissions.'));
+        }
 
         $text = trim((string) $request->request->get('request', ''));
         $back = $this->backTo($request);
@@ -188,6 +190,7 @@ final readonly class CmsSiteComponentController
             'kept_code' => $kept,
             'pages' => null === $kept ? 0 : ($this->usage->pageCounts()['Site:'.$kept] ?? 0),
             'may_make' => $this->mayMake(),
+            'may_ask' => $this->permission->mayAsk(),
             'failed' => GenerationLog::STATUS_DONE !== $candidate->status,
         ]);
     }
@@ -263,6 +266,7 @@ final readonly class CmsSiteComponentController
             'prototype' => $prototype,
             'offered' => !$prototype && $this->availability->isOffered($kept->name()),
             'may_make' => $this->mayMake(),
+            'may_ask' => $this->permission->mayAsk(),
         ]);
     }
 

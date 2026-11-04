@@ -39,9 +39,12 @@ the CMS. Ask whoever looks after the site if it is not done yet.
    the CMS does not ask you to name one.
 3. **Budget**: how much the AI may spend. When it is used up, the generator says
    so and works again next month or as soon as the budget is raised.
-4. **The three uses**: pages (`theliacms.page_generation`), texts of a field
-   (`theliacms.text`) and components (`theliacms.component`) are each turned on
-   and given a range, so you can allow one and not another.
+4. **The four uses**: pages (`theliacms.page_generation`), their translations
+   (`theliacms.page_translation`), texts of a field (`theliacms.text`) and
+   components (`theliacms.component`) are each turned on and given a range, so
+   you can allow one and not another. Translations start on the standard range,
+   lighter than the one of pages; raise it there if you want them written by the
+   stronger model.
 
 The **Generator** card of CMS > Settings keeps three choices: how hard the AI
 thinks (more effort, better but slower and dearer; read by Anthropic models only),
