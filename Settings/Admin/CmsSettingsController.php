@@ -27,6 +27,8 @@ use Thelia\Core\Security\SecurityContext;
 use TheliaCMS\Generation\GeneratorSettings;
 use TheliaCMS\Http\CachePurger;
 use TheliaCMS\Http\CacheTags;
+use TheliaCMS\Http\ContentSecurityPolicyMode;
+use TheliaCMS\Http\ContentSecurityPolicySettings;
 use TheliaCMS\Menu\Admin\MenuTargetChoices;
 use TheliaCMS\Page\Admin\CmsActivityLog;
 use TheliaCMS\Page\Admin\EditLanguage;
@@ -59,6 +61,7 @@ final readonly class CmsSettingsController
         private EditLanguage $languages,
         private CachePurger $httpCache,
         private GeneratorSettings $generator,
+        private ContentSecurityPolicySettings $contentSecurityPolicy,
     ) {
     }
 
@@ -75,6 +78,8 @@ final readonly class CmsSettingsController
             'maintenanceAllowlist' => implode("\n", $this->settings->maintenanceAllowlist()),
             'trashRetentionDays' => $this->settings->trashRetentionDays(),
             'httpCacheTtl' => $this->settings->httpCacheTtl(),
+            'cspMode' => $this->contentSecurityPolicy->mode()->value,
+            'cspHosts' => implode("\n", $this->contentSecurityPolicy->hosts()),
             'generatorEffort' => $this->generator->effort(),
             'generatorMaxTokens' => $this->generator->maxTokens(),
             'generatorWebFetch' => $this->generator->webFetch(),
@@ -121,6 +126,8 @@ final readonly class CmsSettingsController
             trashRetentionDays: null === $data['trashRetentionDays'] ? null : (int) $data['trashRetentionDays'],
             httpCacheTtl: null === $data['httpCacheTtl'] ? null : (int) $data['httpCacheTtl'],
         );
+
+        $this->contentSecurityPolicy->save(ContentSecurityPolicyMode::fromStorage($data['cspMode']), (string) $data['cspHosts']);
 
         $this->generator->save(
             effort: (string) $data['generatorEffort'],

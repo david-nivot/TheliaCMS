@@ -73,6 +73,10 @@ final class PublishedContentSanitizerTest extends TestCase
         yield 'style attribute loading from another host without a scheme' => ['<p style="background-image:url(&quot;//evil.test/t.png&quot;)">x</p>', 'evil.test'];
         yield 'style attribute with the legacy expression vector' => ['<p style="width:expression(alert(1))">x</p>', 'expression('];
         yield 'style attribute with the legacy behaviour vector' => ['<p style="behavior:url(x.htc)">x</p>', 'behavior'];
+        yield 'style attribute with a javascript url' => ['<p style="background:url(javascript:alert(1))">x</p>', 'javascript'];
+        yield 'style attribute with a remote picture set' => ['<p style="background-image:image-set(&quot;https://evil.test/t.png&quot; 1x)">x</p>', 'evil.test'];
+        yield 'style attribute with an escaped url' => ['<p style="background:u\72l(https\3a //evil.test/t.png)">x</p>', 'evil.test'];
+        yield 'style attribute opening a rule' => ['<p style="color:red}p{background:url(https:evil.test/t.png)">x</p>', 'evil.test'];
     }
 
     #[DataProvider('hostileHtml')]
@@ -272,6 +276,71 @@ final class PublishedContentSanitizerTest extends TestCase
         yield 'behavior property' => ['p{behavior:url(#default#time2)}', 'behavior'];
         yield 'remote background' => ['p{background:url(https://evil.test/track.png)}', 'evil.test'];
         yield 'protocol relative background' => ['p{background:url(//evil.test/track.png)}', 'evil.test'];
+        yield 'scheme without slashes' => ['p{background:url(https:evil.test/track.png)}', 'evil.test'];
+        yield 'document in a data url' => ['p{background:url(data:text/html;base64,PHNjcmlwdD4=)}', 'text/html'];
+        yield 'svg in a data url' => ['p{background:url("data:image/svg+xml;utf8,%3Csvg%3E%3C/svg%3E")}', 'svg+xml'];
+        yield 'javascript url' => ['p{background:url(javascript:alert(1))}', 'javascript'];
+        yield 'picture set with a remote string' => ['p{background-image:image-set("https://evil.test/p.png" 1x)}', 'evil.test'];
+        yield 'prefixed picture set' => ['p{background-image:-webkit-image-set(url(https://evil.test/p.png) 1x)}', 'evil.test'];
+        yield 'src function' => ['p{background-image:src("https://evil.test/p.png")}', 'evil.test'];
+        yield 'cross fade with a remote string' => ['p{background-image:cross-fade(url(/a.png) 50%, "https://evil.test/p.png")}', 'evil.test'];
+        yield 'escaped url' => ['p{background:u\72l(https\3a //evil.test/p.png)}', 'evil.test'];
+        yield 'escaped import' => ['\@import url(https://evil.test/x.css);p{color:red}', 'evil.test'];
+        yield 'escaped property' => ['p{beh\61vior:url(/x.htc)}', 'x.htc'];
+        yield 'mozilla binding' => ['p{-moz-binding:url(/x.xml#xss)}', '-moz-binding'];
+        yield 'attribute value' => ['p{background-image:attr(data-x type(<url>))}', 'attr('];
+        yield 'font loaded from another host' => ['@font-face{font-family:x;src:local(x),url(https:evil.test/f.woff2)}', 'evil.test'];
+        yield 'remote picture in a nested rule' => ['.a{color:red;&:hover{background:url(https:evil.test/p.png)}}', 'evil.test'];
+        yield 'remote picture in a media query' => ['@media (min-width:1px){p{background:url(https:evil.test/p.png)}}', 'evil.test'];
+        yield 'end of a style element' => ['p{content:"</style><script>alert(1)</script>"}', '</style>'];
+    }
+
+    /**
+     * What is refused goes with its declaration, and nothing else: the rule
+     * keeps what it set besides.
+     */
+    public function testDropsTheDeclarationItRefusesAndKeepsTheRest(): void
+    {
+        self::assertSame('p{color:red;margin:0}', $this->sanitizer->css('p{color:red;background:url(javascript:x);margin:0}'));
+        self::assertSame('p{color:red}', $this->sanitizer->css('@import url(/x.css);p{color:red}'));
+        self::assertSame('.a{color:red}', $this->sanitizer->css('.a{color:red}\31 0{color:blue}'));
+    }
+
+    /**
+     * The stylesheets of the components are printed one after the other:
+     * what one leaves open must not take in the rules of the next.
+     */
+    public function testLeavesNothingOpenForTheNextStylesheet(): void
+    {
+        self::assertSame('.a{color:red}', $this->sanitizer->css('.a{color:red'));
+        self::assertSame('@media (min-width:1px){.a{color:red}}', $this->sanitizer->css('@media (min-width:1px){.a{color:red'));
+        self::assertSame('.a{color:red}', $this->sanitizer->css('.a{color:red}/* never closed'));
+        self::assertSame('.a{color:red;}', $this->sanitizer->css('.a{color:red;width:calc(1px + 2px}'));
+        self::assertSame('.a{color:red;}', $this->sanitizer->css('.a{color:red;width:1px /* open}'));
+        self::assertSame('', $this->sanitizer->css('[title="open{color:red}'));
+    }
+
+    /**
+     * @return iterable<string, array{0: string}>
+     */
+    public static function cssAPageIsStyledWith(): iterable
+    {
+        yield 'colours' => ['.a{color:rgb(1 2 3 / 50%);background:hsl(10 20% 30%);border-color:oklch(70% 0.1 200);outline-color:color-mix(in srgb, red 40%, blue);caret-color:light-dark(#000,#fff)}'];
+        yield 'arithmetic and custom properties' => ['.a{width:calc(100% - 2rem);margin:min(1rem,2vw) max(1px,2px);font-size:clamp(1rem, 2vw + 1rem, 3rem);color:var(--cms-color-accent, #333);--gap:1rem}'];
+        yield 'gradients' => ['.a{background:linear-gradient(90deg, #fff, rgb(0 0 0 / 0%)),radial-gradient(circle at 50% 50%, red, transparent),repeating-conic-gradient(red 0 10deg, blue 10deg 20deg)}'];
+        yield 'motion' => ['.a{transform:translate(-50%, 0) rotate(3deg) scale(1.1);transition:opacity .2s cubic-bezier(.2,.8,.2,1);animation:fade 1s steps(4, end)}@keyframes fade{from{opacity:0}50%{opacity:.5}to{opacity:1}}'];
+        yield 'filters and shapes' => ['.a{filter:drop-shadow(0 1px 2px rgb(0 0 0 / 20%)) blur(2px);clip-path:polygon(0 0,100% 0,100% 80%,0 100%)}'];
+        yield 'grid and counters' => ['.a{grid-template-columns:repeat(auto-fit, minmax(12rem, 1fr));counter-reset:step}.a li::before{content:counter(step) ". ";font-family:"Helvetica Neue", serif}'];
+        yield 'pictures of this site' => ['.a{background-image:url("/image-library/2/full/max/0/x.webp")}.b{background:url( /x.png ) no-repeat}.c{background:url(data:image/jpeg;base64,/9j/4AAQ)}'];
+        yield 'conditions and nesting' => ['@supports (display:grid){@container card (min-width:20rem){.a{display:grid}}}.a{color:red;&:hover{color:blue!important}}@layer base{.a{margin:0}}'];
+        yield 'comments' => ['/* the hero */.a{color:red /* brand */}'];
+        yield 'selectors' => ['.a:not(.b) > li:nth-child(2n + 1), [data-kind="x"]:is(:hover,:focus-visible){color:red}'];
+    }
+
+    #[DataProvider('cssAPageIsStyledWith')]
+    public function testKeepsWhatAStylesheetIsMadeOf(string $css): void
+    {
+        self::assertSame($css, $this->sanitizer->css($css));
     }
 
     #[DataProvider('hostileCss')]

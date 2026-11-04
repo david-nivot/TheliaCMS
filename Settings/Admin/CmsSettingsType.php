@@ -26,6 +26,8 @@ use Symfony\Component\Form\FormEvents;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use TheliaCMS\Generation\GeneratorSettings;
+use TheliaCMS\Http\ContentSecurityPolicyMode;
+use TheliaCMS\Http\ContentSecurityPolicySettings;
 use TheliaCMS\Http\PageCachePolicy;
 use TheliaCMS\Page\TrashRetention;
 use TheliaCMS\Settings\IpAllowlist;
@@ -75,6 +77,20 @@ final class CmsSettingsType extends AbstractType
                 'required' => false,
                 'attr' => ['min' => 0, 'max' => PageCachePolicy::MAX_TTL],
                 'help' => 'Only applies to a visitor with no session, and only if a proxy or a CDN sits in front of the site. Set 0 if there is none. Shorter when a page goes online or offline sooner, and nothing is kept while the site is closed.',
+            ])
+            ->add('cspMode', ChoiceType::class, [
+                'label' => 'Content-Security-Policy of the pages',
+                'choices' => array_combine(
+                    array_map(static fn (ContentSecurityPolicyMode $mode): string => $mode->label(), ContentSecurityPolicyMode::cases()),
+                    array_map(static fn (ContentSecurityPolicyMode $mode): string => $mode->value, ContentSecurityPolicyMode::cases()),
+                ),
+                'help' => 'Says where the pages of the CMS may load pictures and fonts from, and that only this site may frame them; scripts are left alone. Start with report only: what the policy would block is written to the log of the shop. Enforce once the log stays quiet for a week of real visits. The pages of the shop (cart, payment, account) never get it.',
+            ])
+            ->add('cspHosts', TextareaType::class, [
+                'label' => 'Hosts pictures and fonts may come from',
+                'required' => false,
+                'attr' => ['rows' => 4, 'spellcheck' => 'false', 'class' => 'font-monospace', 'placeholder' => ContentSecurityPolicySettings::GOOGLE_FONTS."\nhttps://*.example-pixel.com"],
+                'help' => 'One per line, besides this site and pictures written in a page. A snippet that loads a pixel, a widget or a font from another host needs that host here, or the enforced policy blocks it.',
             ])
             ->add('maintenanceActive', CheckboxType::class, [
                 'label' => 'Close the site for maintenance',
@@ -136,6 +152,7 @@ final class CmsSettingsType extends AbstractType
             ]);
 
         $builder->addEventListener(FormEvents::POST_SUBMIT, $this->validateAllowlist(...));
+        $builder->addEventListener(FormEvents::POST_SUBMIT, $this->validateHosts(...));
     }
 
     public function configureOptions(OptionsResolver $resolver): void
@@ -170,6 +187,27 @@ final class CmsSettingsType extends AbstractType
         if ([] !== $rejected) {
             $event->getForm()->get('maintenanceAllowlist')->addError(new FormError(
                 \sprintf($this->translate('This is not an IP address or a range: %s'), implode(', ', $rejected))
+            ));
+        }
+    }
+
+    /**
+     * A host the browser cannot read makes it drop the whole directive, and
+     * with it every host the field lists.
+     */
+    private function validateHosts(FormEvent $event): void
+    {
+        $data = $event->getData();
+
+        if (!\is_array($data)) {
+            return;
+        }
+
+        $invalid = ContentSecurityPolicySettings::invalid((string) ($data['cspHosts'] ?? ''));
+
+        if ([] !== $invalid) {
+            $event->getForm()->get('cspHosts')->addError(new FormError(
+                \sprintf($this->translate('This is not a host a policy can name (for example https://cdn.example.com or https://*.example.com): %s'), implode(', ', $invalid))
             ));
         }
     }

@@ -23,6 +23,7 @@ use Symfony\Component\HttpKernel\KernelEvents;
 use Thelia\Domain\Localization\Service\LangService;
 use Thelia\Model\Lang;
 use TheliaCMS\Http\CacheTags;
+use TheliaCMS\Http\ContentSecurityPolicyListener;
 use TheliaCMS\Http\PageCacheListener;
 use TheliaCMS\TheliaCMS;
 
@@ -96,6 +97,7 @@ final readonly class CmsPageViewListener
         // listener has had its say about cookies: whether this answer may be
         // shared depends on them.
         $request->attributes->set(PageCacheListener::TAGS_ATTRIBUTE, CacheTags::forPage($pageId));
+        ContentSecurityPolicyListener::mark($request);
 
         $event->setResponse($response);
     }

@@ -162,6 +162,18 @@ shows how to test an update, outside a transaction.
   null for the rest of the process: ask for any screen first
   (`SectionEditScreenTest::renderedOnce()`).
 
+## CSS and the security policy
+
+- `Content/Pipeline/CssAllowList.php` keeps of a `style` attribute or of a
+  component stylesheet only the functions it lists. A function missing from
+  `FUNCTIONS` (a new colour space, `anchor()`) makes the browser lose the whole
+  declaration without a word: add it to the list with a test in
+  `PublishedContentSanitizerTest`, never loosen the `url()` rule.
+- The Content-Security-Policy goes only on a response whose request was marked
+  by `ContentSecurityPolicyListener::mark($request)`. A new screen that renders
+  a CMS page to visitors marks its request, and gets a case in
+  `ContentSecurityPolicyListenerTest`; a page of the shop is never marked.
+
 ## Calling the AI layer
 
 - Every call goes through `Thelia\Domain\Ai\AiGatewayInterface`, under one of

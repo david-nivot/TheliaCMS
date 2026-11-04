@@ -18,6 +18,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
+use TheliaCMS\Http\ContentSecurityPolicyListener;
 use TheliaCMS\Page\CmsPageRenderer;
 use TheliaCMS\Page\PublishedPage;
 use TheliaCMS\Page\PublishedPageRepository;
@@ -65,6 +66,7 @@ final readonly class CmsPagePreviewController
         $response->headers->set('X-Robots-Tag', 'noindex, nofollow');
         $response->headers->set('Referrer-Policy', 'no-referrer');
         $response->headers->set('Cache-Control', 'private, no-store, max-age=0');
+        ContentSecurityPolicyListener::mark($request);
 
         return $response;
     }

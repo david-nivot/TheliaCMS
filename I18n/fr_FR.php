@@ -1425,4 +1425,12 @@ return [
     'The value is not yes or no.' => 'La valeur n’est ni oui ni non.',
     '"%s" is not one of: %s.' => '« %s » ne fait pas partie de : %s.',
     'The value is not a date written YYYY-MM-DD.' => 'La valeur n’est pas une date écrite AAAA-MM-JJ.',
+    'Security headers' => 'En-têtes de sécurité',
+    'Content-Security-Policy of the pages' => 'Content-Security-Policy des pages',
+    'Report only: nothing is blocked, what would be is reported' => 'Signaler seulement : rien n’est bloqué, ce qui le serait est signalé',
+    'Enforce: the browser blocks what the policy does not allow' => 'Appliquer : le navigateur bloque ce que la politique n’autorise pas',
+    'Says where the pages of the CMS may load pictures and fonts from, and that only this site may frame them; scripts are left alone. Start with report only: what the policy would block is written to the log of the shop. Enforce once the log stays quiet for a week of real visits. The pages of the shop (cart, payment, account) never get it.' => 'Dit d’où les pages du CMS peuvent charger images et polices, et que seul ce site peut les afficher dans un cadre ; les scripts ne sont pas concernés. Commencez par « Signaler seulement » : ce que la politique bloquerait est écrit dans le journal de la boutique. Passez à « Appliquer » quand le journal reste muet pendant une semaine de visites réelles. Les pages de la boutique (panier, paiement, compte) ne la reçoivent jamais.',
+    'Hosts pictures and fonts may come from' => 'Hôtes d’où peuvent venir images et polices',
+    'One per line, besides this site and pictures written in a page. A snippet that loads a pixel, a widget or a font from another host needs that host here, or the enforced policy blocks it.' => 'Un par ligne, en plus de ce site et des images écrites dans une page. Un script qui charge un pixel, un widget ou une police depuis un autre hôte a besoin de cet hôte ici, sinon la politique appliquée le bloque.',
+    'This is not a host a policy can name (for example https://cdn.example.com or https://*.example.com): %s' => 'Ceci n’est pas un hôte qu’une politique peut nommer (par exemple https://cdn.example.com ou https://*.example.com) : %s',
 ];
