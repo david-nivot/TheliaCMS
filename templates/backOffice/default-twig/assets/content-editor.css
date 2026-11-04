@@ -378,9 +378,9 @@ body:has(.cms-content) {
     margin-bottom: 0.5rem !important;
 }
 
-.cms-content__edit form[data-cms-section-form] > :is(.mb-3:has(textarea), .mb-3:has([data-cms-long]), .mb-3:has([data-cms-image-field]), fieldset:not([data-cms-choice-buttons]), details, .cms-content__edit-actions),
-.cms-content__item-fields > :is(.mb-3:has(textarea), fieldset:not([data-cms-choice-buttons]), details),
-.cms-content__appearance-fields > .cms-content__colors {
+.cms-content__edit form[data-cms-section-form] > :is(.mb-3:has(textarea), .mb-3:has([data-cms-long]), .mb-3:has([data-cms-image-field]), fieldset, details, .cms-content__edit-actions),
+.cms-content__item-fields > :is(.mb-3:has(textarea), fieldset, details),
+.cms-content__appearance-fields > :is(.cms-content__colors, fieldset[data-cms-choice-buttons]) {
     grid-column: 1 / -1;
 }
 

@@ -21,6 +21,9 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Fixed
 
+- **A choice drawn as buttons takes the whole line of the section form.** The
+  width of the Image section, and the room and the alignment of the appearance,
+  shared a line with a neighbouring field and wrapped their buttons on two rows.
 - **A portrait image is no longer served narrower than announced.** Each
   candidate of its `srcset` asked the image route for a width alone, which it
   fits in a square: the `480w` file of a 1920 by 2715 portrait was 339 pixels
