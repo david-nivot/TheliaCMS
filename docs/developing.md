@@ -105,6 +105,13 @@ shows how to test an update, outside a transaction.
   -c local/modules/TheliaCMS/phpunit.integration.xml.dist`), after removing
   `var/propel/test` and `var/cache/test` if they were built with it.
 
+- `TheliaCMS::setConfigValue($key, null)` stores an empty value; it does not
+  put a setting back to "never saved", which a setting with a computed default
+  tells apart (`ContentSecurityPolicySettings::hosts()`). A test that needs the
+  never-saved state deletes the row with
+  `ModuleConfigQuery::create()->deleteConfigValue(TheliaCMS::getModuleId(), $key)`,
+  which also drops what the core kept in memory.
+
 - A test that runs outside a transaction (`ALTER TABLE`, `TRUNCATE`) cleans in
   `tearDown()` what it inserted; a run interrupted halfway otherwise leaves
   rows behind for the next one.
