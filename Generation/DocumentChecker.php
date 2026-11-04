@@ -16,6 +16,9 @@ namespace TheliaCMS\Generation;
 
 use Propel\Runtime\ActiveQuery\Criteria;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\Routing\Exception\MethodNotAllowedException;
+use Symfony\Component\Routing\Exception\ResourceNotFoundException;
+use Symfony\Component\Routing\RouterInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Model\CategoryQuery;
 use Thelia\Model\FolderQuery;
@@ -61,6 +64,15 @@ final readonly class DocumentChecker
         'pages' => 'page',
     ];
 
+    /**
+     * Routes that answer any path: the view route of the Flexy theme takes
+     * `/anything` and shows its 404. A path only they match leads nowhere. A
+     * site without Flexy has none of them, and every route counts.
+     *
+     * @var list<string>
+     */
+    private const array CATCH_ALL_ROUTES = ['flexy_view'];
+
     /** How many sentences the check adds to what the page leaves out. */
     private const int LEFT_OUT_COUNT = 10;
 
@@ -71,6 +83,7 @@ final readonly class DocumentChecker
         private PublishedPageRepository $pages,
         private TranslatorInterface $translator,
         private LoggerInterface $logger,
+        private RouterInterface $router,
     ) {
     }
 
@@ -492,7 +505,9 @@ final readonly class DocumentChecker
 
     /**
      * Whether a path of the site is answered: the home page, a page of the
-     * CMS that is reachable, or an address the core rewrote.
+     * CMS that is reachable, an address the core rewrote, or else a route of
+     * the router other than a catch-all (`/login`, `/cart`: shop routes the
+     * core does not rewrite).
      */
     private function isAddressOfTheSite(string $address): bool
     {
@@ -502,7 +517,11 @@ final readonly class DocumentChecker
             return true;
         }
 
+        $rewrittenAddress = false;
+
         foreach (RewritingUrlQuery::create()->filterByUrl($path)->find() as $rewritten) {
+            $rewrittenAddress = true;
+
             if (TheliaCMS::PAGE_VIEW !== $rewritten->getView()) {
                 return true;
             }
@@ -512,6 +531,21 @@ final readonly class DocumentChecker
             }
         }
 
-        return false;
+        // An address the core rewrote, of a page that is not online, is
+        // answered by the router too: it is not a route of the shop.
+        return !$rewrittenAddress && $this->isRoute('/'.$path);
+    }
+
+    private function isRoute(string $path): bool
+    {
+        try {
+            $route = (string) ($this->router->match($path)['_route'] ?? '');
+        } catch (MethodNotAllowedException) {
+            return true;
+        } catch (ResourceNotFoundException) {
+            return false;
+        }
+
+        return '' !== $route && !\in_array($route, self::CATCH_ALL_ROUTES, true);
     }
 }

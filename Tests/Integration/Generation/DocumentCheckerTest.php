@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace TheliaCMS\Tests\Integration\Generation;
 
 use Psr\Log\NullLogger;
+use Symfony\Component\Routing\RouterInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Test\FixtureFactory;
 use TheliaCMS\Content\Document;
@@ -97,9 +98,20 @@ final class DocumentCheckerTest extends CmsIntegrationTestCase
         self::assertSame([], $address('https://example.com/nowhere'), 'An https address is not fetched, nor judged.');
         self::assertSame([], $address('mailto:contact@example.com'));
         self::assertSame([], $address('#contact'));
-        self::assertCount(1, $address('/contact-guessed'), 'A guessed path leads nowhere.');
+        self::assertCount(1, $address('/contact-guessed'), 'A guessed path leads nowhere: only the catch-all route of Flexy takes it.');
+        self::assertSame([], $address('/login'), 'A route of the shop the core does not rewrite is answered.');
+        self::assertSame([], $address('/admin/login?x=1'), 'A route that refuses the method still exists.');
         self::assertCount(1, $address($this->pathOf($offline)), 'A page of the CMS that is not online is not reachable.');
         self::assertStringContainsString('"link" points to /contact-guessed, which is no page of the site', $address('/contact-guessed')[0]->message);
+    }
+
+    public function testOnlyTheCatchAllRouteOfFlexyDoesNotMakeAnAddress(): void
+    {
+        $request = $this->request();
+        $problems = $this->checker()->problems(new Document([$this->section('link', 'Test:Checked', ['link' => '/nothing-but-the-view-route'])]), $request);
+
+        self::assertCount(1, $problems);
+        self::assertSame('flexy_view', $this->getService(RouterInterface::class)->match('/nothing-but-the-view-route')['_route'] ?? null, 'Precondition: the path is taken by the catch-all route.');
     }
 
     public function testAValueThatStaysIsEmptiedAndSaidInTheLanguageOfThePage(): void
@@ -228,6 +240,7 @@ final class DocumentCheckerTest extends CmsIntegrationTestCase
             $this->getService(PublishedPageRepository::class),
             $this->getService(TranslatorInterface::class),
             new NullLogger(),
+            $this->getService(RouterInterface::class),
         );
     }
 

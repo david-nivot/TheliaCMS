@@ -31,7 +31,8 @@ Status: decided 2026-11-04, coded on `fix/generation-quality` (one PR, one commi
 
 1. **G6, section mode.** The schema asks for one section. Its id must be the id
    asked (otherwise sent back as a correction); its component may change; its
-   appearance is the one of the section it replaces. Grafted with
+   appearance is the one of the section it replaces, unless the answer sets one
+   (a brief asking for a colour in words). Grafted with
    `Document::withSection()`. The whole document still goes in the prompt as context.
 2. **G6, translation grafted on the source.** Order, ids and components come from
    the source; any difference is sent back as a correction. Only `text` and `html`
@@ -41,7 +42,8 @@ Status: decided 2026-11-04, coded on `fix/generation-quality` (one PR, one commi
 3. **G7, a check after validation, never throwing a paid page away.** Images of the
    media library that exist, references that exist (page, product, category,
    folder, menu, form, by the kind of the prop), internal addresses that resolve
-   (CMS pages and rewritten URLs of the core), no `h1` and no skipped level
+   (CMS pages, rewritten URLs of the core, and routes of the shop other than the
+   catch-all view route of Flexy), no `h1` and no skipped level
    (`HeadingChecker` on the rendered document). One correction turn within the
    existing limit; a problem still there afterwards empties the value and adds a
    `left_out` line, instead of failing the generation. Shape problems keep failing

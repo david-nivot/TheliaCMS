@@ -97,7 +97,10 @@ kind of request, and looks up:
   category, folder, menu, form, page), a form or a page in the bin counting for
   nothing;
 - an internal address (a path of the site): the home page, a page of the CMS that
-  is online and reachable, or a URL the core rewrote;
+  is online and reachable, a URL the core rewrote, or else a path the router
+  resolves to a route of the shop (`/login`) other than the catch-all view route
+  of Flexy (`flexy_view`, `DocumentChecker::CATCH_ALL_ROUTES`), which answers any
+  path with a 404; a site without Flexy excludes no route;
 - the headings of the rendered document, as the theme draws it under the title of
   the page (`HeadingChecker`, `underTitle`), like the publication does.
 
