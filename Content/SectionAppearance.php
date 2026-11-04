@@ -49,7 +49,8 @@ final readonly class SectionAppearance
         'margin_bottom' => 'margin-bottom',
     ];
 
-    private const array SETTINGS = ['background', 'text', 'padding', 'align', 'padding_top', 'padding_bottom', 'margin_top', 'margin_bottom'];
+    /** The settings the generator is given, the only ones a message names. */
+    private const array PRESET_SETTINGS = ['background', 'text', 'padding', 'align'];
 
     private const string COLOR_PATTERN = '/^#[0-9a-f]{6}$/';
 
@@ -77,8 +78,8 @@ final readonly class SectionAppearance
         $problems = [];
 
         foreach (array_keys($values) as $key) {
-            if (!\in_array($key, self::SETTINGS, true)) {
-                $problems[] = TranslatableText::of('The appearance has no setting "%s": only %s.', $key, implode(', ', self::SETTINGS));
+            if (!\in_array($key, self::PRESET_SETTINGS, true) && !\array_key_exists($key, self::SIDES)) {
+                $problems[] = TranslatableText::of('The appearance has no setting "%s": only %s, and the room above and below set in the editor.', $key, implode(', ', self::PRESET_SETTINGS));
             }
         }
 
@@ -175,7 +176,9 @@ final readonly class SectionAppearance
     }
 
     /**
-     * A preset, or a length for both sides.
+     * A preset, or a length for both sides. A value that is not written as a
+     * length is told the presets only: the generator sets presets, and reads
+     * this message when it wrote another word.
      *
      * @param list<TranslatableText> $problems
      */
@@ -185,7 +188,11 @@ final readonly class SectionAppearance
             return $value;
         }
 
-        return self::length($value, 'padding', $problems, array_keys(self::PADDINGS));
+        if (\is_string($value) && 1 === preg_match(self::LENGTH_PATTERN, strtolower(trim($value)))) {
+            return self::length($value, 'padding', $problems);
+        }
+
+        return self::oneOf($value, 'padding', array_keys(self::PADDINGS), $problems);
     }
 
     /**
@@ -194,9 +201,8 @@ final readonly class SectionAppearance
      * a negative number, another unit) is refused.
      *
      * @param list<TranslatableText> $problems
-     * @param list<string>           $alsoAllowed the presets, named in the message
      */
-    private static function length(mixed $value, string $setting, array &$problems, array $alsoAllowed = []): ?string
+    private static function length(mixed $value, string $setting, array &$problems): ?string
     {
         if (null === $value || '' === $value) {
             return null;
@@ -208,9 +214,7 @@ final readonly class SectionAppearance
             return $length;
         }
 
-        $problems[] = [] === $alsoAllowed
-            ? TranslatableText::of('The %s of the appearance is not a length: write a number and px (0 to %d) or rem (0 to %d), such as 64px or 2rem.', $setting, self::MAX_LENGTHS['px'], self::MAX_LENGTHS['rem'])
-            : TranslatableText::of('The %s of the appearance is none of %s, nor a length: write a number and px (0 to %d) or rem (0 to %d), such as 64px or 2rem.', $setting, implode(', ', $alsoAllowed), self::MAX_LENGTHS['px'], self::MAX_LENGTHS['rem']);
+        $problems[] = TranslatableText::of('The %s of the appearance is not a length: write a number and px (0 to %d) or rem (0 to %d), such as 64px or 2rem.', $setting, self::MAX_LENGTHS['px'], self::MAX_LENGTHS['rem']);
 
         return null;
     }

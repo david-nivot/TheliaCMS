@@ -119,6 +119,40 @@ final class SectionAppearanceTest extends TestCase
         }
     }
 
+    /**
+     * The generator reads these messages on a correction turn and sets
+     * presets only: a message names no setting nor unit it is not given.
+     */
+    #[DataProvider('messagesWithoutLengths')]
+    public function testAMessageOffersNoLengthToWhoeverDidNotWriteOne(array $values, string $expected): void
+    {
+        try {
+            SectionAppearance::fromArray($values);
+            self::fail('The appearance is refused.');
+        } catch (InvalidDocumentException $exception) {
+            self::assertSame([$expected], $exception->problems);
+        }
+    }
+
+    /**
+     * @return iterable<string, array{array<string, mixed>, string}>
+     */
+    public static function messagesWithoutLengths(): iterable
+    {
+        yield 'unknown setting' => [['shadow' => true], 'The appearance has no setting "shadow": only background, text, padding, align, and the room above and below set in the editor.'];
+        yield 'unknown preset' => [['padding' => 'huge'], 'The padding of the appearance is none of small, medium, large.'];
+    }
+
+    public function testAPaddingWrittenAsALengthIsToldItsBound(): void
+    {
+        try {
+            SectionAppearance::fromArray(['padding' => '400px']);
+            self::fail('The appearance is refused.');
+        } catch (InvalidDocumentException $exception) {
+            self::assertSame(['The padding of the appearance is not a length: write a number and px (0 to 320) or rem (0 to 20), such as 64px or 2rem.'], $exception->problems);
+        }
+    }
+
     public function testASectionWithoutPreciseRoomWritesTheStyleItAlwaysDid(): void
     {
         $appearance = SectionAppearance::fromArray(['background' => '#f8d7d7', 'padding' => 'medium']);
