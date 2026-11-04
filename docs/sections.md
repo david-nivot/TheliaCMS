@@ -103,6 +103,12 @@ component (`TheliaCMS\Content\SectionAppearance`):
 | `padding_left`, `padding_right` | a length | `padding-left`, `padding-right` |
 | `margin_top`, `margin_bottom` | a length | `margin-top`, `margin-bottom` (outside the band, its background does not follow) |
 | `margin_left`, `margin_right` | a length | `margin-left`, `margin-right`: the band is narrower |
+
+A side on the left or the right, inside or outside, is written
+`max(min(<length>, 5vw), min((100vw - 48rem) * 1000, <length>))`: the length as
+set from 48rem up, 5% of the screen at most below, so that a phone keeps room for
+the content. In the style attribute itself, as no media query reaches it and no
+rule of the theme outweighs it.
 | `align` | `left`, `center`, `right` | `text-align` |
 
 A length is a number of two decimals at most followed by `px` (0 to 320) or

@@ -145,7 +145,7 @@ final class SectionEditScreenTest extends AdminScreenTestCase
             ['background' => '#f8d7d7', 'padding_top' => '0px', 'padding_bottom' => '64px', 'padding_left' => '1rem', 'margin_top' => '2rem', 'margin_right' => '48px'],
             Document::fromJson($content?->getDraftDocument())?->section('intro')?->appearance->toArray(),
         );
-        self::assertStringContainsString('style="background-color:#f8d7d7;padding-top:0px;padding-bottom:64px;padding-left:1rem;margin-top:2rem;margin-right:48px"', (string) $content?->getDraftHtml());
+        self::assertStringContainsString('style="background-color:#f8d7d7;padding-top:0px;padding-bottom:64px;padding-left:max(min(1rem, 5vw), min((100vw - 48rem) * 1000, 1rem));margin-top:2rem;margin-right:max(min(48px, 5vw), min((100vw - 48rem) * 1000, 48px))"', (string) $content?->getDraftHtml());
 
         $screen = $this->screen($this->url($page));
         $form = $screen->filter('[data-testid="cms-section-edit-intro"] form[data-cms-section-form]')->form();

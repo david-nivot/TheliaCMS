@@ -15,7 +15,9 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   section, top, bottom, left and right (`padding_top`, `padding_bottom`,
   `padding_left`, `padding_right`, the background goes with it), and room
   outside it on the same four sides (`margin_*`: above and below, it keeps the
-  section apart from its neighbours; left and right, it narrows the band). A value is a number of two decimals at most and `px` (0 to 320) or
+  section apart from its neighbours; left and right, it narrows the band). On a
+  screen narrower than 48rem, a side on the left or the right takes 5% of the
+  width at most, so that a phone keeps room for the content. A value is a number of two decimals at most and `px` (0 to 320) or
   `rem` (0 to 20), such as `64px` or `2rem`; `calc()`, `var()`, negative numbers and
   other units are refused, and the style is built from the checked value only.
   The buttons Small, Medium and Large stay and set the room inside, above and

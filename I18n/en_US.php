@@ -916,7 +916,7 @@ return [
     'Outside, right' => 'Outside, right',
     'Inside the section, the background goes with it. "Precise room" sets each side, inside and outside, in px or rem.' => 'Inside the section, the background goes with it. "Precise room" sets each side, inside and outside, in px or rem.',
     'Inside the section, the background goes with it. Written 64px (0 to 320) or 2rem (0 to 20). Empty: the component\'s.' => 'Inside the section, the background goes with it. Written 64px (0 to 320) or 2rem (0 to 20). Empty: the component\'s.',
-    'Outside the section: above and below, between it and its neighbours; left and right, the band is narrower. Same units. Empty: none.' => 'Outside the section: above and below, between it and its neighbours; left and right, the band is narrower. Same units. Empty: none.',
+    'Outside the section: above and below, between it and its neighbours; left and right, the band is narrower. Same units. Empty: none. On a phone, a side on the left or the right, inside or outside, takes 5% of the screen at most.' => 'Outside the section: above and below, between it and its neighbours; left and right, the band is narrower. Same units. Empty: none. On a phone, a side on the left or the right, inside or outside, takes 5% of the screen at most.',
     'Alignment of the text' => 'Alignment of the text',
     'The component\'s' => 'The component\'s',
     'Written #rrggbb. A heading the component colours itself keeps its colour.' => 'Written #rrggbb. A heading the component colours itself keeps its colour.',

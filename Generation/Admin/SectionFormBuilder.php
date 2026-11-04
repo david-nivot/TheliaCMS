@@ -206,7 +206,7 @@ final readonly class SectionFormBuilder
         $group->add('padding_bottom', TextType::class, $length('Inside, bottom'));
         $group->add('padding_left', TextType::class, $length('Inside, left'));
         $group->add('padding_right', TextType::class, $length('Inside, right'));
-        $group->add('margin_top', TextType::class, $length('Outside, top', 'Outside the section: above and below, between it and its neighbours; left and right, the band is narrower. Same units. Empty: none.'));
+        $group->add('margin_top', TextType::class, $length('Outside, top', 'Outside the section: above and below, between it and its neighbours; left and right, the band is narrower. Same units. Empty: none. On a phone, a side on the left or the right, inside or outside, takes 5% of the screen at most.'));
         $group->add('margin_bottom', TextType::class, $length('Outside, bottom'));
         $group->add('margin_left', TextType::class, $length('Outside, left'));
         $group->add('margin_right', TextType::class, $length('Outside, right'));

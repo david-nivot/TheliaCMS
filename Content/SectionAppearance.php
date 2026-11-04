@@ -39,6 +39,18 @@ final readonly class SectionAppearance
 
     public const array ALIGNMENTS = ['left', 'center', 'right'];
 
+    /**
+     * A side on the left or the right, below this width of screen, takes
+     * {@see NARROW_SHARE} at most: 320px on each side of a phone would leave
+     * no room to the content.
+     */
+    public const string NARROW_SCREEN = '48rem';
+
+    public const string NARROW_SHARE = '5vw';
+
+    /** The sides capped on a narrow screen. */
+    private const array HORIZONTAL_SIDES = ['padding_left', 'padding_right', 'margin_left', 'margin_right'];
+
     /** The largest length by unit, in that unit. */
     public const array MAX_LENGTHS = ['px' => 320, 'rem' => 20];
 
@@ -157,7 +169,7 @@ final readonly class SectionAppearance
 
         foreach (self::SIDES as $side => $declaration) {
             if (null !== $this->{$side}) {
-                $declarations[] = $declaration.':'.$this->{$side};
+                $declarations[] = $declaration.':'.(\in_array($side, self::HORIZONTAL_SIDES, true) ? self::cappedOnNarrowScreens($this->{$side}) : $this->{$side});
             }
         }
 
@@ -166,6 +178,18 @@ final readonly class SectionAppearance
         }
 
         return implode(';', $declarations);
+    }
+
+    /**
+     * The length as written from {@see NARROW_SCREEN} up, and no more than
+     * {@see NARROW_SHARE} below, in the style attribute itself, which no
+     * media query reaches and no rule of the theme outweighs: under the
+     * breakpoint the second term is negative and the first wins, above it
+     * the second term is the length and the larger.
+     */
+    private static function cappedOnNarrowScreens(string $length): string
+    {
+        return \sprintf('max(min(%1$s, %2$s), min((100vw - %3$s) * 1000, %1$s))', $length, self::NARROW_SHARE, self::NARROW_SCREEN);
     }
 
     /**

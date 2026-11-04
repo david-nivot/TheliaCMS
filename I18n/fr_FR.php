@@ -916,7 +916,7 @@ return [
     'Outside, right' => 'Extérieur, droite',
     'Inside the section, the background goes with it. "Precise room" sets each side, inside and outside, in px or rem.' => 'À l’intérieur de la section : le fond s’étend avec. « Marges précises » règle chaque côté, à l’intérieur et à l’extérieur, en px ou en rem.',
     'Inside the section, the background goes with it. Written 64px (0 to 320) or 2rem (0 to 20). Empty: the component\'s.' => 'À l’intérieur de la section : le fond s’étend avec. Écrite 64px (0 à 320) ou 2rem (0 à 20). Vide : celle du composant.',
-    'Outside the section: above and below, between it and its neighbours; left and right, the band is narrower. Same units. Empty: none.' => 'À l’extérieur de la section : en haut et en bas, entre elle et ses voisines ; à gauche et à droite, le bandeau se resserre. Mêmes unités. Vide : aucune.',
+    'Outside the section: above and below, between it and its neighbours; left and right, the band is narrower. Same units. Empty: none. On a phone, a side on the left or the right, inside or outside, takes 5% of the screen at most.' => 'À l’extérieur de la section : en haut et en bas, entre elle et ses voisines ; à gauche et à droite, le bandeau se resserre. Mêmes unités. Vide : aucune. Sur un téléphone, un côté gauche ou droit, intérieur ou extérieur, prend au plus 5 % de l’écran.',
     'Alignment of the text' => 'Alignement du texte',
     'The component\'s' => 'Celui du composant',
     'Written #rrggbb. A heading the component colours itself keeps its colour.' => 'Écrite #rrggbb. Un titre que le composant colore lui-même garde sa couleur.',

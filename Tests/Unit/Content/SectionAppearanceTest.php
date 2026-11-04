@@ -17,6 +17,7 @@ namespace TheliaCMS\Tests\Unit\Content;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use TheliaCMS\Content\InvalidDocumentException;
+use TheliaCMS\Content\Pipeline\CssAllowList;
 use TheliaCMS\Content\SectionAppearance;
 
 final class SectionAppearanceTest extends TestCase
@@ -78,8 +79,15 @@ final class SectionAppearanceTest extends TestCase
             'padding_top' => '8px',
         ]);
 
-        self::assertSame('padding-top:8px;padding-left:24px;padding-right:1.5rem;margin-left:0px;margin-right:1rem', $appearance->style());
+        self::assertSame('padding-top:8px;padding-left:max(min(24px, 5vw), min((100vw - 48rem) * 1000, 24px));padding-right:max(min(1.5rem, 5vw), min((100vw - 48rem) * 1000, 1.5rem));margin-left:max(min(0px, 5vw), min((100vw - 48rem) * 1000, 0px));margin-right:max(min(1rem, 5vw), min((100vw - 48rem) * 1000, 1rem))', $appearance->style(), 'Below 48rem a side takes 5 % of the screen at most.');
         self::assertSame(['padding_top' => '8px', 'padding_left' => '24px', 'padding_right' => '1.5rem', 'margin_left' => '0px', 'margin_right' => '1rem'], $appearance->toArray());
+    }
+
+    public function testASideOnTheLeftOrTheRightPassesThePublicationFilterWhole(): void
+    {
+        $style = SectionAppearance::fromArray(['margin_left' => '320px', 'padding_right' => '20rem'])->style();
+
+        self::assertSame($style, (new CssAllowList())->declarations($style));
     }
 
     public function testTheBoundsOfEachUnitAreAccepted(): void
