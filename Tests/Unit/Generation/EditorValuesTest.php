@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace TheliaCMS\Tests\Unit\Generation;
 
 use PHPUnit\Framework\TestCase;
+use TheliaCMS\Content\ColumnsSection;
 use TheliaCMS\Content\Document;
 use TheliaCMS\Content\ImageSection;
 use TheliaCMS\Content\RichTextSection;
@@ -118,8 +119,87 @@ final class EditorValuesTest extends TestCase
         }
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    private static function logos(): array
+    {
+        return [
+            'title' => 'Partners',
+            'proportions' => '1:1',
+            'columns' => [
+                ['image' => 'https://example.com/a.png', 'title' => 'A', 'text' => 'One', 'focus_x' => 10, 'focus_y' => 90, 'zoom' => 200],
+                ['image' => 'https://example.com/b.png', 'title' => 'B', 'text' => 'Two', 'focus_x' => 80, 'focus_y' => 20, 'zoom' => 120],
+            ],
+        ];
+    }
+
+    public function testTheKeptPartOfTheRowsOfAListIsLeftOutOfTheDraftTheModelReads(): void
+    {
+        $document = new Document([new Section('partners', ColumnsSection::NAME, self::logos())]);
+
+        $shown = $this->values()->forModel($document);
+
+        self::assertSame(
+            ['title' => 'Partners', 'columns' => [
+                ['image' => 'https://example.com/a.png', 'title' => 'A', 'text' => 'One'],
+                ['image' => 'https://example.com/b.png', 'title' => 'B', 'text' => 'Two'],
+            ]],
+            $shown->sections[0]->props,
+        );
+
+        foreach (['proportions', 'focus_x', 'focus_y', 'zoom'] as $word) {
+            self::assertStringNotContainsString($word, $shown->toJson());
+        }
+
+        self::assertSame(200, $document->sections[0]->props['columns'][0]['zoom'], 'The stored document is not touched.');
+    }
+
+    public function testEachRowGetsItsKeptPartBackWhenItsPictureIsTheSame(): void
+    {
+        $replaced = new Document([new Section('partners', ColumnsSection::NAME, self::logos())]);
+        $answer = new Document([new Section('partners', ColumnsSection::NAME, ['title' => 'Our partners', 'columns' => [
+            ['image' => 'https://example.com/a.png', 'title' => 'A', 'text' => 'Reworded'],
+            ['image' => 'https://example.com/b.png', 'title' => 'B', 'text' => 'Reworded too'],
+        ]])]);
+
+        $props = $this->values()->restore($replaced, $answer)->sections[0]->props;
+
+        self::assertSame('1:1', $props['proportions']);
+        self::assertSame('Reworded', $props['columns'][0]['text'], 'The words are the answer\'s.');
+        self::assertSame([10, 90, 200], [$props['columns'][0]['focus_x'], $props['columns'][0]['focus_y'], $props['columns'][0]['zoom']]);
+        self::assertSame([80, 20, 120], [$props['columns'][1]['focus_x'], $props['columns'][1]['focus_y'], $props['columns'][1]['zoom']]);
+    }
+
+    public function testARowWhosePictureChangedTakesTheDefaultsAndTheOthersKeepTheirs(): void
+    {
+        $replaced = new Document([new Section('partners', ColumnsSection::NAME, self::logos())]);
+        $answer = new Document([new Section('partners', ColumnsSection::NAME, ['columns' => [
+            ['image' => 'https://example.com/other.png', 'text' => 'One', 'focus_x' => 5, 'zoom' => 400],
+            ['image' => 'https://example.com/b.png', 'text' => 'Two'],
+            ['image' => 'https://example.com/c.png', 'text' => 'A third column the section did not have'],
+        ]])]);
+
+        $columns = $this->values()->restore($replaced, $answer)->sections[0]->props['columns'];
+
+        self::assertSame([50, 50, 100], [$columns[0]['focus_x'], $columns[0]['focus_y'], $columns[0]['zoom']], 'Another picture, and what the answer holds of the editor\'s is reset.');
+        self::assertSame([80, 20, 120], [$columns[1]['focus_x'], $columns[1]['focus_y'], $columns[1]['zoom']]);
+        self::assertSame([50, 50, 100], [$columns[2]['focus_x'], $columns[2]['focus_y'], $columns[2]['zoom']], 'A row the replaced list did not have.');
+    }
+
+    public function testTheRowsOfAnotherComponentTakeTheDefaults(): void
+    {
+        $replaced = new Document([new Section('partners', RichTextSection::NAME, ['html' => '<p>Hi</p>'])]);
+        $answer = new Document([new Section('partners', ColumnsSection::NAME, ['columns' => [['image' => null, 'text' => 'One'], ['image' => null, 'text' => 'Two']]])]);
+
+        $props = $this->values()->restore($replaced, $answer)->sections[0]->props;
+
+        self::assertSame('band', $props['proportions']);
+        self::assertSame([50, 50, 100], [$props['columns'][0]['focus_x'], $props['columns'][0]['focus_y'], $props['columns'][0]['zoom']]);
+    }
+
     private function values(): EditorValues
     {
-        return new EditorValues(new SectionCatalog([new ImageSection(), new RichTextSection()]));
+        return new EditorValues(new SectionCatalog([new ImageSection(), new RichTextSection(), new ColumnsSection()]));
     }
 }

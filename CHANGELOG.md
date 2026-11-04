@@ -80,6 +80,11 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   the one of the column. The part kept (centre and zoom) is set column by
   column, with the same dialog in each row of the list, also in a row added
   without reloading (the media picker of such a row is now bound too).
+- **A rewrite keeps the part kept of each picture of a list.** The draft shown
+  to the generator leaves out the proportions of the columns and the centre and
+  zoom of each row; an answer gets them back row by row, matched by position,
+  when the component and the picture of the row are the same, and the defaults
+  otherwise.
 - **The back-office documentation, the README and `docs/sections.md` describe the
   size and the framing of an image**: the widths, the size in pixels, the fit, the
   dialog and its keys, an image kept elsewhere, and the published pages that keep
