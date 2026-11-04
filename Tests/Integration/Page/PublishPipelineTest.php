@@ -40,7 +40,7 @@ final class PublishPipelineTest extends CmsIntegrationTestCase
 {
     public function testPublishingWritesTheSnapshotTheSearchTextAndARevision(): void
     {
-        $page = $this->createPage('Conseil et accompagnement', html: '<h1>Conseil</h1><p>Un accompagnement sur mesure.</p>');
+        $page = $this->createPage('Conseil et accompagnement', html: '<h2>Conseil</h2><p>Un accompagnement sur mesure.</p>');
         $id = (int) $page->getId();
 
         $content = CmsPageContentQuery::create()->filterByPageId($id)->filterByLocale($this->locale())->findOne();
@@ -68,7 +68,7 @@ final class PublishPipelineTest extends CmsIntegrationTestCase
 
     public function testPublishingKeepsTheDocumentNextToItsRendering(): void
     {
-        $page = $this->createPage('Document publié', html: '<h1>Titre</h1><p>Texte</p>');
+        $page = $this->createPage('Document publié', html: '<h2>Titre</h2><p>Texte</p>');
 
         $content = CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($this->locale())->findOne();
 
@@ -79,7 +79,7 @@ final class PublishPipelineTest extends CmsIntegrationTestCase
 
         self::assertNotNull($document);
         self::assertSame(RichTextSection::NAME, $document->sections[0]->component);
-        self::assertStringContainsString(\sprintf('<div class="cms-page-content"><div data-cms-section="content" class="%s"><h1>Titre</h1><p>Texte</p></div></div>', $this->richTextClass()), (string) $content->getPublishedHtml());
+        self::assertStringContainsString(\sprintf('<div class="cms-page-content"><div data-cms-section="content" class="%s"><h2>Titre</h2><p>Texte</p></div></div>', $this->richTextClass()), (string) $content->getPublishedHtml());
 
         $revision = CmsPageRevisionQuery::create()->filterByPageId($page->getId())->findOne();
 
@@ -122,13 +122,13 @@ final class PublishPipelineTest extends CmsIntegrationTestCase
 
         try {
             $page = $this->pageWithoutContent('Titres cassés');
-            $this->writer()->saveContent($page, $this->locale(), Document::richText('<h1>Un</h1><h1>Deux</h1><h4>Saut</h4>'));
+            $this->writer()->saveContent($page, $this->locale(), Document::richText('<h2>Un</h2><h4>Deux</h4><h6>Saut</h6>'));
 
             try {
                 $this->writer()->publish($page, $this->locale());
                 self::fail('The page should have been refused.');
             } catch (HeadingStructureException $exception) {
-                self::assertCount(2, $exception->problems, 'Two level 1 headings, and a jump from 1 to 4.');
+                self::assertCount(2, $exception->problems, 'Two jumps: from 2 to 4, and from 4 to 6.');
             }
 
             $content = CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($this->locale())->findOne();

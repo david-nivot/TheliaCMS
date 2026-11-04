@@ -199,7 +199,7 @@ final class DocumentCheckerTest extends CmsIntegrationTestCase
 
     public function testHeadingsAreCheckedUnderTheTitleOfThePageAndOnlyHeadingsAreSaidNotChanged(): void
     {
-        $document = new Document([$this->section('intro', 'Test:Checked', ['html' => '<h1>Titre</h1><h2>Suite</h2>'])]);
+        $document = new Document([$this->section('intro', 'Test:Checked', ['html' => '<h2>Titre</h2><h4>Suite</h4>'])]);
         $request = $this->request('en_US');
         $problems = $this->checker()->problems($document, $request);
 

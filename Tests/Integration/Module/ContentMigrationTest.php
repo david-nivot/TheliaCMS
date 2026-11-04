@@ -61,7 +61,7 @@ final class ContentMigrationTest extends CmsIntegrationTestCase
 
     public function testThePagesStayTheirContentGoesAndTheUpdateCanBePlayedTwice(): void
     {
-        $page = $this->createPage('Page écrite avec l’ancien éditeur', html: '<h1>Avant</h1><p>Un texte de 1.5.0.</p>');
+        $page = $this->createPage('Page écrite avec l’ancien éditeur', html: '<h2>Avant</h2><p>Un texte de 1.5.0.</p>');
         $pageId = (int) $page->getId();
         $locale = $this->locale();
 
@@ -94,7 +94,7 @@ final class ContentMigrationTest extends CmsIntegrationTestCase
 
         $legacyContent = $this->rows(\sprintf("SELECT draft_html, draft_project_data, draft_css, published_css FROM cms_legacy_page_content WHERE page_id = %d AND locale = '%s'", $pageId, $locale));
         self::assertCount(1, $legacyContent);
-        self::assertStringContainsString('<h1>Avant</h1><p>Un texte de 1.5.0.</p>', (string) $legacyContent[0]['draft_html']);
+        self::assertStringContainsString('<h2>Avant</h2><p>Un texte de 1.5.0.</p>', (string) $legacyContent[0]['draft_html']);
         self::assertSame('{"pages":[{"frames":[]}]}', $legacyContent[0]['draft_project_data']);
         self::assertSame('body{color:red}', $legacyContent[0]['draft_css']);
         self::assertSame('.cms-page-content{color:red}', $legacyContent[0]['published_css']);
@@ -181,7 +181,7 @@ final class ContentMigrationTest extends CmsIntegrationTestCase
 
     public function testAFreshInstallIsLeftAlone(): void
     {
-        $page = $this->createPage('Page écrite en 2.0.0', html: '<h1>Après</h1><p>Un texte de 2.0.0.</p>');
+        $page = $this->createPage('Page écrite en 2.0.0', html: '<h2>Après</h2><p>Un texte de 2.0.0.</p>');
         $pageId = (int) $page->getId();
 
         // The shape is already the one of 2.0.0: nothing is purged.

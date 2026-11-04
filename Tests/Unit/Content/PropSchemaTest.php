@@ -45,6 +45,20 @@ final class PropSchemaTest extends TestCase
         ]);
     }
 
+    public function testAH1OfAHtmlPropBecomesAH2AndKeepsItsAttributes(): void
+    {
+        $values = $this->schema->normalize(['title' => 'T', 'items' => [['label' => 'One', 'image' => '7']], 'body' => '<H1 id="top" class="big">Title</H1 ><p>Text</p><h10>x</h10><h1>Two</h1>']);
+
+        self::assertSame('<h2 id="top" class="big">Title</h2><p>Text</p><h10>x</h10><h2>Two</h2>', $values['body']);
+    }
+
+    public function testAnImageAlreadyInAHtmlPropIsKept(): void
+    {
+        $html = '<h2>Title</h2><p><img src="/image-library/12/full/max/0/default.jpg" alt="A field"></p>';
+
+        self::assertSame($html, $this->schema->normalize(['title' => 'T', 'items' => [['label' => 'One', 'image' => '7']], 'body' => $html])['body']);
+    }
+
     public function testMissingPropsGetTheirDefaultAndUnknownOnesAreDropped(): void
     {
         $values = $this->schema->normalize([

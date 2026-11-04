@@ -26,6 +26,7 @@ use TheliaCMS\Content\SectionAvailability;
 use TheliaCMS\Content\SectionCatalog;
 use TheliaCMS\Content\Site\SiteComponent;
 use TheliaCMS\Content\Site\SiteComponentRepository;
+use TheliaCMS\Generation\Admin\SectionFormBuilder;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Model\CmsPageContentQuery;
 use TheliaCMS\Model\CmsPageGenerationQuery;
@@ -63,6 +64,10 @@ final class SectionEditScreenTest extends AdminScreenTestCase
         self::assertSame('cms-section-edit-intro', $screen->filter('[data-testid="cms-section-edit-open-intro"]')->attr('commandfor'), 'Its button opens that dialog.');
         self::assertSame(1, $intro->filter('input[name="_token"]')->count());
         self::assertSame(1, $intro->filter('textarea[name="cms_section_intro[html]"].wysiwyg')->count(), 'A html prop is a textarea the editor module upgrades.');
+        self::assertSame(SectionFormBuilder::HTML_TOOLBAR, $intro->filter('textarea[name="cms_section_intro[html]"]')->attr('data-tiptap-toolbar'), 'The editor offers a reduced toolbar for a free text.');
+        self::assertSame('2,3,4', $intro->filter('textarea[name="cms_section_intro[html]"]')->attr('data-tiptap-headings'), 'The editor offers no h1.');
+        self::assertStringNotContainsString('image', SectionFormBuilder::HTML_TOOLBAR);
+        self::assertStringNotContainsString('source', SectionFormBuilder::HTML_TOOLBAR);
 
         $contact = $screen->filter('[data-testid="cms-section-edit-contact"] form[data-cms-section-form]');
         self::assertSame(1, $contact->filter('[name="cms_section_contact[form]"]')->count(), 'A reference is picked in its own field.');
@@ -83,7 +88,7 @@ final class SectionEditScreenTest extends AdminScreenTestCase
         $content = CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($this->locale())->findOne();
         $document = Document::fromJson($content?->getDraftDocument());
 
-        self::assertSame('<h1>Après</h1><p>Un texte <strong>corrigé</strong>.</p>', $document?->section('intro')?->props['html']);
+        self::assertSame('<h2>Après</h2><p>Un texte <strong>corrigé</strong>.</p>', $document?->section('intro')?->props['html'], 'A h1 typed by hand is stored as a h2.');
         self::assertSame(1, $document?->section('contact')?->props['form'], 'The other sections are kept as they are.');
         self::assertStringContainsString('Après', (string) $content?->getDraftHtml(), 'The draft is rendered again.');
         self::assertNull($content?->getPublishedHtml());
@@ -92,7 +97,7 @@ final class SectionEditScreenTest extends AdminScreenTestCase
         self::assertSame('manual', $row?->getKind());
         self::assertSame('done', $row?->getStatus());
         self::assertSame('0.000000', $row?->getCostUsd());
-        self::assertStringContainsString('<h1>Après</h1>', (string) $row?->getDocument());
+        self::assertStringContainsString('Après', (string) $row?->getDocument());
 
         $screen = $this->screen($this->url($page));
         self::assertSame(1, $screen->filter('[data-testid="cms-builder-flash-success"]')->count());

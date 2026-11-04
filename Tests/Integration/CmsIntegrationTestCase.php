@@ -258,7 +258,7 @@ abstract class CmsIntegrationTestCase extends IntegrationTestCase
 
         $writer = $this->writer();
         $writer->saveDraft($page, $locale, new PageDraft(title: $title));
-        $writer->saveContent($page, $locale, Document::richText($html ?? \sprintf('<h1>%s</h1>', htmlspecialchars($title))));
+        $writer->saveContent($page, $locale, Document::richText($html ?? \sprintf('<h2>%s</h2>', htmlspecialchars($title))));
 
         if ($published) {
             $writer->publish($page, $locale);

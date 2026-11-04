@@ -221,7 +221,7 @@ final class ContentScreenTest extends AdminScreenTestCase
 
         $prompt = $this->api->requests[0]->messages[0]->content;
         self::assertStringContainsString(\sprintf('The document the page holds in %s (`%s`)', $source->getTitle(), $source->getLocale()), $prompt);
-        self::assertStringContainsString('<h1>Nos services</h1><p>Written for the test.</p>', $prompt, 'The draft of the other language is what the model writes from.');
+        self::assertStringContainsString('<h2>Nos services</h2><p>Written for the test.</p>', $prompt, 'The draft of the other language is what the model writes from.');
         self::assertStringContainsString(\sprintf('Write this document in %s (`%s`)', $target->getTitle(), $target->getLocale()), $prompt);
 
         $content = CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($target->getLocale())->findOne();
@@ -336,7 +336,7 @@ final class ContentScreenTest extends AdminScreenTestCase
         $screen = $this->screen($events[1]['data']['redirect']);
         self::assertSame(1, $screen->filter('[data-testid="cms-builder-flash-warning"]')->count(), 'A refusal is a warning, with the figures of the call.');
         self::assertSame('false', $screen->filter('[data-testid="cms-builder-flash-warning"]')->attr('data-cms-toast-permanent-value'), 'A warning without details goes away by itself.');
-        self::assertStringContainsString('<h1>Refused</h1>', (string) CmsPageContentQuery::create()->filterByPageId($page->getId())->findOne()?->getDraftHtml(), 'The draft was left as it was.');
+        self::assertStringContainsString('<h2>Refused</h2>', (string) CmsPageContentQuery::create()->filterByPageId($page->getId())->findOne()?->getDraftHtml(), 'The draft was left as it was.');
     }
 
     public function testTheHistoryLineSaysWhatTheCallNeeded(): void
@@ -401,7 +401,7 @@ final class ContentScreenTest extends AdminScreenTestCase
         $form['cms_change[text]'] = 'Say After instead of Written for the test.';
 
         self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()));
-        self::assertStringContainsString('<h1>Revised</h1><p>Written for the test.</p>', $this->api->requests[0]->messages[0]->content, 'The document the page holds is sent with the change.');
+        self::assertStringContainsString('<h2>Revised</h2><p>Written for the test.</p>', $this->api->requests[0]->messages[0]->content, 'The document the page holds is sent with the change.');
         self::assertStringContainsString('<p>After.</p>', (string) CmsPageContentQuery::create()->filterByPageId($page->getId())->findOne()?->getDraftHtml());
         self::assertSame('revision', CmsPageGenerationQuery::create()->filterByTargetId($page->getId())->findOne()?->getKind());
     }
@@ -535,7 +535,7 @@ final class ContentScreenTest extends AdminScreenTestCase
         $form = $screen->filter('[data-testid="cms-content-publish"]')->form();
 
         self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()));
-        self::assertStringContainsString('<h1>Published from the screen</h1>', (string) CmsPageContentQuery::create()->filterByPageId($page->getId())->findOne()?->getPublishedHtml());
+        self::assertStringContainsString('<h2>Published from the screen</h2>', (string) CmsPageContentQuery::create()->filterByPageId($page->getId())->findOne()?->getPublishedHtml());
         self::assertSame(1, $this->screen($this->url($page->getId()))->filter('[data-testid="cms-builder-flash-success"]')->count());
     }
 

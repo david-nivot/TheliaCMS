@@ -59,6 +59,14 @@ final readonly class SectionFormBuilder
 {
     public const string PREFIX = 'cms_section_';
 
+    /**
+     * What the editor of the Tiptap module offers for a html prop (version 1.1.0
+     * and later): no image, no HTML source, no preview, and no h1, which is the
+     * title of the page. The module ignores both attributes before that version.
+     */
+    public const string HTML_TOOLBAR = 'undo,redo,|,bold,italic,underline,|,heading,paragraph,|,bulletlist,orderedlist,|,link,unlink';
+    public const string HTML_HEADINGS = '2,3,4';
+
     /** The longest text drawn on half a line of the form: the default length of a text prop, a title. */
     private const int SHORT_TEXT = 255;
 
@@ -296,7 +304,13 @@ final readonly class SectionFormBuilder
 
         match ($prop->type) {
             PropType::Html => $builder->add($prop->name, TextareaType::class, $common + [
-                'attr' => ['rows' => 8, 'class' => 'wysiwyg', 'data-cms-html' => ''],
+                'attr' => [
+                    'rows' => 8,
+                    'class' => 'wysiwyg',
+                    'data-cms-html' => '',
+                    'data-tiptap-toolbar' => self::HTML_TOOLBAR,
+                    'data-tiptap-headings' => self::HTML_HEADINGS,
+                ],
             ]),
             // A text of a sentence or more takes the whole line of the form;
             // a short one shares it with its neighbour.

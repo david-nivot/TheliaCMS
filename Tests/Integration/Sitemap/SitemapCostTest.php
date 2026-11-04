@@ -79,6 +79,8 @@ final class SitemapCostTest extends CmsIntegrationTestCase
     public function testReadingTheSitemapCostsTheSameWhateverTheNumberOfPages(): void
     {
         $this->pages(3);
+        // What is read once for the whole process (a setting, a language) is not the cost of a page.
+        $this->coldCost();
         $few = $this->coldCost();
 
         $this->pages(9);
@@ -304,7 +306,7 @@ final class SitemapCostTest extends CmsIntegrationTestCase
 
             $title = $label.' (second language)';
             $this->writer()->saveDraft($page, $this->languages[1], new PageDraft(title: $title));
-            $this->writer()->saveContent($page, $this->languages[1], Document::richText('<h1>'.$title.'</h1>'));
+            $this->writer()->saveContent($page, $this->languages[1], Document::richText('<h2>'.$title.'</h2>'));
             $this->writer()->publish($page, $this->languages[1]);
 
             $pages[] = $page;

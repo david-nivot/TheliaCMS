@@ -158,7 +158,9 @@ final readonly class PropSchema
             throw InvalidDocumentException::because([TranslatableText::of('"%s" must be a string of markup.', $prop->name)]);
         }
 
-        return $value;
+        // The top-level title belongs to the page: a section starts at h2.
+        // Only the tag name changes, the attributes stay.
+        return preg_replace(['/<h1(?=[\s>\/])/i', '/<\/h1\s*>/i'], ['<h2', '</h2>'], $value) ?? $value;
     }
 
     private function integer(Prop $prop, mixed $value): int

@@ -16,7 +16,7 @@
         "thelia/rewrite-url-module": "Back-office management of redirections and a log of 404s.",
         "thelia/tnt-search-module": "Indexes CMS pages for the TntSearch front-office search.",
         "thelia/google-tag-manager-module": "Sends CMS page views to the data layer.",
-        "thelia/tiptap-module": "Rich-text editing of the html props of a section on the content screen (a plain textarea without it)."
+        "thelia/tiptap-module": "Rich-text editing of the html props of a section on the content screen (a plain textarea without it); 1.1.0 or later reduces the toolbar of a free text."
     },
     "autoload": {
         "psr-4": {

@@ -250,7 +250,10 @@ a list, a picker on the media library for an image (thumbnails, search,
 filters, sending), buttons for a choice that gives a pictogram per value
 (`Prop::choice(..., icons: [...])`). A `html` prop is edited in
 the editor of the Tiptap module when it is installed (`thelia/tiptap-module`,
-suggested, not required) and in a plain textarea otherwise. What comes back
+suggested, not required) and in a plain textarea otherwise. That editor is reduced to what a text needs
+(no image, no HTML source, no preview, headings h2 to h4), which takes Tiptap
+1.1.0; with an earlier version its global toolbar applies. A `<h1>` of a `html`
+prop is stored as a `<h2>` whatever the editor. What comes back
 goes through the same validator as a generated document and is stored the same
 way, so the next request to the generator starts from the corrected text. A
 word corrected by hand costs nothing and takes the right to change pages, not
