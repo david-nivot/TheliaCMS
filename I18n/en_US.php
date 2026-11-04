@@ -1546,4 +1546,6 @@ return [
     'Result in proportions %ratio%' => 'Result in proportions %ratio%',
     'Result in the proportions of the image' => 'Result in the proportions of the image',
     'The part kept of a picture kept elsewhere can only be set when the proportions are a ratio.' => 'The part kept of a picture kept elsewhere can only be set when the proportions are a ratio.',
+    'The shape the picture is cut to. "Original image" keeps its own; the others crop it around the part you keep. The component keeps its own frame: if it is shaped differently, the theme crops again.' => 'The shape the picture is cut to. "Original image" keeps its own; the others crop it around the part you keep. The component keeps its own frame: if it is shaped differently, the theme crops again.',
+    'The part kept can only be set for a picture of the media library: this component draws a picture kept elsewhere as it is.' => 'The part kept can only be set for a picture of the media library: this component draws a picture kept elsewhere as it is.',
 ];

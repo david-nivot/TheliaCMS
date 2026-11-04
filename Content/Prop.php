@@ -111,6 +111,37 @@ final readonly class Prop
     }
 
     /**
+     * The same prop with other items, for a list.
+     *
+     * @param list<Prop> $items
+     */
+    public function withItems(array $items): self
+    {
+        return new self(
+            $this->name,
+            $this->type,
+            $this->label,
+            $this->default,
+            $this->required,
+            $this->help,
+            $this->choices,
+            $this->min,
+            $this->max,
+            $items,
+            $this->minItems,
+            $this->maxItems,
+            $this->picker,
+            $this->searchable,
+            $this->icons,
+            $this->scalarItems,
+            $this->editorHelp,
+            $this->editorOnly,
+            $this->editorOnlyChoices,
+            $this->editor,
+        );
+    }
+
+    /**
      * The values of a choice the model may write: every one but those kept
      * for the editor.
      *

@@ -436,16 +436,18 @@
         // added without reloading is bound just before this, but is looked for
         // when it is asked, not once.
         function fieldOf() {
-            return scope.querySelector('[data-cms-image-field]');
+            return typeof slot.cmsCropField === 'function' ? slot.cmsCropField() : scope.querySelector('[data-cms-image-field]');
         }
 
         function named(name) {
             return scope.querySelector('[name$="[' + name + ']"]');
         }
 
-        var focusX = named('focus_x');
-        var focusY = named('focus_y');
-        var zoom = named('zoom');
+        // A form with several pictures says which three fields are this one's.
+        var fields = slot.cmsCropFields || {};
+        var focusX = fields.x || named('focus_x');
+        var focusY = fields.y || named('focus_y');
+        var zoom = fields.zoom || named('zoom');
 
         if (!focusX || !focusY || !zoom) {
             return;
@@ -524,6 +526,12 @@
                 // with a box of its own proportions.
                 if (box && box.ratio === 'original' && one.source !== 'library') {
                     why = m.originalElsewhere;
+                }
+
+                // A component that prints the address of its picture itself has no CSS the
+                // module could set on it: only the zone of a file of the library can be kept.
+                if (box && box.libraryOnly && one.source !== 'library') {
+                    why = m.libraryOnly;
                 }
             }
 

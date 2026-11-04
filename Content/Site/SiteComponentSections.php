@@ -15,6 +15,8 @@ declare(strict_types=1);
 namespace TheliaCMS\Content\Site;
 
 use Psr\Log\LoggerInterface;
+use TheliaCMS\Content\ImageFraming;
+use TheliaCMS\Content\PropSchema;
 use TheliaCMS\Content\SectionProviderInterface;
 
 /**
@@ -33,6 +35,7 @@ final readonly class SiteComponentSections implements SectionProviderInterface
         private SiteTemplateRenderer $renderer,
         private SitePropReader $props,
         private LoggerInterface $logger,
+        private ?ImageFraming $framing = null,
     ) {
     }
 
@@ -49,7 +52,7 @@ final readonly class SiteComponentSections implements SectionProviderInterface
                 continue;
             }
 
-            yield new SiteComponentSection($component, $schema, $this->renderer, $this->logger, prototype: \in_array($component->code, $prototypes, true));
+            yield new SiteComponentSection($component, null === $this->framing ? $schema : new PropSchema($this->framing->extend($schema->props)), $this->renderer, $this->logger, prototype: \in_array($component->code, $prototypes, true));
         }
     }
 }

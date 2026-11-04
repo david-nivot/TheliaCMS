@@ -39,6 +39,7 @@ final class ImageCropMessagesTest extends TestCase
         self::assertGreaterThanOrEqual(20, \count(self::words()));
         self::assertContains('Choose an image to crop it.', self::words(), 'The reason the button is off with no image.');
         self::assertContains('The size of this image could not be read.', self::words(), 'The reason the button is off for an image of unknown size.');
+        self::assertContains('The part kept can only be set for a picture of the media library: this component draws a picture kept elsewhere as it is.', self::words(), 'The reason the button is off for a component given a picture kept elsewhere.');
         self::assertContains('This image is not in the media library of the CMS: choose one there to crop it.', self::words(), 'The reason the button is off for an image the CMS library does not hold.');
     }
 

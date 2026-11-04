@@ -40,6 +40,19 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   integers (`square`, `pct:`) is left to the library. Before, the region of an
   address was thrown away on publication. The zone of `data-cms-crop` still
   wins when both are there.
+- **The pictures of the components of the theme and of the components made
+  from a brief can be framed.** Each picture, at the top of the form and in the
+  rows of a list, gets the proportions (the image as it is, 16:9, 4:3, 3:2, 1:1,
+  3:4), a kept part (centre and zoom) and the "Crop the image…" dialog of the
+  Image section. The component never sees these settings: the module hands it the
+  address of the zone of the file (`/image-library/{id}/{x,y,w,h}/max/…`), which the
+  publication turns into its set of widths. A component nobody framed gets the
+  address it always got, so its markup does not change. The component keeps its
+  own frame: if its box is shaped differently from the proportions chosen, the
+  theme crops again. A picture kept elsewhere is drawn as it is, and the dialog
+  says why it cannot crop it. The settings are named after the picture
+  (`photo__proportions`, `photo__focus_x`, `photo__focus_y`, `photo__zoom`) and are
+  never shown to the model.
 - **The size of an Image section is set in a form that follows the choice.** With
   "A size in pixels", the width and height fields show, with the proportions
   16:9, 4:3, 3:2, 1:1 and that of the picture (one click fills the height from

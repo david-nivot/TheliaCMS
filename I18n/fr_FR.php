@@ -1546,4 +1546,6 @@ return [
     'Result in proportions %ratio%' => 'Résultat aux proportions %ratio%',
     'Result in the proportions of the image' => 'Résultat aux proportions de l’image',
     'The part kept of a picture kept elsewhere can only be set when the proportions are a ratio.' => 'La partie gardée d’une image hébergée ailleurs ne se règle que lorsque les proportions sont un rapport (16:9, 4:3…).',
+    'The shape the picture is cut to. "Original image" keeps its own; the others crop it around the part you keep. The component keeps its own frame: if it is shaped differently, the theme crops again.' => 'La forme dans laquelle l’image est découpée. « Image d’origine » garde la sienne ; les autres la recadrent autour de la partie que vous gardez. Le composant garde son propre cadre : s’il a une autre forme, le thème recadre encore.',
+    'The part kept can only be set for a picture of the media library: this component draws a picture kept elsewhere as it is.' => 'La partie gardée ne se règle que pour une image de la médiathèque : ce composant affiche telle quelle une image hébergée ailleurs.',
 ];

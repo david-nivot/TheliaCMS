@@ -732,6 +732,85 @@
         });
     }
 
+    // The pictures of a component the module does not draw (one of the theme,
+    // one made from a brief): each picture `photo` has its proportions and its
+    // kept part in fields named `photo__proportions`, `photo__focus_x`,
+    // `photo__focus_y` and `photo__zoom`, at the top of the form or in a row of a
+    // list. The three numbers read as a sentence next to the button that sets
+    // them. The component keeps its own box: the dialog only knows the shape
+    // asked for, and a picture kept elsewhere cannot be cropped.
+    function bindPictureFraming(root) {
+        // The width the component shows a picture at is not known: the width of the content.
+        var SHOWN = 1200;
+
+        function prepare(fx) {
+            var name = fx.name;
+
+            if (fx.hasAttribute("data-cms-framing-bound") || name.slice(-"__focus_x]".length) !== "__focus_x]") {
+                return;
+            }
+
+            var base = name.slice(0, -"__focus_x]".length);
+            var scope = fx.closest("[data-cms-item]") || fx.form;
+            var fy = scope.querySelector('[name="' + base + '__focus_y]"]');
+            var zoomed = scope.querySelector('[name="' + base + '__zoom]"]');
+            var radios = scope.querySelectorAll('input[type="radio"][name="' + base + '__proportions]"]');
+            var picker = scope.querySelector('input[name="' + base + ']"]');
+
+            if (!fy || !zoomed || !picker) {
+                return;
+            }
+
+            fx.setAttribute("data-cms-framing-bound", "");
+
+            [fx, fy, zoomed].forEach(function (input) {
+                (input.closest(".cms-content__field") || input.closest(".mb-3") || input.parentElement).hidden = true;
+            });
+
+            // Under the picture, and under the other ways of giving one when the form folds them.
+            var holder = picker.closest(".cms-content__field") || picker.closest(".mb-3") || picker.parentElement;
+            var anchor = holder;
+
+            if (anchor.nextElementSibling && anchor.nextElementSibling.matches("details")) {
+                anchor = anchor.nextElementSibling;
+            }
+
+            // The proportions sit under the picture they shape, before the sentence.
+            var shape = radios.length ? radios[0].closest("fieldset") : null;
+
+            if (shape) {
+                anchor.after(shape);
+                anchor = shape;
+            }
+
+            var summary = keptSummary(scope, anchor, { x: fx, y: fy, zoom: zoomed }, function (image) {
+                var box = proportionBox(checkedValue(radios), image, SHOWN);
+
+                // Nothing is served for a picture kept elsewhere, and the component prints its address as it is.
+                box.libraryOnly = true;
+
+                return box;
+            });
+            summary.classList.add("cms-content__kept--picture");
+
+            var slot = summary.querySelector("[data-cms-kept-slot]");
+            slot.cmsCropField = function () { return holder.querySelector("[data-cms-image-field]"); };
+            slot.cmsCropFields = { x: fx, y: fy, zoom: zoomed };
+        }
+
+        root.querySelectorAll("form[data-cms-section-form]").forEach(function (form) {
+            form.querySelectorAll('input[name$="__focus_x]"]').forEach(prepare);
+
+            if (!form.hasAttribute("data-cms-picture-framing")) {
+                form.setAttribute("data-cms-picture-framing", "");
+                // A row added without reloading: its prototype carries the fields.
+                form.addEventListener("cms-item-added", function (event) {
+                    event.target.querySelectorAll('input[name$="__focus_x]"]').forEach(prepare);
+                });
+            }
+        });
+    }
+
     function enhance(root) {
         var progress = root.querySelector("[data-cms-progress]");
         var steps = root.querySelector("[data-cms-progress-steps]");
@@ -1698,6 +1777,7 @@
 
         bindImageDimensions(root);
         bindColumnsFraming(root);
+        bindPictureFraming(root);
 
         // An image field is drawn by media-picker.js, which a new section
         // form asks for too.

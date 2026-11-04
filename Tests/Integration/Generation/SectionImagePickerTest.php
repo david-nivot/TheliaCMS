@@ -18,6 +18,9 @@ use Symfony\Component\DomCrawler\Crawler;
 use Thelia\Model\Lang;
 use TheliaCMS\Content\Document;
 use TheliaCMS\Content\Section;
+use TheliaCMS\Content\Site\SiteComponent;
+use TheliaCMS\Content\Site\SiteComponentRepository;
+use TheliaCMS\Content\Site\SiteComponentValidator;
 use TheliaCMS\Media\CmsMediaLibrary;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Model\CmsPageContentQuery;
@@ -234,6 +237,60 @@ final class SectionImagePickerTest extends AdminScreenTestCase
 
         self::assertSame('1:1', $props['proportions']);
         self::assertSame([[10, 90, 200], [50, 50, 100], [80, 20, 120]], $columns);
+    }
+
+    /**
+     * The pictures of a component the module does not draw (here one made from
+     * a brief) take the proportions and the kept part too, each its own, in
+     * the form and in the rows of its lists.
+     */
+    public function testEachPictureOfAComponentOfTheSiteKeepsItsOwnFraming(): void
+    {
+        $this->getService(SiteComponentRepository::class)->save((new SiteComponentValidator())->validate(new SiteComponent(
+            'GalleryCard',
+            'Gallery card',
+            'A photo and a list of pictures.',
+            [
+                ['name' => 'photo', 'type' => 'image', 'label' => 'Photo'],
+                ['name' => 'gallery', 'type' => 'items', 'label' => 'Gallery', 'min' => 1, 'max' => 4, 'items' => [['name' => 'picture', 'type' => 'image', 'label' => 'Picture']]],
+            ],
+            ['photo' => null, 'gallery' => [['picture' => null]]],
+            '<div><img src="{{ props.photo }}" alt="">{% for row in props.gallery %}<img src="{{ row.picture }}" alt="">{% endfor %}</div>',
+        )), SiteComponentRepository::STATUS_READY);
+
+        $page = $this->createPage('Galerie', published: false);
+        $this->client->request('GET', '/admin/cms/pages');
+        $this->getService(CmsPageWriter::class)->saveContent($page, $this->locale(), new Document([
+            new Section('gallery', 'Site:GalleryCard', ['photo' => null, 'gallery' => [['picture' => null], ['picture' => null]]]),
+        ]));
+
+        $dialog = $this->screen(\sprintf('/admin/cms/pages/%d/content?edit_language_id=%d', $page->getId(), Lang::getDefaultLanguage()->getId()))->filter('[data-testid="cms-section-edit-gallery"]');
+
+        self::assertSame(['original', '16:9', '4:3', '3:2', '1:1', '3:4'], $dialog->filter('[data-testid="cms-choice-photo__proportions"] input[type="radio"]')->each(static fn (Crawler $radio): string => (string) $radio->attr('value')));
+        self::assertSame('original', $dialog->filter('[data-testid="cms-choice-photo__proportions"] input:checked')->attr('value'));
+
+        foreach (['photo__focus_x', 'photo__focus_y', 'photo__zoom'] as $name) {
+            self::assertSame(1, $dialog->filter('[name="cms_section_gallery['.$name.']"]')->count(), $name);
+        }
+
+        foreach (['picture__proportions', 'picture__focus_x', 'picture__focus_y', 'picture__zoom'] as $name) {
+            self::assertStringContainsString('['.$name.']', (string) $dialog->filter('[data-cms-items]')->attr('data-prototype'), $name.' in the prototype of a new row.');
+        }
+
+        $form = $dialog->filter('form[data-cms-section-form]')->form();
+        $values = $form->getPhpValues();
+        $values['cms_section_gallery']['photo'] = (string) $this->image('Fauteuil')->getId();
+        $values['cms_section_gallery'] = ['photo__proportions' => '1:1', 'photo__focus_x' => '10', 'photo__focus_y' => '90', 'photo__zoom' => '200'] + $values['cms_section_gallery'];
+        $values['cms_section_gallery']['gallery'][1] = ['picture__proportions' => '3:4', 'picture__focus_x' => '80', 'picture__focus_y' => '20', 'picture__zoom' => '120'] + $values['cms_section_gallery']['gallery'][1];
+
+        self::assertSame(302, $this->send('POST', $form->getUri(), $values));
+
+        $content = CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($this->locale())->findOne();
+        $props = Document::fromJson($content?->getDraftDocument())?->section('gallery')->props ?? [];
+
+        self::assertSame(['1:1', 10, 90, 200], [$props['photo__proportions'], $props['photo__focus_x'], $props['photo__focus_y'], $props['photo__zoom']]);
+        self::assertSame(['original', 50, 50, 100], [$props['gallery'][0]['picture__proportions'], $props['gallery'][0]['picture__focus_x'], $props['gallery'][0]['picture__focus_y'], $props['gallery'][0]['picture__zoom']]);
+        self::assertSame(['3:4', 80, 20, 120], [$props['gallery'][1]['picture__proportions'], $props['gallery'][1]['picture__focus_x'], $props['gallery'][1]['picture__focus_y'], $props['gallery'][1]['picture__zoom']]);
     }
 
     private function save(CmsPage $page, string $imageId): ?int
