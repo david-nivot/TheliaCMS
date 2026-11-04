@@ -17,6 +17,8 @@ namespace TheliaCMS\Tests\Integration\Generation;
 use Psr\Log\NullLogger;
 use Symfony\Component\Routing\RouterInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use Thelia\Core\Template\Parser\ParserResolver;
+use Thelia\Core\Template\TemplateHelperInterface;
 use Thelia\Test\FixtureFactory;
 use TheliaCMS\Content\Document;
 use TheliaCMS\Content\DocumentRenderer;
@@ -105,13 +107,31 @@ final class DocumentCheckerTest extends CmsIntegrationTestCase
         self::assertStringContainsString('"link" points to /contact-guessed, which is no page of the site', $address('/contact-guessed')[0]->message);
     }
 
-    public function testOnlyTheCatchAllRouteOfFlexyDoesNotMakeAnAddress(): void
+    public function testAPathOnlyTheCatchAllRouteTakesIsAnAddressWhenTheThemeHasThatView(): void
     {
-        $request = $this->request();
-        $problems = $this->checker()->problems(new Document([$this->section('link', 'Test:Checked', ['link' => '/nothing-but-the-view-route'])]), $request);
+        $this->useAnInstalledFrontTheme();
+        $router = $this->getService(RouterInterface::class);
+        $theme = $this->getService(TemplateHelperInterface::class)->getActiveFrontTemplate();
+        $views = array_values(array_filter(
+            array_map(static fn (string $file): string => basename($file, '.html.twig'), glob($theme->getAbsolutePath().'/*.html.twig') ?: []),
+            static fn (string $view): bool => !\in_array($view, $theme->getInternalViews(), true) && 'flexy_view' === ($router->match('/'.$view)['_route'] ?? null),
+        ));
 
-        self::assertCount(1, $problems);
-        self::assertSame('flexy_view', $this->getService(RouterInterface::class)->match('/nothing-but-the-view-route')['_route'] ?? null, 'Precondition: the path is taken by the catch-all route.');
+        if ([] === $views) {
+            self::markTestSkipped('The active front theme has no view served by name.');
+        }
+
+        $address = fn (string $link): array => $this->checker()->problems(new Document([$this->section('link', 'Test:Checked', ['link' => $link])]), $this->request());
+
+        self::assertSame([], $address('/'.$views[0]), 'A view of the theme, taken by the catch-all route, is a page.');
+        self::assertSame('flexy_view', $router->match('/nothing-but-the-view-route')['_route'] ?? null, 'Precondition: the catch-all route takes the path.');
+        self::assertCount(1, $address('/nothing-but-the-view-route'), 'No view of that name: the catch-all route answers a 404.');
+
+        $internal = $theme->getInternalViews()[0] ?? null;
+
+        if (null !== $internal && 'flexy_view' === ($router->match('/'.$internal)['_route'] ?? null)) {
+            self::assertCount(1, $address('/'.$internal), 'A view the theme declares internal is a 404 by name.');
+        }
     }
 
     public function testAValueThatStaysIsEmptiedAndSaidInTheLanguageOfThePage(): void
@@ -241,6 +261,8 @@ final class DocumentCheckerTest extends CmsIntegrationTestCase
             $this->getService(TranslatorInterface::class),
             new NullLogger(),
             $this->getService(RouterInterface::class),
+            $this->getService(ParserResolver::class),
+            $this->getService(TemplateHelperInterface::class),
         );
     }
 

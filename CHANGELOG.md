@@ -97,7 +97,7 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   the title of the page was found at publication. A step after the validator
   (`Generation\DocumentChecker`, every kind of request) now looks up the images of
   the media library, the records a reference names, the internal addresses
-  (CMS pages online, URLs of the core, routes of the shop such as `/login`) and the headings of the rendering. A
+  (CMS pages online, URLs of the core, routes of the shop such as `/login`, views of the front theme such as `/contact`) and the headings of the rendering. A
   problem goes back to the model within the existing limit of corrections; past
   it the value is emptied (a row or a section that cannot do without it is
   dropped) and the page says it leaves it out, the generation still succeeding.

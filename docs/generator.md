@@ -98,9 +98,12 @@ kind of request, and looks up:
   nothing;
 - an internal address (a path of the site): the home page, a page of the CMS that
   is online and reachable, a URL the core rewrote, or else a path the router
-  resolves to a route of the shop (`/login`) other than the catch-all view route
-  of Flexy (`flexy_view`, `DocumentChecker::CATCH_ALL_ROUTES`), which answers any
-  path with a 404; a site without Flexy excludes no route;
+  resolves to a route of the shop (`/login`, `/checkout/cart`). The catch-all view
+  route of Flexy (`flexy_view`, `DocumentChecker::CATCH_ALL_ROUTES`) takes any
+  path, so a path only it takes counts when the active front theme has that view
+  (`/contact`, `/sale`) and does not declare it internal (`/base`,
+  `/checkout-cart`), the test the core's `ViewRenderer` makes; a site without
+  Flexy excludes no route;
 - the headings of the rendered document, as the theme draws it under the title of
   the page (`HeadingChecker`, `underTitle`), like the publication does.
 

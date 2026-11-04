@@ -17,9 +17,12 @@ namespace TheliaCMS\Generation;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Routing\Exception\MethodNotAllowedException;
-use Symfony\Component\Routing\Exception\ResourceNotFoundException;
+use Symfony\Component\Routing\Exception\ResourceNotFoundException as RoutingResourceNotFoundException;
 use Symfony\Component\Routing\RouterInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use Thelia\Core\Template\Exception\ResourceNotFoundException;
+use Thelia\Core\Template\Parser\ParserResolver;
+use Thelia\Core\Template\TemplateHelperInterface;
 use Thelia\Model\CategoryQuery;
 use Thelia\Model\FolderQuery;
 use Thelia\Model\ProductQuery;
@@ -66,8 +69,11 @@ final readonly class DocumentChecker
 
     /**
      * Routes that answer any path: the view route of the Flexy theme takes
-     * `/anything` and shows its 404. A path only they match leads nowhere. A
-     * site without Flexy has none of them, and every route counts.
+     * `/anything` and serves the view of that name of the active front theme,
+     * a 404 when it has none. A path only they match is an address when that
+     * view exists and the theme shows it by name (the core's own test, see
+     * `ViewRenderer`). A site without Flexy has none of them, and every route
+     * counts.
      *
      * @var list<string>
      */
@@ -84,6 +90,8 @@ final readonly class DocumentChecker
         private TranslatorInterface $translator,
         private LoggerInterface $logger,
         private RouterInterface $router,
+        private ParserResolver $parserResolver,
+        private TemplateHelperInterface $templateHelper,
     ) {
     }
 
@@ -539,13 +547,45 @@ final readonly class DocumentChecker
     private function isRoute(string $path): bool
     {
         try {
-            $route = (string) ($this->router->match($path)['_route'] ?? '');
+            $matched = $this->router->match($path);
         } catch (MethodNotAllowedException) {
+            return true;
+        } catch (RoutingResourceNotFoundException) {
+            return false;
+        }
+
+        $route = (string) ($matched['_route'] ?? '');
+
+        if ('' === $route) {
+            return false;
+        }
+
+        return !\in_array($route, self::CATCH_ALL_ROUTES, true) || $this->isViewOfTheTheme((string) ($matched['_view'] ?? ''));
+    }
+
+    /**
+     * Whether the active front theme serves this view by its name: the
+     * template exists, and the theme does not declare it internal (a layout,
+     * a step of the checkout), which the core answers with a 404.
+     */
+    private function isViewOfTheTheme(string $view): bool
+    {
+        if ('' === $view) {
+            return false;
+        }
+
+        try {
+            $theme = $this->templateHelper->getActiveFrontTemplate();
+
+            if (\in_array($view, $theme->getInternalViews(), true)) {
+                return false;
+            }
+
+            $this->parserResolver->getParser($theme->getAbsolutePath(), $view);
+
             return true;
         } catch (ResourceNotFoundException) {
             return false;
         }
-
-        return '' !== $route && !\in_array($route, self::CATCH_ALL_ROUTES, true);
     }
 }
