@@ -7,6 +7,15 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **A Content-Security-Policy for the pages of the module**, under CMS >
+  Settings > Security headers: where pictures and fonts may come from, and that
+  only the site may frame a page. Off by default; report-only first, the
+  reports written to the log of the shop, then enforced. The pages of the shop
+  never get it, and a policy the theme already sends is kept. See the README,
+  "Security headers".
+
 ### Changed
 
 - **The receipt of a form no longer repeats the answers.** It carries the
@@ -74,6 +83,20 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   many senders could have the shop write to one address as often as it liked.
   Beyond three, the receipt is skipped without a word; the message is kept and
   the recipients told.
+- **The CSS a page keeps is read as CSS, and only what draws is kept.** The
+  filter of `style` attributes and of the stylesheets of the components was a
+  list of four patterns, which let through `url(javascript:…)`, a document or
+  an SVG in a data URL, `url(https:host/…)` without slashes, `image-set("…")`,
+  `src()`, `cross-fade()`, `attr()`, `-moz-binding`, any escape (`u\72l(`), and
+  an `@import` or a `@font-face` inside a `@media` or a nested rule. It now
+  reads the CSS in tokens: a value may call colours, arithmetic, custom
+  properties, gradients, transforms, filters, easing, grid and counter
+  functions only, `url()` names a path of this site or a raster picture in a
+  data URL, no escape and no `<` are kept, and the only at-rules kept are
+  `@media`, `@supports`, `@container`, `@layer` and `@keyframes`. A declaration
+  that does not pass is dropped whole, the rest is kept as written. What a page
+  already published keeps until it is published again; on the test site, none
+  of the 38 `style` attributes and 5 component stylesheets stored changes.
 
 ## [2.9.0] - 2026-11-03
 

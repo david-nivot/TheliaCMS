@@ -108,6 +108,22 @@
             </div>
 
             <div class="col-12">
+                <div class="card">
+                    <div class="card-header">{{ 'Security headers'|trans({}, 'theliacms') }}</div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-lg-6">
+                                {{ form_row(form.cspMode) }}
+                            </div>
+                            <div class="col-lg-6">
+                                {{ form_row(form.cspHosts) }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12">
                 <div class="card" data-testid="cms-settings-generator">
                     <div class="card-header">{{ 'Generator'|trans({}, 'theliacms') }}</div>
                     <div class="card-body">

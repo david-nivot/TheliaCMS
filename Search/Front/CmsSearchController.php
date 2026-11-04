@@ -22,6 +22,7 @@ use Thelia\Domain\Localization\Service\LangService;
 use Thelia\Model\Lang;
 use Thelia\Tools\URL;
 use TheliaCMS\Front\ThemeTemplateRenderer;
+use TheliaCMS\Http\ContentSecurityPolicyListener;
 use TheliaCMS\Search\PageSearch;
 use TheliaCMS\Search\SearchTerms;
 use TheliaCMS\TheliaCMS;
@@ -99,6 +100,7 @@ final readonly class CmsSearchController
         // there are queries, which is exactly what search engines ask sites not
         // to have indexed.
         $response->headers->set('X-Robots-Tag', 'noindex, follow');
+        ContentSecurityPolicyListener::mark($request);
 
         return $response;
     }

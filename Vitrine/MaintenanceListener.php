@@ -23,6 +23,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\SecurityContext;
 use Thelia\Domain\Localization\Service\LangService;
 use Thelia\Model\Lang;
+use TheliaCMS\Http\ContentSecurityPolicyListener;
 use TheliaCMS\Page\CmsPageRenderer;
 use TheliaCMS\Page\PublishedPageRepository;
 use TheliaCMS\Settings\CmsSettings;
@@ -87,6 +88,7 @@ final readonly class MaintenanceListener
             return;
         }
 
+        ContentSecurityPolicyListener::mark($request);
         $event->setResponse($this->closedResponse());
     }
 

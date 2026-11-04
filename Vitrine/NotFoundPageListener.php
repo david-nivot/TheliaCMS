@@ -23,6 +23,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Thelia\Domain\Localization\Service\LangService;
 use Thelia\Model\Lang;
+use TheliaCMS\Http\ContentSecurityPolicyListener;
 use TheliaCMS\Page\CmsPageRenderer;
 use TheliaCMS\Page\PublishedPageRepository;
 use TheliaCMS\Settings\CmsSettings;
@@ -108,6 +109,7 @@ final readonly class NotFoundPageListener
 
         $response = new Response($body, Response::HTTP_NOT_FOUND);
         $response->headers->set('X-Robots-Tag', 'noindex');
+        ContentSecurityPolicyListener::mark($request);
 
         $event->setResponse($response);
     }

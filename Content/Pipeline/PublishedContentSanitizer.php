@@ -148,15 +148,16 @@ final readonly class PublishedContentSanitizer
     /**
      * A `style` attribute is CSS too: what `css()` keeps out of a stylesheet
      * is kept out of it, so that markup cannot load from another host what a
-     * stylesheet may not. The sanitizer quotes every attribute with `"` and
-     * escapes its value, so the attribute is read back from its output.
+     * stylesheet may not, and no rule opens in it. The sanitizer quotes every
+     * attribute with `"` and escapes its value, so the attribute is read back
+     * from its output.
      */
     private function filterStyleAttributes(string $html): string
     {
         return (string) preg_replace_callback(
             '/(\sstyle=")([^"]*)(")/i',
-            fn (array $match): string => $match[1]
-                .htmlspecialchars((string) $this->css(html_entity_decode($match[2], \ENT_QUOTES | \ENT_HTML5, 'UTF-8')), \ENT_QUOTES | \ENT_SUBSTITUTE, 'UTF-8')
+            static fn (array $match): string => $match[1]
+                .htmlspecialchars((new CssAllowList())->declarations(html_entity_decode($match[2], \ENT_QUOTES | \ENT_HTML5, 'UTF-8')), \ENT_QUOTES | \ENT_SUBSTITUTE, 'UTF-8')
                 .$match[3],
             $html,
         );
@@ -185,7 +186,8 @@ final readonly class PublishedContentSanitizer
      * The stylesheet is not run through the HTML sanitizer — it never reaches
      * the parser as markup. What it must not carry is a request to a third
      * party (a privacy leak, and a bypass of the consent gate) or the legacy
-     * Internet Explorer script vector.
+     * Internet Explorer script vector: it keeps what `CssAllowList` reads as
+     * drawing only.
      */
     public function css(?string $css): ?string
     {
@@ -193,21 +195,7 @@ final readonly class PublishedContentSanitizer
             return $css;
         }
 
-        $filtered = preg_replace(
-            [
-                '#@import\b[^;]*;?#i',
-                '#expression\s*\(#i',
-                // Anything addressing another host, whether it names a scheme or
-                // leaves it to the page (`//host/x` is remote too — only a lone
-                // leading slash is a path on this site).
-                '#url\(\s*([\'"]?)(?!/(?!/)|data:image/(?:png|jpe?g|gif|webp|avif);)[a-z0-9+.-]*:?//[^)]*\)#i',
-                '#behavior\s*:[^;]*;?#i',
-            ],
-            ['', 'unsupported(', 'none', ''],
-            $css,
-        );
-
-        return $filtered ?? '';
+        return (new CssAllowList())->stylesheet($css);
     }
 
     private function sanitizerFor(bool $allowCustomCode, string $html): HtmlSanitizer

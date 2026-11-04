@@ -26,6 +26,7 @@ use TheliaCMS\Content\Site\SiteComponentStyles;
 use TheliaCMS\Content\Site\SitePropReader;
 use TheliaCMS\Content\Site\SiteTemplateRenderer;
 use TheliaCMS\Generation\Component\ComponentCandidates;
+use TheliaCMS\Http\ContentSecurityPolicyListener;
 use TheliaCMS\Page\CmsPageRenderer;
 use TheliaCMS\Page\PageTypeCode;
 use TheliaCMS\Page\PublishedPage;
@@ -98,6 +99,7 @@ final readonly class ComponentPreviewController
         $response->headers->set('X-Robots-Tag', 'noindex, nofollow');
         $response->headers->set('Referrer-Policy', 'no-referrer');
         $response->headers->set('Cache-Control', 'private, no-store, max-age=0');
+        ContentSecurityPolicyListener::mark($request);
 
         return $response;
     }

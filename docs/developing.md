@@ -105,6 +105,13 @@ shows how to test an update, outside a transaction.
   -c local/modules/TheliaCMS/phpunit.integration.xml.dist`), after removing
   `var/propel/test` and `var/cache/test` if they were built with it.
 
+- `TheliaCMS::setConfigValue($key, null)` stores an empty value; it does not
+  put a setting back to "never saved", which a setting with a computed default
+  tells apart (`ContentSecurityPolicySettings::hosts()`). A test that needs the
+  never-saved state deletes the row with
+  `ModuleConfigQuery::create()->deleteConfigValue(TheliaCMS::getModuleId(), $key)`,
+  which also drops what the core kept in memory.
+
 - A test that runs outside a transaction (`ALTER TABLE`, `TRUNCATE`) cleans in
   `tearDown()` what it inserted; a run interrupted halfway otherwise leaves
   rows behind for the next one.
@@ -161,6 +168,18 @@ shows how to test an update, outside a transaction.
   section through the writer before it asks for a screen leaves `app.request`
   null for the rest of the process: ask for any screen first
   (`SectionEditScreenTest::renderedOnce()`).
+
+## CSS and the security policy
+
+- `Content/Pipeline/CssAllowList.php` keeps of a `style` attribute or of a
+  component stylesheet only the functions it lists. A function missing from
+  `FUNCTIONS` (a new colour space, `anchor()`) makes the browser lose the whole
+  declaration without a word: add it to the list with a test in
+  `PublishedContentSanitizerTest`, never loosen the `url()` rule.
+- The Content-Security-Policy goes only on a response whose request was marked
+  by `ContentSecurityPolicyListener::mark($request)`. A new screen that renders
+  a CMS page to visitors marks its request, and gets a case in
+  `ContentSecurityPolicyListenerTest`; a page of the shop is never marked.
 
 ## Calling the AI layer
 

@@ -823,6 +823,37 @@ proxy. See [docs/shared-cache.md](docs/shared-cache.md).
 `docs/shared-cache.md` has the VCL that does it, the same thing for Fastly and
 Cloudflare, and a complete purger to copy into a project.
 
+## Security headers
+
+The pages the module renders (a page, the home page it serves, its 404 and
+maintenance pages, the search results and the three previews) can be sent a
+Content-Security-Policy, set under **CMS > Settings > Security headers**:
+
+```
+img-src 'self' data: <hosts>; font-src 'self' data: <hosts>; frame-ancestors 'self'
+```
+
+It says where pictures and fonts may come from, and that only the site may
+frame the page. It says nothing of scripts: the consent layer and the snippets
+an administrator pastes are written inline, and a nonce can neither be put
+into pasted HTML nor be kept by a page a cache shares. What it guards is a
+picture or a font a stylesheet or a `style` attribute would load from another
+host, and a tracking pixel loaded before the visitor agreed.
+
+- `off`, the default: nothing is sent.
+- `report-only`: nothing is blocked. The browser reports what would be to
+  `POST /cms/csp-report`, which writes it to the log of the shop (directive,
+  origin of what was blocked, path of the page; nothing a visitor typed), each
+  report once an hour and at most a hundred an hour.
+- `enforce`: the browser blocks what the policy does not allow. Turn it on once
+  the log stays quiet for a week of real visits.
+
+A snippet that loads a pixel, a widget or a font from another host needs that
+host in the list. The pages of the shop (cart, payment, account) are never sent
+the policy, and a page that already has one, from the theme or another module,
+keeps it. Thelia (3.3 and later) already sends `X-Content-Type-Options`,
+`X-Frame-Options` and `Referrer-Policy` on every page.
+
 ## Sitemap
 
 A theme opens its sitemap to modules by calling `theme_hook('sitemap.urls')`
@@ -953,6 +984,8 @@ Most of them are edited under **CMS > Settings**.
 | `maintenance_page_id` | none | CMS page shown while the site is closed. |
 | `trash_retention_days` | `30` | Days a deleted page stays in the bin before it is deleted for good. `0` keeps it until somebody deletes it by hand. |
 | `http_cache_ttl` | `0` | Seconds a shared cache may keep a page. `0` disables it, which is the default. |
+| `csp_mode` | `off` | `report-only` or `enforce` sends a Content-Security-Policy on the pages of the module. See [Security headers](#security-headers). |
+| `csp_hosts` | `https://fonts.gstatic.com`, plus `https://*.axept.io` when Axeptio is configured | Hosts pictures and fonts may come from besides the site, one per line. |
 | `axeptio_client_id` | none | Axeptio project. Without it no banner shows, and every snippet waiting for consent stays off. |
 | `axeptio_cookies_version` | none | Which Axeptio configuration to load, when a project has several. |
 | `axeptio_consent_map` | the two Google products | JSON: vendor to the Consent Mode signals it grants. |

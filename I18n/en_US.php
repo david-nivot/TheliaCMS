@@ -1425,4 +1425,12 @@ return [
     'The value is not yes or no.' => 'The value is not yes or no.',
     '"%s" is not one of: %s.' => '"%s" is not one of: %s.',
     'The value is not a date written YYYY-MM-DD.' => 'The value is not a date written YYYY-MM-DD.',
+    'Security headers' => 'Security headers',
+    'Content-Security-Policy of the pages' => 'Content-Security-Policy of the pages',
+    'Report only: nothing is blocked, what would be is reported' => 'Report only: nothing is blocked, what would be is reported',
+    'Enforce: the browser blocks what the policy does not allow' => 'Enforce: the browser blocks what the policy does not allow',
+    'Says where the pages of the CMS may load pictures and fonts from, and that only this site may frame them; scripts are left alone. Start with report only: what the policy would block is written to the log of the shop. Enforce once the log stays quiet for a week of real visits. The pages of the shop (cart, payment, account) never get it.' => 'Says where the pages of the CMS may load pictures and fonts from, and that only this site may frame them; scripts are left alone. Start with report only: what the policy would block is written to the log of the shop. Enforce once the log stays quiet for a week of real visits. The pages of the shop (cart, payment, account) never get it.',
+    'Hosts pictures and fonts may come from' => 'Hosts pictures and fonts may come from',
+    'One per line, besides this site and pictures written in a page. A snippet that loads a pixel, a widget or a font from another host needs that host here, or the enforced policy blocks it.' => 'One per line, besides this site and pictures written in a page. A snippet that loads a pixel, a widget or a font from another host needs that host here, or the enforced policy blocks it.',
+    'This is not a host a policy can name (for example https://cdn.example.com or https://*.example.com): %s' => 'This is not a host a policy can name (for example https://cdn.example.com or https://*.example.com): %s',
 ];

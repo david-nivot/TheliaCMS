@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Preview;
 
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
@@ -22,6 +23,7 @@ use TheliaCMS\Catalogue\CatalogueItems;
 use TheliaCMS\Catalogue\CatalogueItemType;
 use TheliaCMS\Catalogue\ItemContentRepository;
 use TheliaCMS\Front\ThemeTemplateRenderer;
+use TheliaCMS\Http\ContentSecurityPolicyListener;
 use TheliaCMS\Partial\PartialRenderer;
 
 /**
@@ -53,7 +55,7 @@ final readonly class ItemPreviewController
         requirements: ['type' => CatalogueItemType::ROUTE_REQUIREMENT, 'id' => '\d+', 'locale' => '[a-z]{2}_[A-Z]{2}', 'expires' => '\d+', 'signature' => '[a-f0-9]{64}'],
         methods: ['GET'],
     )]
-    public function __invoke(string $type, int $id, string $locale, int $expires, string $signature): Response
+    public function __invoke(Request $request, string $type, int $id, string $locale, int $expires, string $signature): Response
     {
         $itemType = CatalogueItemType::from($type);
 
@@ -78,6 +80,7 @@ final readonly class ItemPreviewController
         $response->headers->set('X-Robots-Tag', 'noindex, nofollow');
         $response->headers->set('Referrer-Policy', 'no-referrer');
         $response->headers->set('Cache-Control', 'private, no-store, max-age=0');
+        ContentSecurityPolicyListener::mark($request);
 
         return $response;
     }
