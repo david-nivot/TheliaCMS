@@ -120,7 +120,7 @@ final readonly class ImageRewriter
         $widths = $this->widthsFor($media->width);
         $sizes = $attributes['sizes'] ?? null;
 
-        $this->wrapInPicture($document, $image, $media->id, $widths, $sizes);
+        $this->wrapInPicture($document, $image, $media, $widths, $sizes);
     }
 
     /**
@@ -146,7 +146,7 @@ final readonly class ImageRewriter
         $widths = $this->widthsFor($media->width);
 
         if ([] !== $widths) {
-            $attributes['srcset'] = $this->srcset($media->id, $widths, $media->format);
+            $attributes['srcset'] = $this->srcset($media, $widths, $media->format);
             $attributes['sizes'] = $this->sizes(
                 $widths,
                 null !== $sizes && ImageSlot::isValid($sizes) ? trim($sizes) : null,
@@ -224,7 +224,7 @@ final readonly class ImageRewriter
      *
      * @param list<int> $widths
      */
-    private function wrapInPicture(\DOMDocument $document, \DOMElement $image, int $imageId, array $widths, ?string $sizes): void
+    private function wrapInPicture(\DOMDocument $document, \DOMElement $image, MediaFile $media, array $widths, ?string $sizes): void
     {
         $parent = $image->parentNode;
 
@@ -236,8 +236,8 @@ final readonly class ImageRewriter
         $source = $document->createElement('source');
         $source->setAttribute('type', 'image/webp');
         $source->setAttribute('srcset', [] !== $widths
-            ? $this->srcset($imageId, $widths, 'webp')
-            : $this->url($imageId, null, 'webp'));
+            ? $this->srcset($media, $widths, 'webp')
+            : $this->url($media, null, 'webp'));
 
         if (null !== $sizes) {
             $source->setAttribute('sizes', $sizes);
@@ -270,26 +270,32 @@ final readonly class ImageRewriter
     /**
      * @param list<int> $widths ascending, the last one being the original width
      */
-    private function srcset(int $imageId, array $widths, string $format): string
+    private function srcset(MediaFile $media, array $widths, string $format): string
     {
         $original = $widths[array_key_last($widths)];
 
         return implode(', ', array_map(
-            fn (int $width): string => $this->url($imageId, $width === $original ? null : $width, $format).' '.$width.'w',
+            fn (int $width): string => $this->url($media, $width === $original ? null : $width, $format).' '.$width.'w',
             $widths,
         ));
     }
 
     /**
-     * The trailing `!` asks the image route to keep the aspect ratio. Without
-     * it, `480,` is read as 480 by 480: the image comes back squashed, or
-     * rejected outright when that height exceeds the original.
+     * A candidate is asked at its width and at the height its proportions
+     * give. The image route reads a lone width (`480,`) as 480 by 480, and
+     * `480,!` as the largest image that fits in that square: a portrait came
+     * back 480 high and narrower, though announced as `480w`. Without a known
+     * height, the square is kept, which is right for a landscape image only.
      */
-    private function url(int $imageId, ?int $width, string $format): string
+    private function url(MediaFile $media, ?int $width, string $format): string
     {
-        $size = null === $width ? 'max' : $width.',!';
+        $size = match (true) {
+            null === $width => 'max',
+            null !== $media->width && $media->width > 0 && null !== $media->height && $media->height > 0 => $width.','.max(1, (int) round($width * $media->height / $media->width)),
+            default => $width.',!',
+        };
 
-        return '/image-library/'.$imageId.'/full/'.$size.'/0/default.'.$format;
+        return '/image-library/'.$media->id.'/full/'.$size.'/0/default.'.$format;
     }
 
     /**

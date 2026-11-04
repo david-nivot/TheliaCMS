@@ -21,6 +21,13 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Fixed
 
+- **A portrait image is no longer served narrower than announced.** Each
+  candidate of its `srcset` asked the image route for a width alone, which it
+  fits in a square: the `480w` file of a 1920 by 2715 portrait was 339 pixels
+  wide, and looked blurred once stretched. Candidates now ask for the width and
+  the height of the image's proportions. Pages already published keep the old
+  addresses until they are published again, or rendered again with
+  `thelia_cms:render-published`.
 - **The editor of a free text no longer offers an image, the HTML source, the
   preview or a h1.** The `html` fields of a section form ask the Tiptap module
   (1.1.0 or later; before, its global toolbar applies) for a reduced toolbar and
