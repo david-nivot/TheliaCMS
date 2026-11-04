@@ -192,6 +192,7 @@ final class TypedPageGenerationTest extends CmsIntegrationTestCase
             new GatewayFailures($this->getService(TranslatorInterface::class)),
             $this->getService(TranslationGraft::class),
             $this->getService(DocumentChecker::class),
+            $this->getService(\TheliaCMS\Generation\EditorValues::class),
         );
     }
 }

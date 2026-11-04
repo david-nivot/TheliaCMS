@@ -35,6 +35,11 @@ final class ImageSectionTest extends TestCase
         );
     }
 
+    public function testTheModelIsToldThatTheSizeAndTheFramingAreTheEditors(): void
+    {
+        self::assertStringContainsString('set afterwards by the editor: choose only the width.', (new ImageSection())->description());
+    }
+
     public function testNoCaptionNoFigcaption(): void
     {
         $section = new ImageSection();

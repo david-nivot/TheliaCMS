@@ -52,6 +52,16 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   an image whose size cannot be read; an image kept elsewhere takes its centre
   only (the zoom stays at 100 %). The sentence of the kept part now reads as a
   statement next to the button, not as a field.
+- **A rewrite or a translation keeps the size and the framing of a picture.**
+  The draft shown to the generator (revision, section written again,
+  translation, and the model of a page type) no longer carries the width in
+  pixels, the height, the fit, the kept part or the zoom, and a width set in
+  pixels reads as the default width: the generator never sees, nor writes,
+  anything of them. What an answer replaces gets them back from the section it
+  replaces when the component and the picture are the same; another picture
+  takes the defaults. A different preset width asked for wins over the size in
+  pixels, which stays in the section. The description of the Image section tells
+  the generator that the exact size and the kept part are the editor's.
 - **`thelia_cms:render-published`**, the published counterpart of
   `thelia_cms:render`: it renders what is online again from the published
   documents (pages and contents of the catalogue), so a change of the module

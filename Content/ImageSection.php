@@ -68,7 +68,7 @@ final readonly class ImageSection implements SectionDefinitionInterface
 
     public function description(): string
     {
-        return $this->trans('One picture on its own (a photo, an illustration) with an optional caption under it. Only with an image of the media library or the https address of a picture the brief gives: with neither, leave the section out.');
+        return $this->trans('One picture on its own (a photo, an illustration) with an optional caption under it. Only with an image of the media library or the https address of a picture the brief gives: with neither, leave the section out. The exact size of the picture and the part of it that is kept are set afterwards by the editor: choose only the width.');
     }
 
     public function schema(): PropSchema
