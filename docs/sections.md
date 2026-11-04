@@ -99,6 +99,54 @@ words; "Edit by hand" sets it in its **Appearance** group, a colour typed or
 picked. A translation takes the appearance of the source section by section:
 it changes the words, not the look.
 
+### What a theme does with the band
+
+The band, not the component, is then the child of the content
+(`.cms-page-content`), and it spans the whole width on purpose: the first
+element of a component is often its container, narrower than the page, and a
+background set there would be a box rather than a band. The blocks of the
+catalogue set their own width and are not affected. A rule of the theme that
+reaches the sections through the content does not reach a section in a band,
+so it has to name the band too:
+
+- a width or a margin set on a component as a child of the content: target it
+  under `.cms-section-styled` as well, so the background keeps the whole width
+  and the component inside it the width of the page;
+
+  ```css
+  /* Before: the steps span the whole screen once given a background. */
+  .cms-page-content > .cms-site--steps {
+    width: min(75rem, 100% - 2rem);
+    margin-inline: auto;
+  }
+
+  /* After */
+  :is(.cms-page-content, .cms-section-styled) > .cms-site--steps {
+    width: min(75rem, 100% - 2rem);
+    margin-inline: auto;
+  }
+  ```
+
+- sections laid out next to each other, cards in a grid or a row: the band is
+  the item of the grid or of the row in place of the card, so a rule on the
+  items names it as well, or the card with an appearance leaves the grid. Its
+  background then fills the cell of the card, not a band across the page.
+
+  ```css
+  .cms-page-content > :is(.cms-site--card, .cms-section-styled:has(> .cms-site--card)) {
+    grid-column: span 4;
+  }
+  ```
+
+The module wraps the document in a `div.cms-page-content` of its own, inside
+the `article.cms-page-content` of the page template: a rule written
+`.cms-page-content > *` reaches that inner container as well, and narrows the
+band with it. Name the components rather than every child.
+
+The band carries the section's id in `data-cms-section`, as the first element
+of a section without an appearance does; a script of the theme that looks a
+section up by its id finds the band.
+
 ## Writing a section of your own
 
 The first way is a component of the theme, opened in one line of

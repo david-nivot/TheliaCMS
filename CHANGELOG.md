@@ -15,6 +15,13 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   reports written to the log of the shop, then enforced. The pages of the shop
   never get it, and a policy the theme already sends is kept. See the README,
   "Security headers".
+- **What a theme does with a section that has an appearance**, written down.
+  Such a section renders inside a band of the whole width, which becomes the
+  child of the content in place of the component: a width the theme sets on
+  the children of the content, or a grid it lays the sections out in, misses
+  the section until its rule names `.cms-section-styled > …` too. Found on a
+  site where a section given a background spread over the whole screen. See
+  docs/sections.md, "What a theme does with the band".
 
 ### Changed
 
