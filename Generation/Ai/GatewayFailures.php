@@ -98,7 +98,7 @@ final readonly class GatewayFailures
             case AiFinishReason::ContentFilter:
                 throw GenerationRefusedException::because($this->say('The model declined to write this. Reword the brief.'));
             case AiFinishReason::MaxTokens:
-                throw GenerationException::because(null === $outputLimit ? $this->say('The answer was cut at the output limit: %advice%', ['%advice%' => $this->say($advice)]) : $this->say('The answer was cut at %limit% tokens: %advice%', ['%limit%' => $outputLimit, '%advice%' => $this->say($advice)]));
+                throw GenerationException::because($this->cut($response, $outputLimit, $advice));
             case AiFinishReason::Other:
                 // A reason the layer does not know is no failure by itself:
                 // an answer that holds something goes on to be checked. One
@@ -112,6 +112,27 @@ final readonly class GatewayFailures
             case AiFinishReason::ToolCalls:
                 return;
         }
+    }
+
+    /**
+     * The limit that cut the answer. The AI layer holds a call under the limit
+     * of its usage and of its model as well, set in the AI settings of Thelia:
+     * an answer that stopped below the limit asked was cut there, and raising
+     * the limit of the module would change nothing.
+     */
+    private function cut(AiResponse $response, ?int $outputLimit, string $advice): string
+    {
+        if (null === $outputLimit) {
+            return $this->say('The answer was cut at the output limit: %advice%', ['%advice%' => $this->say($advice)]);
+        }
+
+        $written = $response->tokenUsage->outputTokens;
+
+        if ($written > 0 && $written < $outputLimit) {
+            return $this->say('The answer was cut at %written% tokens, below the %limit% asked: the AI settings of Thelia hold this usage, or its model, to less. Raise the limit there, or ask for less.', ['%written%' => $written, '%limit%' => $outputLimit]);
+        }
+
+        return $this->say('The answer was cut at %limit% tokens: %advice%', ['%limit%' => $outputLimit, '%advice%' => $this->say($advice)]);
     }
 
     /**

@@ -26,12 +26,6 @@ use TheliaCMS\Partial\PartialRenderer;
  */
 final readonly class CmsPageRenderer
 {
-    /** @deprecated since 1.2.0, removed in 2.0.0: the template depends on the type of the page, see PageTemplateResolver */
-    public const string THEME_TEMPLATE = PageTemplateResolver::BASE_TEMPLATE;
-
-    /** @deprecated since 1.2.0, removed in 2.0.0: the template depends on the type of the page, see PageTemplateResolver */
-    public const string MODULE_TEMPLATE = '@TheliaCMSModule/front/cmspage.html.twig';
-
     public const string CONTENT_THEME_TEMPLATE = 'cms-page-content-preview';
 
     public const string CONTENT_MODULE_TEMPLATE = '@TheliaCMSModule/front/cms-page-content-preview.html.twig';

@@ -222,7 +222,7 @@ final class ComponentGeneratorTest extends CmsIntegrationTestCase
 
     public function testAnAnswerCutByTheOutputLimitIsAnErrorInTheLedgerAndIsNotCorrected(): void
     {
-        $this->api->answer(FakeAiGateway::response('{"code": "PriceTa', finishReason: AiFinishReason::MaxTokens));
+        $this->api->answer(FakeAiGateway::response('{"code": "PriceTa', finishReason: AiFinishReason::MaxTokens, outputTokens: $this->getService(GeneratorSettings::class)->maxTokens()));
 
         try {
             $this->generator()->generate(new ComponentRequest('Un tableau de prix.', $this->locale()));

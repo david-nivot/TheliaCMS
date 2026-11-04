@@ -20,3 +20,22 @@ says so and nothing is called.
 
 - An export carries the model and the effort, never the key.
 - Every environment that generates needs the variable in its deployment.
+
+## Amendment of 2026-11-04: the output limit
+
+The default output limit of a page and of a component goes from 16 000 to
+48 000 tokens; the texts beside a field keep 2 000. The 16 000 had no reason
+written down, and a long page went over it: thinking and the whole document
+count in the limit, a revision, a section or a translation writes the document
+again, and an answer cut at the limit is paid and thrown away.
+
+- Only what is written is billed, so the limit costs nothing until it is
+  reached. The AI layer of Thelia reserves the budget of the whole limit on
+  every call, though: on Claude Opus 5.5, 0.96 USD at 48 000 against 1.28 at
+  64 000, which only matters near a tight monthly budget. 48 000 is three times
+  the former margin and keeps that reservation under a dollar.
+- The AI layer holds a call under the limit of its usage and of its model as
+  well. An answer cut below the limit of the module says so and points at the
+  AI settings of Thelia, where raising the limit helps.
+- The settings screen writes the limit on every save. The update to 2.10.0
+  raises a stored 16000, the former default, and keeps any other value.

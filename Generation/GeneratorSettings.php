@@ -37,7 +37,14 @@ final readonly class GeneratorSettings
     public const string TEXT_MAX_TOKENS = 'generator_text_max_tokens';
 
     public const string DEFAULT_EFFORT = 'high';
-    public const int DEFAULT_MAX_TOKENS = 16000;
+
+    /**
+     * Thinking and the whole document of a long page count in it, and an
+     * answer cut there is paid and thrown away. Only what is written is
+     * billed: the ceiling costs nothing until it is reached, but the budget of
+     * the AI layer reserves for it on every call (docs/adr/0008).
+     */
+    public const int DEFAULT_MAX_TOKENS = 48000;
 
     /** Below this, no page fits in the answer. */
     public const int MIN_MAX_TOKENS = 1024;

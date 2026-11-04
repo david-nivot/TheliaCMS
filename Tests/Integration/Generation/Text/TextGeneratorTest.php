@@ -170,7 +170,7 @@ final class TextGeneratorTest extends CmsIntegrationTestCase
 
     public function testAnAnswerCutByTheOutputLimitIsLoggedAndThrown(): void
     {
-        $this->api->answer(FakeAiGateway::response('{"html":"<p>Un bol en gr', finishReason: AiFinishReason::MaxTokens));
+        $this->api->answer(FakeAiGateway::response('{"html":"<p>Un bol en gr', finishReason: AiFinishReason::MaxTokens, outputTokens: $this->getService(GeneratorSettings::class)->textMaxTokens()));
 
         try {
             $this->generator()->generate($this->request('Décris le bol.'));

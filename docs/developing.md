@@ -163,6 +163,18 @@ shows how to test an update, outside a transaction.
   own locale: `setLocale()` changes nothing. A test that reads a message in
   French sets the language of the session of the test request
   (`FrenchFormMessagesTest`).
+- A screen test runs in the default language of the shop, English on the test
+  base: a message translated by the test's own translator matches the screen
+  and proves nothing. `?lang=fr_FR` on the address of the screen sets the
+  language of the back office for the rest of the session
+  (`SectionEditScreenTest::testWhatTheDocumentRefusesByHandReadsInTheLanguageOfTheBackOffice`,
+  `MediaSheetScreenTest`).
+- The French guillemets of `I18n/fr_FR.php` take a plain space (`« %s »`), not
+  a no-break space: an expectation typed with one fails on every message.
+- A provider that cuts an answer at the output limit reports that limit as the
+  tokens written, and the module reads it to tell which limit cut the answer
+  (`GatewayFailures`). A fake cut answer says so too:
+  `FakeAiGateway::response(finishReason: AiFinishReason::MaxTokens, outputTokens: …)`.
 - The parser of Thelia sets the `app` global of Twig at the first render of
   the process, with the request of that moment. A screen test that renders a
   section through the writer before it asks for a screen leaves `app.request`

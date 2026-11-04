@@ -995,7 +995,7 @@ Most of them are edited under **CMS > Settings**.
 | `heading_check_mode` | `warn` | `warn` reports heading problems and publishes anyway; `block` refuses to publish. Checked wherever a page goes online: the content screen, the settings screen, `thelia_cms:publish`. |
 | `native_content_notice_dismissed` | `0` | `1` once the notice about existing contents has been closed on the Pages screen. |
 | `generator_effort` | `high` | How hard the model thinks: `low`, `medium`, `high`, `xhigh` or `max`. Anything else falls back to the default. It is passed to the model as its reasoning effort, which only Anthropic models read: on another provider it has no effect. |
-| `generator_max_tokens` | `16000` | The longest answer the generator accepts, in tokens. Below 1024 no page fits, so a smaller value falls back to the default. |
+| `generator_max_tokens` | `48000` | The longest answer the generator accepts, in tokens, thinking included. Below 1024 no page fits, so a smaller value falls back to the default. Only what is written is billed, but the AI layer of Thelia reserves the budget of the whole limit on every call, and holds it under the limit of the usage and of its model. |
 | `generator_web_fetch` | `0` | `1` lets the generator read the web pages a brief cites (see [docs/generator.md](docs/generator.md#web-pages-the-brief-cites)). Off until the site turns it on. |
 | `generator_text_effort`, `generator_text_max_tokens` | `low`, `2000` | The same two settings for the texts written beside a field, which need less than a page. |
 

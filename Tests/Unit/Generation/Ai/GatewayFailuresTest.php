@@ -112,12 +112,25 @@ final class GatewayFailuresTest extends TestCase
     public function testACutAnswerNamesTheLimitAndTheAdvice(): void
     {
         try {
-            $this->failures()->assertUsable(FakeAiGateway::response('{', finishReason: AiFinishReason::MaxTokens), 2000, 'ask for a shorter text.');
+            $this->failures()->assertUsable(FakeAiGateway::response('{', finishReason: AiFinishReason::MaxTokens, outputTokens: 2000), 2000, 'ask for a shorter text.');
             self::fail('A cut answer must end the generation.');
         } catch (GenerationException $exception) {
             self::assertNotInstanceOf(GenerationRefusedException::class, $exception);
             self::assertSame('The answer was cut at 2000 tokens: ask for a shorter text.', $exception->getMessage());
         }
+    }
+
+    /**
+     * The core holds an answer under the limit of the usage and of its model,
+     * set in the AI settings of Thelia. An answer cut there was cut below what
+     * the module asked: raising the limit of the module changes nothing.
+     */
+    public function testAnAnswerCutBelowTheLimitOfTheModuleNamesTheAiSettingsOfThelia(): void
+    {
+        $this->expectException(GenerationException::class);
+        $this->expectExceptionMessage('The answer was cut at 8191 tokens, below the 48000 asked: the AI settings of Thelia hold this usage, or its model, to less. Raise the limit there, or ask for less.');
+
+        $this->failures()->assertUsable(FakeAiGateway::response('{', finishReason: AiFinishReason::MaxTokens, outputTokens: 8191), 48000, 'raise the limit of the generator or ask for a shorter page.');
     }
 
     public function testACutAnswerWithoutALimitOfTheRequestSaysItWasTheLimitOfTheUsage(): void
