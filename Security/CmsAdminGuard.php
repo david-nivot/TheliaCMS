@@ -15,10 +15,13 @@ declare(strict_types=1);
 namespace TheliaCMS\Security;
 
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\ControllerEvent;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\KernelEvents;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Thelia\Core\HttpFoundation\RequestPath;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\SecurityContext;
@@ -38,10 +41,17 @@ use Thelia\Tools\TokenProvider;
  * read (POST, PUT, PATCH, DELETE) must carry it, in the `_token` field of the
  * body or in the `X-CSRF-Token` header, the way the core and the back-office
  * theme send it.
+ *
+ * A visitor who is not logged in and opens a screen in the browser is sent to
+ * the login of the back office, which brings them back to the screen, as the
+ * screens of the core do. A script, a write or an administrator without the
+ * right gets the 403.
  */
 final readonly class CmsAdminGuard
 {
     private const string PREFIX = '/admin/cms';
+
+    private const string LOGIN_ROUTE = 'admin.login';
 
     /**
      * Section of the CMS a URL belongs to. Anything not listed falls back to
@@ -87,6 +97,7 @@ final readonly class CmsAdminGuard
     public function __construct(
         private SecurityContext $securityContext,
         private TokenProvider $tokens,
+        private UrlGeneratorInterface $urls,
     ) {
     }
 
@@ -113,6 +124,13 @@ final readonly class CmsAdminGuard
         }
 
         if (null === $this->securityContext->getAdminUser()) {
+            if (self::opensAScreen($event->getRequest())) {
+                $login = $this->loginUrl($event->getRequest());
+                $event->setController(static fn (): RedirectResponse => new RedirectResponse($login));
+
+                return;
+            }
+
             throw new AccessDeniedHttpException('Administrator authentication is required.');
         }
 
@@ -127,6 +145,27 @@ final readonly class CmsAdminGuard
         if (!$event->getRequest()->isMethodSafe()) {
             $this->tokens->checkRequestToken($event->getRequest());
         }
+    }
+
+    /**
+     * A page the browser navigates to: read with GET, asking for HTML, not sent
+     * by a script. The scripts of the screens ask for JSON or send
+     * `X-Requested-With`, and a redirect would hand them the login page.
+     */
+    private static function opensAScreen(Request $request): bool
+    {
+        return \in_array($request->getMethod(), ['GET', 'HEAD'], true)
+            && !$request->isXmlHttpRequest()
+            && \in_array('text/html', $request->getAcceptableContentTypes(), true);
+    }
+
+    /**
+     * The login screen, told where to come back to, the way the screens of the
+     * back-office theme send there.
+     */
+    private function loginUrl(Request $request): string
+    {
+        return $this->urls->generate(self::LOGIN_ROUTE, ['_target_path' => $request->getRequestUri()]);
     }
 
     private function resourceFor(string $path): string
