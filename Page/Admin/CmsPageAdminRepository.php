@@ -266,6 +266,14 @@ final readonly class CmsPageAdminRepository
         return Document::fromJson(CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($locale)->findOne()?->getDraftDocument());
     }
 
+    /**
+     * The rendering of the draft of the page in this language; null while none was written.
+     */
+    public function draftHtml(CmsPage $page, string $locale): ?string
+    {
+        return CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($locale)->findOne()?->getDraftHtml();
+    }
+
     public function statusOf(CmsPage $page, string $locale): PageStatus
     {
         $content = CmsPageContentQuery::create()
