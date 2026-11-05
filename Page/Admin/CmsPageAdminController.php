@@ -224,7 +224,11 @@ final readonly class CmsPageAdminController
         $lang = $this->editLang($request);
 
         try {
-            $this->writer->publish($this->livePageOrFail($id), $lang->getLocale());
+            $warnings = $this->writer->publish($this->livePageOrFail($id), $lang->getLocale());
+
+            foreach ($warnings as $warning) {
+                $this->support->flash($request, 'warning', $warning);
+            }
         } catch (HeadingStructureException $exception) {
             foreach ($exception->problems as $problem) {
                 $this->support->flash($request, 'danger', $problem);

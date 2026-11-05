@@ -99,6 +99,7 @@ final class PublishPagesCommand extends Command
 
         $published = 0;
         $refused = [];
+        $warnings = [];
         $failed = [];
 
         foreach ($pages as $page) {
@@ -106,8 +107,12 @@ final class PublishPagesCommand extends Command
                 try {
                     // A dry run runs the refusals and not the writes, so the
                     // count it announces is the count a real run reaches.
-                    $this->request->around(fn () => $dryRun ? $this->writer->assertPublishable($page, $locale) : $this->writer->publish($page, $locale), \is_string($url) ? $url : null);
+                    $pageWarnings = $this->request->around(fn () => $dryRun ? $this->writer->assertPublishable($page, $locale) : $this->writer->publish($page, $locale), \is_string($url) ? $url : null);
                     ++$published;
+
+                    if ([] !== $pageWarnings) {
+                        $warnings[] = \sprintf('#%d %s: %s', $page->getId(), $locale, implode(' ', $pageWarnings));
+                    }
 
                     if ($dryRun) {
                         $io->writeln(\sprintf('  #%d %s', $page->getId(), $locale));
@@ -130,7 +135,7 @@ final class PublishPagesCommand extends Command
             }
         }
 
-        foreach (['Refused' => $refused, 'Failed' => $failed] as $heading => $lines) {
+        foreach (['Refused' => $refused, 'Warnings' => $warnings, 'Failed' => $failed] as $heading => $lines) {
             if ([] !== $lines) {
                 $io->section($heading);
                 $io->listing($lines);

@@ -315,6 +315,8 @@ final readonly class CmsPageWriter
      * Promotes the draft to the published snapshot and takes a revision, in one
      * transaction: a half-published page would be served to visitors.
      *
+     * @return list<string> what the author should fix in what went online (the headings, in `warn` mode): empty when nothing
+     *
      * @throws EmptyPageContentException       when the draft would put nothing online
      * @throws PlaceholderPageContentException when the draft is still the sample text of a seeded page
      * @throws HeadingStructureException       when the headings are broken and the site keeps such a page offline
@@ -322,9 +324,9 @@ final readonly class CmsPageWriter
      * @throws MissingPageFieldsException      when a field the type requires is empty
      * @throws InvalidDocumentException        when the draft is not a document the catalogue accepts
      */
-    public function publish(CmsPage $page, string $locale): void
+    public function publish(CmsPage $page, string $locale): array
     {
-        $this->content->publish($this->targets->forPage($page, $locale));
+        return $this->content->publish($this->targets->forPage($page, $locale));
     }
 
     /**
@@ -334,6 +336,8 @@ final readonly class CmsPageWriter
      * caller able to publish in bulk can report what will be refused instead of
      * announcing a count it will not reach.
      *
+     * @return list<string> the warnings `publish()` would return
+     *
      * @throws EmptyPageContentException       when the draft would put nothing online
      * @throws PlaceholderPageContentException when the draft is still the sample text of a seeded page
      * @throws HeadingStructureException       when the headings are broken and the site keeps such a page offline
@@ -341,9 +345,9 @@ final readonly class CmsPageWriter
      * @throws MissingPageFieldsException      when a field the type requires is empty
      * @throws InvalidDocumentException        when the draft is not a document the catalogue accepts
      */
-    public function assertPublishable(CmsPage $page, string $locale): void
+    public function assertPublishable(CmsPage $page, string $locale): array
     {
-        $this->content->assertPublishable($this->targets->forPage($page, $locale));
+        return $this->content->assertPublishable($this->targets->forPage($page, $locale));
     }
 
     public function unpublish(CmsPage $page, string $locale): void
