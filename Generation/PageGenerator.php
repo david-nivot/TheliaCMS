@@ -284,7 +284,7 @@ final readonly class PageGenerator
                 $observer?->onTurn($turns, []);
 
                 try {
-                    [$document, $writtenFields, $leftOut, $proposed] = self::documentFrom(trim($response->text), GenerationRequest::KIND_SECTION === $request->kind);
+                    [$document, $writtenFields, $leftOut, $proposed, $proposedHeader] = self::documentFrom(trim($response->text), GenerationRequest::KIND_SECTION === $request->kind);
                     $document = $this->validator->validate($document);
                     $document = $this->shaped($request, $document);
                     $fields = $fieldsAsked->isEmpty() ? null : self::fieldsFrom($writtenFields, $fieldsAsked, $request->locale, $request->target->fieldValues);
@@ -339,7 +339,7 @@ final readonly class PageGenerator
                 $durationMs = (int) ((hrtime(true) - $started) / 1_000_000);
                 $logId = $record(GenerationLog::STATUS_DONE, null, $document->toJson(), $leftOut);
 
-                return new GenerationResult($document, $model, null, $usage, round($costUsd, 6), $durationMs, $turns, $logId, $fields, $leftOut, $provenance, $request->seoAsked() ? $proposed : []);
+                return new GenerationResult($document, $model, null, $usage, round($costUsd, 6), $durationMs, $turns, $logId, $fields, $leftOut, $provenance, $request->seoAsked() ? $proposed : [], $request->headerAsked() ? $proposedHeader : null);
             }
         } catch (GenerationRefusedException $exception) {
             $exception->logId = $record(GenerationLog::STATUS_REFUSED, $exception->getMessage());
@@ -387,7 +387,7 @@ final readonly class PageGenerator
     {
         return GenerationRequest::KIND_SECTION === $request->kind
             ? new AiOutputSchema('cms_section', $this->schema->strictSection($kept))
-            : new AiOutputSchema('cms_page', $this->schema->strict($kept, $withFields, $request->seoAsked()));
+            : new AiOutputSchema('cms_page', $this->schema->strict($kept, $withFields, $request->seoAsked(), $request->headerAsked()));
     }
 
     /**
@@ -523,7 +523,7 @@ final readonly class PageGenerator
      * still to be read, and what it says the page leaves out. With `$single`,
      * the answer is one section, and the document holds that section alone.
      *
-     * @return array{0: Document, 1: mixed, 2: list<string>, 3: array<string, string>}
+     * @return array{0: Document, 1: mixed, 2: list<string>, 3: array<string, string>, 4: PageHeader|null}
      *
      * @throws InvalidDocumentException
      */
@@ -578,7 +578,7 @@ final readonly class PageGenerator
             throw InvalidDocumentException::because($problems);
         }
 
-        return [Document::fromArray($decoded), $decoded['fields'] ?? null, self::leftOutFrom($decoded['left_out'] ?? null), self::seoFrom($decoded)];
+        return [Document::fromArray($decoded), $decoded['fields'] ?? null, self::leftOutFrom($decoded['left_out'] ?? null), self::seoFrom($decoded), self::headerFrom($decoded)];
     }
 
     /**
@@ -631,6 +631,38 @@ final readonly class PageGenerator
         }
 
         return $seo;
+    }
+
+    /**
+     * The header the answer proposes for a translated page. A title is plain
+     * text on one line and fits its column; the summary and the description
+     * are HTML, filtered when they are written; the sharing description is
+     * plain text. A field that is empty, not a string or too long is ignored,
+     * never a reason for a correction turn: the page keeps what it holds.
+     *
+     * @param array<array-key, mixed> $decoded
+     */
+    private static function headerFrom(array $decoded): ?PageHeader
+    {
+        $read = static function (string $property, bool $html, int $limit) use ($decoded): ?string {
+            if (!\is_string($decoded[$property] ?? null)) {
+                return null;
+            }
+
+            $text = $html ? trim($decoded[$property]) : trim((string) preg_replace('/\s+/u', ' ', strip_tags($decoded[$property])));
+
+            return '' === $text || mb_strlen($text) > $limit ? null : $text;
+        };
+
+        $header = new PageHeader(
+            $read('title', false, PageHeader::TITLE_LENGTH),
+            $read('summary', true, PageHeader::TEXT_LENGTH),
+            $read('description', true, PageHeader::TEXT_LENGTH),
+            $read('og_title', false, PageHeader::TITLE_LENGTH),
+            $read('og_description', false, PageHeader::TEXT_LENGTH),
+        );
+
+        return $header->isEmpty() ? null : $header;
     }
 
     /**

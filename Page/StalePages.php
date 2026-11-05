@@ -17,6 +17,7 @@ namespace TheliaCMS\Page;
 use Propel\Runtime\Propel;
 use TheliaCMS\Content\Document;
 use TheliaCMS\Content\Editing\TranslationFreshness;
+use TheliaCMS\Generation\PageHeader;
 
 /**
  * The pages whose draft in a language was written from a draft that changed
@@ -85,7 +86,14 @@ final readonly class StalePages
             return false;
         }
 
-        return $this->freshness->compare((string) $row['translated_from'], $recorded, $this->freshness->source($source))->isStale();
+        $header = array_combine(PageHeader::COLUMNS, array_map(static fn (string $column): ?string => null === $row['source_'.$column] ? null : (string) $row['source_'.$column], PageHeader::COLUMNS));
+
+        return $this->freshness->compare(
+            (string) $row['translated_from'],
+            $recorded,
+            $this->freshness->source($source, $header),
+            TranslationFreshness::decodeHeader((string) $row['source_fingerprint']),
+        )->isStale();
     }
 
     /**
@@ -98,10 +106,12 @@ final readonly class StalePages
      */
     private function translated(?string $locale, ?array $pageIds): array
     {
-        $sql = 'SELECT t.page_id, t.locale, t.translated_from, t.source_fingerprint, s.draft_document AS source_draft'
+        $sql = 'SELECT t.page_id, t.locale, t.translated_from, t.source_fingerprint, s.draft_document AS source_draft,'
+            .' h.title AS source_title, h.chapo AS source_chapo, h.description AS source_description, h.og_title AS source_og_title, h.og_description AS source_og_description'
             .' FROM cms_page_content t'
             .' JOIN cms_page p ON p.id = t.page_id AND p.deleted_at IS NULL AND p.model = 0'
             .' JOIN cms_page_content s ON s.page_id = t.page_id AND s.locale = t.translated_from'
+            .' LEFT JOIN cms_page_i18n h ON h.id = t.page_id AND h.locale = t.translated_from'
             .' WHERE t.translated_from IS NOT NULL AND t.source_fingerprint IS NOT NULL AND s.draft_document IS NOT NULL';
         $parameters = [];
 

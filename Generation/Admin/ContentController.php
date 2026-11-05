@@ -28,8 +28,10 @@ use TheliaCMS\Content\Document;
 use TheliaCMS\Content\Editing\ContentWriter;
 use TheliaCMS\Content\Editing\TranslationSource;
 use TheliaCMS\Content\InvalidDocumentException;
+use TheliaCMS\Generation\Alongside;
 use TheliaCMS\Generation\Brief;
 use TheliaCMS\Generation\GenerationRequest;
+use TheliaCMS\Generation\HeaderOutcome;
 use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Security\CmsResources;
 
@@ -247,7 +249,7 @@ final readonly class ContentController
         $source = $target->translationSource($sourceLocale);
 
         try {
-            $generation = GenerationRequest::translation($target->generationTarget(), $target->locale(), $source->document ?? new Document([]), $sourceLocale);
+            $generation = GenerationRequest::translation($target->generationTarget(), $target->locale(), $source->document ?? new Document([]), $sourceLocale, $target->translationHeader($sourceLocale));
         } catch (\InvalidArgumentException) {
             $this->support->flash($request, 'danger', $this->support->translate('That language holds nothing to write from any more: reload the screen.'));
 
@@ -387,15 +389,17 @@ final readonly class ContentController
         return $this->runner->respond(
             $request,
             $target->prepare($generation),
-            function (Document $document, ?array $fields = null, ?AiProvenance $provenance = null, array $seo = []) use ($target, $generation, $source): void {
+            function (Document $document, ?AiProvenance $provenance, Alongside $alongside) use ($target, $generation, $source): ?HeaderOutcome {
                 // The draft the answer replaces is kept first: it can be put back.
                 $this->writer->keepDraft($target->contentTarget());
                 $this->writer->saveContent($target->contentTarget(), $document, $provenance);
-                $target->saveAlongside($fields, $seo);
+                $header = $target->saveAlongside($alongside);
 
                 if (null !== $source && null !== $generation->sourceLocale) {
                     $target->recordTranslation($generation->sourceLocale, $source);
                 }
+
+                return $header;
             },
             $target->screenUrl(),
         );

@@ -115,6 +115,11 @@ final readonly class ItemContentRow implements ContentRow
         return '' === $locale || '' === $fingerprint ? null : ['locale' => $locale, 'fingerprint' => $fingerprint];
     }
 
+    public function headerWords(): ?array
+    {
+        return null;
+    }
+
     public function followSource(string $locale, string $fingerprint): void
     {
         // Following a source is not an edit: `updated_at` is what tells that

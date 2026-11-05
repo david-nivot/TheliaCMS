@@ -31,9 +31,12 @@ use TheliaCMS\Content\Editing\ContentWriter;
 use TheliaCMS\Content\Editing\TranslationFreshness;
 use TheliaCMS\Content\Editing\TranslationLink;
 use TheliaCMS\Content\Editing\TranslationSource;
+use TheliaCMS\Generation\Alongside;
 use TheliaCMS\Generation\GenerationRequest;
 use TheliaCMS\Generation\GenerationTarget;
 use TheliaCMS\Generation\GenerationTargets;
+use TheliaCMS\Generation\HeaderOutcome;
+use TheliaCMS\Generation\PageHeader;
 use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Page\Admin\EditLanguage;
 use TheliaCMS\Preview\ItemPreviewLink;
@@ -176,9 +179,16 @@ final readonly class ItemScreenTarget implements ContentScreenTarget
         return $generation;
     }
 
-    /** An item has no fields of a page type: whatever the answer writes besides the document is left out. */
-    public function saveAlongside(?array $fields, array $seo): void
+    /** The header of an item is the core's: a translation does not read it. */
+    public function translationHeader(string $sourceLocale): ?PageHeader
     {
+        return null;
+    }
+
+    /** An item has no fields of a page type and its header is the core's: whatever the answer writes besides the document is left out. */
+    public function saveAlongside(Alongside $alongside): ?HeaderOutcome
+    {
+        return null;
     }
 
     public function nothingToChange(): string

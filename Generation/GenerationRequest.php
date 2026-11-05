@@ -48,17 +48,20 @@ final readonly class GenerationRequest
         // generator is then offered to make one when the catalogue lacks
         // it, if the site allows it (GeneratorSettings::componentMaking()).
         public bool $mayMakeComponents = false,
+        // The header of the page in the language a translation is written
+        // from: what the answer carries a header for the new language from.
+        public ?PageHeader $sourceHeader = null,
     ) {
     }
 
     public function withEffort(string $effort): self
     {
-        return new self($this->target, $this->locale, $this->kind, $this->brief, $this->current, $this->sectionId, $this->sourceLocale, $effort, $this->mayMakeComponents);
+        return new self($this->target, $this->locale, $this->kind, $this->brief, $this->current, $this->sectionId, $this->sourceLocale, $effort, $this->mayMakeComponents, $this->sourceHeader);
     }
 
     public function withComponentMaking(bool $mayMakeComponents): self
     {
-        return new self($this->target, $this->locale, $this->kind, $this->brief, $this->current, $this->sectionId, $this->sourceLocale, $this->effort, $mayMakeComponents);
+        return new self($this->target, $this->locale, $this->kind, $this->brief, $this->current, $this->sectionId, $this->sourceLocale, $this->effort, $mayMakeComponents, $this->sourceHeader);
     }
 
     public static function fromBrief(GenerationTarget $target, string $locale, Brief $brief): self
@@ -97,9 +100,11 @@ final readonly class GenerationRequest
      * The document the target holds in another language, written in this
      * one: same sections, same components, same images and references.
      *
+     * @param PageHeader|null $sourceHeader the header of the page in the source language, for a page: what a header in this one is written from
+     *
      * @throws \InvalidArgumentException when the source is the language asked for, or holds nothing
      */
-    public static function translation(GenerationTarget $target, string $locale, Document $source, string $sourceLocale): self
+    public static function translation(GenerationTarget $target, string $locale, Document $source, string $sourceLocale, ?PageHeader $sourceHeader = null): self
     {
         if ($sourceLocale === $locale) {
             throw new \InvalidArgumentException('A document is translated from another language than its own.');
@@ -109,7 +114,7 @@ final readonly class GenerationRequest
             throw new \InvalidArgumentException(\sprintf('The document in %s holds nothing to translate.', $sourceLocale));
         }
 
-        return new self($target, $locale, self::KIND_TRANSLATION, new Brief(\sprintf('Translated from %s.', $sourceLocale)), $source, null, $sourceLocale);
+        return new self($target, $locale, self::KIND_TRANSLATION, new Brief(\sprintf('Translated from %s.', $sourceLocale)), $source, null, $sourceLocale, sourceHeader: $sourceHeader);
     }
 
     /**
@@ -136,6 +141,20 @@ final readonly class GenerationRequest
     public function seoAsked(): bool
     {
         return null === $this->target->item && \in_array($this->kind, [self::KIND_BRIEF, self::KIND_TRANSLATION], true);
+    }
+
+    /**
+     * Whether the answer may carry the header of the page in this language:
+     * for a page translated from a language whose header says something, not
+     * for an item of the catalogue, whose header belongs to the core, nor for
+     * anything that is not a translation.
+     */
+    public function headerAsked(): bool
+    {
+        return null === $this->target->item
+            && self::KIND_TRANSLATION === $this->kind
+            && null !== $this->sourceHeader
+            && !$this->sourceHeader->isEmpty();
     }
 
     /**

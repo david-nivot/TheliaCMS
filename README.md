@@ -88,6 +88,10 @@ somebody shortened by hand cannot be derived from a title, and deriving it
 anyway renames the page and leaves no redirection behind. The same copy is read
 when a page comes back from the bin.
 
+A language that has no address yet gets its first one from the title a
+translation wrote there, under the address of the parent in that language; an
+address a page already has is never rewritten by a translation.
+
 Renaming a page keeps its previous address as a 301. Those redirections are not
 restored by a deactivation and reactivation cycle: what a page stores is the
 address it answers on, not the list of the ones it used to answer on.

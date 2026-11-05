@@ -36,6 +36,9 @@ final readonly class DocumentSchema
 
     public const int META_DESCRIPTION_LENGTH = 155;
 
+    /** How long the title of a translated page and its sharing title may be (the width of their columns): past it, a generated one is ignored. */
+    public const int HEADER_TITLE_LENGTH = 255;
+
     public function __construct(
         private SectionCatalog $catalog,
     ) {
@@ -83,10 +86,13 @@ final readonly class DocumentSchema
      *                                 as a string like the props (docs/adr/0009)
      * @param bool         $withSeo    whether the answer may also propose the title and
      *                                 the description a search engine shows for the page
+     * @param bool         $withHeader whether the answer may also carry the header of
+     *                                 the page in its language: title, summary,
+     *                                 description and the two texts of a sharing card
      *
      * @return array<string, mixed>
      */
-    public function strict(array $kept = [], bool $withFields = false, bool $withSeo = false): array
+    public function strict(array $kept = [], bool $withFields = false, bool $withSeo = false, bool $withHeader = false): array
     {
         $names = $this->namesWith($kept);
 
@@ -120,6 +126,29 @@ final readonly class DocumentSchema
             $schema['properties']['meta_description'] = [
                 'type' => 'string',
                 'description' => \sprintf('Optional. The description a search engine shows for the page, in the language of the page, plain text of %d characters at most (longer is ignored): what a visitor finds on the page.', self::META_DESCRIPTION_LENGTH),
+            ];
+        }
+
+        if ($withHeader) {
+            $schema['properties']['title'] = [
+                'type' => 'string',
+                'description' => \sprintf('Optional. The title of the page in the language of the page, plain text on one line of %d characters at most (longer is ignored): the same thing as the title it is written from, not a slogan.', self::HEADER_TITLE_LENGTH),
+            ];
+            $schema['properties']['summary'] = [
+                'type' => 'string',
+                'description' => 'Optional. The summary of the page in the language of the page, as HTML like the one it is written from.',
+            ];
+            $schema['properties']['description'] = [
+                'type' => 'string',
+                'description' => 'Optional. The description of the page in the language of the page, as HTML like the one it is written from.',
+            ];
+            $schema['properties']['og_title'] = [
+                'type' => 'string',
+                'description' => \sprintf('Optional. The title shown when the page is shared, in the language of the page, plain text on one line of %d characters at most (longer is ignored).', self::HEADER_TITLE_LENGTH),
+            ];
+            $schema['properties']['og_description'] = [
+                'type' => 'string',
+                'description' => 'Optional. The description shown when the page is shared, in the language of the page, plain text on one line.',
             ];
         }
 

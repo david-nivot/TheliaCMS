@@ -24,9 +24,12 @@ use TheliaCMS\Content\Editing\TranslationFreshness;
 use TheliaCMS\Content\Editing\TranslationLink;
 use TheliaCMS\Content\Editing\TranslationSource;
 use TheliaCMS\Content\Site\SiteComponentPermission;
+use TheliaCMS\Generation\Alongside;
 use TheliaCMS\Generation\GenerationRequest;
 use TheliaCMS\Generation\GenerationTarget;
 use TheliaCMS\Generation\GenerationTargets;
+use TheliaCMS\Generation\HeaderOutcome;
+use TheliaCMS\Generation\PageHeader;
 use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Page\Admin\AccessibilityException;
@@ -189,18 +192,27 @@ final readonly class PageScreenTarget implements ContentScreenTarget
         return $generation->withComponentMaking($this->componentPermission->mayMake());
     }
 
-    public function saveAlongside(?array $fields, array $seo): void
+    public function translationHeader(string $sourceLocale): ?PageHeader
+    {
+        return $this->translationSources->pageHeader((int) $this->page->getId(), $sourceLocale);
+    }
+
+    public function saveAlongside(Alongside $alongside): ?HeaderOutcome
     {
         $locale = $this->locale();
 
-        if (null !== $fields && [] !== $fields) {
-            $this->pageWriter->saveFields($this->page, $locale, $fields);
+        if (null !== $alongside->fields && [] !== $alongside->fields) {
+            $this->pageWriter->saveFields($this->page, $locale, $alongside->fields);
         }
 
         // Only where the page has none in this language.
-        if ([] !== $seo) {
-            $this->pageWriter->saveSeo($this->page, $locale, $seo);
+        if ([] !== $alongside->seo) {
+            $this->pageWriter->saveSeo($this->page, $locale, $alongside->seo);
         }
+
+        // Only the columns the page holds nothing in, and an address only where
+        // the language has none.
+        return null === $alongside->header ? null : $this->pageWriter->saveTranslatedHeader($this->page, $locale, $alongside->header);
     }
 
     public function nothingToChange(): string

@@ -50,6 +50,26 @@ final readonly class TranslatableWords
     }
 
     /**
+     * The hash of the words of a header, by column: what a header is followed
+     * on, as a section is. Blanks and absent are the same, and so is the order
+     * the columns are given in.
+     *
+     * @param array<string, string|null> $header
+     */
+    public function headerFingerprint(array $header): string
+    {
+        $words = [];
+
+        foreach ($header as $column => $text) {
+            $words[(string) $column] = trim((string) $text);
+        }
+
+        ksort($words);
+
+        return hash('sha256', json_encode($words, \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES | \JSON_THROW_ON_ERROR));
+    }
+
+    /**
      * @param array<string, string> $recorded the fingerprint of the source when the translation was written
      * @param array<string, string> $current  the fingerprint of the source now
      *

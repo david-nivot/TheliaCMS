@@ -18,7 +18,9 @@ use Propel\Runtime\Connection\ConnectionInterface;
 use Symfony\Component\Clock\Clock;
 use TheliaCMS\Content\Editing\ContentRow;
 use TheliaCMS\Content\Editing\ContentSnapshot;
+use TheliaCMS\Generation\PageHeader;
 use TheliaCMS\Model\CmsPageContent;
+use TheliaCMS\Model\CmsPageI18nQuery;
 
 /**
  * The row of a page in one language, seen by the shared writer.
@@ -113,6 +115,14 @@ final readonly class PageContentRow implements ContentRow
         $fingerprint = (string) $this->content->getSourceFingerprint();
 
         return '' === $locale || '' === $fingerprint ? null : ['locale' => $locale, 'fingerprint' => $fingerprint];
+    }
+
+    public function headerWords(): array
+    {
+        $held = CmsPageI18nQuery::create()->filterById($this->content->getPageId())->filterByLocale($this->content->getLocale())->findOne();
+        $header = null === $held ? new PageHeader() : PageHeader::of($held);
+
+        return $header->byColumn();
     }
 
     public function followSource(string $locale, string $fingerprint): void

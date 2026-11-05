@@ -27,3 +27,5 @@ When you write a page from its version in another language:
   leaves blank in the other.
 - Text you cannot translate with certainty (a technical term, a regulatory
   wording, a slogan) is kept as written in the source rather than guessed.
+- The title of the page, its summary and its sharing texts say what the source
+  says, as short: the name of the page is not turned into a slogan.

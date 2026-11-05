@@ -90,6 +90,27 @@ final class DocumentSchemaTest extends TestCase
         self::assertNotContains('left_out', $strict['required'], 'A page that holds everything the brief asked says nothing.');
     }
 
+    public function testTheHeaderOfAPageJoinsTheEnvelopeOnlyWhenAskedAndIsNeverRequired(): void
+    {
+        $header = ['title', 'summary', 'description', 'og_title', 'og_description'];
+
+        $without = $this->schema->strict(withFields: true, withSeo: true)['properties'];
+        foreach ($header as $property) {
+            self::assertArrayNotHasKey($property, $without, 'A page that is not translated is asked for the envelope it always was.');
+        }
+
+        $strict = $this->schema->strict(withFields: true, withSeo: true, withHeader: true);
+
+        foreach ($header as $property) {
+            self::assertSame('string', $strict['properties'][$property]['type']);
+            self::assertNotContains($property, $strict['required'], 'The header is optional: a model that leaves one out costs no correction turn.');
+        }
+
+        self::assertArrayHasKey('meta_title', $strict['properties'], 'The search fields stay beside it.');
+        self::assertStringContainsString('255', $strict['properties']['title']['description'], 'The model is told the limit it is held to.');
+        self::assertSame([], (new \Thelia\Domain\Ai\Guardrail\AiSchemaValidator())->validate($strict, ['version' => 1, 'sections' => [], 'fields' => '{}', 'title' => 'Nos tarifs', 'summary' => '<p>Court.</p>']), 'The gateway of the core accepts the answer with a header.');
+    }
+
     public function testTheGatewayOfTheCoreAcceptsADocumentAndRefusesAnUnknownKey(): void
     {
         $validator = new \Thelia\Domain\Ai\Guardrail\AiSchemaValidator();

@@ -48,6 +48,7 @@ use TheliaCMS\Generation\GenerationTarget;
 use TheliaCMS\Generation\GeneratorSettings;
 use TheliaCMS\Generation\InvalidGenerationException;
 use TheliaCMS\Generation\PageGenerator;
+use TheliaCMS\Generation\PageHeader;
 use TheliaCMS\Generation\PromptBuilder;
 use TheliaCMS\Generation\Tool\GeneratorTools;
 use TheliaCMS\Generation\Tool\MakeComponentTool;
@@ -56,6 +57,7 @@ use TheliaCMS\Generation\TranslationGraft;
 use TheliaCMS\Model\CmsForm;
 use TheliaCMS\Model\CmsPageContentQuery;
 use TheliaCMS\Model\CmsPageGenerationQuery;
+use TheliaCMS\Page\Admin\PageDraft;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
 use TheliaCMS\Tests\Support\FakeAiGateway;
 use TheliaLibrary\Model\LibraryImage;
@@ -801,6 +803,111 @@ final class PageGeneratorTest extends CmsIntegrationTestCase
 
         self::assertSame(['meta_title' => str_repeat('é', 60)], $edge->seo, '60 characters fit, 156 for the description do not.');
         self::assertSame(1, $edge->turns);
+    }
+
+    public function testTheHeaderOfAPageIsAskedAndReadForATranslationWithASourceHeaderOnly(): void
+    {
+        $page = $this->createPage('Nos services', published: false);
+        $locale = $this->locale();
+        $otherLocale = 'fr_FR' === $locale ? 'en_US' : 'fr_FR';
+        $source = new Document([new Section('intro', RichTextSection::NAME, ['html' => '<h2>Bonjour</h2>'])]);
+        $header = new PageHeader('Nos services', '<p>Du conseil.</p>', '<p>Pour les PME.</p>', 'Nos services de conseil', 'Du conseil pour les PME');
+        $answered = self::withHeader(['title' => '  Our <b>services</b>  ', 'summary' => '<p>Some <strong>advice</strong>.</p>', 'description' => '<p>For small companies.</p>', 'og_title' => 'Our advice services', 'og_description' => "Advice\nfor small companies"]);
+        $properties = ['title', 'summary', 'description', 'og_title', 'og_description'];
+
+        $this->api->answer(FakeAiGateway::response($answered));
+        $translated = $this->generator()->generate(GenerationRequest::translation(GenerationTarget::page($page, $otherLocale), $otherLocale, $source, $locale, $header));
+
+        $request = $this->api->requests[0];
+        foreach ($properties as $property) {
+            self::assertContains($property, array_keys($request->outputSchema?->schema['properties'] ?? []));
+            self::assertNotContains($property, $request->outputSchema->schema['required'], 'The header is optional.');
+        }
+
+        self::assertSame(1, $translated->turns);
+        self::assertEquals(new PageHeader('Our services', '<p>Some <strong>advice</strong>.</p>', '<p>For small companies.</p>', 'Our advice services', 'Advice for small companies'), $translated->header, 'Titles are plain text on one line, the summary and the description keep their markup.');
+
+        // Not asked, so not read, whatever the model writes: a brief, a revision, a section,
+        // an item, and a translation whose source holds no header.
+        $this->api->answer(FakeAiGateway::response($answered));
+        $brief = $this->generator()->generate(GenerationRequest::fromBrief($this->target($page), $locale, new Brief('Des services.')));
+        $this->api->answer(FakeAiGateway::response($answered));
+        $revision = $this->generator()->generate(GenerationRequest::revision($this->target($page), $locale, $source, new Brief('Plus court.')));
+        $this->api->answer(FakeAiGateway::response(self::section(['id' => 'intro', 'component' => RichTextSection::NAME, 'props' => ['html' => '<h2>Bonjour</h2>']])));
+        $section = $this->generator()->generate(GenerationRequest::section($this->target($page), $locale, $source, 'intro', new Brief('Plus court.')));
+        $item = new CatalogueItem(CatalogueItemType::Category, 1, $locale, 'Vernis', null, null, null, null);
+        $this->api->answer(FakeAiGateway::response($answered));
+        $forItem = $this->generator()->generate(GenerationRequest::translation(GenerationTarget::item($item), $otherLocale, $source, $locale, $header));
+        $this->api->answer(FakeAiGateway::response($answered));
+        $blank = $this->generator()->generate(GenerationRequest::translation(GenerationTarget::page($page, $otherLocale), $otherLocale, $source, $locale, new PageHeader()));
+        $this->api->answer(FakeAiGateway::response($answered));
+        $without = $this->generator()->generate(GenerationRequest::translation(GenerationTarget::page($page, $otherLocale), $otherLocale, $source, $locale));
+
+        foreach (\array_slice($this->api->requests, 1) as $other) {
+            foreach ($properties as $property) {
+                self::assertNotContains($property, array_keys($other->outputSchema?->schema['properties'] ?? []), $property.' is not asked.');
+            }
+
+            self::assertStringNotContainsString('The page header in', $other->messages[0]->content);
+        }
+
+        self::assertSame([null, null, null, null, null, null], [$brief->header, $revision->header, $section->header, $forItem->header, $blank->header, $without->header]);
+    }
+
+    public function testABadHeaderIsIgnoredWithoutACorrectionAndTheOthersAreKept(): void
+    {
+        $page = $this->createPage('Nos services', published: false);
+        $locale = $this->locale();
+        $otherLocale = 'fr_FR' === $locale ? 'en_US' : 'fr_FR';
+        $source = new Document([new Section('intro', RichTextSection::NAME, ['html' => '<h2>Bonjour</h2>'])]);
+        $translate = static fn (): GenerationRequest => GenerationRequest::translation(GenerationTarget::page($page, $otherLocale), $otherLocale, $source, $locale, new PageHeader('Nos services', '<p>Du conseil.</p>'));
+
+        $this->api->answer(FakeAiGateway::response(self::withHeader(['title' => str_repeat('é', 256), 'summary' => '<p>Kept.</p>', 'description' => str_repeat('a', 10001), 'og_title' => 12, 'og_description' => ['x'], 'unknown' => 'ignored'])));
+        $long = $this->generator()->generate($translate());
+
+        self::assertSame(1, $long->turns, 'No correction turn is paid for a header the page can do without.');
+        self::assertEquals(new PageHeader(chapo: '<p>Kept.</p>'), $long->header, 'A title over 255 characters, a description over its cap, a number and a list are ignored, the rest is read.');
+
+        $this->api->answer(FakeAiGateway::response(self::withHeader(['title' => str_repeat('é', 255), 'description' => str_repeat('a', 10000)])));
+        $edge = $this->generator()->generate($translate());
+        self::assertSame(str_repeat('é', 255), $edge->header?->title, '255 characters fit.');
+        self::assertSame(str_repeat('a', 10000), $edge->header->description);
+
+        $this->api->answer(FakeAiGateway::response(self::withHeader(['title' => '   ', 'summary' => '', 'description' => "\n", 'og_title' => '<b></b>', 'og_description' => ' '])));
+        $empty = $this->generator()->generate($translate());
+        self::assertNull($empty->header, 'A header that says nothing is no header.');
+        self::assertSame(1, $empty->turns);
+    }
+
+    public function testTheSourceHeaderIsInThePromptOfATranslationInTheLanguageItIsWrittenIn(): void
+    {
+        $page = $this->createPage('Nos services', published: false);
+        $locale = $this->locale();
+        $otherLocale = 'fr_FR' === $locale ? 'en_US' : 'fr_FR';
+        $this->writer()->saveDraft($page, $otherLocale, new PageDraft(title: 'Titre cible déjà là'));
+        $source = new Document([new Section('intro', RichTextSection::NAME, ['html' => '<h2>Bonjour</h2>'])]);
+        $this->api->answer(FakeAiGateway::response(self::withHeader(['title' => 'Our services'])));
+
+        $this->generator()->generate(GenerationRequest::translation(GenerationTarget::page($page, $otherLocale), $otherLocale, $source, $locale, new PageHeader('Nos services', '<p>Du conseil.</p>', '<p>Pour les PME.</p>')));
+
+        $prompt = $this->api->requests[0]->messages[0]->content;
+        self::assertStringContainsString('# The page header in ', $prompt);
+        self::assertStringContainsString('- Title: Nos services', $prompt);
+        self::assertStringContainsString('- Summary: <p>Du conseil.</p>', $prompt);
+        self::assertStringContainsString('- Description: <p>Pour les PME.</p>', $prompt);
+        self::assertStringNotContainsString('Sharing title', $prompt, 'A field the source lacks gets no line.');
+        self::assertStringNotContainsString('Sharing description', $prompt);
+        self::assertStringNotContainsString('Titre cible déjà là', $prompt, 'The title of the page in the language being written is not the one to translate: the source one is.');
+        self::assertStringContainsString('`title`', $prompt, 'It says which properties to answer with.');
+        self::assertStringNotContainsString('`og_title`', $prompt, 'Only the fields the source holds are asked for.');
+    }
+
+    /**
+     * @param array<string, mixed> $header
+     */
+    private static function withHeader(array $header): string
+    {
+        return json_encode([...json_decode(self::document([['id' => 'intro', 'component' => RichTextSection::NAME, 'props' => ['html' => '<h2>Hello</h2>']]]), true, 16, \JSON_THROW_ON_ERROR), ...$header], \JSON_THROW_ON_ERROR | \JSON_UNESCAPED_UNICODE);
     }
 
     private const array FRAMED_IMAGE = [

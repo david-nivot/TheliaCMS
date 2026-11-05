@@ -51,6 +51,26 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   ties the ones the ledger of the generator proves current (the source was not
   saved after the call that wrote them), says what it would do without
   `--apply`, and changes nothing the second time.
+- **A translated page gets its header in the new language.** The title, the
+  summary, the description and the two sharing texts of a page translated from
+  another language are written in the same call as its content (same usage,
+  same budget, no second request); `thelia_cms:generate --translate-from` prints
+  them as a JSON line and writes them unless `--dry-run`. Only what is empty in
+  that language is written: what an editor typed there is never replaced, the
+  header keeping no revision. The summary and the description go through the
+  filter of an edited page. The language gets an address from the translated
+  title only if it has none (no address, no slug, no fixed address): an address
+  that exists is never touched, a reserved title writes the texts without an
+  address, and the pages under it follow on its first address. The content
+  screen says what was written and what was kept. Pages only: the header of a
+  catalogue item is the core's. The translation skill gains one line on titles.
+  No schema change.
+- **A translation follows the header of its source.** The words of the header of
+  the source (title, summary, description, sharing texts) are recorded with a
+  translated page beside its sections, and a change of them makes it "To be
+  translated again", named in the panel as the header of the page. A translation
+  recorded before this follows no header, so none becomes stale at once; writing
+  it again or marking it up to date starts following it.
 
 ### Changed
 

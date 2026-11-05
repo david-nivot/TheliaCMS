@@ -30,6 +30,7 @@ use TheliaCMS\Documentation\DocumentationLink;
 use TheliaCMS\Generation\Component\ComponentCandidates;
 use TheliaCMS\Generation\GenerationLog;
 use TheliaCMS\Generation\GenerationRequest;
+use TheliaCMS\Generation\HeaderOutcome;
 use TheliaCMS\Generation\WebPageRead;
 use TheliaCMS\Model\CmsPageGeneration;
 use TheliaCMS\Preview\ComponentPreviewLink;
@@ -86,6 +87,7 @@ final readonly class ContentScreen
             'sections' => null === $document ? [] : $this->sections($document, $subject, $mayPublish),
             'history' => array_map($this->row(...), $this->log->history($subject->target, $subject->locale, 20)),
             'outcome' => $this->outcome($request, $subject),
+            'header_outcome' => $this->headerOutcome($request, $subject),
             'may_generate' => $mayGenerate,
             'may_publish' => $mayPublish,
             'toolkit_url' => $this->toolkit->url(),
@@ -186,7 +188,7 @@ final readonly class ContentScreen
      * editor reads. A section only the source has (added since) has no
      * position here.
      *
-     * @return array{source: string, label: string, stale: bool, changed: list<array{id: string, rank: int|null, excerpt: string}>, removed: list<array{id: string, rank: int|null, excerpt: string}>, retranslate_form: FormView|null}|null
+     * @return array{source: string, label: string, stale: bool, header: bool, changed: list<array{id: string, rank: int|null, excerpt: string}>, removed: list<array{id: string, rank: int|null, excerpt: string}>, retranslate_form: FormView|null}|null
      */
     private function translation(ContentSubject $subject): ?array
     {
@@ -211,6 +213,7 @@ final readonly class ContentScreen
             'source' => $link->sourceLocale,
             'label' => $label,
             'stale' => $link->isStale(),
+            'header' => $link->header,
             'changed' => array_map($named, $link->changed),
             'removed' => array_map($named, $link->removed),
             'retranslate_form' => $retranslate
@@ -418,6 +421,47 @@ final readonly class ContentScreen
                 'details' => [(string) $row->getError()],
             ],
         };
+    }
+
+    /**
+     * What a translation did with the header of the page, read from the
+     * address the screen was reloaded at: the columns it wrote, the ones it
+     * left as the editor wrote them, and why an address was not derived.
+     * Nothing for an item, whose header is the core's.
+     *
+     * @return array{type: string, message: string, details: list<string>}|null
+     */
+    private function headerOutcome(Request $request, ContentSubject $subject): ?array
+    {
+        $outcome = null === $subject->target->item ? HeaderOutcome::fromQuery((string) $request->query->get(GenerationRunner::HEADER)) : null;
+
+        if (!$outcome instanceof HeaderOutcome) {
+            return null;
+        }
+
+        $columns = fn (array $named): string => implode(', ', array_map(fn (string $column): string => $this->translator->trans('Header field: '.$column, [], TheliaCMS::DOMAIN_NAME), $named));
+        $written = [...$outcome->written, ...(HeaderOutcome::ADDRESS_WRITTEN === $outcome->address ? ['address'] : [])];
+        $kept = [] === $outcome->kept ? null : $this->translator->trans('Kept as it was: %columns%.', ['%columns%' => $columns($outcome->kept)], TheliaCMS::DOMAIN_NAME);
+        $details = [];
+
+        if (HeaderOutcome::ADDRESS_RESERVED === $outcome->address) {
+            $details[] = $this->translator->trans('No address was derived: “%title%” is a reserved path. Set one in the settings of the page.', ['%title%' => $subject->target->title], TheliaCMS::DOMAIN_NAME);
+        }
+
+        if ($outcome->parentNotAddressed) {
+            $details[] = $this->translator->trans('The parent page has no address in this language yet: this page answers at the root until it has one.', [], TheliaCMS::DOMAIN_NAME);
+        }
+
+        if ([] === $written) {
+            // Nothing was written: what the page already held is the news.
+            return null === $kept && [] === $details ? null : ['type' => 'info', 'message' => $kept ?? $details[0], 'details' => null === $kept ? \array_slice($details, 1) : $details];
+        }
+
+        return [
+            'type' => 'success',
+            'message' => $this->translator->trans('Header written in this language: %columns%.', ['%columns%' => $columns($written)], TheliaCMS::DOMAIN_NAME),
+            'details' => null === $kept ? $details : [$kept, ...$details],
+        ];
     }
 
     private function kindLabel(string $kind): string

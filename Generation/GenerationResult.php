@@ -28,6 +28,7 @@ final readonly class GenerationResult
      * @param array<string, int|float|string|bool|null>|null $fields     by field code, null when no field was asked for
      * @param list<string>                                   $leftOut    what the brief asked and the page does not hold, one sentence each
      * @param array<string, string>                          $seo        the `meta_title` and `meta_description` the answer proposed and the page may take (within their length), by column; empty when none was asked or fit
+     * @param PageHeader|null                                $header     the header the answer proposed for a translated page, read as asked; null when none was asked for or fit
      * @param AiProvenance|null                              $provenance the mark of the core on the last answer; null when the shop turned the mark off for the usage
      */
     public function __construct(
@@ -43,6 +44,15 @@ final readonly class GenerationResult
         public array $leftOut = [],
         public ?AiProvenance $provenance = null,
         public array $seo = [],
+        public ?PageHeader $header = null,
     ) {
+    }
+
+    /**
+     * What a screen or a command saves for the page besides the document.
+     */
+    public function alongside(): Alongside
+    {
+        return new Alongside($this->fields, $this->seo, $this->header);
     }
 }

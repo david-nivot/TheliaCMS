@@ -22,8 +22,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Domain\Ai\AiProvenance;
 use TheliaCMS\Content\Document;
+use TheliaCMS\Generation\Alongside;
 use TheliaCMS\Generation\GenerationException;
 use TheliaCMS\Generation\GenerationRequest;
+use TheliaCMS\Generation\HeaderOutcome;
 use TheliaCMS\Generation\PageGenerator;
 use TheliaCMS\TheliaCMS;
 
@@ -44,6 +46,9 @@ final readonly class GenerationRunner
     /** The query parameter the screen reads the outcome of a call from. */
     public const string OUTCOME = 'done';
 
+    /** What a translation did with the header of a page: read from the address like the outcome of the call, a stream leaving no flash message behind. */
+    public const string HEADER = 'header';
+
     public function __construct(
         private PageGenerator $generator,
         private TranslatorInterface $translator,
@@ -52,7 +57,7 @@ final readonly class GenerationRunner
     }
 
     /**
-     * @param \Closure(Document, array<string, mixed>|null, AiProvenance|null, array<string, string>): void $save stores the document the generator hands back, the values of the fields of the page when it wrote some, the mark of provenance of the call, and the title and description for search engines it proposed
+     * @param \Closure(Document, AiProvenance|null, Alongside): (HeaderOutcome|null) $save stores the document the generator hands back, the mark of provenance of the call and what comes with the document (fields, search engine title and description, header); says what it did with the header of a page, when it did something
      */
     public function respond(Request $request, GenerationRequest $generation, \Closure $save, string $screenUrl): Response
     {
@@ -66,7 +71,7 @@ final readonly class GenerationRunner
 
         try {
             $result = $this->generator->generate($generation);
-            $save($result->document, $result->fields, $result->provenance, $result->seo);
+            $header = $save($result->document, $result->provenance, $result->alongside());
         } catch (GenerationException $exception) {
             if (null === $exception->logId) {
                 $this->flash($request, 'danger', $exception->getMessage());
@@ -82,11 +87,11 @@ final readonly class GenerationRunner
             return new RedirectResponse($screenUrl);
         }
 
-        return new RedirectResponse(self::withOutcome($screenUrl, (int) $result->logId));
+        return new RedirectResponse(self::withOutcome($screenUrl, (int) $result->logId, $header instanceof HeaderOutcome ? $header : null));
     }
 
     /**
-     * @param \Closure(Document, array<string, mixed>|null, AiProvenance|null, array<string, string>): void $save
+     * @param \Closure(Document, AiProvenance|null, Alongside): (HeaderOutcome|null) $save
      */
     private function stream(GenerationRequest $generation, \Closure $save, string $screenUrl): StreamedResponse
     {
@@ -101,7 +106,7 @@ final readonly class GenerationRunner
 
             try {
                 $result = $this->generator->generate($generation, $events);
-                $save($result->document, $result->fields, $result->provenance, $result->seo);
+                $header = $save($result->document, $result->provenance, $result->alongside());
             } catch (GenerationException $exception) {
                 $events->error($exception->getMessage(), null === $exception->logId ? null : self::withOutcome($screenUrl, $exception->logId));
 
@@ -113,7 +118,7 @@ final readonly class GenerationRunner
                 return;
             }
 
-            $events->done(self::withOutcome($screenUrl, (int) $result->logId), $this->translator->trans('The document is written.', [], TheliaCMS::DOMAIN_NAME));
+            $events->done(self::withOutcome($screenUrl, (int) $result->logId, $header instanceof HeaderOutcome ? $header : null), $this->translator->trans('The document is written.', [], TheliaCMS::DOMAIN_NAME));
         }, Response::HTTP_OK, [
             'Content-Type' => 'text/event-stream; charset=UTF-8',
             'Cache-Control' => 'no-cache, no-store, must-revalidate',
@@ -135,9 +140,11 @@ final readonly class GenerationRunner
         return str_contains((string) $request->headers->get('Accept'), 'text/event-stream');
     }
 
-    public static function withOutcome(string $url, int $logId): string
+    public static function withOutcome(string $url, int $logId, ?HeaderOutcome $header = null): string
     {
-        return $url.(str_contains($url, '?') ? '&' : '?').self::OUTCOME.'='.$logId;
+        $url .= (str_contains($url, '?') ? '&' : '?').self::OUTCOME.'='.$logId;
+
+        return null === $header || $header->isEmpty() ? $url : $url.'&'.self::HEADER.'='.$header->toQuery();
     }
 
     private function flash(Request $request, string $type, string $message): void

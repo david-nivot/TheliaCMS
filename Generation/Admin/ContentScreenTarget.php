@@ -19,8 +19,11 @@ use TheliaCMS\Content\Document;
 use TheliaCMS\Content\Editing\ContentTarget;
 use TheliaCMS\Content\Editing\TranslationLink;
 use TheliaCMS\Content\Editing\TranslationSource;
+use TheliaCMS\Generation\Alongside;
 use TheliaCMS\Generation\GenerationRequest;
 use TheliaCMS\Generation\GenerationTarget;
+use TheliaCMS\Generation\HeaderOutcome;
+use TheliaCMS\Generation\PageHeader;
 
 /**
  * One content on the content screen, in the language being edited: what the
@@ -71,12 +74,16 @@ interface ContentScreenTarget
     public function prepare(GenerationRequest $generation): GenerationRequest;
 
     /**
-     * What the generator's answer saves besides the document.
-     *
-     * @param array<string, mixed>|null $fields
-     * @param array<string, string>     $seo
+     * The header of this content in another language, for a translation to
+     * write its own from: null for a family that has none of its own.
      */
-    public function saveAlongside(?array $fields, array $seo): void;
+    public function translationHeader(string $sourceLocale): ?PageHeader;
+
+    /**
+     * What the generator's answer saves besides the document, and what it did
+     * with the header of the page, when it did something.
+     */
+    public function saveAlongside(Alongside $alongside): ?HeaderOutcome;
 
     /** Translated: what a change by hand says when the draft is blank. */
     public function nothingToChange(): string;
