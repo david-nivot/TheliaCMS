@@ -200,6 +200,40 @@ shows how to test an update, outside a transaction.
   null for the rest of the process: ask for any screen first
   (`SectionEditScreenTest::renderedOnce()`).
 
+## Browser checks
+
+`Tests/Browser/section-list-follows-preview.mjs` checks, in a real Chromium,
+that the section list of the content screen follows the preview. It is a
+standalone Node script, run by hand against a development shop: the module has
+no JavaScript tooling, and it does not run in CI.
+
+```bash
+NODE_PATH=<dir>/node_modules \
+CMS_BASE_URL=http://<shop> CMS_ADMIN_USER=<user> CMS_ADMIN_PASSWORD=<password> CMS_PAGE_ID=<id> \
+node Tests/Browser/section-list-follows-preview.mjs
+```
+
+- `NODE_PATH` points at a `node_modules` that holds the `playwright` (or
+  `playwright-core`) library; nothing is installed by the module.
+- `CMS_BASE_URL`, `CMS_ADMIN_USER`, `CMS_ADMIN_PASSWORD` and `CMS_PAGE_ID` are
+  required, with no default. The page must have sections whose list is taller
+  than the panel, and a preview that scrolls; the script fails with a message
+  otherwise.
+- `CHROME_PATH` (optional) is the Chromium executable to launch.
+- `CMS_EDITOR_SCRIPT` (optional) is the path of a local `content-editor.js`,
+  served in place of the one of the shop (`page.route`): use it to check a
+  branch the shop does not load.
+
+The window is 1440x620. The script exits with code 1 at the first failed check
+and prints one line per check: the mark at opening, the mark and the panel
+following a wheel on the preview (one `.is-current`, one `aria-current`, the
+marked section visible, no page scroll, no focus move), the locate button (the
+panel stays still for 1.2 s, the section is marked), an open edit dialog and a
+held drag (the panel does not follow), no change of order after the drag, and
+no console error. It reads only: nothing is saved and no form is sent but the
+login. The held drag is simulated with dispatched `dragstart` and `dragend`
+events, as native drag and drop is not reliable in headless Chromium.
+
 ## CSS and the security policy
 
 - `Content/Pipeline/CssAllowList.php` keeps of a `style` attribute or of a
