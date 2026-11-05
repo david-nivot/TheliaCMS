@@ -61,12 +61,12 @@
             <li class="nav-item" role="presentation">
                 {% if is_new %}
                     {# A page not saved has no id to attach files to. #}
-                    <span title="{{ 'Save the draft of the page first: documents are attached to a saved page.'|trans({}, 'theliacms') }}" data-testid="cms-page-tab-documents-hint">
+                    <span title="{{ 'Save the page first: documents are attached to a saved page.'|trans({}, 'theliacms') }}" data-testid="cms-page-tab-documents-hint">
                         <button class="nav-link disabled" type="button" disabled aria-disabled="true" aria-describedby="tab-documents-unavailable" data-testid="cms-page-tab-documents">
                             {{ 'Documents'|trans({}, 'theliacms') }}
                         </button>
                     </span>
-                    <span class="visually-hidden" id="tab-documents-unavailable">{{ 'Save the draft of the page first: documents are attached to a saved page.'|trans({}, 'theliacms') }}</span>
+                    <span class="visually-hidden" id="tab-documents-unavailable">{{ 'Save the page first: documents are attached to a saved page.'|trans({}, 'theliacms') }}</span>
                 {% else %}
                     <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-documents" type="button" data-testid="cms-page-tab-documents">
                         {{ 'Documents'|trans({}, 'theliacms') }}{% if documents|length > 0 %} <span class="badge text-bg-secondary" data-testid="cms-page-tab-documents-count">{{ documents|length }}</span>{% endif %}

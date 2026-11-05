@@ -91,8 +91,9 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   from this screen says what came of it, which it did not.
 - **The message after publishing is true of the page.** "The page is online." is
   said only when the page is: a hidden page is told "The content is published,
-  but the page is hidden", a scheduled one the date it goes online. Same on the
-  content screen and on the settings screen.
+  but the page is hidden", a scheduled one the date it goes online, written in
+  the language of the screen. Same on the content screen and on the settings
+  screen.
 - **Publish on the content screen** is first of the actions of the header, which
   wrap as a group instead of leaving it alone on a line. With nothing to publish
   it stays reachable by keyboard (`aria-disabled`) and its hint is read with it,

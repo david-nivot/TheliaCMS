@@ -1385,7 +1385,7 @@ return [
     'The model is making a component of the site: it takes up to a minute.' => 'The model is making a component of the site: it takes up to a minute.',
     'About this field' => 'About this field',
     'Documents' => 'Documents',
-    'Save the draft of the page first: documents are attached to a saved page.' => 'Save the draft of the page first: documents are attached to a saved page.',
+    'Save the page first: documents are attached to a saved page.' => 'Save the page first: documents are attached to a saved page.',
     'Files visitors can download from this page: a data sheet, a catalogue, a form. They are saved as soon as you act, with no need to save the draft, and are online at once, without publishing the page again.' => 'Files visitors can download from this page: a data sheet, a catalogue, a form. They are saved as soon as you act, with no need to save the draft, and are online at once, without publishing the page again.',
     'Attached' => 'Attached',
     'Only PDF, Word, Excel, PowerPoint, OpenDocument text, ZIP and plain text files can be attached.' => 'Only PDF, Word, Excel, PowerPoint, OpenDocument text, ZIP and plain text files can be attached.',

@@ -65,9 +65,11 @@ final class PageActionsScreenTest extends AdminScreenTestCase
 
     public function testANewPageHoldsOnlySave(): void
     {
-        $group = $this->screen('/admin/cms/pages/new')->filter('[data-testid="cms-page-actions"]');
+        $screen = $this->screen('/admin/cms/pages/new');
+        $group = $screen->filter('[data-testid="cms-page-actions"]');
 
         self::assertSame(['cms-page-save'], $group->filter('button')->each(static fn (Crawler $button): ?string => $button->attr('data-testid')));
+        self::assertSame($this->say('Save the page first: documents are attached to a saved page.'), trim($screen->filter('#tab-documents-unavailable')->text()));
     }
 
     public function testTheModelOfATypeHoldsOnlySave(): void

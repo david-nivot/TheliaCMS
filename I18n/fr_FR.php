@@ -1385,7 +1385,7 @@ return [
     'The model is making a component of the site: it takes up to a minute.' => 'Le modèle crée un composant du site : cela prend jusqu’à une minute.',
     'About this field' => 'À propos de ce champ',
     'Documents' => 'Documents',
-    'Save the draft of the page first: documents are attached to a saved page.' => 'Enregistrez d’abord le brouillon de la page : les documents sont rattachés à une page enregistrée.',
+    'Save the page first: documents are attached to a saved page.' => 'Enregistrez d’abord la page : les documents sont rattachés à une page enregistrée.',
     'Files visitors can download from this page: a data sheet, a catalogue, a form. They are saved as soon as you act, with no need to save the draft, and are online at once, without publishing the page again.' => 'Les fichiers que les visiteurs peuvent télécharger depuis cette page : une fiche technique, un catalogue, un formulaire. Chaque action est enregistrée aussitôt, sans enregistrer le brouillon, et les changements sont en ligne tout de suite, sans republier la page.',
     'Attached' => 'Ajouté',
     'Only PDF, Word, Excel, PowerPoint, OpenDocument text, ZIP and plain text files can be attached.' => 'Seuls les fichiers PDF, Word, Excel, PowerPoint, texte OpenDocument, ZIP et texte brut peuvent être joints.',

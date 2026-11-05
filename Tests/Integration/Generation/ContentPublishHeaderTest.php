@@ -117,7 +117,10 @@ final class ContentPublishHeaderTest extends AdminScreenTestCase
 
         $messages = $this->publishFromTheContentScreen($page->getId());
 
-        self::assertSame([$this->say('The content is published: the page goes online on %date%.', ['%date%' => $goesOnline->format('Y-m-d H:i')])], $messages);
+        $locale = $this->getService(TranslatorInterface::class)->getLocale();
+        $date = (new \IntlDateFormatter($locale, \IntlDateFormatter::MEDIUM, \IntlDateFormatter::SHORT))->format($goesOnline);
+        self::assertNotSame($goesOnline->format('Y-m-d H:i'), $date);
+        self::assertSame([$this->say('The content is published: the page goes online on %date%.', ['%date%' => $date])], $messages);
     }
 
     private function assertTheButtonSaysWhyItIsOff(Crawler $screen): void

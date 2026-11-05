@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Page\Admin;
 
+use Symfony\Contracts\Translation\TranslatorInterface;
 use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Model\CmsPage;
 
@@ -26,6 +27,7 @@ final readonly class PageOnlineMessage
     public function __construct(
         private AdminControllerSupport $support,
         private CmsPageAdminRepository $pages,
+        private TranslatorInterface $translator,
     ) {
     }
 
@@ -34,9 +36,20 @@ final readonly class PageOnlineMessage
         return match ($this->pages->statusOf($page, $locale)) {
             PageStatus::Unpublished => $this->support->translate('The content is published, but the page is hidden: show it to put it online.'),
             PageStatus::Scheduled => $this->support->translate('The content is published: the page goes online on %date%.', [
-                '%date%' => $page->getPublishAt()?->format('Y-m-d H:i') ?? '',
+                '%date%' => $this->dateOf($page->getPublishAt()),
             ]),
             default => $this->support->translate('The page is online.'),
         };
+    }
+
+    private function dateOf(?\DateTimeInterface $date): string
+    {
+        if (null === $date) {
+            return '';
+        }
+
+        $formatted = (new \IntlDateFormatter($this->translator->getLocale(), \IntlDateFormatter::MEDIUM, \IntlDateFormatter::SHORT))->format($date);
+
+        return false === $formatted ? $date->format('Y-m-d H:i') : $formatted;
     }
 }
