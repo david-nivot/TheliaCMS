@@ -31,6 +31,7 @@ component refuses, is rejected on the way in, every problem listed at once
 |---|---|---|
 | Free text | `cms:richtext` | The module. A piece of markup as is, filtered on the rendered page like everything that goes online. |
 | Columns | `cms:columns` | The module. Two to four columns side by side, each an image (of the media library or an `https` address) over an optional heading and a short text, drawn with the grid of `blocks.css` and stacked below 48rem. |
+| Highlights | `cms:highlights` | The module. A band of one to three blocks, the first one the large one, each a picture under a title, a catchphrase and a button, with an optional picture for a screen narrower than 1024px (see [Highlights](#highlights)). |
 | Image | `cms:image` | The module. One picture (of the media library or an `https` address) with an optional caption, at the width of the reading column (by default), of the content, of the whole screen or at a size in pixels set by the editor, with an optional frame and the part of the picture kept (see [The size and the framing of an image](#the-size-and-the-framing-of-an-image)); nothing is drawn while no image is chosen. |
 | Live content | `Partial:<name>` | Every partial of the site (`PartialDefinitionInterface`), the ones of the module and the ones other modules register. The section renders the placeholder the partial renderer substitutes when the page is served. |
 | Components of the theme | As the theme names them, `Molecules:Reinsurance:Base` | The components the active theme opens to pages in `config/theliacms.yaml` (below). |
@@ -50,6 +51,34 @@ and may write, and what the toolkit shows. A generation that
 revises or translates a page is also allowed the components that page already
 uses (`GenerationRequest::keptComponents()`), so a component switched off
 never forces a page to change.
+
+## Highlights
+
+`cms:highlights` is the band a shop puts under its header: one to three blocks,
+in the structure of the HeaderHighlights module (a large first block, shorter
+ones next to it), drawn by the module under `cms-highlights…` classes of
+`assets/blocks.css`. A block, in `blocks`:
+
+| Prop | Holds |
+|---|---|
+| `title`, `text` | the title (80 characters) and the catchphrase (160), plain text, none when empty |
+| `button_label`, `button_url` | the words and the address of the button (a path of the site, an `https`, mailto or tel address); the button is drawn only when both are set |
+| `image`, `image_alt` | the picture of a wide screen (media library or `https` address) and, for a picture kept elsewhere, its text |
+| `image_mobile` | optional: the picture drawn instead on a screen narrower than 1024px |
+| `focus_x`, `focus_y` | editor only (the generator is not offered them): the part of the picture kept when the block crops it, as an `object-position` |
+
+Zero blocks and four are refused; every prop of a block is optional.
+
+The markup is `<ul class="cms-highlights cms-highlights--N">` with one
+`<li class="cms-highlights__item">` per block (`--lead` on the first). With an
+`image_mobile`, the picture is a `<picture>` whose `<source media="(max-width: 1023px)">`
+holds the mobile picture and whose `<img>` holds the one of the computer; without
+one, the `<img>` is alone, and the publication wraps it in its own `<picture>` with a
+WebP alternative and a set of widths like any image of a page. The `<source>` of the
+mobile picture is written as is, at the full size of the file: the publication does not
+resize it. The blocks are stacked below 48rem (the breakpoint of the picture is 1024px,
+the one HeaderHighlights uses, so a tablet gets the mobile picture in a side-by-side
+layout). The text sits over the lower part of the picture, on a darkened foot.
 
 ## Props
 
