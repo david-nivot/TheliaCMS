@@ -19,6 +19,7 @@ use Thelia\Model\Lang;
 use TheliaCMS\Page\PageTagColor;
 use TheliaCMS\Page\PageTagRepository;
 use TheliaCMS\Page\PageTypeRepository;
+use TheliaCMS\Page\PublishedAccessibilityFinder;
 use TheliaCMS\Page\SampleTextPageFinder;
 use TheliaCMS\TheliaCMS;
 
@@ -36,6 +37,7 @@ final readonly class PageListPresenter
         private CmsPageAdminRepository $pages,
         private PageFilterPresenter $filterBar,
         private SampleTextPageFinder $sampleTextPages,
+        private PublishedAccessibilityFinder $accessibilityPages,
         private UrlGeneratorInterface $urls,
         private PageTagRepository $tags,
         private PageTypeRepository $types,
@@ -71,6 +73,9 @@ final readonly class PageListPresenter
             // rather than only counted somewhere else: this is the screen
             // somebody opens to go and write them.
             'sample_text_pages' => $this->sampleTextPages->publishedPagesStillHoldingSampleText($locale),
+            // Pages online with an image nobody described or a link that says
+            // nothing: published before the check, or by a path that skips it.
+            'accessibility_pages' => $this->accessibilityPages->publishedPagesWithProblems($locale),
             'page_templates' => $this->pageTemplates($locale),
         ];
     }
