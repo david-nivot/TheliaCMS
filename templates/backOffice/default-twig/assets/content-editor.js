@@ -1667,6 +1667,18 @@
             });
         });
 
+        // Publish stays in the tab order when there is nothing to publish, and
+        // says so; the click is refused here, and by the server if the script is absent.
+        root.querySelectorAll("form[data-cms-publish]").forEach(function (form) {
+            form.addEventListener("submit", function (event) {
+                var button = form.querySelector("button[aria-disabled='true']");
+
+                if (button) {
+                    event.preventDefault();
+                }
+            });
+        });
+
         /* ---- Editing by hand ------------------------------------------- */
 
         // A section saved by hand comes back with the screen the server

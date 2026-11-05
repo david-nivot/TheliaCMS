@@ -9,6 +9,13 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Added
 
+- **Save and publish.** On the settings screen of a saved page, a button saves
+  what is typed and then puts the saved content online, in two steps: the
+  settings are committed first, and a refusal of the publication (headings in
+  `block` mode, empty page, sample text, missing required field, invalid or
+  inaccessible content) leaves them saved and says so. A required field typed in
+  the Fields tab no longer needs a save before Publish. No route, no schema
+  change.
 - **A country field for forms.** A tenth kind of field, `country`, drawn as a
   drop-down of the visible countries of the shop, named in the language of the
   page (its translation, else intl from the ISO code, else the default language)
@@ -74,6 +81,25 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Changed
 
+- **Clearer buttons on the settings screen of a page.** One bar at the bottom of
+  the form, on every tab and sticky from the medium breakpoint up, holds Save,
+  Save and publish, Publish and Unpublish, shown only to whoever may use them
+  (a profile that may only look sees none). "Save draft" becomes "Save" (the
+  settings are live as soon as they are saved, only the content has a draft) and
+  "Publish this version" becomes "Publish", as on the content screen; a line under
+  the bar says what each does. Saving now says "Settings saved." and publishing
+  from this screen says what came of it, which it did not.
+- **The message after publishing is true of the page.** "The page is online." is
+  said only when the page is: a hidden page is told "The content is published,
+  but the page is hidden", a scheduled one the date it goes online, written in
+  the language of the screen. Same on the content screen and on the settings
+  screen.
+- **Publish on the content screen** is first of the actions of the header, which
+  wrap as a group instead of leaving it alone on a line. With nothing to publish
+  it stays reachable by keyboard (`aria-disabled`) and its hint is read with it,
+  instead of living in a tooltip on a `disabled` button. The screen tells whether
+  the user may change the content (`may_change`) apart from whether they may
+  publish (`may_publish`), both from the right to change pages for now.
 - **The content screens of pages and catalogue items share one controller and
   one writer.** Routes, rights and behaviour do not change. For module code:
   `ItemContentWriter`, `PageVersions`, `CmsPageContentController` and

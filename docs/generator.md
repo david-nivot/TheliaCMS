@@ -335,7 +335,11 @@ the signed preview link of the draft.
   a page, the header of the source (title, summary, description, sharing title
   and description) is compared as one more entry, named in the panel as the
   header of the page; the other meta fields, the address and the fields of the
-  page type are not. A fingerprint stored before the header was followed has no
+  page type are not. Writing the language again from the source fills only the
+  empty fields of the header, as the first translation does, but records the
+  whole header of the source as followed: a header already filled in that
+  language is not rewritten and is no longer named in the panel, so the editor
+  updates it by hand. A fingerprint stored before the header was followed has no
   `header` entry and follows none: such a translation is not made stale by the
   header until it is written again or marked up to date. The
   command `thelia_cms:generate --translate-from` keeps the draft it replaces

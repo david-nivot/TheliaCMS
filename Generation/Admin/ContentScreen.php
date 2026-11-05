@@ -73,7 +73,9 @@ final readonly class ContentScreen
     public function render(Request $request, ContentSubject $subject): string
     {
         $mayGenerate = $this->securityContext->isGranted(['ADMIN'], [CmsResources::GENERATE], [], [AccessManager::UPDATE]);
-        $mayPublish = $this->securityContext->isGranted(['ADMIN'], [CmsResources::PAGE], [], [AccessManager::UPDATE]);
+        $mayChange = $this->securityContext->isGranted(['ADMIN'], [CmsResources::PAGE], [], [AccessManager::UPDATE]);
+        // The right to change the content, until the right to publish is its own.
+        $mayPublish = $mayChange;
         $document = $subject->document;
         $lastBrief = $this->lastBrief($subject);
 
@@ -84,18 +86,19 @@ final readonly class ContentScreen
             'change_form' => $this->forms->create(ChangeType::class, null, ['action' => $subject->url('revise')])->createView(),
             'translate_form' => $this->translateForm($subject),
             'translation' => $this->translation($subject),
-            'sections' => null === $document ? [] : $this->sections($document, $subject, $mayPublish),
+            'sections' => null === $document ? [] : $this->sections($document, $subject, $mayChange),
             'history' => array_map($this->row(...), $this->log->history($subject->target, $subject->locale, 20)),
             'outcome' => $this->outcome($request, $subject),
             'header_outcome' => $this->headerOutcome($request, $subject),
             'may_generate' => $mayGenerate,
+            'may_change' => $mayChange,
             'may_publish' => $mayPublish,
             'toolkit_url' => $this->toolkit->url(),
             // The screen replaces the layout the link of every other screen
             // is drawn in: it carries its own, at the top of its panel.
             'help_url' => $this->documentation->forRoute((string) $request->attributes->get('_route')),
             'preview_widths' => $this->previewWidths->widths(),
-            'addable' => $mayPublish ? $this->sectionChoices->groups() : [],
+            'addable' => $mayChange ? $this->sectionChoices->groups() : [],
             // Prototyping a component from the page: the right to generate
             // and the rights a component of the site takes, on a screen that
             // has the routes for it (a catalogue item has none).

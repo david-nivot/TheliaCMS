@@ -31,6 +31,7 @@ use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Page\Admin\CmsPageAdminRepository;
 use TheliaCMS\Page\Admin\CmsPageWriter;
 use TheliaCMS\Page\Admin\EditLanguage;
+use TheliaCMS\Page\Admin\PageOnlineMessage;
 use TheliaCMS\Page\PageTypeRepository;
 use TheliaCMS\Preview\ItemPreviewLink;
 use TheliaCMS\Preview\PreviewLink;
@@ -60,6 +61,7 @@ final readonly class ContentTargetResolver
         private TranslationFreshness $freshness,
         private PageTypeRepository $pageTypes,
         private SiteComponentPermission $componentPermission,
+        private PageOnlineMessage $onlineMessage,
     ) {
     }
 
@@ -100,6 +102,7 @@ final readonly class ContentTargetResolver
             $this->freshness,
             $this->pageTypes,
             $this->componentPermission,
+            $this->onlineMessage,
         );
     }
 
