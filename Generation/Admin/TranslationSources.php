@@ -19,6 +19,8 @@ use Thelia\Model\LangQuery;
 use TheliaCMS\Catalogue\CatalogueItemType;
 use TheliaCMS\Catalogue\ItemContentRepository;
 use TheliaCMS\Content\Document;
+use TheliaCMS\Content\Editing\TranslationFreshness;
+use TheliaCMS\Content\Editing\TranslationSource;
 use TheliaCMS\Model\CmsPageContentQuery;
 
 /**
@@ -30,6 +32,7 @@ final readonly class TranslationSources
 {
     public function __construct(
         private ItemContentRepository $items,
+        private TranslationFreshness $freshness,
     ) {
     }
 
@@ -47,9 +50,13 @@ final readonly class TranslationSources
         return $this->sources($drafts, $locale);
     }
 
-    public function pageDocument(int $pageId, string $sourceLocale): ?Document
+    /**
+     * The draft of the page in a language, with the fingerprint of its words
+     * as it is read now.
+     */
+    public function pageSource(int $pageId, string $sourceLocale): ?TranslationSource
     {
-        return Document::fromJson(CmsPageContentQuery::create()->filterByPageId($pageId)->filterByLocale($sourceLocale)->findOne()?->getDraftDocument());
+        return $this->fingerprinted(Document::fromJson(CmsPageContentQuery::create()->filterByPageId($pageId)->filterByLocale($sourceLocale)->findOne()?->getDraftDocument()));
     }
 
     /**
@@ -60,9 +67,14 @@ final readonly class TranslationSources
         return $this->sources($this->items->draftsByLocale($type, $id), $locale);
     }
 
-    public function itemDocument(CatalogueItemType $type, int $id, string $sourceLocale): ?Document
+    public function itemSource(CatalogueItemType $type, int $id, string $sourceLocale): ?TranslationSource
     {
-        return $this->items->draftDocument($type, $id, $sourceLocale);
+        return $this->fingerprinted($this->items->draftDocument($type, $id, $sourceLocale));
+    }
+
+    private function fingerprinted(?Document $document): ?TranslationSource
+    {
+        return null === $document ? null : $this->freshness->source($document);
     }
 
     /**

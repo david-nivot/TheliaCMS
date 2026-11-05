@@ -21,6 +21,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\SecurityContext;
 use TheliaCMS\Content\Document;
+use TheliaCMS\Content\Editing\TranslationLink;
 use TheliaCMS\Content\Section;
 use TheliaCMS\Content\SectionCatalog;
 use TheliaCMS\Content\Site\SiteComponentPermission;
@@ -81,6 +82,7 @@ final readonly class ContentScreen
             'brief_form' => $this->forms->create(BriefType::class, $lastBrief, ['action' => $subject->url('generate')])->createView(),
             'change_form' => $this->forms->create(ChangeType::class, null, ['action' => $subject->url('revise')])->createView(),
             'translate_form' => $this->translateForm($subject),
+            'translation' => $this->translation($subject),
             'sections' => null === $document ? [] : $this->sections($document, $subject, $mayPublish),
             'history' => array_map($this->row(...), $this->log->history($subject->target, $subject->locale, 20)),
             'outcome' => $this->outcome($request, $subject),
@@ -172,6 +174,52 @@ final readonly class ContentScreen
                 'sources' => array_column($subject->translationSources, 'locale', 'label'),
             ])
             ->createView();
+    }
+
+    /**
+     * The language this one was written from, what changed in its draft
+     * since, and the form that writes this language again from it when
+     * something did and this one still holds a draft.
+     *
+     * The sections are named by their position and their words in this
+     * language: the ids are the same on both sides, and this is the one the
+     * editor reads. A section only the source has (added since) has no
+     * position here.
+     *
+     * @return array{source: string, label: string, stale: bool, changed: list<array{id: string, rank: int|null, excerpt: string}>, removed: list<array{id: string, rank: int|null, excerpt: string}>, retranslate_form: FormView|null}|null
+     */
+    private function translation(ContentSubject $subject): ?array
+    {
+        $link = $subject->translationLink;
+
+        if (!$link instanceof TranslationLink) {
+            return null;
+        }
+
+        $held = [];
+
+        foreach ($subject->document->sections ?? [] as $index => $section) {
+            $held[$section->id] = ['id' => $section->id, 'rank' => $index + 1, 'excerpt' => self::excerpt($section)];
+        }
+
+        $named = static fn (string $id): array => $held[$id] ?? ['id' => $id, 'rank' => null, 'excerpt' => ''];
+        $labels = array_column($subject->translationSources, 'label', 'locale');
+        $label = $labels[$link->sourceLocale] ?? $link->sourceLocale;
+        $retranslate = $link->isStale() && $subject->hasContent() && isset($labels[$link->sourceLocale]);
+
+        return [
+            'source' => $link->sourceLocale,
+            'label' => $label,
+            'stale' => $link->isStale(),
+            'changed' => array_map($named, $link->changed),
+            'removed' => array_map($named, $link->removed),
+            'retranslate_form' => $retranslate
+                ? $this->forms->create(TranslateType::class, ['source' => $link->sourceLocale], [
+                    'action' => $subject->url('translate'),
+                    'sources' => [$label => $link->sourceLocale],
+                ])->createView()
+                : null,
+        ];
     }
 
     /**

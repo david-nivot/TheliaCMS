@@ -27,6 +27,8 @@ use TheliaCMS\Catalogue\CatalogueItemType;
 use TheliaCMS\Catalogue\ItemContentRepository;
 use TheliaCMS\Content\Document;
 use TheliaCMS\Content\Editing\ContentWriter;
+use TheliaCMS\Content\Editing\TranslationFreshness;
+use TheliaCMS\Content\Editing\TranslationSource;
 use TheliaCMS\Generation\Admin\TranslationSources;
 use TheliaCMS\Http\ConsoleRequest;
 use TheliaCMS\Model\CmsPage;
@@ -56,6 +58,7 @@ final class GenerateCommand extends Command
         private readonly ContentWriter $contentWriter,
         private readonly ContentTargets $contentTargets,
         private readonly TranslationSources $translationSources,
+        private readonly TranslationFreshness $freshness,
     ) {
         parent::__construct();
     }
@@ -122,8 +125,12 @@ final class GenerateCommand extends Command
             $target = $this->targets->forPage($page, $locale);
         }
 
+        // Read before the model writes: the translation is later compared with
+        // the source as it was when it was read.
+        $source = '' === $sourceLocale ? null : $this->translationSource($sourceLocale, $page, $item);
+
         try {
-            $request = $this->generationRequest($input, $target, $locale, $briefOption, $sourceLocale, $page, $item);
+            $request = $this->generationRequest($input, $target, $locale, $briefOption, $sourceLocale, $source, $page, $item);
         } catch (\InvalidArgumentException $exception) {
             $io->error($exception->getMessage());
 
@@ -176,8 +183,15 @@ final class GenerateCommand extends Command
         }
 
         if (null !== $item) {
-            $this->request->around(function () use ($item, $result): void {
-                $this->contentWriter->saveContent($this->contentTargets->forItem($item), $result->document, $result->provenance);
+            $this->request->around(function () use ($item, $result, $sourceLocale, $source): void {
+                $contentTarget = $this->contentTargets->forItem($item);
+                // The draft the answer replaces is kept first: it can be put back.
+                $this->contentWriter->keepDraft($contentTarget);
+                $this->contentWriter->saveContent($contentTarget, $result->document, $result->provenance);
+
+                if (null !== $source) {
+                    $this->freshness->record($contentTarget, $sourceLocale, $source);
+                }
             }, $url);
             $io->success(\sprintf('Draft of %s #%d saved in %s.', $item->type->value, $item->id, $locale));
 
@@ -185,8 +199,15 @@ final class GenerateCommand extends Command
         }
 
         \assert($page instanceof CmsPage);
-        $this->request->around(function () use ($page, $locale, $result): void {
+        $this->request->around(function () use ($page, $locale, $result, $sourceLocale, $source): void {
+            $contentTarget = $this->contentTargets->forPage($page, $locale);
+            // The draft the answer replaces is kept first: it can be put back.
+            $this->contentWriter->keepDraft($contentTarget);
             $this->writer->saveContent($page, $locale, $result->document, $result->provenance);
+
+            if (null !== $source) {
+                $this->freshness->record($contentTarget, $sourceLocale, $source);
+            }
 
             if (null !== $result->fields && [] !== $result->fields) {
                 $this->writer->saveFields($page, $locale, $result->fields);
@@ -210,15 +231,12 @@ final class GenerateCommand extends Command
         string $locale,
         string $briefOption,
         string $sourceLocale,
+        ?TranslationSource $source,
         ?CmsPage $page,
         ?CatalogueItem $item,
     ): GenerationRequest {
         if ('' !== $sourceLocale) {
-            $source = null !== $item
-                ? $this->translationSources->itemDocument($item->type, $item->id, $sourceLocale)
-                : $this->translationSources->pageDocument((int) $page?->getId(), $sourceLocale);
-
-            return GenerationRequest::translation($target, $locale, $source ?? new Document([]), $sourceLocale);
+            return GenerationRequest::translation($target, $locale, $source->document ?? new Document([]), $sourceLocale);
         }
 
         $brief = new Brief(is_file($briefOption) ? (string) file_get_contents($briefOption) : $briefOption);
@@ -236,6 +254,13 @@ final class GenerateCommand extends Command
         }
 
         return GenerationRequest::revision($target, $locale, $current, $brief);
+    }
+
+    private function translationSource(string $sourceLocale, ?CmsPage $page, ?CatalogueItem $item): ?TranslationSource
+    {
+        return null !== $item
+            ? $this->translationSources->itemSource($item->type, $item->id, $sourceLocale)
+            : $this->translationSources->pageSource((int) $page?->getId(), $sourceLocale);
     }
 
     /**

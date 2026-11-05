@@ -143,6 +143,81 @@
                     </div>
                 {% endif %}
 
+                {# A language written from another: whether the words of the draft
+                   it was written from changed since, which sections, and the two
+                   ways out of it. The draft is what is compared, not what is online. #}
+                {% if translation %}
+                    <section class="cms-content__section" data-testid="cms-content-translation">
+                        {% if translation.stale %}
+                            <div class="alert alert-warning small" role="status" data-testid="cms-content-translation-stale">
+                                <i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>
+                                <strong>{{ 'To be translated again.'|trans({}, 'theliacms') }}</strong>
+                                {{ 'The %language% version changed since this language was written from it.'|trans({ '%language%': translation.label }, 'theliacms') }}
+                                {% if translation.changed is not empty %}
+                                    <span class="d-block mt-2">{{ 'Changed or added in the %language% version:'|trans({ '%language%': translation.label }, 'theliacms') }}</span>
+                                    <ul class="mb-0" data-testid="cms-content-translation-changed">
+                                        {% for section in translation.changed %}
+                                            <li>
+                                                {% if section.rank %}
+                                                    {{ 'Section %d: %s'|trans({ '%d': section.rank, '%s': section.excerpt ?: section.id }, 'theliacms') }}
+                                                {% else %}
+                                                    {{ 'A section added to the %language% version: %id%'|trans({ '%language%': translation.label, '%id%': section.id }, 'theliacms') }}
+                                                {% endif %}
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                {% endif %}
+                                {% if translation.removed is not empty %}
+                                    <span class="d-block mt-2">{{ 'No longer in the %language% version:'|trans({ '%language%': translation.label }, 'theliacms') }}</span>
+                                    <ul class="mb-0" data-testid="cms-content-translation-removed">
+                                        {% for section in translation.removed %}
+                                            <li>
+                                                {% if section.rank %}
+                                                    {{ 'Section %d: %s'|trans({ '%d': section.rank, '%s': section.excerpt ?: section.id }, 'theliacms') }}
+                                                {% else %}
+                                                    {{ section.id }}
+                                                {% endif %}
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                {% endif %}
+                                <span class="d-block mt-2 text-muted">{{ 'The draft of the %language% version is compared, not the one that is online.'|trans({ '%language%': translation.label }, 'theliacms') }}</span>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2">
+                                {% if translation.retranslate_form %}
+                                    <div data-testid="cms-content-retranslate">
+                                        {% form_theme translation.retranslate_form with bo_form_themes only %}
+                                        {{ form_start(translation.retranslate_form, { attr: { 'data-cms-generate': '', novalidate: 'novalidate', 'data-cms-confirm': 'Write this language again from the %language% version? The current draft is kept with the previous drafts.'|trans({ '%language%': translation.label }, 'theliacms') } }) }}
+                                            <input type="hidden" name="_token" value="{{ assignToken() }}">
+                                            {{ form_widget(translation.retranslate_form.source, { attr: { hidden: 'hidden' } }) }}
+                                            {% do translation.retranslate_form.source.setRendered %}
+                                            <button type="submit" class="btn btn-sm btn-primary"{% if not may_generate %} disabled{% endif %}>
+                                                <i class="bi bi-translate" aria-hidden="true"></i>
+                                                {{ 'Write it again from the %language% version'|trans({ '%language%': translation.label }, 'theliacms') }}
+                                            </button>
+                                        {{ form_end(translation.retranslate_form) }}
+                                    </div>
+                                {% endif %}
+                                {% if may_publish %}
+                                    <div data-testid="cms-content-translation-current">
+                                        <form method="post" action="{{ subject.url('translation') }}">
+                                            <input type="hidden" name="_token" value="{{ assignToken() }}">
+                                            <input type="hidden" name="source" value="{{ translation.source }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                                <i class="bi bi-check2" aria-hidden="true"></i> {{ 'Mark it up to date'|trans({}, 'theliacms') }}
+                                            </button>
+                                        </form>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted small mb-0" data-testid="cms-content-translation-ok">
+                                <i class="bi bi-check2 me-1" aria-hidden="true"></i>{{ 'Written from the %language% version, which has not changed since.'|trans({ '%language%': translation.label }, 'theliacms') }}
+                            </p>
+                        {% endif %}
+                    </section>
+                {% endif %}
+
                 {% set brief_heading = (not subject.hasContent ? 'Write it from a brief' : 'Write it again from a brief')|trans({}, 'theliacms') %}
                 {% set brief_body %}
                     {% set replaces_draft = subject.hasContent %}
@@ -347,6 +422,27 @@
                                 </li>
                             {% endfor %}
                         </ol>
+                    </section>
+                {% endif %}
+
+                {# A language written by hand is followed once tied to the
+                   language it translates. #}
+                {% if not translation and subject.hasContent and subject.translationSources is not empty and may_publish %}
+                    <section class="cms-content__section" data-testid="cms-content-translation-attach">
+                        <h2 class="cms-content__heading">{{ 'Translation'|trans({}, 'theliacms') }}</h2>
+                        <p class="text-muted small">{{ 'If this language translates another one, say which, to be told when that one changes.'|trans({}, 'theliacms') }}</p>
+                        <form method="post" action="{{ subject.url('translation') }}" class="d-flex flex-wrap gap-2 align-items-end">
+                            <input type="hidden" name="_token" value="{{ assignToken() }}">
+                            <div>
+                                <label class="form-label small" for="cms-content-translation-source">{{ 'Translates'|trans({}, 'theliacms') }}</label>
+                                <select class="form-select form-select-sm" id="cms-content-translation-source" name="source">
+                                    {% for source in subject.translationSources %}
+                                        <option value="{{ source.locale }}">{{ source.label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">{{ 'Follow its changes'|trans({}, 'theliacms') }}</button>
+                        </form>
                     </section>
                 {% endif %}
 

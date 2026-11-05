@@ -25,7 +25,9 @@ use TheliaCMS\Catalogue\ItemContentRepository;
 use TheliaCMS\Content\Document;
 use TheliaCMS\Content\DocumentSchema;
 use TheliaCMS\Content\DocumentValidator;
+use TheliaCMS\Content\Editing\ContentVersions;
 use TheliaCMS\Content\Editing\ContentWriter;
+use TheliaCMS\Content\Editing\TranslationFreshness;
 use TheliaCMS\Generation\Admin\TranslationSources;
 use TheliaCMS\Generation\Ai\GatewayFailures;
 use TheliaCMS\Generation\Ai\GeneratorToolDefinitions;
@@ -41,7 +43,10 @@ use TheliaCMS\Generation\Tool\MakeComponentTool;
 use TheliaCMS\Generation\Tool\ReadUrlTool;
 use TheliaCMS\Generation\TranslationGraft;
 use TheliaCMS\Http\ConsoleRequest;
+use TheliaCMS\Model\CmsPageContentQuery;
+use TheliaCMS\Model\CmsPageGenerationQuery;
 use TheliaCMS\Model\CmsPageQuery;
+use TheliaCMS\Model\CmsPageRevisionQuery;
 use TheliaCMS\Page\Admin\CmsPageWriter;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
 use TheliaCMS\Tests\Support\FakeAiGateway;
@@ -115,6 +120,38 @@ final class GenerateCommandTest extends CmsIntegrationTestCase
 
         self::assertSame(Command::SUCCESS, $tester->getStatusCode(), $tester->getDisplay());
         self::assertStringContainsString('Fondé en 1987 à Lyon.', $this->api->requests[0]->messages[0]->content, 'The generator reads the document to translate.');
+    }
+
+    public function testATranslationIsSavedInTheLanguageAndLeavesTheSourceAlone(): void
+    {
+        $page = $this->createPage('Notre atelier', html: '<h1>Notre atelier</h1><p>Fondé en 1987 à Lyon.</p>');
+        $target = 'fr_FR' === $this->locale() ? 'en_US' : 'fr_FR';
+        $this->answerWith('<h1>Our workshop</h1><p>Founded in 1987 in Lyon.</p>');
+
+        $tester = $this->generate(['--page' => (string) $page->getId(), '--locale' => $target, '--translate-from' => $this->locale()]);
+
+        self::assertSame(Command::SUCCESS, $tester->getStatusCode(), $tester->getDisplay());
+        $translated = CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($target)->findOne();
+        self::assertStringContainsString('Founded in 1987 in Lyon.', (string) $translated?->getDraftHtml());
+        self::assertStringContainsString('Fondé en 1987 à Lyon.', (string) CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($this->locale())->findOne()?->getDraftHtml(), 'The source draft is untouched.');
+        self::assertSame('translation', CmsPageGenerationQuery::create()->filterByTargetId($page->getId())->filterByLocale($target)->findOne()?->getKind());
+    }
+
+    public function testATranslationWrittenByTheCommandIsFollowedAndTheDraftItReplacesIsKept(): void
+    {
+        $page = $this->createPage('Notre atelier', html: '<h1>Notre atelier</h1><p>Fondé en 1987 à Lyon.</p>');
+        $target = 'fr_FR' === $this->locale() ? 'en_US' : 'fr_FR';
+        $this->getService(CmsPageWriter::class)->saveContent($page, $target, Document::richText('<h1>Our workshop</h1><p>By hand.</p>'));
+        $this->answerWith('<h1>Our workshop</h1><p>Founded in 1987 in Lyon.</p>');
+
+        $tester = $this->generate(['--page' => (string) $page->getId(), '--locale' => $target, '--translate-from' => $this->locale()]);
+
+        self::assertSame(Command::SUCCESS, $tester->getStatusCode(), $tester->getDisplay());
+        $targets = $this->getService(ContentTargets::class);
+        $link = $this->getService(TranslationFreshness::class)->link($targets->forPage($page, $target), static fn (string $locale) => $targets->forPage($page, $locale));
+        self::assertSame($this->locale(), $link?->sourceLocale, 'The command records what it wrote from.');
+        self::assertFalse($link->isStale());
+        self::assertSame(1, CmsPageRevisionQuery::create()->filterByPageId($page->getId())->filterByLocale($target)->filterByLabel(ContentVersions::DRAFT_LABEL)->count(), 'The draft the command replaces is kept, as the screen keeps it.');
     }
 
     public function testATranslationFromALanguageHoldingNothingFails(): void
@@ -193,6 +230,7 @@ final class GenerateCommandTest extends CmsIntegrationTestCase
             $this->getService(ContentWriter::class),
             $this->getService(ContentTargets::class),
             $this->getService(TranslationSources::class),
+            $this->getService(TranslationFreshness::class),
         );
 
         $tester = new CommandTester($command);

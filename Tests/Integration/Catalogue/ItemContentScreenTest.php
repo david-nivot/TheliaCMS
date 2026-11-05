@@ -14,8 +14,11 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Tests\Integration\Catalogue;
 
+use Propel\Runtime\ActiveQuery\Criteria;
 use Thelia\Domain\Ai\AiGatewayInterface;
 use Thelia\Model\Content;
+use Thelia\Model\Lang;
+use Thelia\Model\LangQuery;
 use Thelia\Test\FixtureFactory;
 use TheliaCMS\Catalogue\Admin\ItemContentTabHook;
 use TheliaCMS\Catalogue\CatalogueItemType;
@@ -191,6 +194,32 @@ final class ItemContentScreenTest extends AdminScreenTestCase
         $row = CmsItemContentQuery::create()->filterByItemType('content')->filterByItemId($id)->filterByLocale($this->locale())->findOne();
         self::assertStringContainsString('Écrit à la main.', (string) $row?->getDraftHtml(), 'The previous draft is the draft again.');
         self::assertSame(2, CmsItemRevisionQuery::create()->filterByItemType('content')->filterByItemId($id)->filterByLabel(ContentVersions::DRAFT_LABEL)->count(), 'The draft it replaced is kept in turn.');
+    }
+
+    public function testAnItemTranslatedOverADraftKeepsItAndMarksTheNewOneAsTheModelsWork(): void
+    {
+        $content = $this->content();
+        $id = (int) $content->getId();
+        $target = LangQuery::create()->filterByActive(true)->filterById(Lang::getDefaultLanguage()->getId(), Criteria::NOT_EQUAL)->orderById()->findOne();
+        self::assertNotNull($target);
+        $writer = $this->getService(ContentWriter::class);
+        $writer->saveContent($this->itemTarget(CatalogueItemType::Content, $id, $this->locale()), Document::richText('<h2>Notre méthode</h2><p>En trois étapes.</p>'));
+        $writer->saveContent($this->itemTarget(CatalogueItemType::Content, $id, $target->getLocale()), Document::richText('<h2>Our method</h2><p>By hand.</p>'));
+        $this->api->answer(FakeAiGateway::response(
+            json_encode(['version' => 1, 'sections' => [['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h2>Our method</h2><p>By the model.</p>']]]], \JSON_THROW_ON_ERROR),
+            provenance: FakeAiGateway::provenance(),
+        ));
+
+        $screen = $this->screen(\sprintf('%s?edit_language_id=%d', $this->url($content), $target->getId()));
+        $token = $this->tokenOfTheForm($screen, $this->url($content).'/generate');
+
+        self::assertSame(302, $this->send('POST', \sprintf('%s/translate?edit_language_id=%d', $this->url($content), $target->getId()), ['_token' => $token, 'cms_translate' => ['source' => $this->locale()]]));
+
+        $row = CmsItemContentQuery::create()->filterByItemType('content')->filterByItemId($id)->filterByLocale($target->getLocale())->findOne();
+        self::assertStringContainsString('By the model.', (string) $row?->getDraftHtml());
+        self::assertNotNull($row?->getDraftProvenance(), 'The translation carries the mark of the call.');
+        self::assertSame(1, CmsItemRevisionQuery::create()->filterByItemType('content')->filterByItemId($id)->filterByLocale($target->getLocale())->filterByLabel(ContentVersions::DRAFT_LABEL)->count(), 'The draft the translation replaces is kept.');
+        self::assertSame(0, CmsItemRevisionQuery::create()->filterByItemType('content')->filterByItemId($id)->filterByLocale($this->locale())->filterByLabel(ContentVersions::DRAFT_LABEL)->count(), 'The source keeps nothing: it was not replaced.');
     }
 
     public function testTheSignedLinkShowsTheDraftAndATamperedOneIsNotFound(): void

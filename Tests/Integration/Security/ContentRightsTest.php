@@ -30,7 +30,7 @@ final class ContentRightsTest extends AdminScreenTestCase
 {
     private const array GENERATOR_ACTIONS = ['generate', 'revise', 'section', 'translate'];
 
-    private const array CHANGE_ACTIONS = ['update', 'remove', 'duplicate', 'move', 'add', 'restore', 'publish'];
+    private const array CHANGE_ACTIONS = ['update', 'remove', 'duplicate', 'move', 'add', 'restore', 'publish', 'translation'];
 
     public function testWithoutTheGenerateRightOnlyTheGeneratorActionsAreRefused(): void
     {

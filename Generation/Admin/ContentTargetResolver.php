@@ -23,6 +23,7 @@ use TheliaCMS\Catalogue\CatalogueItems;
 use TheliaCMS\Catalogue\CatalogueItemType;
 use TheliaCMS\Catalogue\ItemContentRepository;
 use TheliaCMS\Content\Editing\ContentWriter;
+use TheliaCMS\Content\Editing\TranslationFreshness;
 use TheliaCMS\Content\Site\SiteComponentPermission;
 use TheliaCMS\Generation\GenerationTargets;
 use TheliaCMS\Http\Admin\AdminControllerSupport;
@@ -56,6 +57,7 @@ final readonly class ContentTargetResolver
         private PreviewLink $pagePreviewLinks,
         private ItemPreviewLink $itemPreviewLinks,
         private TranslationSources $translationSources,
+        private TranslationFreshness $freshness,
         private PageTypeRepository $pageTypes,
         private SiteComponentPermission $componentPermission,
     ) {
@@ -95,6 +97,7 @@ final readonly class ContentTargetResolver
             $this->generationTargets,
             $this->pagePreviewLinks,
             $this->translationSources,
+            $this->freshness,
             $this->pageTypes,
             $this->componentPermission,
         );
@@ -123,6 +126,7 @@ final readonly class ContentTargetResolver
             $this->generationTargets,
             $this->itemPreviewLinks,
             $this->translationSources,
+            $this->freshness,
         );
     }
 }

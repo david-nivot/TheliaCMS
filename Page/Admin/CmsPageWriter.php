@@ -594,14 +594,22 @@ final readonly class CmsPageWriter
             $contents = CmsPageContentQuery::create()->filterByPageId($page->getId())->find();
 
             foreach ($contents as $content) {
-                (new CmsPageContent())
+                $copied = (new CmsPageContent())
                     ->setPageId($copy->getId())
                     ->setLocale($content->getLocale())
                     ->setDraftDocument($content->getDraftDocument() ?? $content->getPublishedDocument())
                     ->setDraftHtml($content->getDraftHtml() ?? $content->getPublishedHtml())
                     ->setDraftProvenance(null !== $content->getDraftDocument() ? $content->getDraftProvenance() : $content->getPublishedProvenance())
-                    ->setDraftUpdatedBy($this->securityContext->getAdminUser()?->getId())
-                    ->save($connection);
+                    ->setDraftUpdatedBy($this->securityContext->getAdminUser()?->getId());
+
+                // The copy of a translation is a translation of the copy of its
+                // source: same words, same source language. Only when the draft
+                // is the one the link was taken from.
+                if (null !== $content->getDraftDocument()) {
+                    $copied->setTranslatedFrom($content->getTranslatedFrom())->setSourceFingerprint($content->getSourceFingerprint());
+                }
+
+                $copied->save($connection);
 
                 $this->urls->refresh($copy, (string) $content->getLocale());
             }

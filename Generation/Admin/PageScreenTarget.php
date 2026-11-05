@@ -20,6 +20,9 @@ use TheliaCMS\Catalogue\Admin\ContentTargets;
 use TheliaCMS\Content\Document;
 use TheliaCMS\Content\Editing\ContentTarget;
 use TheliaCMS\Content\Editing\ContentWriter;
+use TheliaCMS\Content\Editing\TranslationFreshness;
+use TheliaCMS\Content\Editing\TranslationLink;
+use TheliaCMS\Content\Editing\TranslationSource;
 use TheliaCMS\Content\Site\SiteComponentPermission;
 use TheliaCMS\Generation\GenerationRequest;
 use TheliaCMS\Generation\GenerationTarget;
@@ -58,6 +61,7 @@ final readonly class PageScreenTarget implements ContentScreenTarget
         'duplicate' => 'admin.cms.pages.content.duplicate',
         'add' => 'admin.cms.pages.content.add',
         'translate' => 'admin.cms.pages.content.translate',
+        'translation' => 'admin.cms.pages.content.translation',
         'publish' => 'admin.cms.pages.content.publish',
         'component_generate' => 'admin.cms.pages.content.component.generate',
         'component_keep' => 'admin.cms.pages.content.component.keep',
@@ -75,6 +79,7 @@ final readonly class PageScreenTarget implements ContentScreenTarget
         private GenerationTargets $generationTargets,
         private PreviewLink $previewLinks,
         private TranslationSources $translationSources,
+        private TranslationFreshness $freshness,
         private PageTypeRepository $pageTypes,
         private SiteComponentPermission $componentPermission,
     ) {
@@ -126,6 +131,7 @@ final readonly class PageScreenTarget implements ContentScreenTarget
             draftPagePreviewUrl: $this->previewLinks->urlFor((int) $this->page->getId(), $locale),
             template: $this->template($locale),
             previousDrafts: $this->writer->previousDrafts($this->contentTarget()),
+            translationLink: $this->translationLink(),
         );
     }
 
@@ -154,9 +160,24 @@ final readonly class PageScreenTarget implements ContentScreenTarget
         return $this->translationSources->forPage((int) $this->page->getId(), $this->locale());
     }
 
-    public function translationSource(string $sourceLocale): ?Document
+    public function translationSource(string $sourceLocale): ?TranslationSource
     {
-        return $this->translationSources->pageDocument((int) $this->page->getId(), $sourceLocale);
+        return $this->translationSources->pageSource((int) $this->page->getId(), $sourceLocale);
+    }
+
+    public function translationLink(): ?TranslationLink
+    {
+        return $this->freshness->link($this->contentTarget(), fn (string $locale): ContentTarget => $this->contentTargets->forPage($this->page, $locale));
+    }
+
+    public function followTranslation(string $sourceLocale): bool
+    {
+        return $this->freshness->follow($this->contentTarget(), $this->contentTargets->forPage($this->page, $sourceLocale));
+    }
+
+    public function recordTranslation(string $sourceLocale, TranslationSource $source): void
+    {
+        $this->freshness->record($this->contentTarget(), $sourceLocale, $source);
     }
 
     /**

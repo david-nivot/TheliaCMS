@@ -20,6 +20,7 @@ use TheliaCMS\Model\CmsFormSubmissionQuery;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Model\CmsPageContentQuery;
 use TheliaCMS\Model\CmsPageQuery;
+use TheliaCMS\Page\StalePages;
 
 /**
  * What somebody running a showcase site opens the back office to find out.
@@ -34,6 +35,11 @@ final readonly class ShowcaseStats
     private const int RECENT_DAYS = 30;
     private const int RECENT_PAGES = 5;
 
+    public function __construct(
+        private StalePages $stalePages,
+    ) {
+    }
+
     /**
      * @return array{
      *     submissions_recent: int,
@@ -42,7 +48,7 @@ final readonly class ShowcaseStats
      *     pages_published: int,
      *     pages_draft: int,
      *     recent_pages: list<array{id: int, title: string, updated_at: ?\DateTimeInterface}>,
-     *     completeness: list<array{locale: string, title: string, published: int, total: int}>,
+     *     completeness: list<array{locale: string, language_id: int, title: string, published: int, total: int, stale: int}>,
      * }
      */
     public function collect(string $locale): array
@@ -94,11 +100,12 @@ final readonly class ShowcaseStats
      * A page written in French and never translated is invisible to half the
      * visitors of a bilingual site, and nothing else in the back office says so.
      *
-     * @return list<array{locale: string, title: string, published: int, total: int}>
+     * @return list<array{locale: string, language_id: int, title: string, published: int, total: int, stale: int}>
      */
     private function completeness(): array
     {
         $total = $this->livePages()->count();
+        $stale = $this->stalePages->counts();
         $rows = [];
 
         foreach (LangQuery::create()->filterByActive(1)->orderByPosition()->find() as $lang) {
@@ -106,6 +113,7 @@ final readonly class ShowcaseStats
 
             $rows[] = [
                 'locale' => $locale,
+                'language_id' => (int) $lang->getId(),
                 'title' => (string) $lang->getTitle(),
                 'published' => CmsPageContentQuery::create()
                     ->filterByLocale($locale)
@@ -115,6 +123,8 @@ final readonly class ShowcaseStats
                     ->endUse()
                     ->count(),
                 'total' => $total,
+                // Written from another language whose draft changed since.
+                'stale' => $stale[$locale] ?? 0,
             ];
         }
 
