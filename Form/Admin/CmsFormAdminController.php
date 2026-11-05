@@ -20,24 +20,21 @@ use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
-use Thelia\Core\Security\SecurityContext;
 use Thelia\Model\Lang;
 use TheliaCMS\Form\FieldChoices;
 use TheliaCMS\Form\FieldOptions;
 use TheliaCMS\Form\FieldType;
 use TheliaCMS\Form\RetentionPolicy;
+use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Model\CmsForm;
 use TheliaCMS\Model\CmsFormField;
 use TheliaCMS\Page\Admin\CmsPageAdminRepository;
 use TheliaCMS\Page\Admin\EditLanguage;
 use TheliaCMS\Security\CmsResources;
-use TheliaCMS\TheliaCMS;
 use Twig\Environment;
 
 /**
@@ -57,8 +54,7 @@ final readonly class CmsFormAdminController
         private Environment $twig,
         private FormFactoryInterface $forms,
         private UrlGeneratorInterface $urls,
-        private SecurityContext $securityContext,
-        private TranslatorInterface $translator,
+        private AdminControllerSupport $support,
         private CmsFormRepository $repository,
         private CmsFormWriter $writer,
         private CmsPageAdminRepository $pages,
@@ -131,9 +127,7 @@ final readonly class CmsFormAdminController
 
         $this->writer->delete($this->formOrFail($id));
 
-        return new RedirectResponse($this->urls->generate('admin.cms.forms.list', [
-            EditLanguage::PARAMETER => $this->languages->resolve($request)->getId(),
-        ]));
+        return $this->support->redirectInLanguage('admin.cms.forms.list', $this->languages->resolve($request)->getId());
     }
 
     /**
@@ -158,7 +152,7 @@ final readonly class CmsFormAdminController
 
                 return $this->backToEdit($id, $lang);
             } catch (\DomainException $exception) {
-                $form->get('name')->addError(new FormError($this->translate($exception->getMessage())));
+                $form->get('name')->addError(new FormError($this->support->translate($exception->getMessage())));
             }
         }
 
@@ -307,7 +301,7 @@ final readonly class CmsFormAdminController
                 receiptBody: trim((string) $data['receiptBody']),
             ));
         } catch (\DomainException $exception) {
-            $form->get('code')->addError(new FormError($this->translate($exception->getMessage())));
+            $form->get('code')->addError(new FormError($this->support->translate($exception->getMessage())));
 
             return false;
         }
@@ -339,26 +333,16 @@ final readonly class CmsFormAdminController
 
     private function mayWrite(string $access): bool
     {
-        return $this->securityContext->isGranted(['ADMIN'], [CmsResources::FORM], [], [$access]);
+        return $this->support->isGranted(CmsResources::FORM, $access);
     }
 
     private function denyUnless(string $access): void
     {
-        if (!$this->mayWrite($access)) {
-            throw new AccessDeniedHttpException($this->translate('You are not allowed to change forms.'));
-        }
-    }
-
-    private function translate(string $message): string
-    {
-        return $this->translator->trans($message, [], TheliaCMS::DOMAIN_NAME);
+        $this->support->denyUnless(CmsResources::FORM, $access, 'You are not allowed to change forms.');
     }
 
     private function backToEdit(int $id, Lang $lang): RedirectResponse
     {
-        return new RedirectResponse($this->urls->generate('admin.cms.forms.edit', [
-            'id' => $id,
-            EditLanguage::PARAMETER => $lang->getId(),
-        ]));
+        return $this->support->redirectInLanguage('admin.cms.forms.edit', $lang->getId(), ['id' => $id]);
     }
 }

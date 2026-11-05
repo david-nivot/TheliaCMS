@@ -14,15 +14,13 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Notice;
 
-use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Thelia\Core\Security\AccessManager;
-use Thelia\Core\Security\SecurityContext;
 use Thelia\Tools\TokenProvider;
+use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Security\CmsResources;
 
 /**
@@ -36,16 +34,15 @@ final readonly class NativeContentNoticeController
 {
     public function __construct(
         private NativeContentNotice $notice,
-        private SecurityContext $securityContext,
+        private AdminControllerSupport $support,
         private TokenProvider $tokens,
-        private UrlGeneratorInterface $urls,
     ) {
     }
 
     #[Route('/admin/cms/pages/native-content-notice/dismiss', name: 'admin.cms.pages.native_content_notice.dismiss', methods: ['POST'])]
     public function dismiss(Request $request): Response
     {
-        if (!$this->securityContext->isGranted(['ADMIN'], [CmsResources::PAGE], [], [AccessManager::UPDATE])) {
+        if (!$this->support->isGranted(CmsResources::PAGE, AccessManager::UPDATE)) {
             throw new AccessDeniedHttpException();
         }
 
@@ -55,6 +52,6 @@ final readonly class NativeContentNoticeController
 
         $this->notice->dismiss();
 
-        return new RedirectResponse($this->urls->generate('admin.cms.pages.list'));
+        return $this->support->redirect('admin.cms.pages.list');
     }
 }

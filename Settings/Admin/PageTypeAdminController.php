@@ -20,15 +20,14 @@ use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
-use Thelia\Core\Security\SecurityContext;
 use Thelia\Model\Lang;
 use TheliaCMS\Generation\Brief;
+use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Page\Admin\CmsPageWriter;
 use TheliaCMS\Page\Admin\EditLanguage;
 use TheliaCMS\Page\Field\FieldDefinition;
@@ -40,7 +39,6 @@ use TheliaCMS\Page\PageTypeInUseException;
 use TheliaCMS\Page\PageTypeRepository;
 use TheliaCMS\Page\PageTypeWriter;
 use TheliaCMS\Security\CmsResources;
-use TheliaCMS\TheliaCMS;
 use Twig\Environment;
 
 /**
@@ -62,7 +60,7 @@ final readonly class PageTypeAdminController
         private Environment $twig,
         private FormFactoryInterface $forms,
         private UrlGeneratorInterface $urls,
-        private SecurityContext $securityContext,
+        private AdminControllerSupport $support,
         private TranslatorInterface $translator,
         private PageTypeRepository $pageTypes,
         private PageTypeWriter $writer,
@@ -116,8 +114,8 @@ final readonly class PageTypeAdminController
         return new Response($this->twig->render(self::TEMPLATE, [
             'types' => $rows,
             'form' => $form->createView(),
-            'may_create' => $this->isGranted(AccessManager::CREATE),
-            'may_delete' => $this->isGranted(AccessManager::DELETE),
+            'may_create' => $this->support->isGranted(CmsResources::SETTINGS, AccessManager::CREATE),
+            'may_delete' => $this->support->isGranted(CmsResources::SETTINGS, AccessManager::DELETE),
         ]));
     }
 
@@ -133,16 +131,15 @@ final readonly class PageTypeAdminController
         try {
             $this->writer->delete($code);
         } catch (PageTypeInUseException $exception) {
-            $this->flash($request, 'danger', $this->translator->trans(
+            $this->support->flash($request, 'danger', $this->support->translate(
                 'The type "%code%" is still used by %count% page(s), the bin included. Give them another type first.',
                 ['%code%' => $code, '%count%' => $exception->pages],
-                TheliaCMS::DOMAIN_NAME,
             ));
 
             return $this->backToList();
         }
 
-        $this->flash($request, 'success', $this->translator->trans('The page template has been deleted.', [], TheliaCMS::DOMAIN_NAME));
+        $this->support->flash($request, 'success', $this->support->translate('The page template has been deleted.'));
 
         return $this->backToList();
     }
@@ -175,7 +172,7 @@ final readonly class PageTypeAdminController
                 '' === $text ? null : new Brief($text, self::blankToNull($data['briefTone'] ?? null), self::blankToNull($data['briefAudience'] ?? null)),
                 instructions: $data['instructions'] ?? null,
             );
-            $this->flash($request, 'success', $this->translate('The page template is saved.'));
+            $this->support->flash($request, 'success', $this->support->translate('The page template is saved.'));
 
             return $this->backToEdit($code, $lang);
         }
@@ -256,7 +253,7 @@ final readonly class PageTypeAdminController
         $model = $this->pageTypes->modelOf($code) ?? $this->pages->createModel(
             $code,
             $lang->getLocale(),
-            $this->translator->trans('%type% (model)', ['%type%' => $details->title($lang->getLocale())], TheliaCMS::DOMAIN_NAME),
+            $this->support->translate('%type% (model)', ['%type%' => $details->title($lang->getLocale())]),
         );
 
         return new RedirectResponse($this->urls->generate('admin.cms.pages.content.edit', [
@@ -295,7 +292,7 @@ final readonly class PageTypeAdminController
             'template' => $this->templates->resolve($details->code),
             'edit_locale' => $locale,
             'edit_language_id' => $lang->getId(),
-            'may_update' => $this->isGranted(AccessManager::UPDATE),
+            'may_update' => $this->support->isGranted(CmsResources::SETTINGS, AccessManager::UPDATE),
         ]));
     }
 
@@ -348,12 +345,7 @@ final readonly class PageTypeAdminController
 
     private function backToEdit(string $code, Lang $lang): RedirectResponse
     {
-        return new RedirectResponse($this->urls->generate('admin.cms.settings.page_types.edit', ['code' => $code, EditLanguage::PARAMETER => $lang->getId()]));
-    }
-
-    private function translate(string $message): string
-    {
-        return $this->translator->trans($message, [], TheliaCMS::DOMAIN_NAME);
+        return $this->support->redirectInLanguage('admin.cms.settings.page_types.edit', $lang->getId(), ['code' => $code]);
     }
 
     private static function blankToNull(?string $value): ?string
@@ -366,44 +358,24 @@ final readonly class PageTypeAdminController
         $code = (string) $form->get('code')->getData();
 
         if ($this->pageTypes->exists($code)) {
-            $form->get('code')->addError(new FormError($this->translator->trans('This type exists already.', [], TheliaCMS::DOMAIN_NAME)));
+            $form->get('code')->addError(new FormError($this->support->translate('This type exists already.')));
 
             return null;
         }
 
         $this->writer->add($code);
-        $this->flash($request, 'success', $this->translator->trans('The page template has been added.', [], TheliaCMS::DOMAIN_NAME));
+        $this->support->flash($request, 'success', $this->support->translate('The page template has been added.'));
 
         return $this->backToList();
     }
 
     private function backToList(): RedirectResponse
     {
-        return new RedirectResponse($this->urls->generate('admin.cms.settings.page_types.list'));
-    }
-
-    private function flash(Request $request, string $type, string $message): void
-    {
-        if (!$request->hasSession()) {
-            return;
-        }
-
-        $session = $request->getSession();
-
-        if (method_exists($session, 'getFlashBag')) {
-            $session->getFlashBag()->add($type, $message);
-        }
-    }
-
-    private function isGranted(string $access): bool
-    {
-        return $this->securityContext->isGranted(['ADMIN'], [CmsResources::SETTINGS], [], [$access]);
+        return $this->support->redirect('admin.cms.settings.page_types.list');
     }
 
     private function denyUnless(string $access): void
     {
-        if (!$this->isGranted($access)) {
-            throw new AccessDeniedHttpException($this->translator->trans('You are not allowed to change these settings.', [], TheliaCMS::DOMAIN_NAME));
-        }
+        $this->support->denyUnless(CmsResources::SETTINGS, $access, 'You are not allowed to change these settings.');
     }
 }

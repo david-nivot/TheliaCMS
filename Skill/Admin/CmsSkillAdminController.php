@@ -18,17 +18,14 @@ use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
-use Thelia\Core\Security\SecurityContext;
+use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Security\CmsResources;
 use TheliaCMS\Skill\Skill;
 use TheliaCMS\Skill\SkillRepository;
-use TheliaCMS\TheliaCMS;
 use Twig\Environment;
 
 /**
@@ -49,8 +46,7 @@ final readonly class CmsSkillAdminController
         private Environment $twig,
         private FormFactoryInterface $forms,
         private UrlGeneratorInterface $urls,
-        private SecurityContext $securityContext,
-        private TranslatorInterface $translator,
+        private AdminControllerSupport $support,
         private SkillRepository $skills,
     ) {
     }
@@ -60,7 +56,7 @@ final readonly class CmsSkillAdminController
     {
         return new Response($this->twig->render(self::LIST_TEMPLATE, [
             'skills' => $this->skills->all(),
-            'may_update' => $this->isGranted(AccessManager::UPDATE),
+            'may_update' => $this->support->isGranted(CmsResources::SETTINGS, AccessManager::UPDATE),
         ]));
     }
 
@@ -94,7 +90,7 @@ final readonly class CmsSkillAdminController
                 (bool) $data['enabled'],
                 null === $data['position'] ? null : (int) $data['position'],
             );
-            $this->flash($request, 'success', $this->translate('The skill has been saved.'));
+            $this->support->flash($request, 'success', $this->support->translate('The skill has been saved.'));
 
             return $this->backToList();
         }
@@ -102,7 +98,7 @@ final readonly class CmsSkillAdminController
         return new Response($this->twig->render(self::EDIT_TEMPLATE, [
             'skill' => $skill,
             'form' => $form->createView(),
-            'may_update' => $this->isGranted(AccessManager::UPDATE),
+            'may_update' => $this->support->isGranted(CmsResources::SETTINGS, AccessManager::UPDATE),
         ]));
     }
 
@@ -116,7 +112,7 @@ final readonly class CmsSkillAdminController
         }
 
         $this->skills->restore($code);
-        $this->flash($request, 'success', $this->translate('The shipped text of the skill has been put back.'));
+        $this->support->flash($request, 'success', $this->support->translate('The shipped text of the skill has been put back.'));
 
         return $this->backToList();
     }
@@ -132,7 +128,7 @@ final readonly class CmsSkillAdminController
         $this->skillOrFail($code);
 
         $this->skills->move($code, 'up' === $direction ? -1 : 1);
-        $this->flash($request, 'success', $this->translate('The order of the skills has been saved.'));
+        $this->support->flash($request, 'success', $this->support->translate('The order of the skills has been saved.'));
 
         return $this->backToList();
     }
@@ -150,36 +146,11 @@ final readonly class CmsSkillAdminController
 
     private function backToList(): RedirectResponse
     {
-        return new RedirectResponse($this->urls->generate('admin.cms.skills.list'));
-    }
-
-    private function flash(Request $request, string $type, string $message): void
-    {
-        if (!$request->hasSession()) {
-            return;
-        }
-
-        $session = $request->getSession();
-
-        if (method_exists($session, 'getFlashBag')) {
-            $session->getFlashBag()->add($type, $message);
-        }
-    }
-
-    private function translate(string $message): string
-    {
-        return $this->translator->trans($message, [], TheliaCMS::DOMAIN_NAME);
-    }
-
-    private function isGranted(string $access): bool
-    {
-        return $this->securityContext->isGranted(['ADMIN'], [CmsResources::SETTINGS], [], [$access]);
+        return $this->support->redirect('admin.cms.skills.list');
     }
 
     private function denyUnlessUpdate(): void
     {
-        if (!$this->isGranted(AccessManager::UPDATE)) {
-            throw new AccessDeniedHttpException($this->translate('You are not allowed to change the skills.'));
-        }
+        $this->support->denyUnless(CmsResources::SETTINGS, AccessManager::UPDATE, 'You are not allowed to change the skills.');
     }
 }

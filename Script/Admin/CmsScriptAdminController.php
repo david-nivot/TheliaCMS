@@ -15,23 +15,19 @@ declare(strict_types=1);
 namespace TheliaCMS\Script\Admin;
 
 use Symfony\Component\Form\FormFactoryInterface;
-use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\SecurityContext;
 use TheliaCMS\Consent\ConsentSettings;
+use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Model\CmsScript;
-use TheliaCMS\Model\CmsScriptQuery;
 use TheliaCMS\Page\Admin\CmsActivityLog;
 use TheliaCMS\Script\ScriptPlacement;
 use TheliaCMS\Security\CmsResources;
-use TheliaCMS\TheliaCMS;
 use Twig\Environment;
 
 /**
@@ -52,7 +48,8 @@ final readonly class CmsScriptAdminController
         private FormFactoryInterface $forms,
         private UrlGeneratorInterface $urls,
         private SecurityContext $securityContext,
-        private TranslatorInterface $translator,
+        private AdminControllerSupport $support,
+        private CmsScriptRepository $scripts,
         private ConsentSettings $consent,
         private CmsActivityLog $activityLog,
     ) {
@@ -77,7 +74,7 @@ final readonly class CmsScriptAdminController
             $this->activityLog->record('UPDATE', 0, 'CMS consent settings saved', CmsResources::CUSTOM_CODE);
             $this->flash($request, 'success', 'Settings saved.');
 
-            return new RedirectResponse($this->urls->generate('admin.cms.scripts.list'));
+            return $this->support->redirect('admin.cms.scripts.list');
         }
 
         $labels = [];
@@ -89,12 +86,12 @@ final readonly class CmsScriptAdminController
         }
 
         return new Response($this->twig->render(self::LIST_TEMPLATE, [
-            'scripts' => $this->byPlacement(),
+            'scripts' => $this->scripts->byPlacement(),
             'placement_labels' => $labels,
             'placement_help' => $help,
             'consent_form' => $form->createView(),
             'consent_configured' => $this->consent->isConfigured(),
-            'may_write' => $this->isGranted(AccessManager::UPDATE),
+            'may_write' => $this->support->isGranted(CmsResources::CUSTOM_CODE, AccessManager::UPDATE),
         ]));
     }
 
@@ -124,7 +121,7 @@ final readonly class CmsScriptAdminController
         $this->activityLog->record('DELETE', $id, \sprintf('CMS script "%s" deleted', $title), CmsResources::CUSTOM_CODE);
         $this->flash($request, 'success', 'The snippet has been removed.');
 
-        return new RedirectResponse($this->urls->generate('admin.cms.scripts.list'));
+        return $this->support->redirect('admin.cms.scripts.list');
     }
 
     private function editScript(Request $request, CmsScript $script): Response
@@ -158,7 +155,7 @@ final readonly class CmsScriptAdminController
             );
             $this->flash($request, 'success', 'The snippet has been saved.');
 
-            return new RedirectResponse($this->urls->generate('admin.cms.scripts.list'));
+            return $this->support->redirect('admin.cms.scripts.list');
         }
 
         return new Response($this->twig->render(self::EDIT_TEMPLATE, [
@@ -166,7 +163,7 @@ final readonly class CmsScriptAdminController
             'form' => $form->createView(),
             'consent_configured' => $this->consent->isConfigured(),
             'known_vendors' => array_keys($this->consent->consentMap()),
-            'may_write' => $this->isGranted($isNew ? AccessManager::CREATE : AccessManager::UPDATE),
+            'may_write' => $this->support->isGranted(CmsResources::CUSTOM_CODE, $isNew ? AccessManager::CREATE : AccessManager::UPDATE),
         ]));
     }
 
@@ -193,27 +190,9 @@ final readonly class CmsScriptAdminController
         $script->save();
     }
 
-    /**
-     * @return array<string, list<CmsScript>>
-     */
-    private function byPlacement(): array
-    {
-        $grouped = [];
-
-        foreach (ScriptPlacement::cases() as $placement) {
-            $grouped[$placement->value] = [];
-        }
-
-        foreach (CmsScriptQuery::create()->orderById()->find() as $script) {
-            $grouped[ScriptPlacement::fromStorage($script->getPlacement())->value][] = $script;
-        }
-
-        return $grouped;
-    }
-
     private function scriptOrFail(int $id): CmsScript
     {
-        $script = CmsScriptQuery::create()->findPk($id);
+        $script = $this->scripts->find($id);
 
         if (!$script instanceof CmsScript) {
             throw new NotFoundHttpException();
@@ -222,27 +201,13 @@ final readonly class CmsScriptAdminController
         return $script;
     }
 
-    private function isGranted(string $access): bool
-    {
-        return $this->securityContext->isGranted(['ADMIN'], [CmsResources::CUSTOM_CODE], [], [$access]);
-    }
-
     private function denyUnless(string $access): void
     {
-        if (!$this->isGranted($access)) {
-            throw new AccessDeniedHttpException($this->translate('You are not allowed to change the scripts of this site.'));
-        }
+        $this->support->denyUnless(CmsResources::CUSTOM_CODE, $access, 'You are not allowed to change the scripts of this site.');
     }
 
     private function flash(Request $request, string $type, string $message): void
     {
-        if ($request->hasSession()) {
-            $request->getSession()->getFlashBag()->add($type, $this->translate($message));
-        }
-    }
-
-    private function translate(string $message): string
-    {
-        return $this->translator->trans($message, [], TheliaCMS::DOMAIN_NAME);
+        $this->support->flash($request, $type, $this->support->translate($message));
     }
 }

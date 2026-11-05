@@ -24,7 +24,6 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
-use Thelia\Core\Security\SecurityContext;
 use Thelia\Model\Lang;
 use TheliaCMS\Content\Document;
 use TheliaCMS\Content\InvalidDocumentException;
@@ -40,14 +39,13 @@ use TheliaCMS\Generation\Component\ComponentRequest;
 use TheliaCMS\Generation\GenerationException;
 use TheliaCMS\Generation\GenerationLog;
 use TheliaCMS\Generation\GenerationTargets;
+use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Model\CmsComponentQuery;
 use TheliaCMS\Model\CmsPage;
-use TheliaCMS\Model\CmsPageContentQuery;
 use TheliaCMS\Page\Admin\CmsPageAdminRepository;
 use TheliaCMS\Page\Admin\CmsPageWriter;
 use TheliaCMS\Page\Admin\EditLanguage;
 use TheliaCMS\Security\CmsResources;
-use TheliaCMS\TheliaCMS;
 
 /**
  * A component prototyped from the content screen of a page: asked in a
@@ -69,7 +67,7 @@ final readonly class CmsPageComponentController
 
     public function __construct(
         private UrlGeneratorInterface $urls,
-        private SecurityContext $securityContext,
+        private AdminControllerSupport $support,
         private TranslatorInterface $translator,
         private CmsPageAdminRepository $pages,
         private EditLanguage $languages,
@@ -96,7 +94,7 @@ final readonly class CmsPageComponentController
         $screen = $this->screenUrl($page, $lang);
 
         if ('' === $text) {
-            $this->flash($request, 'danger', $this->translate('Say what the component is for.'));
+            $this->support->flash($request, 'danger', $this->support->translate('Say what the component is for.'));
 
             return new RedirectResponse($screen);
         }
@@ -115,7 +113,7 @@ final readonly class CmsPageComponentController
             $result = $this->generator->generate($generation);
         } catch (GenerationException $exception) {
             if (null === $exception->logId) {
-                $this->flash($request, 'danger', $exception->getMessage());
+                $this->support->flash($request, 'danger', $exception->getMessage());
 
                 return new RedirectResponse($screen);
             }
@@ -151,7 +149,7 @@ final readonly class CmsPageComponentController
             $component = $this->validator->validate($candidate->component);
             $this->components->save($component, SiteComponentRepository::STATUS_DRAFT);
         } catch (InvalidSiteComponentException $exception) {
-            $this->flash($request, 'danger', implode(' ', $exception->problems));
+            $this->support->flash($request, 'danger', implode(' ', $exception->problems));
 
             return new RedirectResponse(self::withCandidate($screen, $candidate->logId));
         }
@@ -161,7 +159,7 @@ final readonly class CmsPageComponentController
         // The catalogue of this request was built before the row existed.
         $this->catalog->reset();
         $definition = $this->catalog->find($component->name()) ?? throw new \LogicException(\sprintf('The component %s was saved and is not in the catalogue.', $component->name()));
-        $current = $this->documentOf($page, $locale) ?? new Document([]);
+        $current = $this->pages->draftDocument($page, $locale) ?? new Document([]);
 
         try {
             $section = new Section($current->freeSectionId($component->name()), $component->name(), $definition->normalizeProps($definition->sample()));
@@ -169,14 +167,14 @@ final readonly class CmsPageComponentController
             $this->writer->saveContent($page, $locale, $document);
         } catch (InvalidDocumentException $exception) {
             foreach ($exception->translated($this->translator) as $problem) {
-                $this->flash($request, 'danger', $problem);
+                $this->support->flash($request, 'danger', $problem);
             }
 
             return new RedirectResponse($screen);
         }
 
         $this->log->recordManual($this->targets->forPage($page, $locale), $locale, $document->toJson(), \sprintf('Section "%s" added from the component prototyped on this page (%s).', $section->id, $component->name()));
-        $this->flash($request, 'success', $this->translator->trans('"%label%" is a prototype of this site, added at the end of the draft with example text: edit it by hand. CMS > Components keeps it for the whole site.', ['%label%' => $component->label], TheliaCMS::DOMAIN_NAME));
+        $this->support->flash($request, 'success', $this->support->translate('"%label%" is a prototype of this site, added at the end of the draft with example text: edit it by hand. CMS > Components keeps it for the whole site.', ['%label%' => $component->label]));
 
         return new RedirectResponse($screen);
     }
@@ -194,7 +192,7 @@ final readonly class CmsPageComponentController
     private function stream(ComponentRequest $generation, string $screen): StreamedResponse
     {
         $events = new GenerationStream(
-            fn (string $message, array $parameters): string => $this->translator->trans($message, $parameters, TheliaCMS::DOMAIN_NAME),
+            fn (string $message, array $parameters): string => $this->support->translate($message, $parameters),
             [
                 'answered' => 'The model answered: the site is checking the component.',
                 'refused' => 'The component was refused by the site and sent back for correction.',
@@ -206,7 +204,7 @@ final readonly class CmsPageComponentController
             // for: it runs to its end and is written to the ledger.
             ignore_user_abort(true);
 
-            $events->start($this->translate('The generator is reading the request.'));
+            $events->start($this->support->translate('The generator is reading the request.'));
 
             try {
                 $result = $this->generator->generate($generation, $events);
@@ -216,7 +214,7 @@ final readonly class CmsPageComponentController
                 return;
             }
 
-            $events->done(self::withCandidate($screen, $result->logId), $this->translate('The component is written.'));
+            $events->done(self::withCandidate($screen, $result->logId), $this->support->translate('The component is written.'));
         }, Response::HTTP_OK, [
             'Content-Type' => 'text/event-stream; charset=UTF-8',
             'Cache-Control' => 'no-cache, no-store, must-revalidate',
@@ -246,12 +244,10 @@ final readonly class CmsPageComponentController
 
     private function denyUnlessMayPrototype(): void
     {
-        if (!$this->securityContext->isGranted(['ADMIN'], [CmsResources::GENERATE], [], [AccessManager::UPDATE])) {
-            throw new AccessDeniedHttpException($this->translate('You are not allowed to use the generator.'));
-        }
+        $this->support->denyUnless(CmsResources::GENERATE, AccessManager::UPDATE, 'You are not allowed to use the generator.');
 
         if (!$this->permission->mayMake()) {
-            throw new AccessDeniedHttpException($this->translate('Making a component takes the settings and the custom code permissions.'));
+            throw new AccessDeniedHttpException($this->support->translate('Making a component takes the settings and the custom code permissions.'));
         }
     }
 
@@ -260,25 +256,8 @@ final readonly class CmsPageComponentController
         return $this->pages->findLive($id) ?? throw new NotFoundHttpException();
     }
 
-    private function documentOf(CmsPage $page, string $locale): ?Document
-    {
-        return Document::fromJson(CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($locale)->findOne()?->getDraftDocument());
-    }
-
     private function screenUrl(CmsPage $page, Lang $lang): string
     {
         return $this->urls->generate('admin.cms.pages.content.edit', ['id' => $page->getId(), EditLanguage::PARAMETER => $lang->getId()]);
-    }
-
-    private function flash(Request $request, string $type, string $message): void
-    {
-        if ($request->hasSession()) {
-            $request->getSession()->getFlashBag()->add($type, $message);
-        }
-    }
-
-    private function translate(string $message): string
-    {
-        return $this->translator->trans($message, [], TheliaCMS::DOMAIN_NAME);
     }
 }

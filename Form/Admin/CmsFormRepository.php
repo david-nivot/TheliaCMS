@@ -55,6 +55,19 @@ final readonly class CmsFormRepository
         return $rows;
     }
 
+    /**
+     * The forms that were not deleted, by code.
+     *
+     * @return list<CmsForm>
+     */
+    public function liveForms(): array
+    {
+        return iterator_to_array(
+            CmsFormQuery::create()->filterByDeletedAt(null, Criteria::ISNULL)->orderByCode()->find(),
+            false,
+        );
+    }
+
     public function find(int $id): ?CmsForm
     {
         $form = CmsFormQuery::create()

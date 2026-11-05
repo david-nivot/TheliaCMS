@@ -16,6 +16,7 @@ namespace TheliaCMS\Page\Admin;
 
 use Propel\Runtime\ActiveQuery\Criteria;
 use Thelia\Model\RewritingUrlQuery;
+use TheliaCMS\Content\Document;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Model\CmsPageContentQuery;
 use TheliaCMS\Model\CmsPageI18nQuery;
@@ -255,6 +256,14 @@ final readonly class CmsPageAdminRepository
             ->filterByLocale($locale)
             ->where('(CmsPageContent.DraftProvenance IS NOT NULL OR CmsPageContent.PublishedProvenance IS NOT NULL)')
             ->exists();
+    }
+
+    /**
+     * The draft of the page in this language; null while none was written.
+     */
+    public function draftDocument(CmsPage $page, string $locale): ?Document
+    {
+        return Document::fromJson(CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($locale)->findOne()?->getDraftDocument());
     }
 
     public function statusOf(CmsPage $page, string $locale): PageStatus

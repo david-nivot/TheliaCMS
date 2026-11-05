@@ -17,20 +17,17 @@ namespace TheliaCMS\Form\Admin;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
-use Thelia\Core\Security\SecurityContext;
 use TheliaCMS\Form\SubmissionExport;
+use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Model\CmsForm;
 use TheliaCMS\Model\CmsFormSubmission;
 use TheliaCMS\Page\Admin\CmsActivityLog;
 use TheliaCMS\Page\Admin\EditLanguage;
 use TheliaCMS\Security\CmsResources;
-use TheliaCMS\TheliaCMS;
 use Twig\Environment;
 
 /**
@@ -49,8 +46,7 @@ final readonly class CmsSubmissionAdminController
     public function __construct(
         private Environment $twig,
         private UrlGeneratorInterface $urls,
-        private SecurityContext $securityContext,
-        private TranslatorInterface $translator,
+        private AdminControllerSupport $support,
         private CmsFormRepository $forms,
         private SubmissionRepository $submissions,
         private CmsActivityLog $activityLog,
@@ -76,9 +72,9 @@ final readonly class CmsSubmissionAdminController
             'pages' => max(1, (int) ceil($total / SubmissionRepository::PER_PAGE)),
             'total' => $total,
             'edit_language_id' => $lang->getId(),
-            'may_delete' => $this->securityContext->isGranted(['ADMIN'], [CmsResources::FORM], [], [AccessManager::DELETE]),
-            'yes' => $this->translate('Yes'),
-            'no' => $this->translate('No'),
+            'may_delete' => $this->support->isGranted(CmsResources::FORM, AccessManager::DELETE),
+            'yes' => $this->support->translate('Yes'),
+            'no' => $this->support->translate('No'),
         ]));
     }
 
@@ -98,7 +94,7 @@ final readonly class CmsSubmissionAdminController
 
         $body = 'json' === $format
             ? SubmissionExport::toJson($rows)
-            : SubmissionExport::toCsv($rows, $this->csvHeadings(), $this->translate('Yes'), $this->translate('No'));
+            : SubmissionExport::toCsv($rows, $this->csvHeadings(), $this->support->translate('Yes'), $this->support->translate('No'));
 
         $response = new Response($body);
         $response->headers->set('Content-Type', 'json' === $format ? 'application/json; charset=utf-8' : 'text/csv; charset=utf-8');
@@ -116,9 +112,7 @@ final readonly class CmsSubmissionAdminController
     #[Route('/{submissionId}/delete', name: 'submissions_delete', requirements: ['submissionId' => '\d+'], methods: ['POST'])]
     public function delete(Request $request, int $id, int $submissionId): Response
     {
-        if (!$this->securityContext->isGranted(['ADMIN'], [CmsResources::FORM], [], [AccessManager::DELETE])) {
-            throw new AccessDeniedHttpException($this->translate('You are not allowed to change forms.'));
-        }
+        $this->support->denyUnless(CmsResources::FORM, AccessManager::DELETE, 'You are not allowed to change forms.');
 
         $record = $this->formOrFail($id);
         $submission = $this->submissions->find($record, $submissionId);
@@ -151,10 +145,10 @@ final readonly class CmsSubmissionAdminController
     private function csvHeadings(): array
     {
         return [
-            'id' => $this->translate('Reference'),
-            'created_at' => $this->translate('Received on'),
-            'email' => $this->translate('Email address'),
-            'locale' => $this->translate('Language'),
+            'id' => $this->support->translate('Reference'),
+            'created_at' => $this->support->translate('Received on'),
+            'email' => $this->support->translate('Email address'),
+            'locale' => $this->support->translate('Language'),
         ];
     }
 
@@ -167,10 +161,5 @@ final readonly class CmsSubmissionAdminController
         }
 
         return $record;
-    }
-
-    private function translate(string $message): string
-    {
-        return $this->translator->trans($message, [], TheliaCMS::DOMAIN_NAME);
     }
 }
