@@ -92,7 +92,14 @@ final readonly class PromptBuilder
         } else {
             $lines[] = '# The page';
             $lines[] = '';
-            $lines[] = \sprintf('- Title: %s', $target->title);
+
+            // A header written from the source: its title is the one to translate,
+            // and it is told below. The title the page has in this language, if any,
+            // is not what the model writes from.
+            if (!$request->headerAsked()) {
+                $lines[] = \sprintf('- Title: %s', $target->title);
+            }
+
             $lines[] = \sprintf('- Type: %s', (string) $target->pageType);
 
             if (null !== $target->summary) {
@@ -103,6 +110,10 @@ final readonly class PromptBuilder
         }
 
         array_push($lines, ...$this->typeLines($request));
+
+        if ($request->headerAsked()) {
+            array_push($lines, ...$this->headerLines($request));
+        }
 
         if ($request->seoAsked()) {
             array_push($lines, ...self::seoLines($request));
@@ -263,6 +274,38 @@ final readonly class PromptBuilder
 
             $lines[] = '';
         }
+
+        return $lines;
+    }
+
+    /**
+     * The header of the page in the language it is translated from, and what
+     * is asked of the answer: the same fields in the language of the page.
+     *
+     * @return list<string>
+     */
+    private function headerLines(GenerationRequest $request): array
+    {
+        $header = $request->sourceHeader;
+        \assert($header instanceof PageHeader);
+        $source = $this->shop->describe((string) $request->sourceLocale);
+        $labels = ['title' => 'Title', 'chapo' => 'Summary', 'description' => 'Description', 'og_title' => 'Sharing title', 'og_description' => 'Sharing description'];
+        $properties = ['title' => 'title', 'chapo' => 'summary', 'description' => 'description', 'og_title' => 'og_title', 'og_description' => 'og_description'];
+        $lines = [\sprintf('# The page header in %s (`%s`)', $source['language'], $source['locale']), ''];
+        $asked = [];
+
+        foreach ($header->words() as $column => $text) {
+            $lines[] = \sprintf('- %s: %s', $labels[$column], $text);
+            $asked[] = '`'.$properties[$column].'`';
+        }
+
+        array_push(
+            $lines,
+            '',
+            \sprintf('Also write this header for a reader of the language of the page, answering with %s beside the sections: the same thing as the source says, in the words of that language, and the name of the page is not turned into a slogan.', implode(', ', $asked)),
+            \sprintf('Titles and the sharing description are plain text on one line (a title of %d characters at most, a longer one is ignored); the summary and the description are HTML, keep their tags. Leave a field out rather than write it badly: the page keeps what it holds in that language.', PageHeader::TITLE_LENGTH),
+            '',
+        );
 
         return $lines;
     }

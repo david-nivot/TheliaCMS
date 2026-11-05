@@ -27,12 +27,16 @@ use TheliaCMS\Content\DocumentRenderer;
 use TheliaCMS\Content\DocumentValidator;
 use TheliaCMS\Content\Editing\ContentWriter;
 use TheliaCMS\Content\Editing\PublishedRendering;
+use TheliaCMS\Content\Editing\TranslationFreshness;
 use TheliaCMS\Content\InvalidDocumentException;
 use TheliaCMS\Content\Pipeline\PageContentNormalizer;
 use TheliaCMS\Content\Pipeline\PublishedContentSanitizer;
+use TheliaCMS\Generation\HeaderOutcome;
+use TheliaCMS\Generation\PageHeader;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Model\CmsPageContent;
 use TheliaCMS\Model\CmsPageContentQuery;
+use TheliaCMS\Model\CmsPageI18nQuery;
 use TheliaCMS\Model\CmsPageQuery;
 use TheliaCMS\Model\Map\CmsPageI18nTableMap;
 use TheliaCMS\Model\Map\CmsPageTableMap;
@@ -66,6 +70,8 @@ final readonly class CmsPageWriter
         private PageDocumentWriter $documents,
         private ContentWriter $content,
         private ContentTargets $targets,
+        private PageHeaderTranslator $headers,
+        private TranslationFreshness $freshness,
     ) {
     }
 
@@ -203,6 +209,18 @@ final readonly class CmsPageWriter
         $this->activityLog->record('UPDATE', (int) $page->getId(), \sprintf('CMS page #%d %s written in %s', $page->getId(), implode(' and ', $written), $locale));
 
         return $written;
+    }
+
+    /**
+     * Writes the header a translation proposed (title, summary, description,
+     * the two sharing texts) in the language given, where the page holds
+     * nothing yet, and gives the language an address from the title when it
+     * has none: what an editor wrote, and an address a page is online at, are
+     * never replaced.
+     */
+    public function saveTranslatedHeader(CmsPage $page, string $locale, PageHeader $proposed): HeaderOutcome
+    {
+        return $this->headers->write($page, $locale, $proposed);
     }
 
     /**
@@ -605,7 +623,7 @@ final readonly class CmsPageWriter
                 // source: same words, same source language. Only when the draft
                 // is the one the link was taken from.
                 if (null !== $content->getDraftDocument()) {
-                    $copied->setTranslatedFrom($content->getTranslatedFrom())->setSourceFingerprint($content->getSourceFingerprint());
+                    $copied->setTranslatedFrom($content->getTranslatedFrom())->setSourceFingerprint($this->fingerprintForCopy($content, $copy));
                 }
 
                 $copied->save($connection);
@@ -625,6 +643,24 @@ final readonly class CmsPageWriter
 
             throw $throwable;
         }
+    }
+
+    /**
+     * What the copy of a translation records of its source: the same sections,
+     * and the header of the copy of the source, which is not the original's
+     * (the title of a copy carries a suffix).
+     */
+    private function fingerprintForCopy(CmsPageContent $content, CmsPage $copy): ?string
+    {
+        $recorded = $content->getSourceFingerprint();
+
+        if (null === $recorded || '' === (string) $content->getTranslatedFrom()) {
+            return $recorded;
+        }
+
+        $held = CmsPageI18nQuery::create()->filterById($copy->getId())->filterByLocale($content->getTranslatedFrom())->findOne();
+
+        return $this->freshness->withHeader($recorded, (null === $held ? new PageHeader() : PageHeader::of($held))->byColumn());
     }
 
     /**

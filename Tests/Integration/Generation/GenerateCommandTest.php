@@ -154,6 +154,49 @@ final class GenerateCommandTest extends CmsIntegrationTestCase
         self::assertSame(1, CmsPageRevisionQuery::create()->filterByPageId($page->getId())->filterByLocale($target)->filterByLabel(ContentVersions::DRAFT_LABEL)->count(), 'The draft the command replaces is kept, as the screen keeps it.');
     }
 
+    public function testTheHeaderOfAPageIsWrittenWithItsTranslationAndShownAsAJsonLine(): void
+    {
+        $page = $this->createPage('Notre atelier', html: '<h1>Notre atelier</h1><p>Fondé en 1987 à Lyon.</p>');
+        $page->setLocale($this->locale())->setChapo('<p>Un atelier à Lyon.</p>')->setDescription('<p>Fondé en 1987.</p>')->save();
+        $target = 'fr_FR' === $this->locale() ? 'en_US' : 'fr_FR';
+        $this->answerWith('<h1>Our workshop</h1><p>Founded in 1987 in Lyon.</p>', ['title' => 'Our workshop', 'summary' => '<p>A workshop in Lyon.</p>', 'description' => '<p>Founded in 1987.</p><script>alert(1)</script>']);
+
+        $dryRun = $this->generate(['--page' => (string) $page->getId(), '--locale' => $target, '--translate-from' => $this->locale(), '--dry-run' => true]);
+
+        self::assertSame(Command::SUCCESS, $dryRun->getStatusCode(), $dryRun->getDisplay());
+        self::assertStringContainsString('{"title":"Our workshop","chapo":"<p>A workshop in Lyon.</p>","description":"<p>Founded in 1987.</p><script>alert(1)</script>"}', $dryRun->getDisplay(), 'The header is a JSON line, beside the others.');
+        self::assertStringContainsString('# The page header in', $this->api->requests[0]->messages[0]->content);
+        self::assertNull(CmsPageQuery::create()->findPk($page->getId())?->setLocale($target)->getTitle(), 'A dry run writes nothing.');
+        self::assertNull(CmsPageQuery::create()->findPk($page->getId())?->getRewrittenUrl($target));
+
+        $this->answerWith('<h1>Our workshop</h1><p>Founded in 1987 in Lyon.</p>', ['title' => 'Our workshop', 'summary' => '<p>A workshop in Lyon.</p>', 'description' => '<p>Founded in 1987.</p><script>alert(1)</script>']);
+        $saved = $this->generate(['--page' => (string) $page->getId(), '--locale' => $target, '--translate-from' => $this->locale()]);
+
+        self::assertSame(Command::SUCCESS, $saved->getStatusCode(), $saved->getDisplay());
+        $held = CmsPageQuery::create()->findPk($page->getId())?->setLocale($target);
+        self::assertSame(['Our workshop', '<p>A workshop in Lyon.</p>'], [$held?->getTitle(), $held->getChapo()]);
+        self::assertStringNotContainsString('script', (string) $held->getDescription(), 'Nobody holds the right to custom code on the command line: it is taken out.');
+        self::assertStringContainsString('<p>Founded in 1987.</p>', (string) $held->getDescription());
+        self::assertSame('our-workshop', $held->getRewrittenUrl($target), 'The language had no address: it gets one from the translated title.');
+        self::assertSame('Notre atelier', CmsPageQuery::create()->findPk($page->getId())?->setLocale($this->locale())->getTitle(), 'The source header is untouched.');
+    }
+
+    public function testATranslationOfAnItemAsksAndWritesNoHeader(): void
+    {
+        $factory = $this->createFixtureFactory();
+        $content = $factory->content($factory->folder(), ['title' => 'Notre méthode', 'locale' => $this->locale()]);
+        $id = (int) $content->getId();
+        $target = 'fr_FR' === $this->locale() ? 'en_US' : 'fr_FR';
+        $this->getService(ContentWriter::class)->saveContent($this->getService(ContentTargets::class)->forItemKey(CatalogueItemType::Content, $id, $this->locale()), Document::richText('<h2>Notre méthode</h2>'));
+        $this->answerWith('<h2>Our method</h2>', ['title' => 'Our method']);
+
+        $tester = $this->generate(['--item' => 'content:'.$id, '--locale' => $target, '--translate-from' => $this->locale()]);
+
+        self::assertSame(Command::SUCCESS, $tester->getStatusCode(), $tester->getDisplay());
+        self::assertStringNotContainsString('The page header in', $this->api->requests[0]->messages[0]->content);
+        self::assertStringNotContainsString('"title":"Our method"', $tester->getDisplay());
+    }
+
     public function testATranslationFromALanguageHoldingNothingFails(): void
     {
         $page = $this->createPage('Page vide');
@@ -191,10 +234,13 @@ final class GenerateCommandTest extends CmsIntegrationTestCase
         self::assertSame(Command::FAILURE, $this->generate(['--item' => 'product:999999999', '--locale' => 'fr_FR', '--brief' => 'x'])->getStatusCode());
     }
 
-    private function answerWith(string $html): void
+    /**
+     * @param array<string, string> $more keys of the envelope beside the sections
+     */
+    private function answerWith(string $html, array $more = []): void
     {
         $this->api->answer(FakeAiGateway::response(json_encode(
-            ['version' => 1, 'sections' => [['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => $html]]]],
+            ['version' => 1, 'sections' => [['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => $html]]], ...$more],
             \JSON_THROW_ON_ERROR,
         )));
     }

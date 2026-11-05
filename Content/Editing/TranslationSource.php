@@ -26,10 +26,12 @@ final readonly class TranslationSource
 {
     /**
      * @param array<string, string> $fingerprint the hash of the words of each section, by section id
+     * @param string|null           $header      the hash of the words of the header of the content, null when it has none to follow (an item)
      */
     public function __construct(
         public Document $document,
         public array $fingerprint,
+        public ?string $header = null,
     ) {
     }
 }

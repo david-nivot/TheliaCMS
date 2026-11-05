@@ -21,7 +21,9 @@ use TheliaCMS\Catalogue\ItemContentRepository;
 use TheliaCMS\Content\Document;
 use TheliaCMS\Content\Editing\TranslationFreshness;
 use TheliaCMS\Content\Editing\TranslationSource;
+use TheliaCMS\Generation\PageHeader;
 use TheliaCMS\Model\CmsPageContentQuery;
+use TheliaCMS\Model\CmsPageI18nQuery;
 
 /**
  * The languages a target holds a draft in, other than the one on screen:
@@ -56,7 +58,23 @@ final readonly class TranslationSources
      */
     public function pageSource(int $pageId, string $sourceLocale): ?TranslationSource
     {
-        return $this->fingerprinted(Document::fromJson(CmsPageContentQuery::create()->filterByPageId($pageId)->filterByLocale($sourceLocale)->findOne()?->getDraftDocument()));
+        $held = CmsPageI18nQuery::create()->filterById($pageId)->filterByLocale($sourceLocale)->findOne();
+
+        return $this->fingerprinted(
+            Document::fromJson(CmsPageContentQuery::create()->filterByPageId($pageId)->filterByLocale($sourceLocale)->findOne()?->getDraftDocument()),
+            (null === $held ? new PageHeader() : PageHeader::of($held))->byColumn(),
+        );
+    }
+
+    /**
+     * The header of the page in a language, null when it says nothing there.
+     */
+    public function pageHeader(int $pageId, string $sourceLocale): ?PageHeader
+    {
+        $held = CmsPageI18nQuery::create()->filterById($pageId)->filterByLocale($sourceLocale)->findOne();
+        $header = null === $held ? null : PageHeader::of($held);
+
+        return null === $header || $header->isEmpty() ? null : $header;
     }
 
     /**
@@ -72,9 +90,12 @@ final readonly class TranslationSources
         return $this->fingerprinted($this->items->draftDocument($type, $id, $sourceLocale));
     }
 
-    private function fingerprinted(?Document $document): ?TranslationSource
+    /**
+     * @param array<string, string|null>|null $header the words of the header of the content, null for one that has none to follow
+     */
+    private function fingerprinted(?Document $document, ?array $header = null): ?TranslationSource
     {
-        return null === $document ? null : $this->freshness->source($document);
+        return null === $document ? null : $this->freshness->source($document, $header);
     }
 
     /**

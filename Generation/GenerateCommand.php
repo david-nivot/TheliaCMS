@@ -159,6 +159,10 @@ final class GenerateCommand extends Command
             $io->writeln(json_encode($result->seo, \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES | \JSON_THROW_ON_ERROR));
         }
 
+        if (null !== $result->header) {
+            $io->writeln(json_encode($result->header->words(), \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES | \JSON_THROW_ON_ERROR));
+        }
+
         $io->newLine();
         // One line whatever the width of the terminal: `compare-runs` reads
         // the cost of a run from it, and SymfonyStyle wraps a comment at 80
@@ -216,6 +220,12 @@ final class GenerateCommand extends Command
             if ([] !== $result->seo) {
                 $this->writer->saveSeo($page, $locale, $result->seo);
             }
+
+            // Only the columns the page holds nothing in, and an address only
+            // where the language has none.
+            if (null !== $result->header) {
+                $this->writer->saveTranslatedHeader($page, $locale, $result->header);
+            }
         }, $url);
         $io->success(\sprintf('Draft of page #%d saved in %s. Publish it with thelia_cms:publish --page %d.', $pageId, $locale, $pageId));
 
@@ -236,7 +246,7 @@ final class GenerateCommand extends Command
         ?CatalogueItem $item,
     ): GenerationRequest {
         if ('' !== $sourceLocale) {
-            return GenerationRequest::translation($target, $locale, $source->document ?? new Document([]), $sourceLocale);
+            return GenerationRequest::translation($target, $locale, $source->document ?? new Document([]), $sourceLocale, null === $page ? null : $this->translationSources->pageHeader((int) $page->getId(), $sourceLocale));
         }
 
         $brief = new Brief(is_file($briefOption) ? (string) file_get_contents($briefOption) : $briefOption);

@@ -61,6 +61,16 @@ interface ContentRow
     /** Ties the content to the draft of another language, which is not an edit: the date of the last update stays. */
     public function followSource(string $locale, string $fingerprint): void;
 
+    /**
+     * The words of the header of the content in this language, by column,
+     * what a translation of it is followed on beside the document: null for a
+     * content that has no header of its own to follow (an item of the
+     * catalogue, whose header is the core's).
+     *
+     * @return array<string, string|null>|null
+     */
+    public function headerWords(): ?array;
+
     /** Takes it offline, the published snapshot going with the date. */
     public function takeOffline(): void;
 }

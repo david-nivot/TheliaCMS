@@ -131,6 +131,32 @@ page does without. A change, a section and an item of the catalogue (whose meta
 belong to the core) are not asked for them. `thelia_cms:generate` prints them on
 a line of their own, as JSON, and writes them unless `--dry-run`.
 
+A **translated page** is also asked for its own header, in the same call: the
+title, the summary (`chapo`), the description and the two sharing texts
+(`og_title`, `og_description`) of the page in the source language go in the
+prompt (`Generation/PageHeader`), and the answer carries up to five optional
+properties, `title`, `summary`, `description`, `og_title`, `og_description`. The
+titles are read as plain text on one line (255 characters at most), the sharing
+description likewise, the summary and the description as HTML; one that is
+empty, not a string or longer than its limit is ignored, never a reason for a
+correction turn. Only a page whose source header says something is asked, and
+only a page: the header of a catalogue item is the core's. The writer
+(`CmsPageWriter::saveTranslatedHeader()`, done by `PageHeaderTranslator`) **fills
+and never replaces**: a column that holds something in that language stays as
+its editor wrote it, for the header is live as soon as it is saved and keeps no
+revision to put back. The summary and the description go through the filter an
+edited page goes through (from the command line nobody holds the right to custom
+code). The address is derived from the title the language holds, under the
+address of the parent in that language, **only where the language has none**:
+no address, no slug and no fixed address. A page that already has an address,
+online or not, keeps it and no redirection is made; a title that is a reserved
+path writes the texts and no address; the pages under it already addressed in
+that language follow it on its first address. A model of a page type gets its
+texts and no address. What was written and what was kept is said on the screen
+the editor comes back to (carried by the `header` parameter of its address, a
+stream leaving no flash message behind), and `thelia_cms:generate` prints the
+proposed header as a JSON line of its own and writes it unless `--dry-run`.
+
 Two requests are held tighter than a brief. A **section asked again** is
 constrained to one section, the shape of an item of `sections`, and its prompt
 says to answer with that section alone, the whole document staying in the
@@ -286,7 +312,8 @@ the signed preview link of the draft.
 - **Translations that are out of date**: a language written from another one
   keeps which one (`translated_from`) and the words of that draft then
   (`source_fingerprint`, a JSON object holding the SHA-256 of the words of
-  each section by section id), on `cms_page_content` and `cms_item_content`
+  each section by section id and, for a page, the SHA-256 of the words of its
+  header under `header`), on `cms_page_content` and `cms_item_content`
   alike (`Content\Editing\TranslationFreshness`). The words are the props a
   translation writes, the ones `TranslationGraft` reads from the answer: an
   image, a colour, a link, a number or a move of a section is not a change
@@ -304,10 +331,16 @@ the signed preview link of the draft.
   translated rows and their source drafts, the words compared in PHP; pages in
   the bin and the models of the page types are left out). Items of the
   catalogue have it on their content screen only: the module has no list of
-  them. It is the draft of the source that is compared, not what is online. The
-  title and the fields of the page are not part of what is compared. The
+  them. It is the draft of the source that is compared, not what is online. For
+  a page, the header of the source (title, summary, description, sharing title
+  and description) is compared as one more entry, named in the panel as the
+  header of the page; the other meta fields, the address and the fields of the
+  page type are not. A fingerprint stored before the header was followed has no
+  `header` entry and follows none: such a translation is not made stale by the
+  header until it is written again or marked up to date. The
   command `thelia_cms:generate --translate-from` keeps the draft it replaces
-  and records the source the same way, and the copy of a page carries the link.
+  and records the source the same way, and the copy of a page carries the link
+  (with the header of the copy of the source, whose title is not the original's).
   The export and the import do not: a site restored from an export starts with
   nothing followed.
 - **History**: the calls of the ledger for this page and language, with their

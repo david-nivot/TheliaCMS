@@ -53,6 +53,17 @@ how long an answer may be, and whether it may read the web pages a brief cites.
 If something is missing, the editor reads one sentence that says what to change
 (budget spent, use turned off, connection unreadable, too many requests).
 
+## What a translation writes
+
+Translating a page writes its content and, in the same call, its header in the
+new language: the title, the summary, the description and the two texts shown
+when the page is shared. Only what is empty in that language is written: what an
+editor typed there is kept, and the screen says which columns were written and
+which were left as they were. The address of the page in that language is made
+from its title when it has none yet; a page that already has one keeps it. The
+header of a product, a category, a content or a folder is not translated here:
+it belongs to the core.
+
 ## Reading web pages: off by default
 
 If a brief cites an address, the AI can read that page before it writes. It is

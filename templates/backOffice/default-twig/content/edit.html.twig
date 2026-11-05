@@ -123,7 +123,7 @@
 
         {# This screen replaces the whole body block, so the flash messages of
            the layout are rendered here, with the outcome of the last call. #}
-        {{ include('@TheliaCMSModule/backOffice/default-twig/_toasts.html.twig', { extra: outcome ? [outcome] : [] }) }}
+        {{ include('@TheliaCMSModule/backOffice/default-twig/_toasts.html.twig', { extra: [outcome, header_outcome]|filter(notice => notice) }) }}
 
         <div class="cms-content__stage">
             <aside class="cms-content__panel" aria-label="{{ 'Writing the content'|trans({}, 'theliacms') }}">
@@ -153,9 +153,12 @@
                                 <i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>
                                 <strong>{{ 'To be translated again.'|trans({}, 'theliacms') }}</strong>
                                 {{ 'The %language% version changed since this language was written from it.'|trans({ '%language%': translation.label }, 'theliacms') }}
-                                {% if translation.changed is not empty %}
+                                {% if translation.changed is not empty or translation.header %}
                                     <span class="d-block mt-2">{{ 'Changed or added in the %language% version:'|trans({ '%language%': translation.label }, 'theliacms') }}</span>
                                     <ul class="mb-0" data-testid="cms-content-translation-changed">
+                                        {% if translation.header %}
+                                            <li data-testid="cms-content-translation-header">{{ 'The header of the page (title, summary, description, sharing texts)'|trans({}, 'theliacms') }}</li>
+                                        {% endif %}
                                         {% for section in translation.changed %}
                                             <li>
                                                 {% if section.rank %}
