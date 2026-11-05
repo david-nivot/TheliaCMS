@@ -54,29 +54,37 @@ final class CmsPageType extends AbstractType
             ->add('title', TextType::class, [
                 'label' => 'Title',
                 'constraints' => [new NotBlank(), new Length(max: 255)],
-            ])
-            ->add('slug', PageAddressType::class, [
-                'label' => 'URL slug',
-                'help' => 'Leave empty to derive it from the title. Parent pages prefix it automatically.',
-                'proposal_url' => $options['address_proposal_url'],
-                'page_id' => $options['page_id'],
-            ])
-            ->add('fixedUrl', TextType::class, [
-                'label' => 'Fixed address',
-                'required' => false,
-                'constraints' => [new Length(max: 255)],
-                'help' => 'The whole address, kept as typed whatever the parent page: the address a site taken over had, such as about-us.html. Leave empty for the address built from the parent pages and the slug.',
-                // Checked by `assets/page-address.js` while it is typed.
-                'attr' => null === $options['fixed_address_check_url'] ? [] : [
-                    'data-cms-fixed-address' => '',
-                    'data-check-url' => $options['fixed_address_check_url'],
-                    'data-page-id' => (string) $options['page_id'],
-                    'data-messages' => json_encode([
-                        'free' => $this->translate('This address is free.'),
-                        'failed' => $this->translate('The address could not be checked.'),
-                    ], \JSON_THROW_ON_ERROR | \JSON_UNESCAPED_UNICODE),
-                ],
-            ])
+            ]);
+
+        // The home page is served at the root of the site: its address answers
+        // nothing, and a form without the fields leaves the stored one alone.
+        if (!$options['is_home']) {
+            $builder
+                ->add('slug', PageAddressType::class, [
+                    'label' => 'URL slug',
+                    'help' => 'Leave empty to derive it from the title. Parent pages prefix it automatically.',
+                    'proposal_url' => $options['address_proposal_url'],
+                    'page_id' => $options['page_id'],
+                ])
+                ->add('fixedUrl', TextType::class, [
+                    'label' => 'Fixed address',
+                    'required' => false,
+                    'constraints' => [new Length(max: 255)],
+                    'help' => 'The whole address, kept as typed whatever the parent page: the address a site taken over had, such as about-us.html. Leave empty for the address built from the parent pages and the slug.',
+                    // Checked by `assets/page-address.js` while it is typed.
+                    'attr' => null === $options['fixed_address_check_url'] ? [] : [
+                        'data-cms-fixed-address' => '',
+                        'data-check-url' => $options['fixed_address_check_url'],
+                        'data-page-id' => (string) $options['page_id'],
+                        'data-messages' => json_encode([
+                            'free' => $this->translate('This address is free.'),
+                            'failed' => $this->translate('The address could not be checked.'),
+                        ], \JSON_THROW_ON_ERROR | \JSON_UNESCAPED_UNICODE),
+                    ],
+                ]);
+        }
+
+        $builder
             // `wysiwyg` is the opt-in class of the back-office rich text
             // editor: the same editor as the summary and description of a
             // core content, when one is installed, a plain textarea otherwise.
@@ -274,6 +282,7 @@ final class CmsPageType extends AbstractType
                 'tag_choices' => [],
                 'allow_image_upload' => false,
                 'is_model' => false,
+                'is_home' => false,
                 'field_definitions' => FieldDefinitions::none(),
                 'field_locale' => 'en_US',
                 // Where the slug field asks for the address it proposes; none,
@@ -287,6 +296,7 @@ final class CmsPageType extends AbstractType
             ->setAllowedTypes('page_id', 'int')
             ->setAllowedTypes('page_type_labels', 'array')
             ->setAllowedTypes('is_model', 'bool')
+            ->setAllowedTypes('is_home', 'bool')
             ->setAllowedTypes('field_definitions', FieldDefinitions::class)
             ->setAllowedTypes('field_locale', 'string')
             ->setAllowedTypes('parent_choices', 'array')

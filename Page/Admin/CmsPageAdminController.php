@@ -405,11 +405,11 @@ final readonly class CmsPageAdminController
                     $form->addError(new FormError($problem));
                 }
             } catch (FixedAddressException $exception) {
-                $form->get('fixedUrl')->addError(new FormError($exception->text->trans($this->translator)));
+                $this->addressField($form, 'fixedUrl')->addError(new FormError($exception->text->trans($this->translator)));
             } catch (ReservedSlugException $exception) {
-                $form->get('slug')->addError(new FormError($exception->text->trans($this->translator)));
+                $this->addressField($form, 'slug')->addError(new FormError($exception->text->trans($this->translator)));
             } catch (\InvalidArgumentException $exception) {
-                $form->get('slug')->addError(new FormError($exception->getMessage()));
+                $this->addressField($form, 'slug')->addError(new FormError($exception->getMessage()));
             }
         }
 
@@ -425,7 +425,7 @@ final readonly class CmsPageAdminController
             'edit_locale' => $locale,
             'edit_language_id' => $lang->getId(),
             'ai_marked' => !$page->isNew() && $this->pages->isAiMarked($page, $locale),
-            'is_home' => !$page->isNew() && (int) $page->getId() === (int) TheliaCMS::getConfigValue('home_page_id', 0),
+            'is_home' => $this->isHome($page),
             'preview_url' => $page->isNew() ? null : $page->getUrl($locale),
             'documents' => $page->isNew() ? [] : $this->documentRows->forPage((int) $page->getId(), $locale),
             'document_extensions' => PageDocumentFormat::extensions(),
@@ -437,6 +437,20 @@ final readonly class CmsPageAdminController
             // The browser keeps the script until its version changes.
             'assets_version' => substr(hash('xxh3', (string) @filemtime(__DIR__.'/../../templates/backOffice/default-twig/assets/page-address.js').(string) @filemtime(__DIR__.'/../../templates/backOffice/default-twig/assets/media-picker.js').(string) @filemtime(__DIR__.'/../../templates/backOffice/default-twig/assets/page-documents.js')), 0, 12),
         ]));
+    }
+
+    private function isHome(CmsPage $page): bool
+    {
+        return !$page->isNew() && (int) $page->getId() === (int) TheliaCMS::getConfigValue('home_page_id', 0);
+    }
+
+    /**
+     * The address field to put an error on: the form of the home page has none,
+     * so the error goes on the form.
+     */
+    private function addressField(FormInterface $form, string $name): FormInterface
+    {
+        return $form->has($name) ? $form->get($name) : $form;
     }
 
     private function buildForm(CmsPage $page, Lang $lang): FormInterface
@@ -491,6 +505,7 @@ final readonly class CmsPageAdminController
             'page_type_choices' => array_map(strval(...), array_keys($typeLabels)),
             'page_type_labels' => $typeLabels,
             'is_model' => 1 === $page->getModel(),
+            'is_home' => $this->isHome($page),
             'field_definitions' => $definitions,
             'field_locale' => $locale,
             'tag_choices' => $this->tags->namesById(),
@@ -505,6 +520,8 @@ final readonly class CmsPageAdminController
     {
         $data = $form->getData();
 
+        // The form of the home page has no address field: `slug` and `fixedUrl`
+        // are then the stored ones the form was built with, so its address stays.
         $page->setParent((int) $data['parent'])
             // A disabled field posts nothing: the model keeps its type.
             ->setPageType($data['pageType'] ?? $page->getPageType())

@@ -624,6 +624,7 @@ return [
     'This is not an IP address or a range: %s' => 'This is not an IP address or a range: %s',
     'This is not a phone number.' => 'This is not a phone number.',
     'This is not valid JSON.' => 'This is not valid JSON.',
+    'This is the home page: it is served at the root of the site, so it has no address to set.' => 'This is the home page: it is served at the root of the site, so it has no address to set.',
     'This is where the measurement tags, the chat widget and the ad pixels go, instead of into the theme.' => 'This is where the measurement tags, the chat widget and the ad pixels go, instead of into the theme.',
     'This menu has no entry yet. Add the first one with the form beside.' => 'This menu has no entry yet. Add the first one with the form beside.',
     'This page has no content yet' => 'This page has no content yet',
