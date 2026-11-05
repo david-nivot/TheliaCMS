@@ -92,6 +92,9 @@ shows how to test an update, outside a transaction.
 - `phpstan-baseline.neon` lists the errors present when the analysis came in.
   Fixing one means regenerating it (`--generate-baseline=local/modules/TheliaCMS/phpstan-baseline.neon`);
   a new error is fixed, never added to it.
+- A file of `TheliaCMS\Content\` names no class of `TheliaCMS\Generation\`
+  (ADR 12): `Tests/PHPStan/ContentDoesNotDependOnGenerationRule` is run by
+  PHPStan and tested in `Tests/Unit/PHPStan/`.
 - The code style is the one of the core. From the module directory, with the
   install's fixer: `../../../vendor/bin/php-cs-fixer fix --dry-run --diff`
   (drop `--dry-run --diff` to apply).

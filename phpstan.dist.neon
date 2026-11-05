@@ -34,7 +34,15 @@ parameters:
             - skills/*
             - templates/*
             - phpstan-bootstrap.php
+            # Code the rules of Tests/PHPStan are tested against: it breaks them on purpose.
+            - Tests/PHPStan/data/*
         # Extends a class of TntSearch, an optional module absent from the CI
         # install: a class whose parent is unknown cannot go in the baseline.
         analyse:
             - Search/Tnt/*
+
+# The architecture rules of the module (ADR 12). The class is autoloaded by the
+# install the analysis runs in: its composer.json maps "" to local/modules/, so
+# TheliaCMS\Tests\PHPStan\ resolves to Tests/PHPStan/ of the module.
+rules:
+    - TheliaCMS\Tests\PHPStan\ContentDoesNotDependOnGenerationRule

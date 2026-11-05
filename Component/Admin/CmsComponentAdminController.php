@@ -12,19 +12,16 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace TheliaCMS\Content\Admin;
+namespace TheliaCMS\Component\Admin;
 
-use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
-use Thelia\Core\Security\SecurityContext;
+use TheliaCMS\Content\Admin\SectionUsageFinder;
 use TheliaCMS\Content\Partial\PartialSection;
 use TheliaCMS\Content\SectionAvailability;
 use TheliaCMS\Content\SectionCatalog;
@@ -33,8 +30,8 @@ use TheliaCMS\Content\Site\SiteComponentPermission;
 use TheliaCMS\Content\Site\SiteComponentSection;
 use TheliaCMS\Content\Theme\ThemeComponentSection;
 use TheliaCMS\Generation\Admin\ToolkitLink;
+use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Security\CmsResources;
-use TheliaCMS\TheliaCMS;
 use Twig\Environment;
 
 /**
@@ -53,8 +50,7 @@ final readonly class CmsComponentAdminController
     public function __construct(
         private Environment $twig,
         private UrlGeneratorInterface $urls,
-        private SecurityContext $securityContext,
-        private TranslatorInterface $translator,
+        private AdminControllerSupport $support,
         private SectionCatalog $catalog,
         private SectionAvailability $availability,
         private SectionUsageFinder $usage,
@@ -92,7 +88,7 @@ final readonly class CmsComponentAdminController
 
         return new Response($this->twig->render(self::LIST_TEMPLATE, [
             'components' => $components,
-            'may_update' => $this->isGranted(AccessManager::UPDATE),
+            'may_update' => $this->support->isGranted(CmsResources::SETTINGS, AccessManager::UPDATE),
             'may_make' => $this->permission->mayMake(),
             'may_ask' => $this->permission->mayAsk(),
             'toolkit_url' => $toolkitUrl,
@@ -107,9 +103,7 @@ final readonly class CmsComponentAdminController
     #[Route('/availability', name: 'availability', methods: ['POST'])]
     public function availability(Request $request): Response
     {
-        if (!$this->isGranted(AccessManager::UPDATE)) {
-            throw new AccessDeniedHttpException($this->translate('You are not allowed to change the components offered to the generator.'));
-        }
+        $this->support->denyUnless(CmsResources::SETTINGS, AccessManager::UPDATE, 'You are not allowed to change the components offered to the generator.');
 
         $name = (string) $request->request->get('component', '');
         $definition = $this->catalog->find($name);
@@ -119,19 +113,18 @@ final readonly class CmsComponentAdminController
         }
 
         if (!$this->availability->canBeDisabled($name)) {
-            throw new BadRequestHttpException($this->translate('Free text is always offered to the generator.'));
+            throw new BadRequestHttpException($this->support->translate('Free text is always offered to the generator.'));
         }
 
         $offered = '1' === (string) $request->request->get('offered', '');
         $this->availability->setOffered($name, $offered);
 
-        $this->flash($request, $this->translator->trans(
+        $this->support->flash($request, 'success', $this->support->translate(
             $offered ? '"%label%" is offered to the generator again.' : '"%label%" is no longer offered to the generator. The pages that use it are left as they are.',
             ['%label%' => $definition->label()],
-            TheliaCMS::DOMAIN_NAME,
         ));
 
-        return new RedirectResponse($this->urls->generate('admin.cms.components.list'));
+        return $this->support->redirect('admin.cms.components.list');
     }
 
     /**
@@ -151,28 +144,5 @@ final readonly class CmsComponentAdminController
             $definition instanceof SiteComponentSection => 'site',
             default => 'module',
         };
-    }
-
-    private function flash(Request $request, string $message): void
-    {
-        if (!$request->hasSession()) {
-            return;
-        }
-
-        $session = $request->getSession();
-
-        if (method_exists($session, 'getFlashBag')) {
-            $session->getFlashBag()->add('success', $message);
-        }
-    }
-
-    private function translate(string $message): string
-    {
-        return $this->translator->trans($message, [], TheliaCMS::DOMAIN_NAME);
-    }
-
-    private function isGranted(string $access): bool
-    {
-        return $this->securityContext->isGranted(['ADMIN'], [CmsResources::SETTINGS], [], [$access]);
     }
 }

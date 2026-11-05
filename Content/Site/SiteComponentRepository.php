@@ -101,6 +101,23 @@ final readonly class SiteComponentRepository
         return null === $model ? null : self::fromModel($model);
     }
 
+    /**
+     * The code of the component a row of the ledger points at, or null when
+     * the row is gone.
+     */
+    public function codeOf(int $id): ?string
+    {
+        return CmsComponentQuery::create()->findPk($id)?->getCode();
+    }
+
+    /**
+     * The id of the row of a component, 0 for a code the site does not hold.
+     */
+    public function idOf(string $code): int
+    {
+        return (int) CmsComponentQuery::create()->findOneByCode($code)?->getId();
+    }
+
     public function status(string $code): ?string
     {
         return CmsComponentQuery::create()->findOneByCode($code)?->getStatus();
