@@ -45,6 +45,7 @@ final readonly class CmsSettings
     public const string TRASH_RETENTION_DAYS = 'trash_retention_days';
     public const string HTTP_CACHE_TTL = PageCachePolicy::TTL_SETTING;
     public const string HEADING_CHECK_MODE = 'heading_check_mode';
+    public const string ACCESSIBILITY_CHECK_MODE = 'accessibility_check_mode';
 
     /**
      * How long a client is asked to wait before coming back. Long enough for a
@@ -106,6 +107,17 @@ final readonly class CmsSettings
     public function headingCheckBlocks(): bool
     {
         return 'block' === (string) TheliaCMS::getConfigValue(self::HEADING_CHECK_MODE, 'warn');
+    }
+
+    /**
+     * Whether a page with an undescribed image or a link that says nothing is
+     * kept offline, rather than published with a warning to its author. Its
+     * own setting: a site that keeps broken headings offline did not ask for
+     * this one.
+     */
+    public function accessibilityCheckBlocks(): bool
+    {
+        return 'block' === (string) TheliaCMS::getConfigValue(self::ACCESSIBILITY_CHECK_MODE, 'warn');
     }
 
     public function isMaintenanceActive(): bool

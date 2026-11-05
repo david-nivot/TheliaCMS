@@ -86,6 +86,11 @@ final readonly class ItemContentTarget implements ContentTarget
         return ItemHeadingStructureException::for($this->type, $this->id, $this->locale, $problems);
     }
 
+    public function inaccessible(array $problems): \Throwable
+    {
+        return ItemAccessibilityException::for($this->type, $this->id, $this->locale, $problems);
+    }
+
     public function duringPublication(string $html, ConnectionInterface $connection): void
     {
     }

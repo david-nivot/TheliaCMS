@@ -30,6 +30,7 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   `<picture>` gets a set of widths and the `sizes` of its `<img>`, like any picture
   of the library the author wrote with a media query. No schema change.
 - **The list of sections follows the preview.** Scrolling the preview of a page marks the section on show in the list of the content screen and scrolls the list to it, unless a section is open for editing or being dragged; the scroll asked for by the locate button is not answered, and the motion is dropped under `prefers-reduced-motion`.
+- **Images with no description and links that say nothing are reported before a page goes online.** Publishing a page or a catalogue content now checks the HTML that goes online for an image with no `alt` attribute, an image of the media library that is neither described in the language of the page nor decorative (the library's record decides every library image published with an empty `alt`; an image from elsewhere is reported only when its `alt` is missing, and `aria-hidden` or `role="presentation"` skips it), a link with no text or accessible name, and a link whose whole text is generic ("click here", "read more", "cliquez ici", "en savoir plus", in English and French only). One message per kind, with its count. The new setting `accessibility_check_mode` (`warn` by default, `block` to keep the page offline) is independent of `heading_check_mode`, and like it has no field on the settings screen. The warnings reach the content screen, the settings screen of a page and `thelia_cms:publish` (a `Refused` entry in `block` mode, a `Warnings` entry otherwise, `--dry-run` included). The page list and, on a showcase site, the dashboard list the pages already online with such a problem (twelve named, the rest counted), read from the published HTML on request. The import and the scheduled publication do not run the check, as for the headings. New classes for module code: `AccessibilityChecker`, `MediaDescriptions` (implemented by `CmsMediaLibrary`), `PublishedAccessibilityFinder`, the exceptions `AccessibilityException` and `ItemAccessibilityException`, and `ContentTarget::inaccessible()`. No schema change.
 
 - **A translation whose source changed is reported.** A language written from
   another one by the generator (from the content screen or with
@@ -62,6 +63,10 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Fixed
 
+- **A page listed by a warning is named in the language it was found in.** The list
+  of pages still showing sample text named a page by its title in the language of the
+  screen, and by its number when it had no title there; it now takes the title of the
+  language the link opens, then the one of the screen.
 - **The command keeps the draft a generation replaces.** `thelia_cms:generate`
   overwrote the draft of the language it wrote; it now keeps it with the
   previous drafts first, as the content screen does.
