@@ -57,6 +57,7 @@ final readonly class SectionChoices
         'cms:richtext' => ['family' => self::TEXT, 'icon' => 'text-paragraph', 'label' => 'Free text', 'summary' => 'Paragraphs, headings and lists.'],
         'cms:image' => ['family' => self::TEXT, 'icon' => 'image', 'label' => 'Image', 'summary' => 'One picture of the library, with an optional caption.'],
         'cms:columns' => ['family' => self::TEXT, 'icon' => 'layout-three-columns', 'label' => 'Columns', 'summary' => 'Two to four columns: an image, a heading and a short text each.'],
+        'cms:highlights' => ['family' => self::TEXT, 'icon' => 'layout-sidebar-inset', 'label' => 'Highlights', 'summary' => 'One to three blocks: a picture with a title, a catchphrase and a button each.'],
         'Organisms:VideoPlayer:Base' => ['family' => self::TEXT, 'icon' => 'play-btn', 'label' => 'Video', 'summary' => 'A YouTube, Vimeo or Dailymotion video.'],
         'Layouts:Subheader:Base' => ['family' => self::TEXT, 'icon' => 'type-h1', 'label' => 'Heading band', 'summary' => 'A title with an optional breadcrumb.'],
         'Layouts:CrossSelling:Base' => ['family' => self::SHOP, 'icon' => 'grid-3x2-gap', 'label' => 'Row of products', 'summary' => 'Products of the shop as cards side by side, under a heading.'],

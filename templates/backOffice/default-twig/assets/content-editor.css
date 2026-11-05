@@ -112,6 +112,7 @@ body:has(.cms-content) {
 }
 
 .cms-content__item.is-hover,
+.cms-content__item.is-current,
 .cms-content__item:hover,
 .cms-content__item:focus-within {
     border-color: var(--bs-primary, #0d6efd);

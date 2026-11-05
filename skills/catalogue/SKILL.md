@@ -32,6 +32,10 @@ anything else is refused.
     text, quoted, with its author: the review components draw a score out
     of five, and an empty one reads as zero. Reviews with a score: the row
     of reviews for several, the card for one.
+  - A banner of one to three offers to push, each with a picture, a title, a
+    catchphrase and a button, goes in the highlights, at the top of a home
+    page; the first block is the large one. Never use it for a list of
+    arguments: that is columns.
   - Points of the same kind listed side by side — rooms, arguments, ways
     to get there, commitments — go in columns, one column each, when there
     are two to four of them and each fits in two sentences. More, or longer,
