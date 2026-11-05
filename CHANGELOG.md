@@ -7,6 +7,17 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Fixed
+
+- **A screen of the CMS opened without being logged in leads to the login.**
+  A screen under `/admin/cms` opened in the browser with no administrator
+  logged in answered a bare 403, "Administrator authentication is required.",
+  where the screens of the core send to the login of the back office. It now
+  sends there too, with `_target_path`, so that logging in brings the editor
+  back to the screen. A script (`X-Requested-With`, or a request that does not
+  ask for HTML), a write and an administrator without the right still get the
+  403.
+
 ## [2.12.0] - 2026-11-04
 
 ### Added
