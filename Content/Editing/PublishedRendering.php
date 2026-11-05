@@ -12,7 +12,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace TheliaCMS\Page\Admin;
+namespace TheliaCMS\Content\Editing;
 
 /**
  * What rendering the published version again from its document came to.

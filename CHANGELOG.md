@@ -22,6 +22,15 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   of the library the author wrote with a media query. No schema change.
 - **The list of sections follows the preview.** Scrolling the preview of a page marks the section on show in the list of the content screen and scrolls the list to it, unless a section is open for editing or being dragged; the scroll asked for by the locate button is not answered, and the motion is dropped under `prefers-reduced-motion`.
 
+### Changed
+
+- **The content screens of pages and catalogue items share one controller and
+  one writer.** Routes, rights and behaviour do not change. For module code:
+  `ItemContentWriter`, `PageVersions`, `CmsPageContentController` and
+  `ItemContentController` are removed. `ContentWriter` (with `ContentTargets`),
+  `ContentVersions` and `ContentController` replace them, and
+  `PublishedRendering` moved to `TheliaCMS\Content\Editing`.
+
 ### Fixed
 
 - **A screen of the CMS opened without being logged in leads to the login.**

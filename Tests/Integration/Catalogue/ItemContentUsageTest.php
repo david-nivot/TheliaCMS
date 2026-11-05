@@ -14,10 +14,10 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Tests\Integration\Catalogue;
 
-use TheliaCMS\Catalogue\Admin\ItemContentWriter;
 use TheliaCMS\Catalogue\CatalogueItemType;
 use TheliaCMS\Content\Admin\SectionUsageFinder;
 use TheliaCMS\Content\Document;
+use TheliaCMS\Content\Editing\ContentWriter;
 use TheliaCMS\Content\ImageSection;
 use TheliaCMS\Content\Section;
 use TheliaCMS\Content\Site\SiteComponentRepository;
@@ -48,7 +48,7 @@ final class ItemContentUsageTest extends CmsIntegrationTestCase
         $this->getService(CmsMediaLibrary::class)->tag($image);
         $imageId = (int) $image->getId();
 
-        $this->itemWriter()->saveContent(CatalogueItemType::Product, self::PRODUCT_ID, $this->locale(), new Document([
+        $this->itemWriter()->saveContent($this->itemTarget(CatalogueItemType::Product, self::PRODUCT_ID, $this->locale()), new Document([
             new Section('picture', ImageSection::NAME, ['image' => $imageId, 'alt' => '']),
         ]));
 
@@ -63,8 +63,8 @@ final class ItemContentUsageTest extends CmsIntegrationTestCase
     {
         $before = $this->getService(SectionUsageFinder::class)->pageCounts()['cms:richtext'] ?? 0;
 
-        $this->itemWriter()->saveContent(CatalogueItemType::Product, self::PRODUCT_ID, $this->locale(), Document::richText('<h2>Titre</h2>'));
-        $this->itemWriter()->saveContent(CatalogueItemType::Category, self::PRODUCT_ID, $this->locale(), Document::richText('<h2>Titre</h2>'));
+        $this->itemWriter()->saveContent($this->itemTarget(CatalogueItemType::Product, self::PRODUCT_ID, $this->locale()), Document::richText('<h2>Titre</h2>'));
+        $this->itemWriter()->saveContent($this->itemTarget(CatalogueItemType::Category, self::PRODUCT_ID, $this->locale()), Document::richText('<h2>Titre</h2>'));
 
         self::assertSame($before + 2, $this->getService(SectionUsageFinder::class)->pageCounts()['cms:richtext'] ?? 0, 'Two items holding the same id are two uses.');
     }
@@ -74,7 +74,7 @@ final class ItemContentUsageTest extends CmsIntegrationTestCase
         $repository = $this->getService(SiteComponentRepository::class);
         $repository->save((new SiteComponentValidator())->validate(PriceTable::component()), SiteComponentRepository::STATUS_READY);
 
-        $this->itemWriter()->saveContent(CatalogueItemType::Product, self::PRODUCT_ID, $this->locale(), new Document([
+        $this->itemWriter()->saveContent($this->itemTarget(CatalogueItemType::Product, self::PRODUCT_ID, $this->locale()), new Document([
             new Section('plans', 'Site:PriceTable', ['plans' => [['name' => 'Studio', 'price' => '40 €']]]),
         ]));
 
@@ -86,8 +86,8 @@ final class ItemContentUsageTest extends CmsIntegrationTestCase
         self::assertStringContainsString('"plans"', $breakages[0]);
     }
 
-    private function itemWriter(): ItemContentWriter
+    private function itemWriter(): ContentWriter
     {
-        return $this->getService(ItemContentWriter::class);
+        return $this->getService(ContentWriter::class);
     }
 }

@@ -20,12 +20,13 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use TheliaCMS\Catalogue\Admin\ItemContentWriter;
+use TheliaCMS\Catalogue\Admin\ContentTargets;
 use TheliaCMS\Catalogue\CatalogueItem;
 use TheliaCMS\Catalogue\CatalogueItems;
 use TheliaCMS\Catalogue\CatalogueItemType;
 use TheliaCMS\Catalogue\ItemContentRepository;
 use TheliaCMS\Content\Document;
+use TheliaCMS\Content\Editing\ContentWriter;
 use TheliaCMS\Generation\Admin\TranslationSources;
 use TheliaCMS\Http\ConsoleRequest;
 use TheliaCMS\Model\CmsPage;
@@ -52,7 +53,8 @@ final class GenerateCommand extends Command
         private readonly GenerationTargets $targets,
         private readonly CatalogueItems $items,
         private readonly ItemContentRepository $itemContents,
-        private readonly ItemContentWriter $itemWriter,
+        private readonly ContentWriter $contentWriter,
+        private readonly ContentTargets $contentTargets,
         private readonly TranslationSources $translationSources,
     ) {
         parent::__construct();
@@ -175,7 +177,7 @@ final class GenerateCommand extends Command
 
         if (null !== $item) {
             $this->request->around(function () use ($item, $result): void {
-                $this->itemWriter->saveContent($item->type, $item->id, $item->locale, $result->document, $result->provenance);
+                $this->contentWriter->saveContent($this->contentTargets->forItem($item), $result->document, $result->provenance);
             }, $url);
             $io->success(\sprintf('Draft of %s #%d saved in %s.', $item->type->value, $item->id, $locale));
 

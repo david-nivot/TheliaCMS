@@ -18,9 +18,10 @@ use Thelia\Domain\Ai\AiGatewayInterface;
 use Thelia\Model\Content;
 use Thelia\Test\FixtureFactory;
 use TheliaCMS\Catalogue\Admin\ItemContentTabHook;
-use TheliaCMS\Catalogue\Admin\ItemContentWriter;
 use TheliaCMS\Catalogue\CatalogueItemType;
 use TheliaCMS\Content\Document;
+use TheliaCMS\Content\Editing\ContentVersions;
+use TheliaCMS\Content\Editing\ContentWriter;
 use TheliaCMS\Content\ImageSection;
 use TheliaCMS\Content\Section;
 use TheliaCMS\Media\CmsMediaLibrary;
@@ -171,8 +172,8 @@ final class ItemContentScreenTest extends AdminScreenTestCase
     {
         $content = $this->content();
         $id = (int) $content->getId();
-        $writer = $this->getService(ItemContentWriter::class);
-        $writer->saveContent(CatalogueItemType::Content, $id, $this->locale(), Document::richText('<h2>Avant</h2><p>Écrit à la main.</p>'));
+        $writer = $this->getService(ContentWriter::class);
+        $writer->saveContent($this->itemTarget(CatalogueItemType::Content, $id, $this->locale()), Document::richText('<h2>Avant</h2><p>Écrit à la main.</p>'));
 
         $this->api->answer(FakeAiGateway::response(json_encode(['version' => 1, 'sections' => [
             ['id' => 'intro', 'component' => 'cms:richtext', 'props' => ['html' => '<h2>Après</h2><p>Écrit par le générateur.</p>']],
@@ -189,13 +190,13 @@ final class ItemContentScreenTest extends AdminScreenTestCase
 
         $row = CmsItemContentQuery::create()->filterByItemType('content')->filterByItemId($id)->filterByLocale($this->locale())->findOne();
         self::assertStringContainsString('Écrit à la main.', (string) $row?->getDraftHtml(), 'The previous draft is the draft again.');
-        self::assertSame(2, CmsItemRevisionQuery::create()->filterByItemType('content')->filterByItemId($id)->filterByLabel(ItemContentWriter::DRAFT_LABEL)->count(), 'The draft it replaced is kept in turn.');
+        self::assertSame(2, CmsItemRevisionQuery::create()->filterByItemType('content')->filterByItemId($id)->filterByLabel(ContentVersions::DRAFT_LABEL)->count(), 'The draft it replaced is kept in turn.');
     }
 
     public function testTheSignedLinkShowsTheDraftAndATamperedOneIsNotFound(): void
     {
         $content = $this->content();
-        $this->getService(ItemContentWriter::class)->saveContent(CatalogueItemType::Content, (int) $content->getId(), $this->locale(), Document::richText('<h2>Brouillon</h2><p>Pas encore en ligne.</p>'));
+        $this->getService(ContentWriter::class)->saveContent($this->itemTarget(CatalogueItemType::Content, (int) $content->getId(), $this->locale()), Document::richText('<h2>Brouillon</h2><p>Pas encore en ligne.</p>'));
 
         $url = $this->getService(ItemPreviewLink::class)->urlFor(CatalogueItemType::Content, (int) $content->getId(), $this->locale());
 
@@ -211,7 +212,7 @@ final class ItemContentScreenTest extends AdminScreenTestCase
     public function testThePreviewShowsTheWholePageOfAnItemOnlineAndTheContentAloneOtherwise(): void
     {
         $content = $this->content();
-        $this->getService(ItemContentWriter::class)->saveContent(CatalogueItemType::Content, (int) $content->getId(), $this->locale(), Document::richText('<h2>Brouillon</h2><p>Pas encore en ligne.</p>'));
+        $this->getService(ContentWriter::class)->saveContent($this->itemTarget(CatalogueItemType::Content, (int) $content->getId(), $this->locale()), Document::richText('<h2>Brouillon</h2><p>Pas encore en ligne.</p>'));
 
         $screen = $this->screen($this->url($content));
         $frame = (string) $screen->filter('[data-testid="cms-content-frame"]')->attr('src');
@@ -240,7 +241,7 @@ final class ItemContentScreenTest extends AdminScreenTestCase
         $image->save();
         $this->getService(CmsMediaLibrary::class)->tag($image);
 
-        $this->getService(ItemContentWriter::class)->saveContent(CatalogueItemType::Content, (int) $content->getId(), $this->locale(), new Document([
+        $this->getService(ContentWriter::class)->saveContent($this->itemTarget(CatalogueItemType::Content, (int) $content->getId(), $this->locale()), new Document([
             new Section('picture', ImageSection::NAME, ['image' => (int) $image->getId(), 'alt' => '']),
         ]));
 

@@ -74,3 +74,25 @@ that showed nowhere: Flexy fires the hooks and never calls
   this amendment), and a Flexy without it shows no document on a product.
 - A content, a folder and a store get no hook from Flexy, so their theme
   still prints their document with `cms_item_content()`.
+
+## Amendment of 2026-11-05
+
+One controller, `Generation/Admin/ContentController`, serves the content
+screen of a page and the one of a catalogue item. One writer,
+`Content/Editing/ContentWriter`, saves, publishes and takes offline the
+document of both, through a `ContentTarget` per family (a page, an item).
+The two controllers and the item writer of the first decision are gone;
+addresses, route names and templates are the same.
+
+The rights, as the code applies them:
+
+- The screen is opened with the right to view pages (`admin.cms.page`, VIEW),
+  which the guard of `/admin/cms` checks before the controller runs.
+- Every write, by hand or by restore, takes the right to change pages
+  (`admin.cms.page`, UPDATE).
+- The generator actions (brief, change, translation) take the right to
+  generate (`admin.cms.generate`, UPDATE).
+
+The sentence of the decision above that gives "the right to change pages for
+the screen" is read this way: changing pages is the right of the writes, not of
+opening the screen.

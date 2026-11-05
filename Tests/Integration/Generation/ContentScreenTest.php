@@ -16,8 +16,12 @@ namespace TheliaCMS\Tests\Integration\Generation;
 
 use Propel\Runtime\ActiveQuery\Criteria;
 use Symfony\Component\DomCrawler\Crawler;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Response\MockResponse;
+use Symfony\Component\HttpKernel\Event\ResponseEvent;
+use Symfony\Component\HttpKernel\KernelEvents;
+use Thelia\Core\HttpFoundation\Session\Session as TheliaSession;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Domain\Ai\AiFinishReason;
 use Thelia\Domain\Ai\AiGatewayInterface;
@@ -54,12 +58,25 @@ final class ContentScreenTest extends AdminScreenTestCase
 {
     private FakeAiGateway $api;
 
+    private \stdClass $editedLanguages;
+
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->api = new FakeAiGateway();
         static::getContainer()->set(AiGatewayInterface::class, $this->api);
+
+        $this->editedLanguages = new \stdClass();
+        $this->editedLanguages->id = 0;
+        $editedLanguages = $this->editedLanguages;
+        $this->getService(EventDispatcherInterface::class)->addListener(KernelEvents::RESPONSE, static function (ResponseEvent $event) use ($editedLanguages): void {
+            $session = $event->getRequest()->hasSession(true) ? $event->getRequest()->getSession() : null;
+
+            if ($event->isMainRequest() && $session instanceof TheliaSession) {
+                $editedLanguages->id = $session->getAdminEditionLang()->getId();
+            }
+        });
     }
 
     protected function tearDown(): void
@@ -198,6 +215,25 @@ final class ContentScreenTest extends AdminScreenTestCase
         self::assertStringContainsString('https://example.com/a-propos', $pages->filter('li')->eq(0)->text());
         self::assertStringContainsString('not counted', $pages->filter('li')->eq(0)->text(), 'The tokens of a page are in the log of the core, not counted here.');
         self::assertStringContainsString('not read (The page could not be reached)', $pages->filter('li')->eq(1)->text());
+    }
+
+    public function testAnUnknownPageDoesNotChangeTheLanguageBeingEdited(): void
+    {
+        $page = $this->createPage('Nos services', published: false);
+        $current = Lang::getDefaultLanguage();
+        $other = LangQuery::create()->filterByActive(true)->filterById($current->getId(), Criteria::NOT_EQUAL)->orderById()->findOne();
+        self::assertNotNull($other, 'The shop of the tests has a second active language.');
+        $path = '/admin/cms/pages/%d/content?edit_language_id=%d';
+
+        $this->screen(\sprintf($path, $page->getId(), $current->getId()));
+        self::assertSame($current->getId(), $this->editedLanguageId());
+
+        $this->screen(\sprintf($path, $page->getId(), $other->getId()));
+        self::assertSame($other->getId(), $this->editedLanguageId(), 'On a page that exists, the request changes the language being edited.');
+
+        $this->screen(\sprintf($path, $page->getId(), $current->getId()));
+        self::assertSame(404, $this->send('GET', \sprintf($path, 999999999, $other->getId())));
+        self::assertSame($current->getId(), $this->editedLanguageId(), 'On a page that does not exist, it does not.');
     }
 
     public function testALanguageWithoutContentIsWrittenFromAnotherOne(): void
@@ -572,6 +608,15 @@ final class ContentScreenTest extends AdminScreenTestCase
         $settings = $this->getService(GeneratorSettings::class);
         $settings->save($settings->effort(), $settings->maxTokens(), webFetch: true);
         ModuleConfigQuery::resetConfigCache();
+    }
+
+    /**
+     * The language the session holds once the last request is answered, read
+     * as the response leaves: the test client keeps no session of its own.
+     */
+    private function editedLanguageId(): int
+    {
+        return $this->editedLanguages->id;
     }
 
     private function url(int $pageId): string

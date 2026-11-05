@@ -18,10 +18,10 @@ use Thelia\Model\Product;
 use Thelia\Model\RewritingUrl;
 use Thelia\Model\RewritingUrlQuery;
 use Thelia\Test\FixtureFactory;
-use TheliaCMS\Catalogue\Admin\ItemContentWriter;
 use TheliaCMS\Catalogue\CatalogueItemType;
 use TheliaCMS\Catalogue\ItemContentRepository;
 use TheliaCMS\Content\Document;
+use TheliaCMS\Content\Editing\ContentWriter;
 use TheliaCMS\ImportExport\ImportOptions;
 use TheliaCMS\ImportExport\SiteDocument;
 use TheliaCMS\ImportExport\SiteExporter;
@@ -49,10 +49,10 @@ final class ItemContentRoundTripTest extends CmsIntegrationTestCase
     public function testTheDocumentOfAProductComesBackOnTheProductOfTheSameReference(): void
     {
         $product = $this->product('ROUND-TRIP-REF');
-        $this->itemWriter()->saveContent(CatalogueItemType::Product, (int) $product->getId(), $this->locale(), Document::richText('<h2>Questions</h2><p>Une réponse reconnaissable.</p>'));
-        $this->itemWriter()->publish(CatalogueItemType::Product, (int) $product->getId(), $this->locale());
-        $this->itemWriter()->saveContent(CatalogueItemType::Product, (int) $product->getId(), $this->locale(), Document::richText('<h2>Questions</h2><p>Une réponse du modèle.</p>'), FakeAiGateway::provenance());
-        $this->itemWriter()->publish(CatalogueItemType::Product, (int) $product->getId(), $this->locale());
+        $this->itemWriter()->saveContent($this->itemTarget(CatalogueItemType::Product, (int) $product->getId(), $this->locale()), Document::richText('<h2>Questions</h2><p>Une réponse reconnaissable.</p>'));
+        $this->itemWriter()->publish($this->itemTarget(CatalogueItemType::Product, (int) $product->getId(), $this->locale()));
+        $this->itemWriter()->saveContent($this->itemTarget(CatalogueItemType::Product, (int) $product->getId(), $this->locale()), Document::richText('<h2>Questions</h2><p>Une réponse du modèle.</p>'), FakeAiGateway::provenance());
+        $this->itemWriter()->publish($this->itemTarget(CatalogueItemType::Product, (int) $product->getId(), $this->locale()));
         $before = $this->contents()->find(CatalogueItemType::Product, (int) $product->getId(), $this->locale());
         self::assertNotNull($before?->getPublishedProvenance());
 
@@ -78,7 +78,7 @@ final class ItemContentRoundTripTest extends CmsIntegrationTestCase
     {
         $exported = (new FixtureFactory($this->getPropelConnection()))->folder();
         $this->address($exported->getId(), 'dossier-aller-retour.html');
-        $this->itemWriter()->saveContent(CatalogueItemType::Folder, (int) $exported->getId(), $this->locale(), Document::richText('<h2>Dossier</h2><p>Reconnaissable.</p>'));
+        $this->itemWriter()->saveContent($this->itemTarget(CatalogueItemType::Folder, (int) $exported->getId(), $this->locale()), Document::richText('<h2>Dossier</h2><p>Reconnaissable.</p>'));
 
         $document = $this->getService(SiteExporter::class)->export();
 
@@ -112,7 +112,7 @@ final class ItemContentRoundTripTest extends CmsIntegrationTestCase
     public function testAnItemHoldingADocumentKeepsItUnlessTheImportReplaces(): void
     {
         $product = $this->product('KEEP-REF');
-        $this->itemWriter()->saveContent(CatalogueItemType::Product, (int) $product->getId(), $this->locale(), Document::richText('<h2>Ici</h2>'));
+        $this->itemWriter()->saveContent($this->itemTarget(CatalogueItemType::Product, (int) $product->getId(), $this->locale()), Document::richText('<h2>Ici</h2>'));
 
         $document = $this->fileWith([
             'type' => 'product',
@@ -155,9 +155,9 @@ final class ItemContentRoundTripTest extends CmsIntegrationTestCase
         return $factory->product($factory->category(), $factory->taxRule(), $factory->currency(), ['ref' => $reference]);
     }
 
-    private function itemWriter(): ItemContentWriter
+    private function itemWriter(): ContentWriter
     {
-        return $this->getService(ItemContentWriter::class);
+        return $this->getService(ContentWriter::class);
     }
 
     private function contents(): ItemContentRepository

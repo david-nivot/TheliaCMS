@@ -16,10 +16,10 @@ namespace TheliaCMS\Tests\Integration\Catalogue;
 
 use Thelia\Core\Hook\Theme\ThemeHookInterface;
 use Thelia\Model\ModuleConfigQuery;
-use TheliaCMS\Catalogue\Admin\ItemContentWriter;
 use TheliaCMS\Catalogue\CatalogueItemType;
 use TheliaCMS\Catalogue\ItemContentThemeHook;
 use TheliaCMS\Content\Document;
+use TheliaCMS\Content\Editing\ContentWriter;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
 use TheliaCMS\TheliaCMS;
 
@@ -118,9 +118,9 @@ final class ItemContentThemeHookTest extends CmsIntegrationTestCase
 
     private function publish(CatalogueItemType $type, string $html): void
     {
-        $writer = $this->getService(ItemContentWriter::class);
-        $writer->saveContent($type, self::ITEM_ID, $this->locale(), Document::richText($html));
-        $writer->publish($type, self::ITEM_ID, $this->locale());
+        $writer = $this->getService(ContentWriter::class);
+        $writer->saveContent($this->itemTarget($type, self::ITEM_ID, $this->locale()), Document::richText($html));
+        $writer->publish($this->itemTarget($type, self::ITEM_ID, $this->locale()));
     }
 
     /**

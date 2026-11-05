@@ -45,6 +45,8 @@ use TheliaCMS\Partial\PartialCache;
  */
 abstract class CmsIntegrationTestCase extends IntegrationTestCase
 {
+    use BuildsItemTargets;
+
     /** Checked once per run: the answer cannot change between two test cases. */
     private static ?string $checkedDatabase = null;
 
@@ -215,7 +217,7 @@ abstract class CmsIntegrationTestCase extends IntegrationTestCase
             $type = ltrim((string) $parameter->getType(), '?');
             $arguments[] = match (true) {
                 CachePurger::class === $type => new CachePurger([$purger], new NullLogger()),
-                \in_array($type, [PageInvalidator::class, PartialCache::class], true) => $this->purgingWith($type, $purger),
+                $this->reachesAPurger($type) => $this->purgingWith($type, $purger),
                 // What the container has no service for keeps the default the
                 // constructor gives it, as autowiring leaves it.
                 $parameter->isDefaultValueAvailable() && !static::getContainer()->has($type) => $parameter->getDefaultValue(),
@@ -224,6 +226,34 @@ abstract class CmsIntegrationTestCase extends IntegrationTestCase
         }
 
         return new $class(...$arguments);
+    }
+
+    /**
+     * Whether a service of the module holds a purger, itself or through the
+     * services it takes: those are rebuilt around the spy, so the purges of
+     * a writer cannot reach the real one whatever service it hands them to.
+     *
+     * @param array<string, true> $seen
+     */
+    private function reachesAPurger(string $type, array $seen = []): bool
+    {
+        if (\in_array($type, [CachePurger::class, PageInvalidator::class, PartialCache::class], true)) {
+            return true;
+        }
+
+        if (isset($seen[$type]) || !str_starts_with($type, 'TheliaCMS\\') || !class_exists($type) || !method_exists($type, '__construct')) {
+            return false;
+        }
+
+        $seen[$type] = true;
+
+        foreach ((new \ReflectionMethod($type, '__construct'))->getParameters() as $parameter) {
+            if ($this->reachesAPurger(ltrim((string) $parameter->getType(), '?'), $seen)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

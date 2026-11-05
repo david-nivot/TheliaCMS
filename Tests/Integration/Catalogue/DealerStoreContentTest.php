@@ -19,13 +19,13 @@ use Dealer\Model\Dealer;
 use Dealer\Model\DealerMetaSeo;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Thelia\Model\CountryQuery;
-use TheliaCMS\Catalogue\Admin\ItemContentWriter;
 use TheliaCMS\Catalogue\CatalogueItemKeys;
 use TheliaCMS\Catalogue\CatalogueItems;
 use TheliaCMS\Catalogue\CatalogueItemType;
 use TheliaCMS\Catalogue\DealerStores;
 use TheliaCMS\Catalogue\ItemContentRepository;
 use TheliaCMS\Content\Document;
+use TheliaCMS\Content\Editing\ContentWriter;
 use TheliaCMS\Model\CmsItemContentQuery;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
 
@@ -62,8 +62,8 @@ final class DealerStoreContentTest extends CmsIntegrationTestCase
     {
         $id = (int) $this->store('Magasin de Mérignac')->getId();
 
-        $this->itemWriter()->saveContent(CatalogueItemType::Dealer, $id, $this->locale(), Document::richText('<h2>Le marché</h2><p>Tous les samedis.</p>'));
-        $this->itemWriter()->publish(CatalogueItemType::Dealer, $id, $this->locale());
+        $this->itemWriter()->saveContent($this->itemTarget(CatalogueItemType::Dealer, $id, $this->locale()), Document::richText('<h2>Le marché</h2><p>Tous les samedis.</p>'));
+        $this->itemWriter()->publish($this->itemTarget(CatalogueItemType::Dealer, $id, $this->locale()));
 
         self::assertStringContainsString('Tous les samedis.', (string) $this->getService(ItemContentRepository::class)->publishedHtml(CatalogueItemType::Dealer, $id, $this->locale()));
     }
@@ -73,8 +73,8 @@ final class DealerStoreContentTest extends CmsIntegrationTestCase
         $store = $this->store('Magasin de Talence');
         $id = (int) $store->getId();
 
-        $this->itemWriter()->saveContent(CatalogueItemType::Dealer, $id, $this->locale(), Document::richText('<h2>Magasin</h2><p>Texte</p>'));
-        $this->itemWriter()->saveContent(CatalogueItemType::Product, $id, $this->locale(), Document::richText('<h2>Produit</h2><p>Texte</p>'));
+        $this->itemWriter()->saveContent($this->itemTarget(CatalogueItemType::Dealer, $id, $this->locale()), Document::richText('<h2>Magasin</h2><p>Texte</p>'));
+        $this->itemWriter()->saveContent($this->itemTarget(CatalogueItemType::Product, $id, $this->locale()), Document::richText('<h2>Produit</h2><p>Texte</p>'));
 
         $event = new DealerEvent();
         $event->setDealer($store);
@@ -113,8 +113,8 @@ final class DealerStoreContentTest extends CmsIntegrationTestCase
         return $store;
     }
 
-    private function itemWriter(): ItemContentWriter
+    private function itemWriter(): ContentWriter
     {
-        return $this->getService(ItemContentWriter::class);
+        return $this->getService(ContentWriter::class);
     }
 }

@@ -26,6 +26,7 @@ use TheliaCMS\Content\Document;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Page\Admin\CmsPageWriter;
 use TheliaCMS\Page\Admin\PageDraft;
+use TheliaCMS\Tests\Integration\BuildsItemTargets;
 
 /**
  * The screens of the CMS, requested over HTTP by a logged-in administrator.
@@ -36,6 +37,8 @@ use TheliaCMS\Page\Admin\PageDraft;
  */
 abstract class AdminScreenTestCase extends WebIntegrationTestCase
 {
+    use BuildsItemTargets;
+
     /**
      * What a browser adds to a request sent by a page of the same site. The
      * Symfony forms of the module check it on top of the back-office token.

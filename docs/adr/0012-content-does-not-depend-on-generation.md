@@ -41,3 +41,7 @@ from doing the same.
   catalogue) lives outside `Content`, under the feature it belongs to.
 - The rule covers `Content` only. Other directions (`Page`, `Preview`) are
   not checked.
+- `Content/Editing/` (the shared writer, the versions and the interfaces of the
+  targets) follows the rule: it names no class of `Generation`, `Page` or
+  `Catalogue`. The targets that name both families live in `Page/Admin/` and
+  `Catalogue/Admin/`.
