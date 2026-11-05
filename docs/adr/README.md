@@ -17,3 +17,4 @@ decision supersedes it with a new file.
 | [9](0009-a-page-type-is-a-template-of-pages.md) | A page type is a template of pages |
 | [10](0010-the-template-draws-the-title-of-a-page.md) | The template draws the title of a page |
 | [11](0011-a-catalogue-item-carries-a-document.md) | A catalogue item carries a document |
+| [12](0012-content-does-not-depend-on-generation.md) | Content does not depend on Generation |

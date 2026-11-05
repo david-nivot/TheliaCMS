@@ -22,16 +22,15 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
-use Thelia\Core\Security\SecurityContext;
 use Thelia\Model\Lang;
 use TheliaCMS\Content\InvalidDocumentException;
+use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Media\Admin\CmsMediaWriter;
 use TheliaCMS\Media\CmsMediaLibrary;
 use TheliaCMS\Model\CmsPage;
@@ -66,7 +65,7 @@ final readonly class CmsPageAdminController
         private Environment $twig,
         private FormFactoryInterface $forms,
         private UrlGeneratorInterface $urls,
-        private SecurityContext $securityContext,
+        private AdminControllerSupport $support,
         private TranslatorInterface $translator,
         private CmsPageAdminRepository $pages,
         private CmsPageWriter $writer,
@@ -129,7 +128,7 @@ final readonly class CmsPageAdminController
         $title = trim((string) $request->request->get('title', ''));
 
         if ('' === $title) {
-            $this->flash($request, 'danger', $this->translate('Give the new page a title.'));
+            $this->support->flash($request, 'danger', $this->support->translate('Give the new page a title.'));
 
             return $this->backToList($request);
         }
@@ -167,7 +166,7 @@ final readonly class CmsPageAdminController
         $slug = trim((string) $request->request->get('slug', ''));
 
         if ('' === $title && '' === $slug) {
-            return new JsonResponse(['error' => $this->translate('Give the page a title first.')], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return new JsonResponse(['error' => $this->support->translate('Give the page a title first.')], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $locale = $this->editLang($request)->getLocale();
@@ -228,24 +227,24 @@ final readonly class CmsPageAdminController
             $this->writer->publish($this->livePageOrFail($id), $lang->getLocale());
         } catch (HeadingStructureException $exception) {
             foreach ($exception->problems as $problem) {
-                $this->flash($request, 'danger', $problem);
+                $this->support->flash($request, 'danger', $problem);
             }
 
-            $this->flash($request, 'danger', $this->translate('The page was not published: fix the heading structure first.'));
+            $this->support->flash($request, 'danger', $this->support->translate('The page was not published: fix the heading structure first.'));
         } catch (InvalidDocumentException $exception) {
             foreach ($exception->translated($this->translator) as $problem) {
-                $this->flash($request, 'danger', $problem);
+                $this->support->flash($request, 'danger', $problem);
             }
 
-            $this->flash($request, 'danger', $this->translate('The page was not published: its content is no longer valid. Open it in the editor to see what to fix.'));
+            $this->support->flash($request, 'danger', $this->support->translate('The page was not published: its content is no longer valid. Open it in the editor to see what to fix.'));
         } catch (EmptyPageContentException) {
-            $this->flash($request, 'danger', $this->translate('This page has no content yet: add at least one block in the editor before publishing it.'));
+            $this->support->flash($request, 'danger', $this->support->translate('This page has no content yet: add at least one block in the editor before publishing it.'));
         } catch (PlaceholderPageContentException) {
-            $this->flash($request, 'danger', $this->translate('This page still holds the sample text it was created with: write your own before publishing it.'));
+            $this->support->flash($request, 'danger', $this->support->translate('This page still holds the sample text it was created with: write your own before publishing it.'));
         } catch (ModelPagePublicationException) {
-            $this->flash($request, 'danger', $this->translate('This page is the model of its type: it is never published. Start a new page from it instead.'));
+            $this->support->flash($request, 'danger', $this->support->translate('This page is the model of its type: it is never published. Start a new page from it instead.'));
         } catch (MissingPageFieldsException $exception) {
-            $this->flash($request, 'danger', $this->translator->trans('Fill in the fields this type requires before publishing: %fields%.', ['%fields%' => implode(', ', $exception->labels)], TheliaCMS::DOMAIN_NAME));
+            $this->support->flash($request, 'danger', $this->support->translate('Fill in the fields this type requires before publishing: %fields%.', ['%fields%' => implode(', ', $exception->labels)]));
         }
 
         return $this->backToEdit($id, $lang);
@@ -269,7 +268,7 @@ final readonly class CmsPageAdminController
         $lang = $this->editLang($request);
 
         if ($this->writer->removeProvenance($this->livePageOrFail($id), $lang->getLocale())) {
-            $this->flash($request, 'success', $this->translate('The AI mark has been removed from this page in this language.'));
+            $this->support->flash($request, 'success', $this->support->translate('The AI mark has been removed from this page in this language.'));
         }
 
         return $this->backToEdit($id, $lang);
@@ -283,7 +282,7 @@ final readonly class CmsPageAdminController
         try {
             $this->writer->toggleVisibility($this->livePageOrFail($id));
         } catch (ModelPageSettingException) {
-            $this->flash($request, 'danger', $this->translate('This page is the model of its template: it is never online.'));
+            $this->support->flash($request, 'danger', $this->support->translate('This page is the model of its template: it is never online.'));
         }
 
         return $this->backToList($request);
@@ -308,7 +307,7 @@ final readonly class CmsPageAdminController
         $copy = $this->writer->duplicate(
             $this->livePageOrFail($id),
             $lang->getLocale(),
-            $this->translator->trans('(copy)', [], TheliaCMS::DOMAIN_NAME),
+            $this->support->translate('(copy)'),
         );
 
         return $this->backToEdit((int) $copy->getId(), $lang);
@@ -332,7 +331,7 @@ final readonly class CmsPageAdminController
         try {
             $this->writer->moveToTrash($this->livePageOrFail($id));
         } catch (ModelPageSettingException) {
-            $this->flash($request, 'danger', $this->translate('This page is the model of its template: it is deleted with its template, under CMS > Page templates, never moved to the bin.'));
+            $this->support->flash($request, 'danger', $this->support->translate('This page is the model of its template: it is deleted with its template, under CMS > Page templates, never moved to the bin.'));
         }
 
         return $this->backToList($request);
@@ -423,8 +422,8 @@ final readonly class CmsPageAdminController
             'document_max_size' => (int) UploadedFile::getMaxFilesize(),
             'document_max_size_label' => PageDocumentSize::human((int) UploadedFile::getMaxFilesize(), $locale),
             'document_max_files' => max(1, (int) \ini_get('max_file_uploads')),
-            'may_change_documents' => $this->securityContext->isGranted(['ADMIN'], [CmsResources::PAGE], [], [AccessManager::UPDATE]),
-            'may_delete_documents' => $this->securityContext->isGranted(['ADMIN'], [CmsResources::PAGE], [], [AccessManager::DELETE]),
+            'may_change_documents' => $this->support->isGranted(CmsResources::PAGE, AccessManager::UPDATE),
+            'may_delete_documents' => $this->support->isGranted(CmsResources::PAGE, AccessManager::DELETE),
             // The browser keeps the script until its version changes.
             'assets_version' => substr(hash('xxh3', (string) @filemtime(__DIR__.'/../../templates/backOffice/default-twig/assets/page-address.js').(string) @filemtime(__DIR__.'/../../templates/backOffice/default-twig/assets/media-picker.js').(string) @filemtime(__DIR__.'/../../templates/backOffice/default-twig/assets/page-documents.js')), 0, 12),
         ]));
@@ -485,7 +484,7 @@ final readonly class CmsPageAdminController
             'field_definitions' => $definitions,
             'field_locale' => $locale,
             'tag_choices' => $this->tags->namesById(),
-            'allow_image_upload' => $this->securityContext->isGranted(['ADMIN'], [CmsResources::MEDIA], [], [AccessManager::CREATE]),
+            'allow_image_upload' => $this->support->isGranted(CmsResources::MEDIA, AccessManager::CREATE),
             'address_proposal_url' => $this->urls->generate('admin.cms.pages.address_proposal', [self::EDIT_LANGUAGE_PARAMETER => $lang->getId()]),
             'fixed_address_check_url' => $this->urls->generate('admin.cms.pages.fixed_address_check', [self::EDIT_LANGUAGE_PARAMETER => $lang->getId()]),
             'page_id' => $page->isNew() ? 0 : (int) $page->getId(),
@@ -567,26 +566,12 @@ final readonly class CmsPageAdminController
 
     private function denyUnless(string $access): void
     {
-        if (!$this->securityContext->isGranted(['ADMIN'], [CmsResources::PAGE], [], [$access])) {
-            throw new AccessDeniedHttpException($this->translator->trans('You are not allowed to change CMS pages.', [], TheliaCMS::DOMAIN_NAME));
-        }
+        $this->support->denyUnless(CmsResources::PAGE, $access, 'You are not allowed to change CMS pages.');
     }
 
     private function editLang(Request $request): Lang
     {
         return $this->languages->resolve($request);
-    }
-
-    private function flash(Request $request, string $type, string $message): void
-    {
-        if ($request->hasSession()) {
-            $request->getSession()->getFlashBag()->add($type, $message);
-        }
-    }
-
-    private function translate(string $message): string
-    {
-        return $this->translator->trans($message, [], TheliaCMS::DOMAIN_NAME);
     }
 
     /**
@@ -596,17 +581,14 @@ final readonly class CmsPageAdminController
      */
     private function backToList(Request $request): RedirectResponse
     {
-        return new RedirectResponse($this->urls->generate('admin.cms.pages.list', [
+        return $this->support->redirect('admin.cms.pages.list', [
             self::EDIT_LANGUAGE_PARAMETER => $this->editLang($request)->getId(),
             ...PageFilters::fromRequest($request)->toQueryParams(),
-        ]));
+        ]);
     }
 
     private function backToEdit(int $id, Lang $lang): RedirectResponse
     {
-        return new RedirectResponse($this->urls->generate('admin.cms.pages.edit', [
-            'id' => $id,
-            self::EDIT_LANGUAGE_PARAMETER => $lang->getId(),
-        ]));
+        return $this->support->redirectInLanguage('admin.cms.pages.edit', $lang->getId(), ['id' => $id]);
     }
 }

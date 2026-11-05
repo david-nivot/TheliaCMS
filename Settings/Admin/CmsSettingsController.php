@@ -18,13 +18,10 @@ use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
-use Thelia\Core\Security\SecurityContext;
 use TheliaCMS\Generation\GeneratorSettings;
+use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Http\CachePurger;
 use TheliaCMS\Http\CacheTags;
 use TheliaCMS\Http\ContentSecurityPolicyMode;
@@ -36,7 +33,6 @@ use TheliaCMS\Security\CmsResources;
 use TheliaCMS\Settings\CmsSettings;
 use TheliaCMS\Settings\EditorProfileSeeder;
 use TheliaCMS\Settings\SiteMode;
-use TheliaCMS\TheliaCMS;
 use Twig\Environment;
 
 /**
@@ -51,9 +47,7 @@ final readonly class CmsSettingsController
     public function __construct(
         private Environment $twig,
         private FormFactoryInterface $forms,
-        private UrlGeneratorInterface $urls,
-        private SecurityContext $securityContext,
-        private TranslatorInterface $translator,
+        private AdminControllerSupport $support,
         private CmsSettings $settings,
         private MenuTargetChoices $choices,
         private EditorProfileSeeder $editorProfile,
@@ -158,26 +152,16 @@ final readonly class CmsSettingsController
         ), CmsResources::SETTINGS);
         $this->flash($request, 'success', 'Settings saved.');
 
-        return new RedirectResponse($this->urls->generate('admin.cms.settings.edit'));
+        return $this->support->redirect('admin.cms.settings.edit');
     }
 
     private function flash(Request $request, string $type, string $message): void
     {
-        if (!$request->hasSession()) {
-            return;
-        }
-
-        $session = $request->getSession();
-
-        if (method_exists($session, 'getFlashBag')) {
-            $session->getFlashBag()->add($type, $this->translator->trans($message, [], TheliaCMS::DOMAIN_NAME));
-        }
+        $this->support->flash($request, $type, $this->support->translate($message));
     }
 
     private function denyUnlessUpdate(): void
     {
-        if (!$this->securityContext->isGranted(['ADMIN'], [CmsResources::SETTINGS], [], [AccessManager::UPDATE])) {
-            throw new AccessDeniedHttpException($this->translator->trans('You are not allowed to change these settings.', [], TheliaCMS::DOMAIN_NAME));
-        }
+        $this->support->denyUnless(CmsResources::SETTINGS, AccessManager::UPDATE, 'You are not allowed to change these settings.');
     }
 }

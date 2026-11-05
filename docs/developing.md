@@ -92,11 +92,21 @@ shows how to test an update, outside a transaction.
 - `phpstan-baseline.neon` lists the errors present when the analysis came in.
   Fixing one means regenerating it (`--generate-baseline=local/modules/TheliaCMS/phpstan-baseline.neon`);
   a new error is fixed, never added to it.
+- A file of `TheliaCMS\Content\` names no class of `TheliaCMS\Generation\`
+  (ADR 12): `Tests/PHPStan/ContentDoesNotDependOnGenerationRule` is run by
+  PHPStan and tested in `Tests/Unit/PHPStan/`.
 - The code style is the one of the core. From the module directory, with the
   install's fixer: `../../../vendor/bin/php-cs-fixer fix --dry-run --diff`
   (drop `--dry-run --diff` to apply).
 
 ## Writing tests
+
+- The unit suite loads no Propel model: its bootstrap is the install's
+  autoloader alone, and the generated `Base` classes live under `var/propel`
+  (`new Lang()` fails with `Class "Thelia\Model\Base\Lang" not found`).
+  A service meant for unit tests takes plain values (an id rather than a
+  `Lang`, for instance, as `Http/Admin/AdminControllerSupport` does); what
+  needs a model goes to the integration suite.
 
 - Under DDEV, the web container exports `DATABASE_NAME=db`, which wins over
   `.env.test` when the test caches are built: the integration tests then

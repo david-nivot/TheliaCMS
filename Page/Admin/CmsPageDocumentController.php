@@ -19,23 +19,18 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\Session\FlashBagAwareSessionInterface;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
-use Thelia\Core\Security\SecurityContext;
 use Thelia\Model\Lang;
+use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Model\CmsPageDocument;
 use TheliaCMS\Page\Document\PageDocumentRepository;
 use TheliaCMS\Page\Document\PageDocumentUpload;
 use TheliaCMS\Page\Document\PageDocumentWriter;
 use TheliaCMS\Security\CmsResources;
-use TheliaCMS\TheliaCMS;
 
 /**
  * The files of a page, from the Documents tab of its edit screen. Each action
@@ -52,9 +47,7 @@ final readonly class CmsPageDocumentController
     private const int DESCRIPTION_MAX_BYTES = 65535;
 
     public function __construct(
-        private UrlGeneratorInterface $urls,
-        private SecurityContext $securityContext,
-        private TranslatorInterface $translator,
+        private AdminControllerSupport $support,
         private CmsPageAdminRepository $pages,
         private PageDocumentWriter $writer,
         private PageDocumentRepository $documents,
@@ -89,15 +82,15 @@ final readonly class CmsPageDocumentController
         }
 
         if ([] === $files) {
-            $this->flash($request, 'warning', $this->translate('Choose at least one file to attach.'));
+            $this->support->flash($request, 'warning', $this->support->translate('Choose at least one file to attach.'));
         }
 
         foreach ($this->refusals($upload) as $refusal) {
-            $this->flash($request, 'warning', \sprintf('%s: %s', $refusal['name'], $refusal['reason']));
+            $this->support->flash($request, 'warning', \sprintf('%s: %s', $refusal['name'], $refusal['reason']));
         }
 
         if ([] !== $upload->stored) {
-            $this->flash($request, 'success', $this->translator->trans('%count% file(s) attached.', ['%count%' => \count($upload->stored)], TheliaCMS::DOMAIN_NAME));
+            $this->support->flash($request, 'success', $this->support->translate('%count% file(s) attached.', ['%count%' => \count($upload->stored)]));
         }
 
         return $this->backToTab((int) $page->getId(), $lang);
@@ -117,7 +110,7 @@ final readonly class CmsPageDocumentController
         $title = $request->request->getString('title');
 
         if (mb_strlen(trim($title)) > self::TITLE_MAX_LENGTH) {
-            $this->flash($request, 'danger', $this->translator->trans('The title is limited to %max% characters.', ['%max%' => self::TITLE_MAX_LENGTH], TheliaCMS::DOMAIN_NAME));
+            $this->support->flash($request, 'danger', $this->support->translate('The title is limited to %max% characters.', ['%max%' => self::TITLE_MAX_LENGTH]));
 
             return $this->backToTab($id, $lang);
         }
@@ -125,13 +118,13 @@ final readonly class CmsPageDocumentController
         $description = $request->request->getString('description');
 
         if (\strlen(trim($description)) > self::DESCRIPTION_MAX_BYTES) {
-            $this->flash($request, 'danger', $this->translator->trans('The description is limited to %max% bytes.', ['%max%' => self::DESCRIPTION_MAX_BYTES], TheliaCMS::DOMAIN_NAME));
+            $this->support->flash($request, 'danger', $this->support->translate('The description is limited to %max% bytes.', ['%max%' => self::DESCRIPTION_MAX_BYTES]));
 
             return $this->backToTab($id, $lang);
         }
 
         $this->writer->describe($documentId, $lang->getLocale(), $title, $description);
-        $this->flash($request, 'success', $this->translate('Document saved.'));
+        $this->support->flash($request, 'success', $this->support->translate('Document saved.'));
 
         return $this->backToTab($id, $lang);
     }
@@ -163,7 +156,7 @@ final readonly class CmsPageDocumentController
         $this->documentOfPageOrFail($id, $documentId);
 
         $this->writer->delete($documentId);
-        $this->flash($request, 'success', $this->translate('Document deleted.'));
+        $this->support->flash($request, 'success', $this->support->translate('Document deleted.'));
 
         return $this->backToTab($id, $lang);
     }
@@ -175,7 +168,7 @@ final readonly class CmsPageDocumentController
     {
         return array_map(fn (array $refusal): array => [
             'name' => $refusal['name'],
-            'reason' => $this->translate($refusal['reason']->message()),
+            'reason' => $this->support->translate($refusal['reason']->message()),
         ], $upload->refused);
     }
 
@@ -199,30 +192,11 @@ final readonly class CmsPageDocumentController
 
     private function denyUnless(string $access): void
     {
-        if (!$this->securityContext->isGranted(['ADMIN'], [CmsResources::PAGE], [], [$access])) {
-            throw new AccessDeniedHttpException($this->translate('You are not allowed to change CMS pages.'));
-        }
-    }
-
-    private function translate(string $message): string
-    {
-        return $this->translator->trans($message, [], TheliaCMS::DOMAIN_NAME);
-    }
-
-    private function flash(Request $request, string $level, string $message): void
-    {
-        $session = $request->hasSession() ? $request->getSession() : null;
-
-        if ($session instanceof FlashBagAwareSessionInterface) {
-            $session->getFlashBag()->add($level, $message);
-        }
+        $this->support->denyUnless(CmsResources::PAGE, $access, 'You are not allowed to change CMS pages.');
     }
 
     private function backToTab(int $pageId, Lang $lang): RedirectResponse
     {
-        return new RedirectResponse($this->urls->generate('admin.cms.pages.edit', [
-            'id' => $pageId,
-            EditLanguage::PARAMETER => $lang->getId(),
-        ]).'#tab-documents');
+        return $this->support->redirectInLanguage('admin.cms.pages.edit', $lang->getId(), ['id' => $pageId], 'tab-documents');
     }
 }

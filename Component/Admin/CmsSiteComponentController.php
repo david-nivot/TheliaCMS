@@ -12,7 +12,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace TheliaCMS\Content\Admin;
+namespace TheliaCMS\Component\Admin;
 
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,7 +22,7 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Symfony\Contracts\Translation\TranslatorInterface;
+use TheliaCMS\Content\Admin\SectionUsageFinder;
 use TheliaCMS\Content\SectionAvailability;
 use TheliaCMS\Content\Site\InvalidSiteComponentException;
 use TheliaCMS\Content\Site\SiteComponent;
@@ -38,12 +38,11 @@ use TheliaCMS\Generation\Component\ComponentGenerator;
 use TheliaCMS\Generation\Component\ComponentRequest;
 use TheliaCMS\Generation\GenerationException;
 use TheliaCMS\Generation\GenerationLog;
-use TheliaCMS\Model\CmsComponentQuery;
+use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Model\CmsPageQuery;
 use TheliaCMS\Page\Admin\CmsPageWriter;
 use TheliaCMS\Page\Admin\DraftRendering;
 use TheliaCMS\Preview\ComponentPreviewLink;
-use TheliaCMS\TheliaCMS;
 use Twig\Environment;
 
 /**
@@ -67,7 +66,7 @@ final readonly class CmsSiteComponentController
     public function __construct(
         private Environment $twig,
         private UrlGeneratorInterface $urls,
-        private TranslatorInterface $translator,
+        private AdminControllerSupport $support,
         private ComponentGenerator $generator,
         private ComponentCandidates $candidates,
         private SiteComponentRepository $components,
@@ -101,16 +100,16 @@ final readonly class CmsSiteComponentController
     public function generate(Request $request): Response
     {
         if (!$this->permission->mayAsk()) {
-            throw new AccessDeniedHttpException($this->translate('Asking the generator for a component takes the generator, the settings and the custom code permissions.'));
+            throw new AccessDeniedHttpException($this->support->translate('Asking the generator for a component takes the generator, the settings and the custom code permissions.'));
         }
 
         $text = trim((string) $request->request->get('request', ''));
         $back = $this->backTo($request);
 
         if ('' === $text) {
-            $this->flash($request, 'danger', $this->translate('Say what the component is for.'));
+            $this->support->flash($request, 'danger', $this->support->translate('Say what the component is for.'));
 
-            return new RedirectResponse($back);
+            return $back;
         }
 
         $generation = $this->requestFor($request, $text);
@@ -127,15 +126,15 @@ final readonly class CmsSiteComponentController
             $result = $this->generator->generate($generation);
         } catch (GenerationException $exception) {
             if (null === $exception->logId) {
-                $this->flash($request, 'danger', $exception->getMessage());
+                $this->support->flash($request, 'danger', $exception->getMessage());
 
-                return new RedirectResponse($back);
+                return $back;
             }
 
-            return new RedirectResponse($this->urls->generate('admin.cms.components.site.candidate', ['id' => $exception->logId]));
+            return $this->support->redirect('admin.cms.components.site.candidate', ['id' => $exception->logId]);
         }
 
-        return new RedirectResponse($this->urls->generate('admin.cms.components.site.candidate', ['id' => $result->logId]));
+        return $this->support->redirect('admin.cms.components.site.candidate', ['id' => $result->logId]);
     }
 
     /**
@@ -146,7 +145,7 @@ final readonly class CmsSiteComponentController
     private function stream(ComponentRequest $generation): StreamedResponse
     {
         $events = new GenerationStream(
-            fn (string $message, array $parameters): string => $this->translator->trans($message, $parameters, TheliaCMS::DOMAIN_NAME),
+            fn (string $message, array $parameters): string => $this->support->translate($message, $parameters),
             [
                 'answered' => 'The model answered: the site is checking the component.',
                 'refused' => 'The component was refused by the site and sent back for correction.',
@@ -158,7 +157,7 @@ final readonly class CmsSiteComponentController
             // for: it runs to its end and is written to the ledger.
             ignore_user_abort(true);
 
-            $events->start($this->translate('The generator is reading the request.'));
+            $events->start($this->support->translate('The generator is reading the request.'));
 
             try {
                 $result = $this->generator->generate($generation, $events);
@@ -168,7 +167,7 @@ final readonly class CmsSiteComponentController
                 return;
             }
 
-            $events->done($this->urls->generate('admin.cms.components.site.candidate', ['id' => $result->logId]), $this->translate('The component is written.'));
+            $events->done($this->urls->generate('admin.cms.components.site.candidate', ['id' => $result->logId]), $this->support->translate('The component is written.'));
         }, Response::HTTP_OK, [
             'Content-Type' => 'text/event-stream; charset=UTF-8',
             'Cache-Control' => 'no-cache, no-store, must-revalidate',
@@ -180,7 +179,7 @@ final readonly class CmsSiteComponentController
     public function candidate(int $id, Request $request): Response
     {
         $candidate = $this->candidates->find($id) ?? throw new NotFoundHttpException();
-        $kept = $candidate->componentId > 0 ? CmsComponentQuery::create()->findPk($candidate->componentId)?->getCode() : null;
+        $kept = $candidate->componentId > 0 ? $this->components->codeOf($candidate->componentId) : null;
 
         return $this->render('candidate.html.twig', [
             'candidate' => $candidate,
@@ -201,13 +200,13 @@ final readonly class CmsSiteComponentController
         $this->denyUnlessMayMake();
 
         $candidate = $this->candidates->find($id) ?? throw new NotFoundHttpException();
-        $screen = $this->urls->generate('admin.cms.components.site.candidate', ['id' => $id]);
+        $screen = $this->support->redirect('admin.cms.components.site.candidate', ['id' => $id]);
 
         if (null === $candidate->component) {
             throw new NotFoundHttpException();
         }
 
-        $replacing = $candidate->componentId > 0 ? CmsComponentQuery::create()->findPk($candidate->componentId)?->getCode() : null;
+        $replacing = $candidate->componentId > 0 ? $this->components->codeOf($candidate->componentId) : null;
 
         try {
             $component = $this->validator->validate($candidate->component);
@@ -220,40 +219,39 @@ final readonly class CmsSiteComponentController
 
             $this->components->save($component, SiteComponentRepository::STATUS_READY, $replacing);
         } catch (InvalidSiteComponentException $exception) {
-            $this->flash($request, 'danger', implode(' ', $exception->problems));
+            $this->support->flash($request, 'danger', implode(' ', $exception->problems));
 
-            return new RedirectResponse($screen);
+            return $screen;
         }
 
-        $componentId = (int) CmsComponentQuery::create()->findOneByCode($component->code)?->getId();
+        $componentId = $this->components->idOf($component->code);
 
         if (null === $replacing) {
             $this->candidates->attach([$candidate->logId], $componentId);
         }
 
         if (null === $replacing) {
-            $this->flash($request, 'success', $this->translator->trans('"%label%" is a component of the site: pages may use it, and the generator is offered it.', ['%label%' => $component->label], TheliaCMS::DOMAIN_NAME));
+            $this->support->flash($request, 'success', $this->support->translate('"%label%" is a component of the site: pages may use it, and the generator is offered it.', ['%label%' => $component->label]));
         } else {
             [$rendered, $left] = $this->renderDraftsUsing($component->name());
-            $this->flash($request, 'success', $this->translator->trans(
+            $this->support->flash($request, 'success', $this->support->translate(
                 '"%label%" is changed: %rendered% draft(s) drawn again with it. Published pages change at their next publication.',
                 ['%label%' => $component->label, '%rendered%' => $rendered],
-                TheliaCMS::DOMAIN_NAME,
             ));
 
             if ([] !== $left) {
-                $this->flash($request, 'warning', $this->translator->trans('Drafts left as they were, to save from their screen: %pages%', ['%pages%' => implode(', ', $left)], TheliaCMS::DOMAIN_NAME));
+                $this->support->flash($request, 'warning', $this->support->translate('Drafts left as they were, to save from their screen: %pages%', ['%pages%' => implode(', ', $left)]));
             }
         }
 
-        return new RedirectResponse($this->urls->generate('admin.cms.components.site.show', ['component' => $component->code]));
+        return $this->support->redirect('admin.cms.components.site.show', ['component' => $component->code]);
     }
 
     #[Route('/{component}', name: 'show', requirements: ['component' => self::CODE], methods: ['GET'])]
     public function show(string $component, Request $request): Response
     {
         $kept = $this->components->find($component) ?? throw new NotFoundHttpException();
-        $id = (int) CmsComponentQuery::create()->findOneByCode($component)?->getId();
+        $id = $this->components->idOf($component);
 
         $prototype = SiteComponentRepository::STATUS_DRAFT === $this->components->status($component);
 
@@ -284,10 +282,10 @@ final readonly class CmsSiteComponentController
 
         if (SiteComponentRepository::STATUS_DRAFT === $this->components->status($component)) {
             $this->components->promote($component);
-            $this->flash($request, 'success', $this->translator->trans('"%label%" is a component of the site: pages may use it, and the generator is offered it.', ['%label%' => $kept->label], TheliaCMS::DOMAIN_NAME));
+            $this->support->flash($request, 'success', $this->support->translate('"%label%" is a component of the site: pages may use it, and the generator is offered it.', ['%label%' => $kept->label]));
         }
 
-        return new RedirectResponse($this->urls->generate('admin.cms.components.site.show', ['component' => $component]));
+        return $this->support->redirect('admin.cms.components.site.show', ['component' => $component]);
     }
 
     /**
@@ -310,18 +308,17 @@ final readonly class CmsSiteComponentController
             $copy = $this->validator->validate(new SiteComponent($code, $label, $source->description, $source->props, $source->sample, $source->template, $source->css, $source->provenance));
             $this->components->save($copy, SiteComponentRepository::STATUS_DRAFT);
         } catch (InvalidSiteComponentException $exception) {
-            $this->flash($request, 'danger', implode(' ', $exception->problems));
+            $this->support->flash($request, 'danger', implode(' ', $exception->problems));
 
-            return new RedirectResponse($this->urls->generate('admin.cms.components.site.show', ['component' => $source->code]));
+            return $this->support->redirect('admin.cms.components.site.show', ['component' => $source->code]);
         }
 
-        $this->flash($request, 'success', $this->translator->trans(
+        $this->support->flash($request, 'success', $this->support->translate(
             '"%label%" is a copy of "%source%", kept as a prototype: ask it a change, then keep it for the whole site.',
             ['%label%' => $copy->label, '%source%' => $source->label],
-            TheliaCMS::DOMAIN_NAME,
         ));
 
-        return new RedirectResponse($this->urls->generate('admin.cms.components.site.show', ['component' => $copy->code]));
+        return $this->support->redirect('admin.cms.components.site.show', ['component' => $copy->code]);
     }
 
     /**
@@ -338,18 +335,18 @@ final readonly class CmsSiteComponentController
         $pages = $this->usage->pageCounts()[$kept->name()] ?? 0;
 
         if ($pages > 0) {
-            $this->flash($request, 'danger', $this->translator->trans('"%label%" is used by %count% page(s): take it out of them before deleting it.', ['%label%' => $kept->label, '%count%' => $pages], TheliaCMS::DOMAIN_NAME));
+            $this->support->flash($request, 'danger', $this->support->translate('"%label%" is used by %count% page(s): take it out of them before deleting it.', ['%label%' => $kept->label, '%count%' => $pages]));
 
-            return new RedirectResponse($this->urls->generate('admin.cms.components.site.show', ['component' => $component]));
+            return $this->support->redirect('admin.cms.components.site.show', ['component' => $component]);
         }
 
         $this->components->delete($component);
         // A component switched off and deleted leaves no name behind in the
         // list of the ones put away.
         $this->availability->setOffered($kept->name(), true);
-        $this->flash($request, 'success', $this->translator->trans('"%label%" is deleted.', ['%label%' => $kept->label], TheliaCMS::DOMAIN_NAME));
+        $this->support->flash($request, 'success', $this->support->translate('"%label%" is deleted.', ['%label%' => $kept->label]));
 
-        return new RedirectResponse($this->urls->generate('admin.cms.components.list'));
+        return $this->support->redirect('admin.cms.components.list');
     }
 
     /**
@@ -396,7 +393,7 @@ final readonly class CmsSiteComponentController
         if ('' !== $code) {
             $component = $this->components->find($code) ?? throw new NotFoundHttpException();
 
-            return new ComponentRequest($text, $locale, $component, (int) CmsComponentQuery::create()->findOneByCode($code)?->getId());
+            return new ComponentRequest($text, $locale, $component, $this->components->idOf($code));
         }
 
         $candidateId = (int) $request->request->get('candidate', 0);
@@ -418,15 +415,15 @@ final readonly class CmsSiteComponentController
      * Where a request that cannot run sends the editor back: the screen it
      * came from.
      */
-    private function backTo(Request $request): string
+    private function backTo(Request $request): RedirectResponse
     {
         $code = (string) $request->request->get('component', '');
         $candidateId = (int) $request->request->get('candidate', 0);
 
         return match (true) {
-            1 === preg_match('/^[A-Z][A-Za-z0-9]{1,39}$/', $code) => $this->urls->generate('admin.cms.components.site.show', ['component' => $code]),
-            $candidateId > 0 => $this->urls->generate('admin.cms.components.site.candidate', ['id' => $candidateId]),
-            default => $this->urls->generate('admin.cms.components.site.new'),
+            1 === preg_match('/^[A-Z][A-Za-z0-9]{1,39}$/', $code) => $this->support->redirect('admin.cms.components.site.show', ['component' => $code]),
+            $candidateId > 0 => $this->support->redirect('admin.cms.components.site.candidate', ['id' => $candidateId]),
+            default => $this->support->redirect('admin.cms.components.site.new'),
         };
     }
 
@@ -450,19 +447,7 @@ final readonly class CmsSiteComponentController
     private function denyUnlessMayMake(): void
     {
         if (!$this->mayMake()) {
-            throw new AccessDeniedHttpException($this->translate('Making a component takes the settings and the custom code permissions.'));
+            throw new AccessDeniedHttpException($this->support->translate('Making a component takes the settings and the custom code permissions.'));
         }
-    }
-
-    private function flash(Request $request, string $type, string $message): void
-    {
-        if ($request->hasSession() && method_exists($session = $request->getSession(), 'getFlashBag')) {
-            $session->getFlashBag()->add($type, $message);
-        }
-    }
-
-    private function translate(string $message): string
-    {
-        return $this->translator->trans($message, [], TheliaCMS::DOMAIN_NAME);
     }
 }

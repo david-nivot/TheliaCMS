@@ -17,12 +17,9 @@ namespace TheliaCMS\Generation\Text\Admin;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\SecurityContext;
-use Thelia\Model\LangQuery;
 use TheliaCMS\Generation\Brief;
 use TheliaCMS\Generation\GenerationException;
 use TheliaCMS\Generation\GenerationRefusedException;
@@ -34,8 +31,9 @@ use TheliaCMS\Generation\Text\TextField;
 use TheliaCMS\Generation\Text\TextGenerator;
 use TheliaCMS\Generation\Text\TextOutcomes;
 use TheliaCMS\Generation\Text\TextRequest;
+use TheliaCMS\Http\Admin\AdminControllerSupport;
+use TheliaCMS\Locale\ShopLanguages;
 use TheliaCMS\Security\CmsResources;
-use TheliaCMS\TheliaCMS;
 
 /**
  * Writes the text of one rich-text field from a brief, for the script beside
@@ -60,7 +58,8 @@ final readonly class TextBriefController
     public function __construct(
         private TextGenerator $generator,
         private SecurityContext $securityContext,
-        private TranslatorInterface $translator,
+        private AdminControllerSupport $support,
+        private ShopLanguages $languages,
         private TextOutcomes $outcomes,
     ) {
     }
@@ -110,16 +109,16 @@ final readonly class TextBriefController
         $brief = trim((string) $request->request->get('brief', ''));
         $current = (string) $request->request->get('current', '');
 
-        if (!\in_array($type, self::TYPES, true) || !$field instanceof TextField || !LangQuery::create()->filterByActive(1)->filterByLocale($locale)->exists()) {
-            return [Response::HTTP_BAD_REQUEST, ['error' => $this->translate('This field cannot be written from a brief.')]];
+        if (!\in_array($type, self::TYPES, true) || !$field instanceof TextField || !$this->languages->isActive($locale)) {
+            return [Response::HTTP_BAD_REQUEST, ['error' => $this->support->translate('This field cannot be written from a brief.')]];
         }
 
         if ('' === $brief) {
-            return [Response::HTTP_UNPROCESSABLE_ENTITY, ['error' => $this->translate('Say in the brief what the text should say.')]];
+            return [Response::HTTP_UNPROCESSABLE_ENTITY, ['error' => $this->support->translate('Say in the brief what the text should say.')]];
         }
 
         if (mb_strlen($brief) > self::BRIEF_LENGTH || \strlen($current) > self::CURRENT_LENGTH) {
-            return [Response::HTTP_UNPROCESSABLE_ENTITY, ['error' => $this->translate('The brief or the text of the field is too long.')]];
+            return [Response::HTTP_UNPROCESSABLE_ENTITY, ['error' => $this->support->translate('The brief or the text of the field is too long.')]];
         }
 
         $target = GenerationTarget::field($type, max(0, $request->request->getInt('id')), (string) $request->request->get('title', ''), $locale);
@@ -147,9 +146,7 @@ final readonly class TextBriefController
 
     private function denyUnlessMayGenerate(): void
     {
-        if (!$this->securityContext->isGranted(['ADMIN'], [CmsResources::GENERATE], [], [AccessManager::UPDATE])) {
-            throw new AccessDeniedHttpException($this->translate('You are not allowed to use the generator.'));
-        }
+        $this->support->denyUnless(CmsResources::GENERATE, AccessManager::UPDATE, 'You are not allowed to use the generator.');
     }
 
     private function adminId(): int
@@ -162,10 +159,5 @@ final readonly class TextBriefController
         $value = \is_string($value) ? trim($value) : '';
 
         return '' === $value ? null : mb_substr($value, 0, 200);
-    }
-
-    private function translate(string $message): string
-    {
-        return $this->translator->trans($message, [], TheliaCMS::DOMAIN_NAME);
     }
 }

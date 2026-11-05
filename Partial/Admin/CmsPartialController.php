@@ -14,16 +14,15 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Partial\Admin;
 
-use Propel\Runtime\ActiveQuery\Criteria;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use Thelia\Model\FolderQuery;
 use Thelia\Model\Lang;
-use Thelia\Model\LangQuery;
-use TheliaCMS\Model\CmsFormQuery;
-use TheliaCMS\Model\CmsMenuQuery;
+use TheliaCMS\Form\Admin\CmsFormRepository;
+use TheliaCMS\Locale\ShopLanguages;
+use TheliaCMS\Menu\Admin\CmsMenuRepository;
+use TheliaCMS\Partial\Catalogue\PickableFolders;
 use TheliaCMS\Partial\MissingPartialPropException;
 use TheliaCMS\Partial\PartialRenderer;
 use TheliaCMS\Partial\UnknownPartialException;
@@ -41,6 +40,10 @@ final readonly class CmsPartialController
 {
     public function __construct(
         private PartialRenderer $partials,
+        private PickableFolders $folders,
+        private CmsMenuRepository $menus,
+        private CmsFormRepository $forms,
+        private ShopLanguages $languages,
     ) {
     }
 
@@ -84,7 +87,6 @@ final readonly class CmsPartialController
     public function folders(Request $request): Response
     {
         $locale = $request->getLocale();
-        $folders = FolderQuery::create()->filterByVisible(1)->orderByPosition()->find();
 
         return new JsonResponse(array_map(
             static function ($folder) use ($locale): array {
@@ -92,7 +94,7 @@ final readonly class CmsPartialController
 
                 return ['id' => (int) $folder->getId(), 'name' => (string) $folder->getTitle()];
             },
-            iterator_to_array($folders, false),
+            $this->folders->visible(),
         ));
     }
 
@@ -104,7 +106,6 @@ final readonly class CmsPartialController
     public function menus(Request $request): Response
     {
         $locale = $request->getLocale();
-        $menus = CmsMenuQuery::create()->filterByShared()->orderByCode()->find();
 
         return new JsonResponse(array_map(
             static function ($menu) use ($locale): array {
@@ -114,7 +115,7 @@ final readonly class CmsPartialController
 
                 return ['id' => (int) $menu->getId(), 'name' => '' === $title ? (string) $menu->getCode() : $title];
             },
-            iterator_to_array($menus, false),
+            $this->menus->sharedMenus(),
         ));
     }
 
@@ -125,10 +126,6 @@ final readonly class CmsPartialController
     public function forms(Request $request): Response
     {
         $locale = $request->getLocale();
-        $forms = CmsFormQuery::create()
-            ->filterByDeletedAt(null, Criteria::ISNULL)
-            ->orderByCode()
-            ->find();
 
         return new JsonResponse(array_map(
             static function ($form) use ($locale): array {
@@ -138,7 +135,7 @@ final readonly class CmsPartialController
 
                 return ['id' => (int) $form->getId(), 'name' => '' === $title ? (string) $form->getCode() : $title];
             },
-            iterator_to_array($forms, false),
+            $this->forms->liveForms(),
         ));
     }
 
@@ -151,7 +148,7 @@ final readonly class CmsPartialController
 
         // Anything the browser sends is checked against the languages of the
         // shop rather than trusted as a locale.
-        if (null !== LangQuery::create()->filterByLocale($locale)->findOne()) {
+        if ($this->languages->exists($locale)) {
             return $locale;
         }
 

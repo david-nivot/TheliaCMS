@@ -21,22 +21,19 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\Session\FlashBagAwareSessionInterface;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
-use Thelia\Core\Security\SecurityContext;
 use Thelia\Model\Lang;
+use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Menu\MenuTargetType;
 use TheliaCMS\Model\CmsMenu;
 use TheliaCMS\Model\CmsMenuItem;
 use TheliaCMS\Model\CmsMenuQuery;
 use TheliaCMS\Page\Admin\EditLanguage;
 use TheliaCMS\Security\CmsResources;
-use TheliaCMS\TheliaCMS;
 use Twig\Environment;
 
 /**
@@ -66,8 +63,7 @@ final readonly class CmsMenuAdminController
         private Environment $twig,
         private FormFactoryInterface $forms,
         private UrlGeneratorInterface $urls,
-        private SecurityContext $securityContext,
-        private TranslatorInterface $translator,
+        private AdminControllerSupport $support,
         private CmsMenuRepository $menus,
         private CmsMenuWriter $writer,
         private MenuTargetChoices $choices,
@@ -160,9 +156,7 @@ final readonly class CmsMenuAdminController
 
         $this->writer->deleteMenu($menu);
 
-        return new RedirectResponse($this->urls->generate('admin.cms.menus.list', [
-            EditLanguage::PARAMETER => $this->languages->resolve($request)->getId(),
-        ]));
+        return $this->support->redirectInLanguage('admin.cms.menus.list', $this->languages->resolve($request)->getId());
     }
 
     /**
@@ -192,7 +186,7 @@ final readonly class CmsMenuAdminController
 
                 return $this->backToEdit($id, $lang);
             } catch (\DomainException $exception) {
-                $form->addError(new FormError($this->translate($exception->getMessage())));
+                $form->addError(new FormError($this->support->translate($exception->getMessage())));
             }
         }
 
@@ -242,7 +236,7 @@ final readonly class CmsMenuAdminController
                 $request->request->getInt('position', 1),
             );
         } catch (\DomainException $exception) {
-            return new JsonResponse(['error' => $this->translate($exception->getMessage())], Response::HTTP_CONFLICT);
+            return new JsonResponse(['error' => $this->support->translate($exception->getMessage())], Response::HTTP_CONFLICT);
         }
 
         return new JsonResponse(['ok' => true]);
@@ -394,7 +388,7 @@ final readonly class CmsMenuAdminController
             'edited_item' => $editedItem,
             'edit_locale' => $locale,
             'edit_language_id' => $lang->getId(),
-            'may_write' => $this->securityContext->isGranted(['ADMIN'], [CmsResources::MENU], [], [AccessManager::UPDATE]),
+            'may_write' => $this->support->isGranted(CmsResources::MENU, AccessManager::UPDATE),
             'may_replace' => $this->mayReplace(),
             'place_url_template' => $this->placeUrlTemplate($menu, $lang),
             'assets_version' => $this->assetsVersion(),
@@ -514,7 +508,7 @@ final readonly class CmsMenuAdminController
         try {
             $this->writer->saveMenu($menu, $lang->getLocale(), (string) $data['code'], (string) $data['title']);
         } catch (\DomainException $exception) {
-            $form->get('code')->addError(new FormError($this->translate($exception->getMessage())));
+            $form->get('code')->addError(new FormError($this->support->translate($exception->getMessage())));
 
             return false;
         }
@@ -558,7 +552,7 @@ final readonly class CmsMenuAdminController
     private function menuName(string $menuLocale): string
     {
         if (CmsMenuQuery::SHARED === $menuLocale) {
-            return $this->translate('Shared menu');
+            return $this->support->translate('Shared menu');
         }
 
         return (string) ($this->menus->languages()[$menuLocale] ?? null)?->getTitle() ?: $menuLocale;
@@ -580,9 +574,7 @@ final readonly class CmsMenuAdminController
 
     private function flash(Request $request, string $type, string $message): void
     {
-        if ($request->hasSession() && ($session = $request->getSession()) instanceof FlashBagAwareSessionInterface) {
-            $session->getFlashBag()->add($type, $this->translate($message));
-        }
+        $this->support->flash($request, $type, $this->support->translate($message));
     }
 
     /**
@@ -591,34 +583,24 @@ final readonly class CmsMenuAdminController
      */
     private function mayReplace(): bool
     {
-        return $this->securityContext->isGranted(['ADMIN'], [CmsResources::MENU], [], [AccessManager::UPDATE])
-            && $this->securityContext->isGranted(['ADMIN'], [CmsResources::MENU], [], [AccessManager::DELETE]);
+        return $this->support->isGranted(CmsResources::MENU, AccessManager::UPDATE)
+            && $this->support->isGranted(CmsResources::MENU, AccessManager::DELETE);
     }
 
     private function denyUnlessMayReplace(): void
     {
         if (!$this->mayReplace()) {
-            throw new AccessDeniedHttpException($this->translate('You are not allowed to change menus.'));
+            throw new AccessDeniedHttpException($this->support->translate('You are not allowed to change menus.'));
         }
     }
 
     private function denyUnless(string $access): void
     {
-        if (!$this->securityContext->isGranted(['ADMIN'], [CmsResources::MENU], [], [$access])) {
-            throw new AccessDeniedHttpException($this->translate('You are not allowed to change menus.'));
-        }
-    }
-
-    private function translate(string $message): string
-    {
-        return $this->translator->trans($message, [], TheliaCMS::DOMAIN_NAME);
+        $this->support->denyUnless(CmsResources::MENU, $access, 'You are not allowed to change menus.');
     }
 
     private function backToEdit(int $id, Lang $lang): RedirectResponse
     {
-        return new RedirectResponse($this->urls->generate('admin.cms.menus.edit', [
-            'id' => $id,
-            EditLanguage::PARAMETER => $lang->getId(),
-        ]));
+        return $this->support->redirectInLanguage('admin.cms.menus.edit', $lang->getId(), ['id' => $id]);
     }
 }

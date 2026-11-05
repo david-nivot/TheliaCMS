@@ -78,6 +78,16 @@ final readonly class CmsMenuRepository
         return $summaries;
     }
 
+    /**
+     * The shared menus, one per code, by code.
+     *
+     * @return list<CmsMenu>
+     */
+    public function sharedMenus(): array
+    {
+        return iterator_to_array(CmsMenuQuery::create()->filterByShared()->orderByCode()->find(), false);
+    }
+
     public function find(int $id): ?CmsMenu
     {
         return CmsMenuQuery::create()->findPk($id);

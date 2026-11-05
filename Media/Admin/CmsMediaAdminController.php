@@ -21,22 +21,17 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\Session\FlashBagAwareSessionInterface;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
-use Thelia\Core\Security\SecurityContext;
 use Thelia\Model\Lang;
 use TheliaCMS\Catalogue\CatalogueItems;
+use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Media\CmsMediaLibrary;
 use TheliaCMS\Media\MediaFilter;
 use TheliaCMS\Media\MediaOrder;
 use TheliaCMS\Page\Admin\EditLanguage;
 use TheliaCMS\Security\CmsResources;
-use TheliaCMS\TheliaCMS;
 use TheliaLibrary\Model\LibraryImage;
 use Twig\Environment;
 
@@ -56,9 +51,7 @@ final readonly class CmsMediaAdminController
     public function __construct(
         private Environment $twig,
         private FormFactoryInterface $forms,
-        private UrlGeneratorInterface $urls,
-        private SecurityContext $securityContext,
-        private TranslatorInterface $translator,
+        private AdminControllerSupport $support,
         private CmsMediaLibrary $library,
         private MediaCatalog $catalog,
         private MediaUsageFinder $usages,
@@ -171,14 +164,13 @@ final readonly class CmsMediaAdminController
         }
 
         if ([] === $files) {
-            return $this->backToList($request, $lang, $this->translator->trans('Choose at least one image to add.', [], TheliaCMS::DOMAIN_NAME), 'warning');
+            return $this->backToList($request, $lang, $this->support->translate('Choose at least one image to add.'), 'warning');
         }
 
         if ([] !== $upload->refused) {
-            $this->flash($request, 'warning', $this->translator->trans(
+            $this->support->flash($request, 'warning', $this->support->translate(
                 'Not added: %files%.',
                 ['%files%' => implode(', ', array_map(static fn (array $refusal): string => $refusal['name'].' ('.$refusal['reason'].')', $this->refusals($upload)))],
-                TheliaCMS::DOMAIN_NAME,
             ));
         }
 
@@ -190,23 +182,19 @@ final readonly class CmsMediaAdminController
         // no alternative text is not publishable, and the moment it lands is
         // the moment the editor knows what it shows.
         if (1 === \count($upload->stored)) {
-            return new RedirectResponse($this->urls->generate('admin.cms.media.edit', [
-                'id' => $upload->stored[0]->getId(),
-                self::EDIT_LANGUAGE_PARAMETER => $lang->getId(),
-            ]));
+            return $this->support->redirectInLanguage('admin.cms.media.edit', $lang->getId(), ['id' => $upload->stored[0]->getId()]);
         }
 
         // Several: the describe queue of these images, one after the other.
-        $this->flash($request, 'success', $this->translator->trans(
+        $this->support->flash($request, 'success', $this->support->translate(
             '%count% images added. Describe each of them before using it in a page.',
             ['%count%' => \count($upload->stored)],
-            TheliaCMS::DOMAIN_NAME,
         ));
 
-        return new RedirectResponse($this->urls->generate('admin.cms.media.describe', [
+        return $this->support->redirect('admin.cms.media.describe', [
             self::EDIT_LANGUAGE_PARAMETER => $lang->getId(),
             'images' => implode(',', $upload->storedIds()),
-        ]));
+        ]);
     }
 
     /**
@@ -216,7 +204,7 @@ final readonly class CmsMediaAdminController
     {
         return array_map(fn (array $refusal): array => [
             'name' => $refusal['name'],
-            'reason' => $this->translator->trans($refusal['refusal']->message(), [], TheliaCMS::DOMAIN_NAME),
+            'reason' => $this->support->translate($refusal['refusal']->message()),
         ], $upload->refused);
     }
 
@@ -241,7 +229,7 @@ final readonly class CmsMediaAdminController
             : $this->library->ownedImage($queue->items[0]->id ?? 0);
 
         if (!$image instanceof LibraryImage) {
-            return $this->backToList($request, $lang, $this->translator->trans('Every image of this list is described.', [], TheliaCMS::DOMAIN_NAME));
+            return $this->backToList($request, $lang, $this->support->translate('Every image of this list is described.'));
         }
 
         $form = $this->forms->create(MediaDescriptionType::class, ['alt' => null, 'decorative' => false]);
@@ -253,10 +241,10 @@ final readonly class CmsMediaAdminController
             $this->writer->describe($image, $locale, $data['alt'], true === $data['decorative']);
 
             // Described, it left the queue: the next one is at its position.
-            return new RedirectResponse($this->urls->generate('admin.cms.media.describe', [
+            return $this->support->redirect('admin.cms.media.describe', [
                 self::EDIT_LANGUAGE_PARAMETER => $lang->getId(),
                 'at' => $position,
-            ] + $query->queueParameters()));
+            ] + $query->queueParameters());
         }
 
         return new Response($this->twig->render(self::DESCRIBE_TEMPLATE, [
@@ -285,10 +273,10 @@ final readonly class CmsMediaAdminController
             $this->denyUnless(AccessManager::UPDATE);
             $this->writer->save($image, $locale, $form->getData());
 
-            return new RedirectResponse($this->urls->generate('admin.cms.media.edit', [
+            return $this->support->redirect('admin.cms.media.edit', [
                 'id' => $id,
                 self::EDIT_LANGUAGE_PARAMETER => $lang->getId(),
-            ] + MediaQuery::fromRequest($request)->addressParameters()));
+            ] + MediaQuery::fromRequest($request)->addressParameters());
         }
 
         return new Response($this->twig->render(self::EDIT_TEMPLATE, [
@@ -327,7 +315,7 @@ final readonly class CmsMediaAdminController
         }
 
         if ([] === $images) {
-            return $this->backToList($request, $lang, $this->trans('Select at least one image.'), 'warning');
+            return $this->backToList($request, $lang, $this->support->translate('Select at least one image.'), 'warning');
         }
 
         $count = ['%count%' => \count($images), '%tag%' => $tag];
@@ -338,7 +326,7 @@ final readonly class CmsMediaAdminController
                 $this->denyUnless(AccessManager::UPDATE);
 
                 if ('' === $tag) {
-                    return $this->backToList($request, $lang, $this->trans('Name the tag.'), 'warning');
+                    return $this->backToList($request, $lang, $this->support->translate('Name the tag.'), 'warning');
                 }
 
                 $adding = 'tag-add' === $request->request->getString('action');
@@ -347,7 +335,7 @@ final readonly class CmsMediaAdminController
                     $adding ? $this->library->addTag($image, $tag) : $this->library->removeTag($image, $tag);
                 }
 
-                return $this->backToList($request, $lang, $this->trans($adding ? '%count% image(s) tagged “%tag%”.' : '%count% image(s) no longer tagged “%tag%”.', $count));
+                return $this->backToList($request, $lang, $this->support->translate($adding ? '%count% image(s) tagged “%tag%”.' : '%count% image(s) no longer tagged “%tag%”.', $count));
             case 'decorative':
             case 'not-decorative':
                 $this->denyUnless(AccessManager::UPDATE);
@@ -357,7 +345,7 @@ final readonly class CmsMediaAdminController
                     $this->writer->setDecorative($image, $decorative);
                 }
 
-                return $this->backToList($request, $lang, $this->trans($decorative ? '%count% image(s) marked decorative.' : '%count% image(s) no longer decorative.', $count));
+                return $this->backToList($request, $lang, $this->support->translate($decorative ? '%count% image(s) marked decorative.' : '%count% image(s) no longer decorative.', $count));
             case 'delete':
                 $this->denyUnless(AccessManager::DELETE);
                 $uses = $this->usages->countsFor(array_map(static fn (LibraryImage $image): int => (int) $image->getId(), $images));
@@ -376,21 +364,13 @@ final readonly class CmsMediaAdminController
                 }
 
                 if ([] !== $kept) {
-                    $this->flash($request, 'warning', $this->trans('Kept, still used by a page or an item: %titles%.', ['%titles%' => implode(', ', $kept)]));
+                    $this->support->flash($request, 'warning', $this->support->translate('Kept, still used by a page or an item: %titles%.', ['%titles%' => implode(', ', $kept)]));
                 }
 
-                return $this->backToList($request, $lang, $this->trans('%count% image(s) deleted.', ['%count%' => $deleted]));
+                return $this->backToList($request, $lang, $this->support->translate('%count% image(s) deleted.', ['%count%' => $deleted]));
             default:
-                return $this->backToList($request, $lang, $this->trans('Choose what to do with the images.'), 'warning');
+                return $this->backToList($request, $lang, $this->support->translate('Choose what to do with the images.'), 'warning');
         }
-    }
-
-    /**
-     * @param array<string, int|string> $parameters
-     */
-    private function trans(string $message, array $parameters = []): string
-    {
-        return $this->translator->trans($message, $parameters, TheliaCMS::DOMAIN_NAME);
     }
 
     #[Route('/{id}/delete', name: 'delete', requirements: ['id' => '\d+'], methods: ['POST'])]
@@ -403,16 +383,15 @@ final readonly class CmsMediaAdminController
         $usageCount = $this->usages->useCount($id);
 
         if ($usageCount > 0) {
-            return $this->backToList($request, $lang, $this->translator->trans(
+            return $this->backToList($request, $lang, $this->support->translate(
                 'This image is still used by %count% page(s) or catalogue item(s). Remove it from them first.',
                 ['%count%' => $usageCount],
-                TheliaCMS::DOMAIN_NAME,
             ), 'warning');
         }
 
         $this->writer->delete($image);
 
-        return $this->backToList($request, $lang, $this->translator->trans('Image deleted.', [], TheliaCMS::DOMAIN_NAME));
+        return $this->backToList($request, $lang, $this->support->translate('Image deleted.'));
     }
 
     /**
@@ -464,9 +443,7 @@ final readonly class CmsMediaAdminController
 
     private function denyUnless(string $access): void
     {
-        if (!$this->securityContext->isGranted(['ADMIN'], [CmsResources::MEDIA], [], [$access])) {
-            throw new AccessDeniedHttpException($this->translator->trans('You are not allowed to change CMS media.', [], TheliaCMS::DOMAIN_NAME));
-        }
+        $this->support->denyUnless(CmsResources::MEDIA, $access, 'You are not allowed to change CMS media.');
     }
 
     private function editLang(Request $request): Lang
@@ -477,20 +454,11 @@ final readonly class CmsMediaAdminController
     private function backToList(Request $request, Lang $lang, ?string $message = null, string $level = 'success'): RedirectResponse
     {
         if (null !== $message) {
-            $this->flash($request, $level, $message);
+            $this->support->flash($request, $level, $message);
         }
 
-        return new RedirectResponse($this->urls->generate('admin.cms.media.list', [
+        return $this->support->redirect('admin.cms.media.list', [
             self::EDIT_LANGUAGE_PARAMETER => $lang->getId(),
-        ] + MediaQuery::fromRequest($request)->addressParameters()));
-    }
-
-    private function flash(Request $request, string $level, string $message): void
-    {
-        $session = $request->hasSession() ? $request->getSession() : null;
-
-        if ($session instanceof FlashBagAwareSessionInterface) {
-            $session->getFlashBag()->add($level, $message);
-        }
+        ] + MediaQuery::fromRequest($request)->addressParameters());
     }
 }

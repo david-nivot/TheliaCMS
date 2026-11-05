@@ -20,13 +20,11 @@ use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
-use Thelia\Core\Security\SecurityContext;
+use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Model\CmsTag;
 use TheliaCMS\Page\PageTagColor;
 use TheliaCMS\Page\PageTagExistsException;
@@ -34,7 +32,6 @@ use TheliaCMS\Page\PageTagName;
 use TheliaCMS\Page\PageTagRepository;
 use TheliaCMS\Page\PageTagWriter;
 use TheliaCMS\Security\CmsResources;
-use TheliaCMS\TheliaCMS;
 use Twig\Environment;
 
 /**
@@ -53,8 +50,7 @@ final readonly class CmsTagAdminController
         private Environment $twig,
         private FormFactoryInterface $forms,
         private UrlGeneratorInterface $urls,
-        private SecurityContext $securityContext,
-        private TranslatorInterface $translator,
+        private AdminControllerSupport $support,
         private PageTagRepository $tags,
         private PageTagWriter $writer,
     ) {
@@ -100,9 +96,9 @@ final readonly class CmsTagAdminController
         return new Response($this->twig->render(self::LIST_TEMPLATE, [
             'tags' => $rows,
             'form' => $form->createView(),
-            'may_create' => $this->isGranted(AccessManager::CREATE),
-            'may_update' => $this->isGranted(AccessManager::UPDATE),
-            'may_delete' => $this->isGranted(AccessManager::DELETE),
+            'may_create' => $this->support->isGranted(CmsResources::PAGE, AccessManager::CREATE),
+            'may_update' => $this->support->isGranted(CmsResources::PAGE, AccessManager::UPDATE),
+            'may_delete' => $this->support->isGranted(CmsResources::PAGE, AccessManager::DELETE),
         ]));
     }
 
@@ -125,11 +121,11 @@ final readonly class CmsTagAdminController
             try {
                 $this->writer->rename($tag, (string) $form->get('name')->getData());
                 $this->writer->recolor($tag, $form->get('color')->getData());
-                $this->flash($request, 'success', $this->translate('The tag has been saved.'));
+                $this->support->flash($request, 'success', $this->support->translate('The tag has been saved.'));
 
                 return $this->backToList();
             } catch (PageTagExistsException) {
-                $form->get('name')->addError(new FormError($this->translate('A tag with this name exists already.')));
+                $form->get('name')->addError(new FormError($this->support->translate('A tag with this name exists already.')));
             }
         }
 
@@ -146,9 +142,9 @@ final readonly class CmsTagAdminController
 
         $detached = $this->writer->delete($this->tagOrFail($id));
 
-        $this->flash($request, 'success', 0 === $detached
-            ? $this->translate('The tag has been deleted.')
-            : $this->translator->trans('The tag has been deleted; %count% page(s) no longer carry one.', ['%count%' => $detached], TheliaCMS::DOMAIN_NAME));
+        $this->support->flash($request, 'success', 0 === $detached
+            ? $this->support->translate('The tag has been deleted.')
+            : $this->support->translate('The tag has been deleted; %count% page(s) no longer carry one.', ['%count%' => $detached]));
 
         return $this->backToList();
     }
@@ -158,13 +154,13 @@ final readonly class CmsTagAdminController
         $name = PageTagName::normalize((string) $form->get('name')->getData());
 
         if (null !== $this->tags->findByName($name)) {
-            $form->get('name')->addError(new FormError($this->translate('A tag with this name exists already.')));
+            $form->get('name')->addError(new FormError($this->support->translate('A tag with this name exists already.')));
 
             return null;
         }
 
         $this->writer->add($name, $form->get('color')->getData());
-        $this->flash($request, 'success', $this->translate('The tag has been added.'));
+        $this->support->flash($request, 'success', $this->support->translate('The tag has been added.'));
 
         return $this->backToList();
     }
@@ -182,36 +178,11 @@ final readonly class CmsTagAdminController
 
     private function backToList(): RedirectResponse
     {
-        return new RedirectResponse($this->urls->generate('admin.cms.tags.list'));
-    }
-
-    private function flash(Request $request, string $type, string $message): void
-    {
-        if (!$request->hasSession()) {
-            return;
-        }
-
-        $session = $request->getSession();
-
-        if (method_exists($session, 'getFlashBag')) {
-            $session->getFlashBag()->add($type, $message);
-        }
-    }
-
-    private function translate(string $message): string
-    {
-        return $this->translator->trans($message, [], TheliaCMS::DOMAIN_NAME);
-    }
-
-    private function isGranted(string $access): bool
-    {
-        return $this->securityContext->isGranted(['ADMIN'], [CmsResources::PAGE], [], [$access]);
+        return $this->support->redirect('admin.cms.tags.list');
     }
 
     private function denyUnless(string $access): void
     {
-        if (!$this->isGranted($access)) {
-            throw new AccessDeniedHttpException($this->translate('You are not allowed to change CMS pages.'));
-        }
+        $this->support->denyUnless(CmsResources::PAGE, $access, 'You are not allowed to change CMS pages.');
     }
 }
