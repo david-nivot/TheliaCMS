@@ -78,6 +78,10 @@ final readonly class ImageRewriter
             $this->rewriteImage($document, $image, 0 === $position);
         }
 
+        foreach (iterator_to_array($document->getElementsByTagName('picture')) as $picture) {
+            $this->rewriteSources($picture);
+        }
+
         // Read, it has done its work: nothing of it goes online.
         foreach ([ImageSlot::ATTRIBUTE, ImageSlot::HEIGHT_ATTRIBUTE, ImageFrame::ATTRIBUTE] as $attribute) {
             foreach (iterator_to_array((new \DOMXPath($document))->query('//*[@'.$attribute.']') ?: []) as $declaring) {
@@ -132,6 +136,50 @@ final readonly class ImageRewriter
         $sizes = $attributes['sizes'] ?? null;
 
         $this->wrapInPicture($document, $image, $media, $zone, $widths, $sizes);
+    }
+
+    /**
+     * Gives the `<source>` of a `<picture>` that an author wrote the widths its
+     * `<img>` has: a mobile picture served at the size of its file is as heavy
+     * as the desktop one.
+     *
+     * Only a source that is one address of the library, for a media query, and
+     * with no `type`, is touched: it is another file than the `<img>`, so it is
+     * measured on its own, but the slot it is drawn at is the one of the
+     * `<img>`, whose `sizes` it takes. The zone the `<img>` keeps is not
+     * carried over, and no WebP alternative is added: a `<picture>` that
+     * already exists is the author's, as `wrapInPicture()` leaves it.
+     */
+    private function rewriteSources(\DOMElement $picture): void
+    {
+        $image = $picture->getElementsByTagName('img')->item(0);
+
+        if (!$image instanceof \DOMElement) {
+            return;
+        }
+
+        foreach (iterator_to_array($picture->getElementsByTagName('source')) as $source) {
+            $address = trim($source->getAttribute('srcset'));
+
+            if ('' === trim($source->getAttribute('media')) || $source->hasAttribute('type') || '' === $address || 1 === preg_match('/\s/', $address) || null !== ImageFrame::region($address)) {
+                continue;
+            }
+
+            $media = $this->library->fromUrl($address);
+
+            if (null === $media) {
+                continue;
+            }
+
+            $attributes = $this->attributes($media, $this->declaredSizes($image), $this->declaredHeight($image));
+
+            if (!isset($attributes['srcset'])) {
+                continue;
+            }
+
+            $source->setAttribute('srcset', $attributes['srcset']);
+            $source->setAttribute('sizes', $image->getAttribute('sizes') ?: $attributes['sizes']);
+        }
     }
 
     /**

@@ -75,8 +75,8 @@ The markup is `<ul class="cms-highlights cms-highlights--N">` with one
 holds the mobile picture and whose `<img>` holds the one of the computer; without
 one, the `<img>` is alone, and the publication wraps it in its own `<picture>` with a
 WebP alternative and a set of widths like any image of a page. The `<source>` of the
-mobile picture is written as is, at the full size of the file: the publication does not
-resize it. The blocks are stacked below 48rem (the breakpoint of the picture is 1024px,
+mobile picture gets its own set of widths on publication, and the `sizes` of the `<img>`;
+no WebP alternative is added to it. The blocks are stacked below 48rem (the breakpoint of the picture is 1024px,
 the one HeaderHighlights uses, so a tablet gets the mobile picture in a side-by-side
 layout). The text sits over the lower part of the picture, on a darkened foot.
 

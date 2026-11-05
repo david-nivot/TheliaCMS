@@ -17,7 +17,9 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   the picture of the computer is drawn on every screen. The picture, its link and
   its button are optional, and the centre kept of a picture is set by the editor,
   not offered to the generator. The section is added to the dialog of the Text and
-  media family, with its French labels. No schema change.
+  media family, with its French labels. On publication, the `<source>` of such a
+  `<picture>` gets a set of widths and the `sizes` of its `<img>`, like any picture
+  of the library the author wrote with a media query. No schema change.
 
 ### Fixed
 
