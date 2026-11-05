@@ -23,6 +23,7 @@ use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Page\Admin\CmsActivityLog;
 use TheliaCMS\Page\Admin\PageContentTarget;
 use TheliaCMS\Page\Admin\PageRevisionStore;
+use TheliaCMS\Page\CmsUrlService;
 use TheliaCMS\Page\Field\PageFields;
 use TheliaCMS\Page\PageInvalidator;
 use TheliaCMS\Search\SearchTextExtractor;
@@ -44,12 +45,13 @@ final readonly class ContentTargets
         private ItemContentRepository $itemContents,
         private CachePurger $httpCache,
         private ItemRevisionStore $itemRevisions,
+        private CmsUrlService $urls,
     ) {
     }
 
     public function forPage(CmsPage $page, string $locale): PageContentTarget
     {
-        return new PageContentTarget($page, $locale, $this->activityLog, $this->invalidator, $this->fields, $this->placeholders, $this->searchText, $this->pageRevisions);
+        return new PageContentTarget($page, $locale, $this->activityLog, $this->invalidator, $this->fields, $this->placeholders, $this->searchText, $this->pageRevisions, $this->urls);
     }
 
     public function forItem(CatalogueItem $item): ItemContentTarget

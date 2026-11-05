@@ -25,6 +25,7 @@ use TheliaCMS\Model\CmsPageContent;
 use TheliaCMS\Model\CmsPageContentQuery;
 use TheliaCMS\Model\CmsPageSearch;
 use TheliaCMS\Model\CmsPageSearchQuery;
+use TheliaCMS\Page\CmsUrlService;
 use TheliaCMS\Page\Field\PageFields;
 use TheliaCMS\Page\PageInvalidator;
 use TheliaCMS\Search\SearchTextExtractor;
@@ -48,6 +49,7 @@ final readonly class PageContentTarget implements ContentTarget
         private PlaceholderContentChecker $placeholders,
         private SearchTextExtractor $searchText,
         private PageRevisionStore $revisions,
+        private CmsUrlService $urls,
     ) {
     }
 
@@ -118,10 +120,13 @@ final readonly class PageContentTarget implements ContentTarget
 
     /**
      * Refreshes the full-text payload of the page, so the front-office search
-     * queries plain text and never the HTML columns.
+     * queries plain text and never the HTML columns, and gives the page the
+     * address it lacks in this language.
      */
     public function duringPublication(string $html, ConnectionInterface $connection): void
     {
+        $this->addressIfMissing();
+
         $index = CmsPageSearchQuery::create()
             ->filterByPageId($this->page->getId())
             ->filterByLocale($this->locale)
@@ -132,6 +137,24 @@ final readonly class PageContentTarget implements ContentTarget
 
         $index->setContent(trim($this->page->getTitle().' '.$this->searchText->extract($html)))
             ->save($connection);
+    }
+
+    /**
+     * The address of a page is written when its settings are saved in a
+     * language, so a page written in another language from the content screen
+     * reaches publication without one. Given here, by the same rules as on the
+     * settings screen, together with the first address of the pages under it.
+     */
+    private function addressIfMissing(): void
+    {
+        $this->page->setLocale($this->locale);
+
+        if ('' !== trim((string) $this->page->getRewrittenUrl($this->locale))) {
+            return;
+        }
+
+        $this->urls->refresh($this->page, $this->locale);
+        $this->urls->rebuildDescendants($this->page, $this->locale);
     }
 
     public function afterSaved(): void
