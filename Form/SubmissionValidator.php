@@ -93,7 +93,7 @@ final readonly class SubmissionValidator
             FieldType::Email => $this->checkEmail($value),
             FieldType::Phone => $this->checkPhone($value),
             FieldType::Date => $this->checkDate($value),
-            FieldType::Select, FieldType::Radio => $this->checkChoice($field, $value),
+            FieldType::Select, FieldType::Radio, FieldType::Country => $this->checkChoice($field, $value),
             FieldType::Textarea => mb_strlen($value) > self::MAX_LONG_TEXT
                 ? $this->trans('This answer is too long.')
                 : null,

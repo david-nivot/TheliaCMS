@@ -9,6 +9,12 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Added
 
+- **A country field for forms.** A tenth kind of field, `country`, drawn as a
+  drop-down of the visible countries of the shop, named in the language of the
+  page (its translation, else intl from the ISO code, else the default language)
+  and sorted for that language. The answer is the name picked, checked against
+  the list like any drop-down. Templates test `field.type.isDropDown()` to draw
+  it with the drop-downs. No schema change.
 - **A Highlights section (`cms:highlights`).** A band of one to three blocks,
   the first one the large one, each a picture under a title, a catchphrase and a
   button, in the structure of the HeaderHighlights module and drawn by the module
