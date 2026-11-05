@@ -38,7 +38,7 @@ final class HighlightsSectionTest extends TestCase
     public function testABlockIsAPictureUnderATitleACatchphraseAndAButton(): void
     {
         self::assertSame(
-            '<ul class="cms-highlights cms-highlights--1" data-cms-sizes="(max-width: 77rem) calc(100vw - 2rem), 75rem">'
+            '<ul class="cms-highlights cms-highlights--1" data-cms-sizes="100vw">'
             .'<li class="cms-highlights__item cms-highlights__item--lead"><img class="cms-highlights__image" src="https://img.test/d.jpg" alt="Des soldes" loading="lazy">'
             .'<div class="cms-highlights__content"><p class="cms-highlights__title">Soldes</p><p class="cms-highlights__text">Jusqu&apos;à -50%</p><a class="cms-highlights__button" href="/soldes">Voir</a></div></li></ul>',
             $this->render([self::block()]),
@@ -49,7 +49,7 @@ final class HighlightsSectionTest extends TestCase
     {
         $html = $this->render([self::block(), self::block('<b>Deux</b>'), self::block('Trois')]);
 
-        self::assertStringStartsWith('<ul class="cms-highlights cms-highlights--3" data-cms-sizes="(min-width: 77rem)', $html);
+        self::assertStringStartsWith('<ul class="cms-highlights cms-highlights--3" data-cms-sizes="(min-width: 48rem) 67vw, 100vw"', $html);
         self::assertSame(1, substr_count($html, 'cms-highlights__item--lead'));
         self::assertSame(3, substr_count($html, '<li '));
         self::assertStringContainsString('&lt;b&gt;Deux&lt;/b&gt;', $html);
