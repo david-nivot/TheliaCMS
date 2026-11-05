@@ -44,6 +44,11 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   back to the screen. A script (`X-Requested-With`, or a request that does not
   ask for HTML), a write and an administrator without the right still get the
   403.
+- **The toolkit page of every section shows where each one starts and ends.**
+  On `/toolkit/cms-all-sections`, the name of a section was smaller than the
+  titles the section draws, and nothing closed its drawing. Each name is now a
+  ruled heading of the toolkit, and each drawing sits in the dashed canvas of
+  the toolkit, with no new style.
 
 ## [2.12.0] - 2026-11-04
 

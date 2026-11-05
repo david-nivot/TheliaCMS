@@ -10,11 +10,18 @@
 <link rel="stylesheet" href="{{ path('cms.site_component_styles') }}">
 <div class="Story">
     {% for section in cms_catalogue() %}
+        {# The heading is ruled and larger than the titles a section draws, and
+           the drawing sits in the dashed canvas of the toolkit: where a section
+           starts and ends reads at a glance, even when it draws its own titles. #}
         <div class="Story-section" id="{{ section.name|lower|replace({':': '-'}) }}">
-            <h4 class="Story-title">{{ section.label }} <code>{{ section.name }}</code></h4>
-            <span class="Story-label">{{ section.description }}</span>
+            <div class="Story-heading">
+                <h4 class="Toolkit-sectionTitle">{{ section.label }} <code>{{ section.name }}</code></h4>
+                <span class="Story-label">{{ section.description }}</span>
+            </div>
             {% if not section.live %}
-                <div class="cms-page-content">{{ cms_section(section.name) }}</div>
+                <div class="Story-canvas">
+                    <div class="cms-page-content">{{ cms_section(section.name) }}</div>
+                </div>
             {% endif %}
         </div>
     {% endfor %}
