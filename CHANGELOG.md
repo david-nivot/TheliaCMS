@@ -7,6 +7,8 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+## [2.13.0] - 2026-11-05
+
 ### Added
 
 - **Save and publish.** On the settings screen of a saved page, a button saves
@@ -2515,7 +2517,8 @@ the published pages.
 - The breadcrumb of a page filed under a draft one offered a link to that page,
   which answers 404, both to the reader and in the `BreadcrumbList`.
 
-[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.12.0...HEAD
+[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.13.0...HEAD
+[2.13.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.13.0
 [2.12.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.12.0
 [2.11.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.11.0
 [2.10.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.10.0
