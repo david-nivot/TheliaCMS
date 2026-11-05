@@ -22,7 +22,7 @@ use TheliaCMS\TheliaCMS;
  * catchphrase and a button: what a shop puts under its header to push an
  * offer, a collection, a service.
  *
- * Drawn by the module with the grid of its stylesheet, in the structure of
+ * Drawn by the module with the grid of its stylesheet, edge to edge, in the structure of
  * the HeaderHighlights module (a large first block, shorter ones next to it,
  * a picture of its own for a narrow screen). A block may carry a second
  * picture for a screen narrower than 1024px; without one, the picture of the
@@ -100,8 +100,8 @@ final readonly class HighlightsSection implements SectionDefinitionInterface
             return '';
         }
 
-        // Two or three blocks share the width in halves (the large one of three spans both rows): the width of one of two columns.
-        $sizes = 1 === \count($blocks) ? ImageSlot::content() : ImageSlot::column(2);
+        // Edge to edge: a lone block takes the screen, two or three share it by thirds and the large one, the widest, takes two of them.
+        $sizes = 1 === \count($blocks) ? ImageSlot::screen() : '(min-width: 48rem) 67vw, 100vw';
         $html = \sprintf('<ul class="cms-highlights cms-highlights--%d"%s>', \count($blocks), ImageSlot::attribute($sizes));
 
         foreach ($blocks as $position => $block) {

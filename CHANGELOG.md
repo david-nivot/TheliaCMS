@@ -12,7 +12,10 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 - **A Highlights section (`cms:highlights`).** A band of one to three blocks,
   the first one the large one, each a picture under a title, a catchphrase and a
   button, in the structure of the HeaderHighlights module and drawn by the module
-  (`cms-highlights…` in `assets/blocks.css`, stacked below 48rem). A block may
+  (`cms-highlights…` in `assets/blocks.css`). The band runs the full width of the
+  page: the first block takes two thirds, the others are stacked beside it, and
+  each text sits in a light panel at the bottom left of its picture, with a
+  rounded dark button; the blocks are stacked below 48rem. A block may
   carry a picture for a screen narrower than 1024px (`image_mobile`); without one,
   the picture of the computer is drawn on every screen. The picture, its link and
   its button are optional, and the centre kept of a picture is set by the editor,
