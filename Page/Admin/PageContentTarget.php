@@ -118,6 +118,11 @@ final readonly class PageContentTarget implements ContentTarget
         return HeadingStructureException::for($this->id(), $this->locale, $problems);
     }
 
+    public function inaccessible(array $problems): \Throwable
+    {
+        return AccessibilityException::for($this->id(), $this->locale, $problems);
+    }
+
     /**
      * Refreshes the full-text payload of the page, so the front-office search
      * queries plain text and never the HTML columns, and gives the page the
