@@ -158,10 +158,35 @@
             </div>
         </div>
 
-        <div class="d-flex flex-wrap gap-2 mt-3" data-cms-page-save-bar>
-            <button type="submit" class="btn btn-primary">{{ 'Save draft'|trans({}, 'theliacms') }}</button>
-        </div>
+        {% set can_publish = may_publish and not is_new and not is_model %}
+        {% if may_change %}
+            {# One bar on every tab. Save and Save and publish send the settings form; Publish and
+               Unpublish are buttons of the two forms below, tied by `form`, so each keeps its own POST. #}
+            <div class="cms-page-actions sticky-md-bottom bg-body border-top mt-3 py-2" data-cms-page-save-bar>
+                <div class="d-flex flex-wrap gap-2" role="group" aria-label="{{ 'Page actions'|trans({}, 'theliacms') }}" data-testid="cms-page-actions">
+                    <button type="submit" class="btn btn-outline-primary" aria-describedby="cms-page-actions-help" data-cms-save-actions data-testid="cms-page-save">{{ 'Save'|trans({}, 'theliacms') }}</button>
+                    {% if can_publish %}
+                        <button type="submit" name="save_and_publish" value="1" class="btn btn-success" aria-describedby="cms-page-actions-help" data-cms-save-actions data-testid="cms-page-save-and-publish">{{ 'Save and publish'|trans({}, 'theliacms') }}</button>
+                        <button type="submit" form="cms-page-publish-form" class="btn btn-outline-success" aria-describedby="cms-page-actions-help" data-cms-publish-only data-testid="cms-page-publish">{{ 'Publish'|trans({}, 'theliacms') }}</button>
+                        <button type="submit" form="cms-page-unpublish-form" class="btn btn-outline-secondary" data-testid="cms-page-unpublish">{{ 'Unpublish'|trans({}, 'theliacms') }}</button>
+                    {% endif %}
+                </div>
+                <p class="form-text mb-0 mt-1" id="cms-page-actions-help">
+                    {{ 'The settings are live as soon as they are saved. The content goes online when you publish it.'|trans({}, 'theliacms') }}
+                    {% if can_publish %}{{ 'Save and publish saves what is typed here, then puts the saved content online. Publish only puts the content already saved online.'|trans({}, 'theliacms') }}{% endif %}
+                </p>
+            </div>
+        {% endif %}
     {{ form_end(form) }}
+
+    {% if not is_new and not is_model and may_publish %}
+        <form method="post" id="cms-page-publish-form" action="{{ path('admin.cms.pages.publish', { id: page.id, edit_language_id: edit_language_id }) }}">
+            <input type="hidden" name="_token" value="{{ assignToken() }}">
+        </form>
+        <form method="post" id="cms-page-unpublish-form" action="{{ path('admin.cms.pages.unpublish', { id: page.id, edit_language_id: edit_language_id }) }}">
+            <input type="hidden" name="_token" value="{{ assignToken() }}">
+        </form>
+    {% endif %}
 
     {% if not is_new %}
         {# After the form, not in it: its forms are not part of the draft. #}
@@ -171,17 +196,9 @@
     {% endif %}
 
     {% if not is_new %}
-        {# Kept out of the settings form: each one is a POST of its own. #}
+        {# Kept out of the settings form: each one is a POST of its own. Publication has its place in the bar. #}
         <div class="d-flex flex-wrap gap-2 mt-3 pt-3 border-top">
             {% if not is_model %}
-            <form method="post" action="{{ path('admin.cms.pages.publish', { id: page.id, edit_language_id: edit_language_id }) }}">
-                <input type="hidden" name="_token" value="{{ assignToken() }}">
-                <button type="submit" class="btn btn-sm btn-success">{{ 'Publish this version'|trans({}, 'theliacms') }}</button>
-            </form>
-            <form method="post" action="{{ path('admin.cms.pages.unpublish', { id: page.id, edit_language_id: edit_language_id }) }}">
-                <input type="hidden" name="_token" value="{{ assignToken() }}">
-                <button type="submit" class="btn btn-sm btn-outline-secondary">{{ 'Unpublish'|trans({}, 'theliacms') }}</button>
-            </form>
             <form method="post" action="{{ path('admin.cms.pages.duplicate', { id: page.id, edit_language_id: edit_language_id }) }}">
                 <input type="hidden" name="_token" value="{{ assignToken() }}">
                 <button type="submit" class="btn btn-sm btn-outline-secondary">{{ 'Duplicate'|trans({}, 'theliacms') }}</button>
@@ -211,5 +228,6 @@
     {% if not is_new %}
         <script src="{{ module_asset('TheliaCMS', 'assets/page-documents.js') }}?v={{ assets_version }}" defer></script>
     {% endif %}
+    <script src="{{ module_asset('TheliaCMS', 'assets/page-actions.js') }}?v={{ assets_version }}" defer></script>
     {{ include('@TheliaCMSModule/backOffice/default-twig/media/_picker.html.twig', { media_picker_version: assets_version }) }}
 {% endblock %}

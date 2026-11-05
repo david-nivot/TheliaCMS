@@ -7,8 +7,7 @@
  *   why it was refused, so one refused file costs none of the others;
  * - the format and the size are checked before sending, the server checks again;
  * - the tab opens when the address ends with its anchor (where every action
- *   redirects to), and the "Save draft" button, which does not save documents,
- *   is hidden while the tab is shown;
+ *   redirects to);
  * - the deletion dialog opens on browsers that do not know the `command`
  *   attribute of buttons.
  */
@@ -206,13 +205,6 @@
         document.querySelectorAll('form[data-cms-document-upload]').forEach(bindUpload);
 
         var button = document.querySelector('[data-bs-target="' + TAB + '"]');
-        var saveBar = document.querySelector('[data-cms-page-save-bar]');
-
-        document.addEventListener('shown.bs.tab', function (event) {
-            if (saveBar) {
-                saveBar.classList.toggle('d-none', event.target.getAttribute('data-bs-target') === TAB);
-            }
-        });
 
         // Once every script is loaded: the click is Bootstrap's to answer.
         function openTab() {

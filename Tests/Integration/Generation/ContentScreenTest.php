@@ -102,7 +102,8 @@ final class ContentScreenTest extends AdminScreenTestCase
         self::assertSame(0, $screen->filter('[data-testid="cms-content-sections"]')->count());
         self::assertSame(1, $screen->filter('[data-testid="cms-content-brief"] form input[name="_token"]')->count(), 'The brief form carries the token.');
         self::assertSame(0, $screen->filter('[data-testid="cms-content-brief-dialog"]')->count(), 'Without a brief, the form is in the screen, the first thing to fill.');
-        self::assertNotNull($screen->filter('[data-testid="cms-content-publish"] button')->attr('disabled'), 'Nothing to publish yet.');
+        self::assertSame('true', $screen->filter('[data-testid="cms-content-publish"] button')->attr('aria-disabled'), 'Nothing to publish yet.');
+        self::assertNull($screen->filter('[data-testid="cms-content-publish"] button')->attr('disabled'), 'The button stays in the tab order.');
     }
 
     public function testTheDraftABriefReplacesIsKeptAndCanBePutBack(): void

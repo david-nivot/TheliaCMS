@@ -234,6 +234,19 @@ no console error. It reads only: nothing is saved and no form is sent but the
 login. The held drag is simulated with dispatched `dragstart` and `dragend`
 events, as native drag and drop is not reliable in headless Chromium.
 
+`Tests/Browser/page-actions-stay-in-view.mjs` checks the action bar of the
+settings screen of a page and the Publish button of the content screen. Same
+shape, same variables (`CMS_PAGE_ID` is a saved page that is not a model, with
+a long SEO tab), no `CMS_EDITOR_SCRIPT`. It reads only: it saves and publishes
+nothing. Window 1440x620, then 360 wide and 1024 wide. It checks that the bar is
+sticky and inside the window on the SEO tab, that tabbing through the fields
+never leaves the focused one under the bar, that at 360 px the bar is not
+sticky or covers at most a third of the window, that Publish is on the first
+line of the actions of the header and not alone at 1440 and 1024, and that the
+console is clean. The back office scrolls smoothly: the script waits for the
+scroll to settle before it measures. A click on Save and publish is checked
+by hand, on a page made for it.
+
 ## CSS and the security policy
 
 - `Content/Pipeline/CssAllowList.php` keeps of a `style` attribute or of a

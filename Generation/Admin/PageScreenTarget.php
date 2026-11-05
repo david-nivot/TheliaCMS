@@ -40,6 +40,7 @@ use TheliaCMS\Page\Admin\EmptyPageContentException;
 use TheliaCMS\Page\Admin\HeadingStructureException;
 use TheliaCMS\Page\Admin\MissingPageFieldsException;
 use TheliaCMS\Page\Admin\ModelPagePublicationException;
+use TheliaCMS\Page\Admin\PageOnlineMessage;
 use TheliaCMS\Page\Admin\PlaceholderPageContentException;
 use TheliaCMS\Page\PageTypeCode;
 use TheliaCMS\Page\PageTypeRepository;
@@ -85,6 +86,7 @@ final readonly class PageScreenTarget implements ContentScreenTarget
         private TranslationFreshness $freshness,
         private PageTypeRepository $pageTypes,
         private SiteComponentPermission $componentPermission,
+        private PageOnlineMessage $onlineMessage,
     ) {
     }
 
@@ -227,7 +229,7 @@ final readonly class PageScreenTarget implements ContentScreenTarget
 
     public function online(): string
     {
-        return $this->support->translate('The page is online.');
+        return $this->onlineMessage->say($this->page, $this->locale());
     }
 
     public function explainRefusal(\Throwable $refusal): ?array

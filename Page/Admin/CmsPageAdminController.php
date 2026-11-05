@@ -79,6 +79,7 @@ final readonly class CmsPageAdminController
         private PageTagRepository $tags,
         private PageFields $fields,
         private PageDocumentRows $documentRows,
+        private PageOnlineMessage $onlineMessage,
     ) {
     }
 
@@ -223,39 +224,7 @@ final readonly class CmsPageAdminController
         $this->denyUnless(AccessManager::UPDATE);
         $lang = $this->editLang($request);
 
-        try {
-            $warnings = $this->writer->publish($this->livePageOrFail($id), $lang->getLocale());
-
-            foreach ($warnings as $warning) {
-                $this->support->flash($request, 'warning', $warning);
-            }
-        } catch (HeadingStructureException $exception) {
-            foreach ($exception->problems as $problem) {
-                $this->support->flash($request, 'danger', $problem);
-            }
-
-            $this->support->flash($request, 'danger', $this->support->translate('The page was not published: fix the heading structure first.'));
-        } catch (AccessibilityException $exception) {
-            foreach ($exception->problems as $problem) {
-                $this->support->flash($request, 'danger', $problem);
-            }
-
-            $this->support->flash($request, 'danger', $this->support->translate('The page was not published: fix the accessibility problems first.'));
-        } catch (InvalidDocumentException $exception) {
-            foreach ($exception->translated($this->translator) as $problem) {
-                $this->support->flash($request, 'danger', $problem);
-            }
-
-            $this->support->flash($request, 'danger', $this->support->translate('The page was not published: its content is no longer valid. Open it in the editor to see what to fix.'));
-        } catch (EmptyPageContentException) {
-            $this->support->flash($request, 'danger', $this->support->translate('This page has no content yet: add at least one block in the editor before publishing it.'));
-        } catch (PlaceholderPageContentException) {
-            $this->support->flash($request, 'danger', $this->support->translate('This page still holds the sample text it was created with: write your own before publishing it.'));
-        } catch (ModelPagePublicationException) {
-            $this->support->flash($request, 'danger', $this->support->translate('This page is the model of its type: it is never published. Start a new page from it instead.'));
-        } catch (MissingPageFieldsException $exception) {
-            $this->support->flash($request, 'danger', $this->support->translate('Fill in the fields this type requires before publishing: %fields%.', ['%fields%' => implode(', ', $exception->labels)]));
-        }
+        $this->publishPage($request, $this->livePageOrFail($id), $lang->getLocale());
 
         return $this->backToEdit($id, $lang);
     }
@@ -396,8 +365,16 @@ final readonly class CmsPageAdminController
         if ($form->isSubmitted() && $form->isValid()) {
             $this->denyUnless($page->isNew() ? AccessManager::CREATE : AccessManager::UPDATE);
 
+            $wasNew = $page->isNew();
+
             try {
                 $this->applyTo($page, $locale, $form);
+                $this->support->flash($request, 'success', $this->support->translate('Settings saved.'));
+
+                // The settings are committed above: a publication refused below leaves them saved.
+                if (!$wasNew && $this->asksToPublish($request, $page)) {
+                    $this->publishPage($request, $page, $locale);
+                }
 
                 return $this->backToEdit((int) $page->getId(), $lang);
             } catch (InvalidFieldsException $exception) {
@@ -432,11 +409,80 @@ final readonly class CmsPageAdminController
             'document_max_size' => (int) UploadedFile::getMaxFilesize(),
             'document_max_size_label' => PageDocumentSize::human((int) UploadedFile::getMaxFilesize(), $locale),
             'document_max_files' => max(1, (int) \ini_get('max_file_uploads')),
+            'may_change' => $this->mayChange(),
+            'may_publish' => $this->mayPublish(),
             'may_change_documents' => $this->support->isGranted(CmsResources::PAGE, AccessManager::UPDATE),
             'may_delete_documents' => $this->support->isGranted(CmsResources::PAGE, AccessManager::DELETE),
             // The browser keeps the script until its version changes.
-            'assets_version' => substr(hash('xxh3', (string) @filemtime(__DIR__.'/../../templates/backOffice/default-twig/assets/page-address.js').(string) @filemtime(__DIR__.'/../../templates/backOffice/default-twig/assets/media-picker.js').(string) @filemtime(__DIR__.'/../../templates/backOffice/default-twig/assets/page-documents.js')), 0, 12),
+            'assets_version' => substr(hash('xxh3', (string) @filemtime(__DIR__.'/../../templates/backOffice/default-twig/assets/page-address.js').(string) @filemtime(__DIR__.'/../../templates/backOffice/default-twig/assets/media-picker.js').(string) @filemtime(__DIR__.'/../../templates/backOffice/default-twig/assets/page-documents.js').(string) @filemtime(__DIR__.'/../../templates/backOffice/default-twig/assets/page-actions.js')), 0, 12),
         ]));
+    }
+
+    /**
+     * Puts the saved content of the page online and says what came of it: the
+     * warnings of `warn` mode, the refusals otherwise. Whether it went online.
+     */
+    private function publishPage(Request $request, CmsPage $page, string $locale): bool
+    {
+        try {
+            $warnings = $this->writer->publish($page, $locale);
+
+            foreach ($warnings as $warning) {
+                $this->support->flash($request, 'warning', $warning);
+            }
+
+            $this->support->flash($request, 'success', $this->onlineMessage->say($page, $locale));
+
+            return true;
+        } catch (HeadingStructureException $exception) {
+            foreach ($exception->problems as $problem) {
+                $this->support->flash($request, 'danger', $problem);
+            }
+
+            $this->support->flash($request, 'danger', $this->support->translate('The page was not published: fix the heading structure first.'));
+        } catch (AccessibilityException $exception) {
+            foreach ($exception->problems as $problem) {
+                $this->support->flash($request, 'danger', $problem);
+            }
+
+            $this->support->flash($request, 'danger', $this->support->translate('The page was not published: fix the accessibility problems first.'));
+        } catch (InvalidDocumentException $exception) {
+            foreach ($exception->translated($this->translator) as $problem) {
+                $this->support->flash($request, 'danger', $problem);
+            }
+
+            $this->support->flash($request, 'danger', $this->support->translate('The page was not published: its content is no longer valid. Open it in the editor to see what to fix.'));
+        } catch (EmptyPageContentException) {
+            $this->support->flash($request, 'danger', $this->support->translate('This page has no content yet: add at least one block in the editor before publishing it.'));
+        } catch (PlaceholderPageContentException) {
+            $this->support->flash($request, 'danger', $this->support->translate('This page still holds the sample text it was created with: write your own before publishing it.'));
+        } catch (ModelPagePublicationException) {
+            $this->support->flash($request, 'danger', $this->support->translate('This page is the model of its type: it is never published. Start a new page from it instead.'));
+        } catch (MissingPageFieldsException $exception) {
+            $this->support->flash($request, 'danger', $this->support->translate('Fill in the fields this type requires before publishing: %fields%.', ['%fields%' => implode(', ', $exception->labels)]));
+        }
+
+        return false;
+    }
+
+    /**
+     * "Save and publish" is posted at the top level of the request, outside the
+     * form, and only a page that is not a model can be published.
+     */
+    private function asksToPublish(Request $request, CmsPage $page): bool
+    {
+        return $request->request->has('save_and_publish') && 1 !== $page->getModel() && $this->mayPublish();
+    }
+
+    private function mayChange(): bool
+    {
+        return $this->support->isGranted(CmsResources::PAGE, AccessManager::UPDATE);
+    }
+
+    /** Taken from the right to change until the right to publish is its own. */
+    private function mayPublish(): bool
+    {
+        return $this->support->isGranted(CmsResources::PAGE, AccessManager::UPDATE);
     }
 
     private function isHome(CmsPage $page): bool
