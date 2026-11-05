@@ -185,6 +185,26 @@ final class SubmissionValidatorTest extends TestCase
         self::assertSame('camille@example.org', $submission->entered['email']);
     }
 
+    public function testACountryFieldTakesOneOfTheCountriesOffered(): void
+    {
+        $country = new Field('country', FieldType::Country, 'Country', required: true, choices: ['France', 'Italie']);
+
+        $submission = $this->validator->validate([$country], ['country' => 'Italie']);
+
+        self::assertTrue($submission->isValid());
+        self::assertSame('Italie', $submission->answers[0]->value);
+    }
+
+    public function testACountryFieldRefusesACountryNotOffered(): void
+    {
+        $country = new Field('country', FieldType::Country, 'Country', choices: ['France', 'Italie']);
+
+        $submission = $this->validator->validate([$country], ['country' => 'Atlantide']);
+
+        self::assertFalse($submission->isValid());
+        self::assertArrayHasKey('country', $submission->errors);
+    }
+
     private function field(string $name, FieldType $type = FieldType::Text, bool $required = false): Field
     {
         return new Field($name, $type, ucfirst($name), required: $required);

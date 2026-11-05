@@ -34,6 +34,7 @@ final readonly class FormCatalog
 {
     public function __construct(
         private PublishedPageRepository $pages,
+        private CountryChoices $countries,
     ) {
     }
 
@@ -116,9 +117,21 @@ final readonly class FormCatalog
             required: 1 === (int) $row->getRequired(),
             placeholder: (string) $row->getPlaceholder(),
             help: (string) $row->getHelp(),
-            choices: $type->hasChoices() ? FieldChoices::parse($row->getChoices()) : [],
+            choices: $this->choicesOf($type, $row, $locale),
             rows: $options->rows,
         );
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function choicesOf(FieldType $type, CmsFormField $row, string $locale): array
+    {
+        if (FieldType::Country === $type) {
+            return $this->countries->forLocale($locale);
+        }
+
+        return $type->hasChoices() ? FieldChoices::parse($row->getChoices()) : [];
     }
 
     /**

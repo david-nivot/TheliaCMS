@@ -152,6 +152,7 @@ return [
     'Receipt subject' => 'Receipt subject',
     'Corner radius' => 'Corner radius',
     'Countdown' => 'Countdown',
+    'Country' => 'Country',
     'Create the first form' => 'Create the first form',
     'Create the first menu' => 'Create the first menu',
     'Create the first page' => 'Create the first page',

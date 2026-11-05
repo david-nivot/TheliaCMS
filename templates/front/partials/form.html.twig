@@ -82,7 +82,7 @@
                                           {% if field.placeholder %}placeholder="{{ field.placeholder }}"{% endif %}
                                           {% if described_by %}aria-describedby="{{ described_by }}"{% endif %}
                                           {% if error %}aria-invalid="true"{% endif %}>{{ value }}</textarea>
-                            {% elseif field.type.value == 'select' %}
+                            {% elseif field.type.isDropDown() %}
                                 <select class="cms-form__input" id="{{ id }}" name="{{ field.name }}"
                                         {{ field.required ? 'required' : '' }}
                                         {% if described_by %}aria-describedby="{{ described_by }}"{% endif %}

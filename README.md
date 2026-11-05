@@ -751,10 +751,18 @@ reference and nothing more: the fields, the wording and the recipients are read
 when the page is served, so adding a field never means republishing the pages
 the form is on.
 
-A field is one of nine kinds: a single line of text, an email address, several
+A field is one of ten kinds: a single line of text, an email address, several
 lines, a drop-down list, a tick box, one choice among several, a phone number,
-a date, or an agreement to be contacted. Labels, help texts and the answers a
-list offers are written per language. A field with no label in a language is
+a date, an agreement to be contacted, or a country. Labels, help texts and the
+answers a list offers are written per language.
+
+A country field is a drop-down of the countries the shop shows (Configuration >
+Countries), read when the page is served: switching a country on or off changes
+the list without touching the form. Each country is named in the language of
+the page, from its translation in the shop, else from its ISO code through intl,
+else from the default language; the list is sorted the way that language reads.
+The answer is the name the visitor picked, so a mail or an export reads it as
+is. A field with no label in a language is
 left out of the form in that language, and the back office says so: an input
 nobody can name cannot be filled in, and a screen reader announces nothing
 for it.

@@ -152,6 +152,7 @@ return [
     'Receipt subject' => 'Objet de l’accusé de réception',
     'Corner radius' => 'Arrondi des angles',
     'Countdown' => 'Compte à rebours',
+    'Country' => 'Pays',
     'Create the first form' => 'Créer le premier formulaire',
     'Create the first menu' => 'Créer le premier menu',
     'Create the first page' => 'Créer la première page',
