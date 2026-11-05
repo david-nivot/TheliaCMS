@@ -1385,10 +1385,138 @@
             }
         }
 
+        /* ---- The list follows the preview ------------------------------- */
+
+        // The section at the top of the preview is marked in the list, and
+        // the list scrolls to it. Only the scroll of the preview by the
+        // reader drives this: a scroll the list asked for (locate, a section
+        // added, the place kept after a call) is waited out first. The list
+        // stays where it is while a section is being edited or dragged, and
+        // only the panel scrolls, never the page, and the focus stays put.
+        var followed = null;
+        var followFrame = 0;
+        var quietUntil = 0;
+        var currentItem = null;
+        var listDragging = false;
+
+        function stillFor(milliseconds) {
+            quietUntil = Math.max(quietUntil, Date.now() + milliseconds);
+        }
+
+        function listBusy() {
+            // The <details> of a section form are open from the start (fields
+            // in use, a fold to fill in) inside a closed dialog: only an open
+            // dialog means a section is being edited.
+            return running || listDragging || root.querySelector("dialog[open]") !== null;
+        }
+
+        function setCurrent(item, scroll) {
+            if (item === currentItem) {
+                return;
+            }
+
+            if (currentItem) {
+                currentItem.classList.remove("is-current");
+                currentItem.removeAttribute("aria-current");
+            }
+
+            currentItem = item;
+            item.classList.add("is-current");
+            item.setAttribute("aria-current", "true");
+
+            var panel = item.closest(".cms-content__panel");
+
+            if (!scroll || !panel || listBusy()) {
+                return;
+            }
+
+            var box = item.getBoundingClientRect();
+            var area = panel.getBoundingClientRect();
+
+            if (box.top >= area.top && box.bottom <= area.bottom) {
+                return;
+            }
+
+            var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            var top = panel.scrollTop + box.top - area.top - Math.max(0, (area.height - box.height) / 2);
+
+            panel.scrollTo({ top: Math.max(0, top), behavior: reduced ? "instant" : "smooth" });
+        }
+
+        // The section on the top of what the frame shows: the last one whose
+        // top has reached the upper part of the window.
+        function currentSection(inner) {
+            var sections = inner.querySelectorAll("[data-cms-section]");
+            var line = inner.defaultView.innerHeight * 0.2;
+            var found = null;
+
+            for (var index = 0; index < sections.length; index++) {
+                if (sections[index].getBoundingClientRect().top <= line) {
+                    found = sections[index];
+                }
+            }
+
+            return found || sections[0] || null;
+        }
+
+        function followNow() {
+            followFrame = 0;
+            var inner = previewDocument();
+
+            if (!inner || inner !== followed) {
+                return;
+            }
+
+            var section = currentSection(inner);
+            var id = section ? section.getAttribute("data-cms-section") : null;
+            var item = null;
+
+            items.forEach(function (candidate) {
+                if (candidate.getAttribute("data-section") === id) {
+                    item = candidate;
+                }
+            });
+
+            if (item) {
+                setCurrent(item, Date.now() >= quietUntil);
+            }
+        }
+
+        function followPreview() {
+            var inner = previewDocument();
+
+            // The program that loads a frame scrolls it (revealLastSection,
+            // restorePreviewPosition): let it finish before following.
+            stillFor(900);
+
+            if (!inner || inner === followed) {
+                return;
+            }
+
+            followed = inner;
+            inner.defaultView.addEventListener("scroll", function () {
+                if (Date.now() < quietUntil) {
+                    // Each scroll of a list-driven move pushes the end back.
+                    stillFor(150);
+
+                    return;
+                }
+
+                if (!followFrame) {
+                    followFrame = requestAnimationFrame(followNow);
+                }
+            }, { passive: true });
+
+            // Marked from the first render, the list left where it is.
+            stillFor(900);
+            followNow();
+        }
+
         // A component prototyped from this screen is drawn in the frame in
         // place of the draft: it has no section to mark or to add after.
         if (frame && !frame.hasAttribute("data-cms-frame-prototype")) {
             frame.addEventListener("load", markPreview);
+            frame.addEventListener("load", followPreview);
             frame.addEventListener("load", addSlot);
             frame.addEventListener("load", revealLastSection);
             frame.addEventListener("load", function () {
@@ -1400,6 +1528,7 @@
                 }
             });
             markPreview();
+            followPreview();
             addSlot();
         }
 
@@ -1426,6 +1555,9 @@
                     var section = previewSection(id);
 
                     if (section) {
+                        // The list drove this scroll: it must not answer it.
+                        stillFor(900);
+                        setCurrent(item, false);
                         section.scrollIntoView({ behavior: "smooth", block: "start" });
                     }
                 });
@@ -1464,6 +1596,7 @@
                 }
 
                 dragged = item;
+                listDragging = true;
                 from = items().indexOf(item);
                 event.dataTransfer.effectAllowed = "move";
                 event.dataTransfer.setData("text/plain", item.getAttribute("data-section"));
@@ -1500,6 +1633,7 @@
                 var item = dragged;
                 var to = items().indexOf(item);
                 dragged = null;
+                listDragging = false;
                 item.draggable = false;
                 item.classList.remove("cms-content__item--dragged");
 
