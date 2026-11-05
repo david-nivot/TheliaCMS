@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Tests\Integration\Content;
 
+use Propel\Runtime\Connection\ConnectionWrapper;
+use Propel\Runtime\Propel;
 use Thelia\Test\FixtureFactory;
 use TheliaCMS\Catalogue\Admin\ContentTargets;
 use TheliaCMS\Catalogue\Admin\EmptyItemContentException;
@@ -45,7 +47,7 @@ use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
  */
 final class ContentSideEffectsTest extends CmsIntegrationTestCase
 {
-    /** @var CachePurgerInterface&object{purged: list<string>} */
+    /** @var CachePurgerInterface&object{purged: list<string>, depths: list<int>} */
     private CachePurgerInterface $purger;
 
     protected function setUp(): void
@@ -56,8 +58,13 @@ final class ContentSideEffectsTest extends CmsIntegrationTestCase
             /** @var list<string> */
             public array $purged = [];
 
+            /** @var list<int> transaction depth of the connection at each call */
+            public array $depths = [];
+
             public function purge(array $tags): void
             {
+                $connection = Propel::getConnection('TheliaMain');
+                $this->depths[] = $connection instanceof ConnectionWrapper ? $connection->getNestedTransactionCount() : -1;
                 array_push($this->purged, ...$tags);
             }
         };
@@ -196,6 +203,50 @@ final class ContentSideEffectsTest extends CmsIntegrationTestCase
 
         self::assertSame($before + 1, CmsPageSearchQuery::create()->count());
         self::assertStringContainsString('accompagnement', (string) CmsPageSearchQuery::create()->filterByPageId($page->getId())->findOne()?->getContent());
+    }
+
+    /**
+     * A purge inside the publication transaction lets a visitor's request
+     * refill the shared cache with the old row before the commit, and purges
+     * for a publication that is rolled back afterwards. The test case wraps
+     * each test in a transaction, so the depth is compared with the one
+     * measured before publishing, not with zero.
+     */
+    public function testThePurgeOfAPagePublicationComesAfterItsCommit(): void
+    {
+        $page = $this->createPage('Ordered', published: false);
+
+        foreach (['first publication', 'publication of what is online'] as $moment) {
+            $before = \count($this->purger->depths);
+            $depth = $this->transactionDepth();
+
+            $this->pageWriter()->publish($page, $this->locale());
+
+            $depths = \array_slice($this->purger->depths, $before);
+            self::assertNotSame([], $depths, 'No purge at the '.$moment.': the test would see nothing.');
+            self::assertSame(array_fill(0, \count($depths), $depth), $depths, 'Purged inside the transaction at the '.$moment.'.');
+        }
+    }
+
+    public function testThePurgeOfAnItemPublicationComesAfterItsCommit(): void
+    {
+        $id = $this->product();
+        $writer = $this->itemWriter();
+        $writer->saveContent($this->itemTarget(CatalogueItemType::Product, $id, $this->locale()), Document::richText('<h2>Questions</h2><p>Sur devis.</p>'));
+        $depth = $this->transactionDepth();
+
+        $writer->publish($this->itemTarget(CatalogueItemType::Product, $id, $this->locale()));
+
+        self::assertNotSame([], $this->purger->depths, 'No purge: the test would see nothing.');
+        self::assertSame(array_fill(0, \count($this->purger->depths), $depth), $this->purger->depths);
+    }
+
+    private function transactionDepth(): int
+    {
+        $connection = Propel::getConnection('TheliaMain');
+        self::assertInstanceOf(ConnectionWrapper::class, $connection);
+
+        return $connection->getNestedTransactionCount();
     }
 
     private function product(): int
