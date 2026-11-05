@@ -121,35 +121,44 @@ final readonly class DocumentSchema
         if ($withSeo) {
             $schema['properties']['meta_title'] = [
                 'type' => 'string',
-                'description' => \sprintf('Optional. The title a search engine shows for the page, in the language of the page, plain text of %d characters at most (longer is ignored): what the page is about, not the title of the page again word for word.', self::META_TITLE_LENGTH),
+                'description' => \sprintf('The title a search engine shows for the page, in the language of the page, plain text of %d characters at most (longer is ignored): what the page is about, not the title of the page again word for word. An empty string when there is nothing to propose.', self::META_TITLE_LENGTH),
             ];
             $schema['properties']['meta_description'] = [
                 'type' => 'string',
-                'description' => \sprintf('Optional. The description a search engine shows for the page, in the language of the page, plain text of %d characters at most (longer is ignored): what a visitor finds on the page.', self::META_DESCRIPTION_LENGTH),
+                'description' => \sprintf('The description a search engine shows for the page, in the language of the page, plain text of %d characters at most (longer is ignored): what a visitor finds on the page. An empty string when there is nothing to propose.', self::META_DESCRIPTION_LENGTH),
             ];
         }
 
         if ($withHeader) {
             $schema['properties']['title'] = [
                 'type' => 'string',
-                'description' => \sprintf('Optional. The title of the page in the language of the page, plain text on one line of %d characters at most (longer is ignored): the same thing as the title it is written from, not a slogan.', self::HEADER_TITLE_LENGTH),
+                'description' => \sprintf('The title of the page in the language of the page, plain text on one line of %d characters at most (longer is ignored): the same thing as the title it is written from, not a slogan. An empty string when the one it is written from is empty.', self::HEADER_TITLE_LENGTH),
             ];
             $schema['properties']['summary'] = [
                 'type' => 'string',
-                'description' => 'Optional. The summary of the page in the language of the page, as HTML like the one it is written from.',
+                'description' => 'The summary of the page in the language of the page, as HTML like the one it is written from. An empty string when the one it is written from is empty.',
             ];
             $schema['properties']['description'] = [
                 'type' => 'string',
-                'description' => 'Optional. The description of the page in the language of the page, as HTML like the one it is written from.',
+                'description' => 'The description of the page in the language of the page, as HTML like the one it is written from. An empty string when the one it is written from is empty.',
             ];
             $schema['properties']['og_title'] = [
                 'type' => 'string',
-                'description' => \sprintf('Optional. The title shown when the page is shared, in the language of the page, plain text on one line of %d characters at most (longer is ignored).', self::HEADER_TITLE_LENGTH),
+                'description' => \sprintf('The title shown when the page is shared, in the language of the page, plain text on one line of %d characters at most (longer is ignored). An empty string when the one it is written from is empty.', self::HEADER_TITLE_LENGTH),
             ];
             $schema['properties']['og_description'] = [
                 'type' => 'string',
-                'description' => 'Optional. The description shown when the page is shared, in the language of the page, plain text on one line.',
+                'description' => 'The description shown when the page is shared, in the language of the page, plain text on one line. An empty string when the one it is written from is empty.',
             ];
+        }
+
+        // Asked means required: held to a strict schema, a model leaves an
+        // optional key out (no real translation wrote one). An empty string
+        // says there is nothing to propose, and is read as nothing.
+        foreach (['meta_title', 'meta_description', 'title', 'summary', 'description', 'og_title', 'og_description'] as $asked) {
+            if (isset($schema['properties'][$asked])) {
+                $schema['required'][] = $asked;
+            }
         }
 
         if ($withFields) {

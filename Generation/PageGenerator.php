@@ -651,6 +651,12 @@ final readonly class PageGenerator
 
             $text = $html ? trim($decoded[$property]) : trim((string) preg_replace('/\s+/u', ' ', strip_tags($decoded[$property])));
 
+            // An HTML field with no text (an empty paragraph copied from an
+            // empty source) is nothing: it would fill an empty column.
+            if ($html && '' === preg_replace('/[\s\x{A0}]+/u', '', html_entity_decode(strip_tags($text), \ENT_QUOTES | \ENT_HTML5))) {
+                return null;
+            }
+
             return '' === $text || mb_strlen($text) > $limit ? null : $text;
         };
 

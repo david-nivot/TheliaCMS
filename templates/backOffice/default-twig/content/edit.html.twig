@@ -67,6 +67,17 @@
             {{ component('BoLanguageSwitcher', { currentLanguageId: subject.languageId }) }}
 
             <div class="cms-content__actions">
+                {# First of the actions: it is the one that matters, and a group that wraps keeps it with the others. A model of a page type is never published: its pages are. #}
+                {% if may_publish and subject.publishable %}
+                    <form method="post" action="{{ subject.url('publish') }}" class="d-inline" data-testid="cms-content-publish" data-cms-publish>
+                        <input type="hidden" name="_token" value="{{ assignToken() }}">
+                        {# Not `disabled`: a disabled button leaves the tab order and says nothing. The script and the server refuse the click. #}
+                        <button type="submit" class="btn btn-sm btn-success" title="{{ subject.publishHint }}" aria-describedby="cms-content-publish-hint"{% if not subject.hasContent %} aria-disabled="true"{% endif %}>
+                            {{ 'Publish'|trans({}, 'theliacms') }}
+                        </button>
+                        <span class="visually-hidden" id="cms-content-publish-hint">{{ subject.hasContent ? subject.publishHint : 'Nothing to publish yet: write the content first.'|trans({}, 'theliacms') }}</span>
+                    </form>
+                {% endif %}
                 {# The draft reads in its whole page, or alone: a CMS page with its
                    header, footer and title, or without; a catalogue item in its
                    own page, when it has one online, or alone. The page first. The
@@ -108,15 +119,6 @@
                        title="{{ 'Preview the page'|trans({}, 'theliacms') }}" data-testid="cms-page-preview-btn">
                         <i class="bi bi-eye" aria-hidden="true"></i> {{ 'Preview'|trans({}, 'theliacms') }}
                     </a>
-                {% endif %}
-                {# The model of a page type is never published: its pages are. #}
-                {% if may_publish and subject.publishable %}
-                    <form method="post" action="{{ subject.url('publish') }}" class="d-inline" data-testid="cms-content-publish">
-                        <input type="hidden" name="_token" value="{{ assignToken() }}">
-                        <button type="submit" class="btn btn-sm btn-success" title="{{ subject.publishHint }}"{% if not subject.hasContent %} disabled{% endif %}>
-                            {{ 'Publish'|trans({}, 'theliacms') }}
-                        </button>
-                    </form>
                 {% endif %}
             </div>
         </header>
@@ -201,7 +203,7 @@
                                         {{ form_end(translation.retranslate_form) }}
                                     </div>
                                 {% endif %}
-                                {% if may_publish %}
+                                {% if may_change %}
                                     <div data-testid="cms-content-translation-current">
                                         <form method="post" action="{{ subject.url('translation') }}">
                                             <input type="hidden" name="_token" value="{{ assignToken() }}">
@@ -316,7 +318,7 @@
 
                     <section class="cms-content__section" data-testid="cms-content-sections">
                         <h2 class="cms-content__heading">{{ 'The sections of the draft'|trans({}, 'theliacms') }}</h2>
-                        {% set reorderable = may_publish and sections|length > 1 %}
+                        {% set reorderable = may_change and sections|length > 1 %}
                         {# Dragged by its handle, dropped elsewhere in the list: the script
                            posts the new rank to the address the arrows post to. The token
                            travels in the body, never in a URL. #}
@@ -333,7 +335,7 @@
                                             <span class="cms-content__item-rank" aria-hidden="true">{{ section.rank }}</span>
                                             <span class="cms-content__item-label" title="{{ section.component }}">{{ section.label }}</span>
                                         </button>
-                                        {% if may_publish %}
+                                        {% if may_change %}
                                             <div class="cms-content__item-actions">
                                                 {# The first section has nowhere to go up to, the last nowhere down to. #}
                                                 {% if not loop.first %}
@@ -430,7 +432,7 @@
 
                 {# A language written by hand is followed once tied to the
                    language it translates. #}
-                {% if not translation and subject.hasContent and subject.translationSources is not empty and may_publish %}
+                {% if not translation and subject.hasContent and subject.translationSources is not empty and may_change %}
                     <section class="cms-content__section" data-testid="cms-content-translation-attach">
                         <h2 class="cms-content__heading">{{ 'Translation'|trans({}, 'theliacms') }}</h2>
                         <p class="text-muted small">{{ 'If this language translates another one, say which, to be told when that one changes.'|trans({}, 'theliacms') }}</p>
@@ -451,7 +453,7 @@
 
                 {# The drafts a generation replaced: one is put back from here,
                    the current draft kept in its place. #}
-                {% if subject.previousDrafts is not empty and may_publish %}
+                {% if subject.previousDrafts is not empty and may_change %}
                     <section class="cms-content__section" data-testid="cms-content-previous-drafts">
                         <h2 class="cms-content__heading">{{ 'Previous drafts'|trans({}, 'theliacms') }}</h2>
                         <p class="text-muted small">{{ 'The drafts the generator replaced, the latest first. Putting one back keeps the current draft here in turn.'|trans({}, 'theliacms') }}</p>

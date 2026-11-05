@@ -60,10 +60,23 @@ body:has(.cms-content) {
 }
 
 .cms-content__actions {
+    /* The actions wrap as a group, Publish first: when the bar is too narrow
+       for them next to the title, they go to the next line together and
+       Publish is never left alone on a line. */
     display: flex;
+    flex: 1 1 22rem;
+    flex-wrap: wrap;
     align-items: center;
+    justify-content: flex-end;
     gap: 0.5rem;
     margin-left: auto;
+}
+
+/* Publish with nothing to publish stays in the tab order (aria-disabled, not
+   disabled): Bootstrap only greys the second. */
+.cms-content__actions .btn[aria-disabled="true"] {
+    opacity: 0.65;
+    cursor: not-allowed;
 }
 
 .cms-content__stage {

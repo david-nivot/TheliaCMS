@@ -90,7 +90,7 @@ final class DocumentSchemaTest extends TestCase
         self::assertNotContains('left_out', $strict['required'], 'A page that holds everything the brief asked says nothing.');
     }
 
-    public function testTheHeaderOfAPageJoinsTheEnvelopeOnlyWhenAskedAndIsNeverRequired(): void
+    public function testTheHeaderOfAPageJoinsTheEnvelopeOnlyWhenAskedAndIsThenRequired(): void
     {
         $header = ['title', 'summary', 'description', 'og_title', 'og_description'];
 
@@ -103,12 +103,34 @@ final class DocumentSchemaTest extends TestCase
 
         foreach ($header as $property) {
             self::assertSame('string', $strict['properties'][$property]['type']);
-            self::assertNotContains($property, $strict['required'], 'The header is optional: a model that leaves one out costs no correction turn.');
+            self::assertContains($property, $strict['required'], 'Asked means required: a model held to a strict schema leaves an optional key out (seen on real translations, 2026-11-05).');
+            self::assertStringContainsString('empty string', $strict['properties'][$property]['description'], 'The model is told how to say it has nothing to propose.');
         }
+
+        $validator = new \Thelia\Domain\Ai\Guardrail\AiSchemaValidator();
+        $empty = ['version' => 1, 'sections' => [], 'fields' => '{}', 'meta_title' => '', 'meta_description' => '', 'title' => '', 'summary' => '', 'description' => '', 'og_title' => '', 'og_description' => ''];
+        self::assertSame([], $validator->validate($strict, $empty), 'An empty string says there is nothing to propose.');
+        $withoutTitle = $empty;
+        unset($withoutTitle['title']);
+        self::assertNotSame([], $validator->validate($strict, $withoutTitle), 'An answer without the title asked for is refused.');
 
         self::assertArrayHasKey('meta_title', $strict['properties'], 'The search fields stay beside it.');
         self::assertStringContainsString('255', $strict['properties']['title']['description'], 'The model is told the limit it is held to.');
-        self::assertSame([], (new \Thelia\Domain\Ai\Guardrail\AiSchemaValidator())->validate($strict, ['version' => 1, 'sections' => [], 'fields' => '{}', 'title' => 'Nos tarifs', 'summary' => '<p>Court.</p>']), 'The gateway of the core accepts the answer with a header.');
+        self::assertSame([], $validator->validate($strict, ['title' => 'Nos tarifs', 'summary' => '<p>Court.</p>'] + $empty), 'The gateway of the core accepts the answer with a header.');
+    }
+
+    public function testTheSearchFieldsAreRequiredOnlyWhenAsked(): void
+    {
+        self::assertArrayNotHasKey('meta_title', $this->schema->strict()['properties'], 'A revision is asked for the envelope alone.');
+
+        $strict = $this->schema->strict(withSeo: true);
+
+        foreach (['meta_title', 'meta_description'] as $property) {
+            self::assertContains($property, $strict['required'], 'Asked means required: a model held to a strict schema leaves an optional key out.');
+            self::assertStringContainsString('empty string', $strict['properties'][$property]['description']);
+        }
+
+        self::assertSame(['version', 'sections', 'meta_title', 'meta_description'], $strict['required']);
     }
 
     public function testTheGatewayOfTheCoreAcceptsADocumentAndRefusesAnUnknownKey(): void
