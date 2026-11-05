@@ -1,0 +1,36 @@
+{# Pages that are online with an image nobody described, or a link that says
+   nothing.
+
+   Included by the page list and by the dashboard, from the same service, like
+   the sample text warning: the dashboard is where somebody notices, the list is
+   where they act. Not a live region, for the same reason. The heading level is
+   given by the including screen, so the outline of each stays in order.
+
+   Links carry `alert-link`: the brand colour of the theme is unreadable on this
+   background. #}
+{% set level = accessibility_heading_level|default(2) %}
+{% if accessibility_pages.total > 0 %}
+    <div class="alert alert-warning" data-testid="cms-accessibility-warning">
+        <h{{ level }} class="h6 alert-heading">
+            <i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>
+            {{ 'Some pages are online with an image that has no description, or a link that says nothing'|trans({}, 'theliacms') }}
+        </h{{ level }}>
+        <p class="mb-2">
+            {{ 'Visitors who use a screen reader cannot tell what these images and links are. Open each page and fix what is listed.'|trans({}, 'theliacms') }}
+        </p>
+        <ul class="mb-0">
+            {% for page in accessibility_pages.pages %}
+                <li>
+                    <a class="alert-link" href="{{ path('admin.cms.pages.content.edit', { id: page.id, edit_language_id: page.language_id }) }}">{{- page.title -}}</a>
+                    <span>({{ page.language }})</span>
+                    <span class="d-block small">{{ page.problems|join(' ') }}</span>
+                </li>
+            {% endfor %}
+        </ul>
+        {% if accessibility_pages.total > accessibility_pages.pages|length %}
+            <p class="mb-0 mt-2">
+                {{ 'And %count% more.'|trans({'%count%': accessibility_pages.total - accessibility_pages.pages|length}, 'theliacms') }}
+            </p>
+        {% endif %}
+    </div>
+{% endif %}

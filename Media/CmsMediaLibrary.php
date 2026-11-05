@@ -35,7 +35,7 @@ use TheliaLibrary\TheliaLibrary;
  * other, and marked with a tag: the library is shared with the rest of the
  * shop, but the editor only offers what was uploaded for content pages.
  */
-final readonly class CmsMediaLibrary implements MediaResolver
+final readonly class CmsMediaLibrary implements MediaResolver, MediaDescriptions
 {
     /** Title of the tag every image uploaded from the builder carries. */
     public const string TAG = 'cms';
@@ -123,6 +123,54 @@ final readonly class CmsMediaLibrary implements MediaResolver
             width: $image->getWidth(),
             height: $image->getHeight(),
         );
+    }
+
+    /**
+     * The state of every library image the addresses point at, in one
+     * statement: a page of thirty images costs the same as a page of one.
+     */
+    public function statesOf(array $urls, string $locale): array
+    {
+        $idsByUrl = [];
+
+        foreach ($urls as $url) {
+            if (1 === preg_match('#^/image-library/(\d+)/#', $url, $matches)) {
+                $idsByUrl[$url] = (int) $matches[1];
+            }
+        }
+
+        if ([] === $idsByUrl) {
+            return [];
+        }
+
+        $statement = Propel::getConnection('TheliaMain')->prepare(\sprintf(
+            "SELECT li.id, li.decorative,
+                EXISTS (SELECT 1 FROM library_image_i18n i WHERE i.id = li.id AND i.locale = :locale AND TRIM(COALESCE(i.alt, '')) <> '') AS described
+             FROM library_image li
+             WHERE li.id IN (%s) AND li.file_name IS NOT NULL",
+            implode(',', array_unique($idsByUrl)),
+        ));
+        $statement->execute(['locale' => $locale]);
+
+        $stateById = [];
+
+        foreach ($statement->fetchAll(\PDO::FETCH_ASSOC) as $row) {
+            $stateById[(int) $row['id']] = match (true) {
+                (bool) $row['decorative'] => ImageState::Decorative,
+                (bool) $row['described'] => ImageState::Described,
+                default => ImageState::Undescribed,
+            };
+        }
+
+        $states = [];
+
+        foreach ($idsByUrl as $url => $id) {
+            if (isset($stateById[$id])) {
+                $states[$url] = $stateById[$id];
+            }
+        }
+
+        return $states;
     }
 
     /**

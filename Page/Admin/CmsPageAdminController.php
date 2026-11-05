@@ -235,6 +235,12 @@ final readonly class CmsPageAdminController
             }
 
             $this->support->flash($request, 'danger', $this->support->translate('The page was not published: fix the heading structure first.'));
+        } catch (AccessibilityException $exception) {
+            foreach ($exception->problems as $problem) {
+                $this->support->flash($request, 'danger', $problem);
+            }
+
+            $this->support->flash($request, 'danger', $this->support->translate('The page was not published: fix the accessibility problems first.'));
         } catch (InvalidDocumentException $exception) {
             foreach ($exception->translated($this->translator) as $problem) {
                 $this->support->flash($request, 'danger', $problem);
