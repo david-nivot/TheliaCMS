@@ -180,10 +180,12 @@ final readonly class ContentWriter
      * Promotes the draft to the published snapshot and takes a revision, in
      * one transaction: a half-published content would be served to visitors.
      *
+     * @return list<string> what the author should fix in what went online, in the language of the back office: empty when nothing, and always in `block` mode, which refuses instead
+     *
      * @throws \Throwable               the refusals of the family, the empty-content and the heading exceptions
      * @throws InvalidDocumentException when the draft is not a document the catalogue accepts
      */
-    public function publish(ContentTarget $target): void
+    public function publish(ContentTarget $target): array
     {
         $connection = Propel::getConnection('TheliaMain');
         $connection->beginTransaction();
@@ -192,7 +194,7 @@ final readonly class ContentWriter
             $withCustomCode = $this->mayPublishCustomCode();
 
             $row = $target->row();
-            $html = $this->publishableHtml($target, $row, $withCustomCode);
+            ['html' => $html, 'warnings' => $warnings] = $this->publishableHtml($target, $row, $withCustomCode);
             $wasOnline = $row->isOnline();
 
             $snapshot = $row->publish($html, $connection);
@@ -208,6 +210,8 @@ final readonly class ContentWriter
         }
 
         $target->afterPublished($wasOnline, $withCustomCode);
+
+        return $warnings;
     }
 
     /**
@@ -216,12 +220,14 @@ final readonly class ContentWriter
      * report what will be refused instead of announcing a count it will not
      * reach.
      *
+     * @return list<string> the warnings `publish()` would return
+     *
      * @throws \Throwable               the refusals `publish()` would raise
      * @throws InvalidDocumentException when the draft is not a document the catalogue accepts
      */
-    public function assertPublishable(ContentTarget $target): void
+    public function assertPublishable(ContentTarget $target): array
     {
-        $this->publishableHtml($target, $target->row(), $this->mayPublishCustomCode());
+        return $this->publishableHtml($target, $target->row(), $this->mayPublishCustomCode())['warnings'];
     }
 
     /**
@@ -259,9 +265,12 @@ final readonly class ContentWriter
      * HTML, so a component whose template changed since the last save is
      * published the way it looks today. Checked on every path a content goes
      * online by, and not only in the editor, or the mode that keeps a broken
-     * content offline would only hold there.
+     * content offline would only hold there. In `warn` mode the problems found
+     * come back with the HTML, for the caller to tell the author.
+     *
+     * @return array{html: string, warnings: list<string>}
      */
-    private function publishableHtml(ContentTarget $target, ContentRow $row, bool $withCustomCode): string
+    private function publishableHtml(ContentTarget $target, ContentRow $row, bool $withCustomCode): array
     {
         $target->refuseBeforeRendering();
 
@@ -295,6 +304,6 @@ final readonly class ContentWriter
 
         $target->refuseRendered($html);
 
-        return $html;
+        return ['html' => $html, 'warnings' => $problems];
     }
 }

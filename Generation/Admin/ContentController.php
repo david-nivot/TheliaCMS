@@ -27,7 +27,6 @@ use TheliaCMS\Catalogue\CatalogueItemType;
 use TheliaCMS\Content\Document;
 use TheliaCMS\Content\Editing\ContentWriter;
 use TheliaCMS\Content\InvalidDocumentException;
-use TheliaCMS\Content\Pipeline\HeadingChecker;
 use TheliaCMS\Generation\Brief;
 use TheliaCMS\Generation\GenerationRequest;
 use TheliaCMS\Http\Admin\AdminControllerSupport;
@@ -58,7 +57,6 @@ final readonly class ContentController
         private AdminControllerSupport $support,
         private ContentTargetResolver $resolver,
         private ContentWriter $writer,
-        private HeadingChecker $headings,
         private ContentScreen $screen,
         private GenerationRunner $runner,
         private SectionUpdate $sectionUpdate,
@@ -263,7 +261,7 @@ final readonly class ContentController
         $this->denyUnlessMayChange();
 
         try {
-            $this->writer->publish($target->contentTarget());
+            $warnings = $this->writer->publish($target->contentTarget());
         } catch (InvalidDocumentException $exception) {
             foreach ($exception->translated($this->translator) as $problem) {
                 $this->support->flash($request, 'danger', $problem);
@@ -284,9 +282,9 @@ final readonly class ContentController
         }
 
         // In `warn` mode the content went online and its author is told what
-        // to fix; the writer refused it in `block` mode above.
-        foreach ($this->headings->check($target->draftHtml(), underTitle: true) as $problem) {
-            $this->support->flash($request, 'warning', $problem);
+        // to fix in it; the writer refused it in `block` mode above.
+        foreach ($warnings as $warning) {
+            $this->support->flash($request, 'warning', $warning);
         }
 
         $this->support->flash($request, 'success', $target->online());

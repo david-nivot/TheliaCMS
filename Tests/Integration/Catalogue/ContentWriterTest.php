@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace TheliaCMS\Tests\Integration\Catalogue;
 
 use Propel\Runtime\ActiveQuery\Criteria;
+use Symfony\Component\Clock\Test\ClockSensitiveTrait;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Thelia\Core\Event\Folder\FolderDeleteEvent;
 use Thelia\Core\Event\TheliaEvents;
@@ -41,6 +42,8 @@ use TheliaCMS\TheliaCMS;
  */
 final class ContentWriterTest extends CmsIntegrationTestCase
 {
+    use ClockSensitiveTrait;
+
     private const int PRODUCT_ID = 987654;
 
     public function testSavingWritesTheDraftAndLeavesTheItemOffline(): void
@@ -78,6 +81,22 @@ final class ContentWriterTest extends CmsIntegrationTestCase
             $this->contents()->publishedHtml(CatalogueItemType::Product, self::PRODUCT_ID, $this->locale()),
             'The same id of another type is another item.',
         );
+    }
+
+    public function testAnItemJustPublishedIsNotModifiedSincePublication(): void
+    {
+        // Frozen far from the real time: the edit date has to come from the
+        // same instant as the publication date, not from a second reading of
+        // the clock when the row is saved.
+        self::mockTime('2020-01-15 10:00:00');
+        $target = $this->itemTarget(CatalogueItemType::Product, self::PRODUCT_ID, $this->locale());
+        $this->itemWriter()->saveContent($target, Document::richText('<h2>Titre</h2><p>Texte</p>'));
+        $this->itemWriter()->publish($target);
+
+        $content = $this->contents()->find(CatalogueItemType::Product, self::PRODUCT_ID, $this->locale());
+
+        self::assertEquals($content?->getPublishedAt(), $content?->getUpdatedAt());
+        self::assertSame(ItemContentStatus::Published, ItemContentStatus::resolve($content));
     }
 
     public function testUnpublishingDropsTheSnapshotAndKeepsTheDraft(): void

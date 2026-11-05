@@ -204,7 +204,14 @@ final readonly class DocumentChecker
                 continue;
             }
 
-            $existing[$this->recordKind($candidate['kind'], $candidate['prop'])][] = (int) $candidate['id'];
+            $kind = $this->recordKind($candidate['kind'], $candidate['prop']);
+
+            // A reference that names no kind of record cannot be looked up.
+            if (null === $kind) {
+                continue;
+            }
+
+            $existing[$kind][] = (int) $candidate['id'];
         }
 
         foreach ($existing as $kind => $ids) {

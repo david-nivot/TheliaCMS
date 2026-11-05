@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace TheliaCMS\Catalogue\Admin;
 
 use Propel\Runtime\Connection\ConnectionInterface;
+use Symfony\Component\Clock\Clock;
 use TheliaCMS\Content\Editing\ContentRow;
 use TheliaCMS\Content\Editing\ContentSnapshot;
 use TheliaCMS\Model\CmsItemContent;
@@ -80,10 +81,16 @@ final readonly class ItemContentRow implements ContentRow
 
     public function publish(string $html, ConnectionInterface $connection): ContentSnapshot
     {
+        // One instant for both columns: left to itself, the timestampable
+        // behaviour reads the clock again on save, and a second turning in
+        // between would date the edit after the publication.
+        $now = Clock::get()->now();
+
         $this->content->setPublishedDocument($this->content->getDraftDocument())
             ->setPublishedHtml($html)
             ->setPublishedProvenance($this->content->getDraftProvenance())
-            ->setPublishedAt(new \DateTimeImmutable())
+            ->setPublishedAt($now)
+            ->setUpdatedAt($now)
             ->save($connection);
 
         return new ContentSnapshot($this->content->getPublishedDocument(), $this->content->getPublishedHtml(), $this->content->getPublishedProvenance());

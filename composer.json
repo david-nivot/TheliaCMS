@@ -8,6 +8,7 @@
         "thelia/core": "^3.3",
         "thelia/installer": "~1.6",
         "smalot/pdfparser": "^2.13",
+        "symfony/clock": "^7.4|^8.0",
         "symfony/html-sanitizer": "^7.4",
         "thelia/thelia-library-module": "^2.0"
     },

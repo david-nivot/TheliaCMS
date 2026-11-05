@@ -42,6 +42,29 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Fixed
 
+- **A page written in a second language and published has an address there.**
+  A page translated from its content screen and published without its settings
+  being saved in that language was online in it with no address of its own:
+  only a technical link (`/?view=cmspage&lang=…`) reached it, and it had no
+  place under the address of its parent. Publishing, from any screen or with
+  `thelia_cms:publish`, now gives the page the address it lacks in that
+  language, by the rules of the settings screen: the slug comes from the title
+  of that language, and a page that has none there is named `page-<id>`, which
+  its author can change in the settings. An address already there, edited or
+  not, is left as it is.
+- **A page published in `warn` mode now tells what to fix on every screen.**
+  With the heading check set to `warn`, only the content screen reported a
+  broken heading structure, and from the draft rather than from what went
+  online. The settings screen of a page and `thelia_cms:publish` published
+  without a word. They now report it too, from the HTML that actually went
+  online: the settings screen shows the warnings, and the command lists them
+  in a "Warnings" section, its `--dry-run` included.
+- **A page published at the turn of a second no longer reads "Modified since
+  publication".** The publication date and the last edit date of the page (and
+  of a product, category or folder description) were each read from the clock,
+  one after the other: when a second turned between the two, the edit came out
+  after the publication and the page showed "Modified since publication" with
+  nothing changed. Both now take the same instant.
 - **A screen of the CMS opened without being logged in leads to the login.**
   A screen under `/admin/cms` opened in the browser with no administrator
   logged in answered a bare 403, "Administrator authentication is required.",
