@@ -33,7 +33,7 @@
     <h3 id="pages-list">Trouver une page</h3>
     <p><strong>CMS &gt; Pages</strong> présente l’arbre du site un niveau à la fois. Une page qui en contient d’autres affiche leur nombre et s’ouvre sur sa flèche. Le champ <em>Trouver une page</em> cherche un mot dans les titres de la langue modifiée, et l’état de publication ou la visibilité affinent la recherche. Les flèches qui changent l’ordre des pages n’apparaissent que sur l’arbre.</p>
     <figure class="figure d-block my-3">
-        <img class="figure-img img-fluid rounded border" src="{{ module_asset('TheliaCMS', 'assets/documentation/pages-list.fr_FR.png') }}" alt="La liste des pages : l’arbre du site, avec pour chaque page son titre, son état de publication, son adresse et ses actions." loading="lazy">
+        <img class="figure-img img-fluid rounded border" src="{{ module_asset('TheliaCMS', 'assets/documentation/pages-list.fr_FR.png') }}" alt="La liste des pages : l’arbre du site, avec pour chaque page son titre, son état de publication, son adresse et ses actions." width="1440" height="900" loading="lazy">
         <figcaption class="figure-caption">La liste des pages : une ligne par page, ses actions à droite.</figcaption>
     </figure>
     <p>Chaque ligne affiche l’état de la page dans la langue modifiée : <em>Brouillon</em>, <em>Programmée</em>, <em>Publiée</em>, <em>Modifiée depuis la publication</em> ou <em>Dépubliée</em>. <em>Masquer</em> retire la page du site, dans toutes les langues ; <em>Afficher</em> la remet.</p>
@@ -89,7 +89,7 @@
     <h2>Le contenu d’une page</h2>
     <p>Le contenu se modifie sur son propre écran : <em>Modifier le contenu</em>, depuis la page. Il est fait de <strong>sections</strong> posées les unes sous les autres, chacune étant un composant (un bandeau, un texte, une liste de produits, un formulaire…). À gauche, le brief et la liste des sections ; à droite, l’aperçu montre le brouillon tel que le site l’affichera.</p>
     <figure class="figure d-block my-3">
-        <img class="figure-img img-fluid rounded border" src="{{ module_asset('TheliaCMS', 'assets/documentation/content-screen.fr_FR.png') }}" alt="L’écran de contenu : la liste des sections à gauche, l’aperçu de la page à droite." loading="lazy">
+        <img class="figure-img img-fluid rounded border" src="{{ module_asset('TheliaCMS', 'assets/documentation/content-screen.fr_FR.png') }}" alt="L’écran de contenu : la liste des sections à gauche, l’aperçu de la page à droite." width="1440" height="900" loading="lazy">
         <figcaption class="figure-caption">Les sections se règlent à gauche, l’aperçu du brouillon se lit à droite.</figcaption>
     </figure>
 
@@ -242,7 +242,7 @@
     <h3 id="site-components">Copier, garder ou supprimer un composant du site</h3>
     <p>Dans <strong>CMS &gt; Composants</strong>, le bouton <em>Modifier</em>, sur un composant créé sur ce site, ouvre son écran, avec son aperçu, ses propriétés et son historique.</p>
     <figure class="figure d-block my-3">
-        <img class="figure-img img-fluid rounded border" src="{{ module_asset('TheliaCMS', 'assets/documentation/site-component.fr_FR.png') }}" alt="L’écran d’un composant du site : son aperçu et le formulaire pour le copier dans un nouveau composant." loading="lazy">
+        <img class="figure-img img-fluid rounded border" src="{{ module_asset('TheliaCMS', 'assets/documentation/site-component.fr_FR.png') }}" alt="L’écran d’un composant du site : son aperçu et le formulaire pour le copier dans un nouveau composant." width="1440" height="900" loading="lazy">
         <figcaption class="figure-caption">L’écran d’un composant du site : l’aperçu, et le formulaire de copie en dessous.</figcaption>
     </figure>
     <ul>
@@ -291,19 +291,29 @@
     <h3 id="forms">Formulaires</h3>
     <p><strong>CMS &gt; Formulaires</strong> crée des formulaires, placés dans une page avec la section formulaire. Un champ est une ligne de texte, une adresse e-mail, plusieurs lignes, une liste déroulante, une case à cocher, un choix parmi plusieurs, un téléphone, une date ou un accord pour être recontacté. Les destinataires se règlent ici. Les robots sont écartés sans captcha. Les <em>Réponses</em> se consultent, se cherchent par adresse e-mail, s’exportent (CSV, JSON) et se suppriment ; elles sont effacées d’elles-mêmes après la durée de conservation du formulaire (365 jours par défaut).</p>
     <h3 id="media">Médias</h3>
-    <p><strong>CMS &gt; Médias</strong> range les images des pages (JPEG, PNG, WebP). Une image est refusée au-delà de 10 Mo ou de 25 millions de pixels, dans la médiathèque, dans une page et dans une section. Le texte alternatif est obligatoire dans chaque langue, sauf pour une image marquée décorative : c’est ce que lisent les lecteurs d’écran et ce qui s’affiche quand l’image ne charge pas. Chaque image indique ses dimensions, son poids et les pages qui l’utilisent ; une image utilisée ne peut pas être supprimée. À la publication, les images sont servies en plusieurs tailles et au format WebP.</p>
+    <p><strong>CMS &gt; Médias</strong> range les images des pages (JPEG, PNG, WebP, SVG). Une image est refusée au-delà de 10 Mo ou de 25 millions de pixels, dans la médiathèque, dans une page et dans une section. Le texte alternatif est obligatoire dans chaque langue, sauf pour une image marquée décorative : c’est ce que lisent les lecteurs d’écran et ce qui s’affiche quand l’image ne charge pas. Chaque image indique ses dimensions, son poids et les pages qui l’utilisent ; une image utilisée ne peut pas être supprimée. À la publication, les images sont servies en plusieurs tailles et au format WebP.</p>
     <h3 id="add-described-image">Ajouter une image décrite</h3>
     <ol>
         <li>Ouvrez <strong>CMS &gt; Médias</strong>. Déposez les fichiers sur le cadre <em>Déposez des images ici, ou choisissez-les</em>, ou cliquez sur <em>Ajouter des images</em>. Plusieurs fichiers à la fois sont possibles ; un fichier refusé est nommé avec sa raison, sans empêcher les autres.</li>
-        <li>Quand l’envoi est fini, cliquez sur <em>Décrire les N image(s) ajoutée(s)</em>.</li>
+        <li>Quand l’envoi est fini, cliquez sur <em>Décrire les N images ajoutées</em>.</li>
         <li>Pour chaque image, saisissez dans <em>Texte alternatif</em> ce qu’elle montre, pour quelqu’un qui ne la voit pas, puis appuyez sur Entrée ou cliquez sur <em>Enregistrer et suivante</em>. Une image qui ne sert qu’à décorer se marque avec <em>Elle est décorative</em> ; <em>Passer</em> la laisse pour plus tard.</li>
         <li>La description se fait pour la langue choisie avec le sélecteur : recommencez dans chaque langue du site.</li>
         <li>Placez l’image : dans l’onglet <em>Image</em> d’une page, ou dans le formulaire d’une section avec <em>Choisir dans la médiathèque</em>. La fenêtre qui s’ouvre montre les vignettes ; cherchez, filtrez, puis cliquez sur l’image. Elle indique si chaque image est <em>Décrite</em>, <em>À décrire</em> ou <em>Décorative</em>.</li>
     </ol>
     <figure class="figure d-block my-3">
-        <img class="figure-img img-fluid rounded border" src="{{ module_asset('TheliaCMS', 'assets/documentation/media-picker.fr_FR.png') }}" alt="La fenêtre pour choisir une image : des vignettes, un champ de recherche et des filtres." loading="lazy">
+        <img class="figure-img img-fluid rounded border" src="{{ module_asset('TheliaCMS', 'assets/documentation/media-picker.fr_FR.png') }}" alt="La fenêtre pour choisir une image : des vignettes, un champ de recherche et des filtres." width="1440" height="900" loading="lazy">
         <figcaption class="figure-caption">La fenêtre de choix d’une image : l’état de chaque image se lit sur sa vignette.</figcaption>
     </figure>
+    <h3 id="prepare-svg">Préparer un SVG</h3>
+    <p>Un fichier SVG n’entre pas directement dans la médiathèque : il passe d’abord par l’écran <em>Préparer le SVG</em>, un fichier à la fois. Les images JPEG, PNG et WebP envoyées avec lui sont ajoutées tout de suite, comme d’habitude. Quand plusieurs SVG sont envoyés ensemble, le haut de l’écran indique où vous en êtes (<em>Fichier 2 sur 3</em>).</p>
+    <ol>
+        <li><strong>Nettoyage</strong>, obligatoire. Ce qui pourrait s’exécuter ou charger un contenu ailleurs est retiré : scripts, gestionnaires d’événements, liens vers d’autres fichiers ou sites, contenu HTML intégré, animations. Les commentaires et les données propres au logiciel qui a produit le fichier partent aussi. La liste dit ce qui a été retiré ou ajouté (une <code>viewBox</code> qui manquait, par exemple).</li>
+        <li><strong>Optimisation</strong>, obligatoire aussi et sans perte : le fichier s’allège sans que son aspect change. Le titre et la description inscrits dans le fichier (<code>&lt;title&gt;</code>, <code>&lt;desc&gt;</code>) en sortent : c’est le texte alternatif de l’image qui décrit le dessin. C’est la seule méthode proposée pour l’instant.</li>
+        <li><em>Ajouter à la médiathèque</em> enregistre le résultat ; l’original n’est pas gardé. <em>Ne pas ajouter ce fichier</em> l’écarte. Les images ajoutées se décrivent ensuite comme les autres.</li>
+    </ol>
+    <p>L’aperçu montre l’original et le résultat côte à côte, sur un damier, un fond clair ou un fond sombre, ajustés au cadre ou agrandis 1, 4 ou 10 fois ; les deux aperçus défilent ensemble ; sous chacun, son poids, et sous le résultat le gain obtenu.</p>
+    <p>Un fichier qui ne se lit pas sans risque est refusé avec sa raison : entités déclarées, XML invalide, encodage autre qu’UTF-8, fichier qui n’est pas un SVG, plus de 5 Mo ou de 50 000 éléments, ou dessin sans dimensions. Un SVG est servi tel quel, sans tailles ni WebP, et entier : un recadrage réglé dans une section ne s’y applique pas. Pour remplacer celui d’une image, utilisez <em>Remplacer le fichier</em> sur sa fiche : le nouveau fichier passe par le même écran.</p>
+    <p>Depuis une page ou une section, <em>Envoyer une image</em> dans la fenêtre de choix accepte aussi un SVG : le même écran s’ouvre par-dessus l’éditeur, et <em>Ajouter et choisir</em> l’ajoute à la médiathèque puis le place dans le champ.</p>
     <h3 id="media-list">Retrouver et trier les images</h3>
     <p>La liste montre 48 images par page. Elle se restreint aux images encore à décrire dans la langue éditée, aux inutilisées, aux décoratives ou à une étiquette, et se trie des plus récentes aux plus anciennes, par titre ou par poids. La recherche lit le titre, le texte alternatif, la légende et les étiquettes. <em>Les décrire une à une</em> présente les images de la liste encore à décrire, une par une.</p>
     <p>Les images cochées dans la liste reçoivent ou perdent une étiquette, deviennent décoratives ou non, ou sont supprimées si rien ne les utilise ; celles encore utilisées sont gardées et nommées.</p>

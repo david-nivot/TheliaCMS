@@ -49,6 +49,39 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   publishes a home page in French and in English (where active) and sets it as the
   home page: a free text and three highlights with no picture, without the title
   band. A site with pages gets nothing new.
+- **SVG images in the media library, prepared before they are added.** The
+  library accepts SVG files next to JPEG, PNG and WebP (TheliaLibrary 2.4).
+  An SVG does not enter it straight away: it opens the **Prepare the SVG**
+  screen, one file at a time ("File 2 of 3" when several were sent; the
+  matrix images of the same sending are stored at once, as before). The
+  screen shows the original and the result side by side, on a checkerboard,
+  a light or a dark ground, fitted or zoomed 1, 4 or 10 times, and two
+  required steps:
+  - **Cleaning**: what could run or load content from elsewhere (scripts,
+    event handlers, external references, embedded HTML, animations),
+    comments and editor data leave the file; the list says what was removed
+    or added (a missing `viewBox`, the SVG namespace).
+  - **Optimization**: lossless, without any change to how the file looks
+    (titles and descriptions, unused identifiers, the clip an export adds
+    when nothing goes beyond it, needless spaces and digits).
+
+  *Add to the media library* stores the result, the original is not kept;
+  *Do not add this file* leaves it out. A file that cannot be read safely is
+  refused with its reason. *Replace the file* on the sheet of an image goes
+  through the same screen. The part of the documentation on media explains
+  the screen, and its help link leads there.
+- **An SVG sent from the image picker of the editor is prepared over it.**
+  *Send an image* in the picker of a page or a section accepts an SVG: the
+  same screen opens in a window over the editor, without the menus of the
+  back office, and *Add and choose* stores the result and puts it in the
+  field. Leaving the file out, or a file refused, closes the window and the
+  picker says why: a file the library refuses, SVG or not, shows as a warning
+  naming the file and the reason. A screen of the CMS shown in a frame opens
+  its help in a new tab.
+- **An SVG is served as it is.** In a page or a section, an SVG of the
+  library is rendered from its own file, with its width and height, without
+  `srcset`, `<picture>` or WebP, and whole: a crop set in a section does not
+  apply to it. The thumbnails of the library show the file itself.
 
 ### Changed
 
@@ -57,6 +90,19 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 - The generator's tool that searches pages and the translation of the header of a
   page no longer reach the header zone: it is offered as no link target and is
   given no address.
+- **After a sending with a refused file, the buttons say what they leave.**
+  "Stay on the list" becomes *Describe later* (the images added stay in the
+  list, to describe) or *Do not add these SVG files* (the SVG files waiting
+  to be prepared are dropped); the button that goes on names both steps of a
+  mixed sending ("Prepare the 2 SVG files, then describe the 3 images"), in
+  the singular or the plural as the count asks.
+
+### Fixed
+
+- **A help link lands on its part of the documentation the first time.** The
+  screenshots of the documentation had no size: once loaded, they grew and
+  pushed the part a help link had scrolled to out of sight. They now keep
+  their place before they load.
 
 ## [2.13.0] - 2026-11-05
 

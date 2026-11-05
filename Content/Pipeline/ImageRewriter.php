@@ -116,6 +116,12 @@ final readonly class ImageRewriter
             return;
         }
 
+        if ($media->isVector()) {
+            $this->rewriteVector($image, $media);
+
+            return;
+        }
+
         $zone = $this->declaredZone($image, $media);
         $attributes = $this->attributes($media, $this->declaredSizes($image), $this->declaredHeight($image), $zone);
 
@@ -183,6 +189,22 @@ final readonly class ImageRewriter
     }
 
     /**
+     * An SVG is served as the file it is: no resized copy, no other format. It
+     * keeps its own address, its intrinsic size, and neither `srcset` nor
+     * `<picture>`, whose candidates the library would refuse.
+     */
+    private function rewriteVector(\DOMElement $image, MediaFile $media): void
+    {
+        $image->setAttribute('src', $this->url($media, null, null, $media->format));
+        $image->removeAttribute('srcset');
+        $image->removeAttribute('sizes');
+
+        foreach ($this->attributes($media) as $name => $value) {
+            $image->setAttribute($name, $value);
+        }
+    }
+
+    /**
      * The attributes of an image of the library that make it responsive: the
      * intrinsic size, the set of widths and what they are chosen by. What
      * `rewrite()` writes on every image of a page, for a template that draws
@@ -192,11 +214,18 @@ final readonly class ImageRewriter
      * @param string|null                                $height the fixed height it is drawn at, in the form of `data-cms-height`
      * @param array{x: int, y: int, w: int, h: int}|null $zone   the part of the file that is served, in its pixels; the candidates and the intrinsic size are then those of the zone
      *
-     * @return array<string, string> `width` and `height` when the library knows them, `srcset` and `sizes` when it knows the width
+     * @return array<string, string> `width` and `height` when the library knows them, `srcset` and `sizes` when it knows the width (neither for an SVG, served as it is)
      */
     public function attributes(MediaFile $media, ?string $sizes = null, ?string $height = null, ?array $zone = null): array
     {
         $attributes = [];
+
+        if ($media->isVector()) {
+            // Served whole whatever the zone or the widths: only its size is known to the page.
+            return null !== $media->width && null !== $media->height
+                ? ['width' => (string) $media->width, 'height' => (string) $media->height]
+                : [];
+        }
 
         if (null !== $zone) {
             $attributes['width'] = (string) $zone['w'];

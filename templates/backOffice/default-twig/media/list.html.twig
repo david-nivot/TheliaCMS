@@ -17,14 +17,20 @@
           data-accepted="{{ accepted_mime_types }}"
           data-max-size="{{ max_upload_size }}"
           data-describe-url="{{ path('admin.cms.media.describe', { edit_language_id: edit_language_id }) }}"
+          data-prepare-url="{{ path('admin.cms.media.svg.show', { token: token_placeholder, edit_language_id: edit_language_id }) }}"
+          data-token-placeholder="{{ token_placeholder }}"
           data-messages="{{ {
               sending: 'Sending…'|trans({}, 'theliacms'),
               added: 'Added'|trans({}, 'theliacms'),
-              format: 'Only JPEG, PNG and WebP images can be uploaded.'|trans({}, 'theliacms'),
+              format: 'Only JPEG, PNG, WebP and SVG images can be uploaded.'|trans({}, 'theliacms'),
+              prepared: 'To prepare'|trans({}, 'theliacms'),
+              prepare: 'Prepare the SVG file|Prepare the %count% SVG files'|trans({}, 'theliacms'),
+              thenDescribe: ', then describe the image|, then describe the %count% images'|trans({}, 'theliacms'),
+              dropSvg: 'Do not add this SVG file|Do not add these SVG files'|trans({}, 'theliacms'),
               tooLarge: max_upload_refusal|trans({}, 'theliacms'),
               failed: 'The file did not arrive whole. Send it again.'|trans({}, 'theliacms'),
-              describe: 'Describe the %count% image(s) added'|trans({}, 'theliacms'),
-              stay: 'Stay on the list'|trans({}, 'theliacms'),
+              describe: 'Describe the image added|Describe the %count% images added'|trans({}, 'theliacms'),
+              describeLater: 'Describe later'|trans({}, 'theliacms'),
           }|json_encode }}">
         <input type="hidden" name="_token" value="{{ assignToken() }}">
         <div class="d-flex flex-wrap gap-3 align-items-center">
@@ -33,7 +39,7 @@
                 <label class="form-label mb-1 fw-medium" for="cms-media-files">{{ 'Drop images here, or choose them'|trans({}, 'theliacms') }}</label>
                 <input class="form-control" type="file" id="cms-media-files" name="files[]" multiple
                        accept="{{ accepted_mime_types }}" onchange="this.form.requestSubmit()">
-                <div class="form-text">{{ 'JPEG, PNG or WebP. Several at once.'|trans({}, 'theliacms') }}</div>
+                <div class="form-text">{{ 'JPEG, PNG, WebP or SVG. Several at once.'|trans({}, 'theliacms') }}</div>
             </div>
             <button type="submit" class="btn btn-primary text-nowrap" data-cms-media-upload-submit>
                 <i class="bi bi-upload me-1" aria-hidden="true"></i>{{ 'Add images'|trans({}, 'theliacms') }}

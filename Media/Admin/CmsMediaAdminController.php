@@ -23,6 +23,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Model\Lang;
 use TheliaCMS\Catalogue\CatalogueItems;
@@ -30,8 +31,10 @@ use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Media\CmsMediaLibrary;
 use TheliaCMS\Media\MediaFilter;
 use TheliaCMS\Media\MediaOrder;
+use TheliaCMS\Media\Svg\SvgUpload;
 use TheliaCMS\Page\Admin\EditLanguage;
 use TheliaCMS\Security\CmsResources;
+use TheliaLibrary\Exception\UnreadableSvgException;
 use TheliaLibrary\Model\LibraryImage;
 use Twig\Environment;
 
@@ -58,6 +61,7 @@ final readonly class CmsMediaAdminController
         private CmsMediaWriter $writer,
         private EditLanguage $languages,
         private CatalogueItems $items,
+        private UrlGeneratorInterface $urls,
     ) {
     }
 
@@ -76,7 +80,9 @@ final readonly class CmsMediaAdminController
             'orders' => MediaOrder::cases(),
             'tags' => $this->library->tagCounts(),
             'has_library' => $tally->total > 0,
-            'accepted_mime_types' => implode(',', CmsMediaType::ACCEPTED_MIME_TYPES),
+            'accepted_mime_types' => implode(',', CmsMediaType::LIBRARY_ACCEPTED_TYPES),
+            // The script puts the token of a prepared SVG where this one stands.
+            'token_placeholder' => SvgPreparationController::TOKEN_PLACEHOLDER,
             'max_upload_size' => min(CmsMediaType::MAX_IMAGE_BYTES, (int) UploadedFile::getMaxFilesize()),
             // The screen refuses a file above that size before sending it: it
             // names the limit that stops it, the ceiling of the module or PHP's.
@@ -159,6 +165,16 @@ final readonly class CmsMediaAdminController
                     'id' => (int) $image->getId(),
                     'title' => (string) $image->setLocale($lang->getLocale())->getTitle(),
                 ], $upload->stored),
+                'prepared' => $upload->prepared,
+                // The picker of the editor opens this screen in a frame, which
+                // hands the image added back to it.
+                'prepare' => [] === $upload->prepared ? null : $this->urls->generate('admin.cms.media.svg.show', SvgPreparationController::parameters(
+                    $upload->preparedTokens(),
+                    $upload->storedIds(),
+                    null,
+                    $lang->getId(),
+                    picker: $request->query->getBoolean('picker'),
+                )),
                 'refused' => $this->refusals($upload),
             ], [] === $files ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK);
         }
@@ -171,6 +187,18 @@ final readonly class CmsMediaAdminController
             $this->support->flash($request, 'warning', $this->support->translate(
                 'Not added: %files%.',
                 ['%files%' => implode(', ', array_map(static fn (array $refusal): string => $refusal['name'].' ('.$refusal['reason'].')', $this->refusals($upload)))],
+            ));
+        }
+
+        // An SVG is shown to the editor before it enters the library: the
+        // screen of the first one, then the others, then the images that were
+        // stored (they are carried along to the end of the way).
+        if ([] !== $upload->prepared) {
+            return $this->support->redirect('admin.cms.media.svg.show', SvgPreparationController::parameters(
+                $upload->preparedTokens(),
+                $upload->storedIds(),
+                null,
+                $lang->getId(),
             ));
         }
 
@@ -271,7 +299,13 @@ final readonly class CmsMediaAdminController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $this->denyUnless(AccessManager::UPDATE);
-            $this->writer->save($image, $locale, $form->getData());
+            $data = $form->getData();
+            $svg = $data['file'] instanceof UploadedFile && SvgUpload::isSvg($data['file']) ? $data['file'] : null;
+            $this->writer->save($image, $locale, $data);
+
+            if (null !== $svg) {
+                return $this->replaceWithSvg($request, $lang, $id, $svg);
+            }
 
             return $this->support->redirect('admin.cms.media.edit', [
                 'id' => $id,
@@ -292,6 +326,32 @@ final readonly class CmsMediaAdminController
             'edit_locale' => $locale,
             'edit_language_id' => $lang->getId(),
         ]));
+    }
+
+    /**
+     * The other fields are saved; the file is shown on the preparation screen,
+     * and replaces the image once the editor has seen what is stored.
+     */
+    private function replaceWithSvg(Request $request, Lang $lang, int $id, UploadedFile $file): RedirectResponse
+    {
+        try {
+            $token = $this->writer->prepareSvg($file);
+            $refusal = null === $token ? MediaUploadRefusal::Failed : null;
+        } catch (UnreadableSvgException $exception) {
+            $token = null;
+            $refusal = MediaUploadRefusal::forUnreadableSvg($exception->reason);
+        }
+
+        if (null === $token) {
+            $this->support->flash($request, 'warning', $this->support->translate(
+                'Saved, but the file was not replaced: %reason%',
+                ['%reason%' => $this->support->translate(($refusal ?? MediaUploadRefusal::Failed)->message())],
+            ));
+
+            return $this->support->redirect('admin.cms.media.edit', ['id' => $id, self::EDIT_LANGUAGE_PARAMETER => $lang->getId()]);
+        }
+
+        return $this->support->redirect('admin.cms.media.svg.show', SvgPreparationController::parameters([$token], [], $id, $lang->getId()));
     }
 
     /**

@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Tests\Integration\Page;
 
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Test\FixtureFactory;
 use TheliaCMS\Media\CmsMediaLibrary;
@@ -22,6 +23,7 @@ use TheliaCMS\Model\CmsPageQuery;
 use TheliaCMS\Model\Map\CmsPageTableMap;
 use TheliaCMS\Security\CmsResources;
 use TheliaCMS\Tests\Integration\Security\AdminScreenTestCase;
+use TheliaCMS\TheliaCMS;
 use TheliaLibrary\Model\LibraryImage;
 
 /**
@@ -40,6 +42,23 @@ final class PageImagePickerTest extends AdminScreenTestCase
         self::assertSame('number', $field->attr('type'));
         self::assertStringEndsWith('/admin/cms/media/picker', (string) $field->attr('data-cms-image-picker'));
         self::assertStringEndsWith('/admin/cms/media', (string) $field->attr('data-cms-image-upload'));
+    }
+
+    /**
+     * A file the picker sends and the library refuses is told apart from the
+     * grey line of the grid: its script receives the words naming the file
+     * and the reason, and those of a sending that did not arrive.
+     */
+    public function testThePickerReceivesTheWordsOfARefusal(): void
+    {
+        $page = $this->createPage('Refus', published: false);
+        $messages = json_decode($this->screen($this->settings($page))->filter('script[data-cms-media-picker-messages]')->text(), true, flags: \JSON_THROW_ON_ERROR);
+        $translator = $this->getService(TranslatorInterface::class);
+
+        self::assertSame($translator->trans('“%name%” was not added: %reason%', [], TheliaCMS::DOMAIN_NAME), $messages['refused']);
+        self::assertStringContainsString('%name%', $messages['refused']);
+        self::assertStringContainsString('%reason%', $messages['refused']);
+        self::assertSame($translator->trans('The file did not arrive whole. Send it again.', [], TheliaCMS::DOMAIN_NAME), $messages['sendFailed']);
     }
 
     public function testWithoutTheRightToAddMediaThePickerSendsNothing(): void

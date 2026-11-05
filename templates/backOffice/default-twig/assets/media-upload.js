@@ -8,9 +8,12 @@
  * checked here first, so a file the server would refuse is not sent; the
  * server checks again.
  *
- * Once every file is answered, the describe queue opens on the images just
- * added. When a file was refused, the screen stays, so the editor reads why,
- * and offers the queue.
+ * An SVG is not stored by its sending: the server keeps it apart under a
+ * token, and the row says it is to prepare. Once every file is answered, the
+ * preparation screen opens on the first of them, the others and the images
+ * already added behind it in the address; without SVG, the describe queue
+ * opens on the images just added. When a file was refused, the screen stays,
+ * so the editor reads why, and offers the way on.
  */
 (function () {
     'use strict';
@@ -37,7 +40,17 @@
         var accepted = (form.getAttribute('data-accepted') || '').split(',');
         var maxSize = parseInt(form.getAttribute('data-max-size') || '0', 10);
         var describeUrl = form.getAttribute('data-describe-url');
-        var m = JSON.parse(form.getAttribute('data-messages') || '{}');
+        var prepareUrl = form.getAttribute('data-prepare-url');
+        var placeholder = form.getAttribute('data-token-placeholder');
+        var m = {};
+
+        // Words the page could not hand over leave the screen working, wordless.
+        try {
+            m = JSON.parse(form.getAttribute('data-messages') || '{}');
+        } catch (error) {
+            m = {};
+        }
+
         var busy = false;
 
         // The form is sent by the script now, not on change.
@@ -71,8 +84,14 @@
             send(Array.prototype.slice.call(event.dataTransfer ? event.dataTransfer.files : []));
         });
 
+        // Some systems give an SVG file no type: its name then decides.
+        function isAccepted(file) {
+            return accepted.indexOf(file.type) !== -1
+                || (accepted.indexOf('.svg') !== -1 && /\.svg$/i.test(file.name));
+        }
+
         function refusalOf(file) {
-            if (accepted.indexOf(file.type) === -1) {
+            if (!isAccepted(file)) {
                 return m.format;
             }
 
@@ -99,6 +118,12 @@
 
             return {
                 progress: function (ratio) { fill.style.width = Math.round(ratio * 100) + '%'; },
+                prepared: function () {
+                    fill.style.width = '100%';
+                    fill.classList.add('bg-warning');
+                    status.className = 'text-nowrap text-warning-emphasis';
+                    status.textContent = m.prepared;
+                },
                 added: function () {
                     fill.style.width = '100%';
                     fill.classList.add('bg-success');
@@ -143,7 +168,14 @@
 
                     if (request.status === 200 && answer && answer.stored && answer.stored.length > 0) {
                         view.added();
-                        resolve(answer.stored[0].id);
+                        resolve({ id: answer.stored[0].id });
+
+                        return;
+                    }
+
+                    if (request.status === 200 && answer && answer.prepared && answer.prepared.length > 0) {
+                        view.prepared();
+                        resolve({ token: answer.prepared[0].token });
 
                         return;
                     }
@@ -170,6 +202,7 @@
             done.replaceChildren();
 
             var stored = [];
+            var prepared = [];
             var refused = 0;
 
             files.reduce(function (previous, file) {
@@ -184,22 +217,73 @@
                         return null;
                     }
 
-                    return upload(file, view).then(function (id) {
-                        if (id) {
-                            stored.push(id);
+                    return upload(file, view).then(function (answer) {
+                        if (answer && answer.token) {
+                            prepared.push(answer.token);
+                        } else if (answer) {
+                            stored.push(answer.id);
                         } else {
                             refused++;
                         }
                     });
                 });
             }, Promise.resolve()).then(function () {
+                finish(stored, prepared, refused);
+            }).finally(function () {
+                // Whatever happened, the next drop is taken.
                 busy = false;
-                finish(stored, refused);
             });
         }
 
-        function finish(stored, refused) {
-            if (stored.length === 0) {
+        // The address of the preparation screen of the first SVG: the others
+        // and the images added so far follow it, to be taken up at its end.
+        function prepareQueue(stored, prepared) {
+            var url = prepareUrl.replace(placeholder, prepared[0]);
+
+            if (prepared.length > 1) {
+                url += '&queue=' + prepared.slice(1).join(',') + '&of=' + prepared.length;
+            }
+
+            if (stored.length > 0) {
+                url += '&images=' + stored.join(',');
+            }
+
+            return url;
+        }
+
+        // A message in the two forms of the translation files, "one|many",
+        // with %count% filled: the first form for one item, the second for more.
+        function counted(message, count) {
+            var forms = (message || '').split('|');
+
+            return (count === 1 || forms.length === 1 ? forms[0] : forms[1]).replace('%count%', String(count));
+        }
+
+        function finish(stored, prepared, refused) {
+            if (stored.length === 0 && prepared.length === 0) {
+                return;
+            }
+
+            if (prepared.length > 0) {
+                var prepare = prepareQueue(stored, prepared);
+
+                if (refused === 0) {
+                    window.location.assign(prepare);
+
+                    return;
+                }
+
+                // The images of a mixed sending are stored already: the queue
+                // comes to them after the SVG files, and leaving drops only
+                // the SVG files, which wait under their token.
+                var go = element('a', 'btn btn-sm btn-primary', counted(m.prepare, prepared.length) + (stored.length > 0 ? counted(m.thenDescribe, stored.length) : ''));
+                go.href = prepare;
+                go.setAttribute('data-cms-media-upload-prepare', '');
+                var remain = element('a', 'btn btn-sm btn-outline-secondary', counted(m.dropSvg, prepared.length));
+                remain.href = window.location.href;
+                done.append(go, remain);
+                done.classList.remove('d-none');
+
                 return;
             }
 
@@ -211,10 +295,11 @@
                 return;
             }
 
-            var describe = element('a', 'btn btn-sm btn-primary', (m.describe || '').replace('%count%', String(stored.length)));
+            var describe = element('a', 'btn btn-sm btn-primary', counted(m.describe, stored.length));
             describe.href = queue;
             describe.setAttribute('data-cms-media-upload-describe', '');
-            var stay = element('a', 'btn btn-sm btn-outline-secondary', m.stay);
+            // The images stay in the list, to describe.
+            var stay = element('a', 'btn btn-sm btn-outline-secondary', m.describeLater);
             stay.href = window.location.href;
             done.append(describe, stay);
             done.classList.remove('d-none');

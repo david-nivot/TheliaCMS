@@ -243,6 +243,56 @@ final class ImageRewriterTest extends TestCase
         self::assertStringContainsString('<source type="image/webp" srcset="/image-library/8/full/max/0/default.webp"', $html);
     }
 
+    public function testServesAnSvgAsTheFileItIsWithItsSizeAndNothingElse(): void
+    {
+        $html = $this->rewrite(
+            '<p><img src="/image-library/9/full/max/0/default.svg" alt="A logo"></p>',
+            new MediaFile(id: 9, format: 'svg', width: 1600, height: 900),
+        );
+
+        self::assertStringNotContainsString('<picture', $html);
+        self::assertStringNotContainsString('<source', $html);
+        self::assertStringNotContainsString('srcset', $html);
+        self::assertStringNotContainsString('sizes=', $html);
+        self::assertStringNotContainsString('webp', $html);
+        self::assertStringContainsString('src="/image-library/9/full/max/0/default.svg"', $html);
+        self::assertStringContainsString('width="1600"', $html);
+        self::assertStringContainsString('height="900"', $html);
+        self::assertStringContainsString('loading="lazy"', $this->rewrite('<img src="/image-library/9/full/max/0/default.svg" alt=""><img src="/image-library/9/full/max/0/default.svg" alt="">', new MediaFile(id: 9, format: 'svg', width: 10, height: 10)), 'The loading hints still apply.');
+    }
+
+    public function testAnSvgNeverAsksTheLibraryForAnotherFormatOrAZone(): void
+    {
+        $html = $this->rewrite(
+            '<img src="/image-library/9/160,0,800,450/480,270/0/default.webp" alt="" srcset="/image-library/9/full/480,270/0/default.webp 480w" sizes="100vw" data-cms-crop="35,20,200,960,540">',
+            new MediaFile(id: 9, format: 'svg', width: 1600, height: 900),
+        );
+
+        self::assertStringContainsString('src="/image-library/9/full/max/0/default.svg"', $html);
+        self::assertSame(1, substr_count($html, '/image-library/'));
+        self::assertStringNotContainsString('srcset', $html);
+        self::assertStringNotContainsString('sizes=', $html);
+        self::assertStringNotContainsString('data-cms-crop', $html);
+        self::assertStringContainsString('width="1600" height="900"', $html);
+    }
+
+    public function testAnSvgOfUnknownSizeCarriesNoDimension(): void
+    {
+        $html = $this->rewrite('<img src="/image-library/9/full/max/0/default.svg" alt="">', new MediaFile(id: 9, format: 'svg'));
+
+        self::assertStringNotContainsString('width=', $html);
+        self::assertStringNotContainsString('<picture', $html);
+    }
+
+    public function testTheAttributesOfAnSvgAreItsSizeOnly(): void
+    {
+        $rewriter = new ImageRewriter($this->resolver(null));
+
+        self::assertSame(['width' => '1600', 'height' => '900'], $rewriter->attributes(new MediaFile(id: 9, format: 'svg', width: 1600, height: 900), '50vw', '4rem', ['x' => 0, 'y' => 0, 'w' => 800, 'h' => 450]));
+        self::assertSame([], $rewriter->attributes(new MediaFile(id: 9, format: 'SVG')));
+        self::assertArrayHasKey('srcset', $rewriter->attributes(new MediaFile(id: 9, format: 'png', width: 1600, height: 900)), 'A raster image is unchanged.');
+    }
+
     public function testLeavesAnImageTheLibraryDoesNotOwnUntouchedApartFromLoadingHints(): void
     {
         $html = $this->rewrite(

@@ -1,0 +1,20 @@
+{#
+    The end of a preparation opened from the image picker of the editor, in
+    its frame (SvgPreparationController::picked): the image added, or why there
+    is none, handed to the picker around it, which only listens to its own
+    origin and to this frame.
+#}
+<!doctype html>
+<html lang="{{ app.request.locale|default('en')|slice(0, 2) }}">
+<head>
+    <meta charset="utf-8">
+    <title>{{ 'Prepare the SVG'|trans({}, 'theliacms') }}</title>
+</head>
+<body data-testid="cms-svg-picked">
+    {% if message %}<p>{{ message }}</p>{% endif %}
+    <script type="application/json" data-cms-svg-picked>{{ { type: 'cms-svg-picked', image: image, message: message }|json_encode(constant('JSON_HEX_TAG') b-or constant('JSON_HEX_AMP') b-or constant('JSON_HEX_APOS') b-or constant('JSON_HEX_QUOT'))|raw }}</script>
+    <script>
+        window.parent.postMessage(JSON.parse(document.querySelector('[data-cms-svg-picked]').textContent), window.location.origin);
+    </script>
+</body>
+</html>

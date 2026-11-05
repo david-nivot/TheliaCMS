@@ -27,4 +27,19 @@ final readonly class MediaFile
         public ?int $height = null,
     ) {
     }
+
+    /**
+     * Whether a stored format is a vector one: the library serves it as it is,
+     * with no resized copy and no other format, so an address built for a
+     * raster image would be refused.
+     */
+    public static function isVectorFormat(string $format): bool
+    {
+        return 'svg' === strtolower($format);
+    }
+
+    public function isVector(): bool
+    {
+        return self::isVectorFormat($this->format);
+    }
 }

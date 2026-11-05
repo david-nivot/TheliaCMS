@@ -1,6 +1,6 @@
 {# The link of a screen of the CMS to the section of the documentation that explains it (CmsDocumentationLinkHook). #}
 <p class="text-end small mb-2">
-    <a href="{{ url }}" class="link-secondary" data-testid="cms-documentation-link">
+    <a href="{{ url }}" class="link-secondary" data-testid="cms-documentation-link"{% if new_tab|default(false) %} target="_blank" rel="noopener"{% endif %}>
         <i class="bi bi-question-circle me-1" aria-hidden="true"></i>{{ label }}
     </a>
 </p>
