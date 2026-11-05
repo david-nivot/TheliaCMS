@@ -40,7 +40,6 @@ use TheliaCMS\Generation\GenerationException;
 use TheliaCMS\Generation\GenerationLog;
 use TheliaCMS\Generation\GenerationTargets;
 use TheliaCMS\Http\Admin\AdminControllerSupport;
-use TheliaCMS\Model\CmsComponentQuery;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Page\Admin\CmsPageAdminRepository;
 use TheliaCMS\Page\Admin\CmsPageWriter;
@@ -154,7 +153,7 @@ final readonly class CmsPageComponentController
             return new RedirectResponse(self::withCandidate($screen, $candidate->logId));
         }
 
-        $this->candidates->attach([$candidate->logId], (int) CmsComponentQuery::create()->findOneByCode($component->code)?->getId());
+        $this->candidates->attach([$candidate->logId], $this->components->idOf($component->code));
 
         // The catalogue of this request was built before the row existed.
         $this->catalog->reset();
