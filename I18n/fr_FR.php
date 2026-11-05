@@ -624,6 +624,7 @@ return [
     'This is not an IP address or a range: %s' => 'Ceci n’est pas une adresse IP ni une plage : %s',
     'This is not a phone number.' => 'Ceci n’est pas un numéro de téléphone.',
     'This is not valid JSON.' => 'Ce n’est pas du JSON valide.',
+    'This is the home page: it is served at the root of the site, so it has no address to set.' => 'Cette page est la page d’accueil : elle est servie à la racine du site, elle n’a donc pas d’adresse à régler.',
     'This is where the measurement tags, the chat widget and the ad pixels go, instead of into the theme.' => 'C’est ici que se placent les balises de mesure, le module de discussion et les pixels publicitaires, plutôt que dans le thème.',
     'This menu has no entry yet. Add the first one with the form beside.' => 'Ce menu n’a encore aucune entrée. Ajoutez la première avec le formulaire à côté.',
     'This page has no content yet' => 'Cette page n\'a pas encore de contenu',

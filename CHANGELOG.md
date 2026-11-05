@@ -67,6 +67,12 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   of pages still showing sample text named a page by its title in the language of the
   screen, and by its number when it had no title there; it now takes the title of the
   language the link opens, then the one of the screen.
+- **The home page no longer shows an address to set.** The settings screen of
+  the page set as the home page offered the slug and the fixed address, though
+  the page is served at the root of the site and answers on neither. Both
+  fields are now left out, with a note saying why; saving the page keeps the
+  address it has in every language, so the fields are back, filled as they
+  were, on a page that stops being the home page. No schema change.
 - **The command keeps the draft a generation replaces.** `thelia_cms:generate`
   overwrote the draft of the language it wrote; it now keeps it with the
   previous drafts first, as the content screen does.

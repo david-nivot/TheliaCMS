@@ -105,6 +105,28 @@ final class CmsPageTypeTest extends TestCase
         self::assertFalse($form->get('tag')->isValid());
     }
 
+    public function testTheHomePageHasNoAddressFieldAndOtherPagesHaveBoth(): void
+    {
+        $home = $this->createForm(['is_home' => true]);
+
+        self::assertFalse($home->has('slug'));
+        self::assertFalse($home->has('fixedUrl'));
+        self::assertTrue($home->has('title'));
+
+        $ordinary = $this->createForm();
+
+        self::assertTrue($ordinary->has('slug'));
+        self::assertTrue($ordinary->has('fixedUrl'));
+    }
+
+    public function testTheFormOfTheHomePageIsValidWithoutAnAddress(): void
+    {
+        $form = $this->createForm(['is_home' => true]);
+        $form->submit(['title' => 'Accueil', 'parent' => '0'], false);
+
+        self::assertTrue($form->isValid());
+    }
+
     public function testTheUploadFieldIsThereOnlyWhenUploadingIsAllowed(): void
     {
         self::assertFalse($this->createForm()->has('imageUpload'));
