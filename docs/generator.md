@@ -120,9 +120,11 @@ document: it is said, and the editor mends it where it shows. A problem of shape
 keeps failing the generation after the corrections, as before.
 
 A page written from a brief and a page translated are also asked for the title
-and the description search engines show: two optional properties of the
-envelope, `meta_title` (60 characters at most) and `meta_description` (155), read
-as plain text on one line. They are written to `cms_page_i18n`, in the language
+and the description search engines show: two properties of the envelope,
+`meta_title` (60 characters at most) and `meta_description` (155), read as plain
+text on one line. They are required when asked, an empty string saying there is
+nothing to propose: held to a strict schema, the model leaves an optional key
+out, and none was written on the real calls checked while they were optional. They are written to `cms_page_i18n`, in the language
 of the call, only where the page holds none yet in that language
 (`CmsPageWriter::saveSeo()`): what an editor wrote is never replaced, and they
 are live as soon as saved, like the fields of the page type. One that is empty or
@@ -134,11 +136,12 @@ a line of their own, as JSON, and writes them unless `--dry-run`.
 A **translated page** is also asked for its own header, in the same call: the
 title, the summary (`chapo`), the description and the two sharing texts
 (`og_title`, `og_description`) of the page in the source language go in the
-prompt (`Generation/PageHeader`), and the answer carries up to five optional
-properties, `title`, `summary`, `description`, `og_title`, `og_description`. The
+prompt (`Generation/PageHeader`), and the answer carries five properties,
+required when asked for the same reason, `title`, `summary`, `description`,
+`og_title`, `og_description` (an empty string for nothing to propose). The
 titles are read as plain text on one line (255 characters at most), the sharing
 description likewise, the summary and the description as HTML; one that is
-empty, not a string or longer than its limit is ignored, never a reason for a
+empty (an HTML field with no text included), not a string or longer than its limit is ignored, never a reason for a
 correction turn. Only a page whose source header says something is asked, and
 only a page: the header of a catalogue item is the core's. The writer
 (`CmsPageWriter::saveTranslatedHeader()`, done by `PageHeaderTranslator`) **fills

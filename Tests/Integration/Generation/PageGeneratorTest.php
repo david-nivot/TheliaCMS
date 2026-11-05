@@ -166,7 +166,7 @@ final class PageGeneratorTest extends CmsIntegrationTestCase
         self::assertSame(['anthropic' => ['effort' => 'high']], $first->providerOptions);
         self::assertSame($settings->maxTokens(), $first->maxOutputTokens);
         self::assertSame('cms_page', $first->outputSchema?->name);
-        self::assertSame(['version', 'sections'], $first->outputSchema?->schema['required']);
+        self::assertSame(['version', 'sections', 'meta_title', 'meta_description'], $first->outputSchema?->schema['required'], 'The search fields asked for are required.');
         self::assertSame($this->getService(DocumentSchema::class)->strict([], false, true), $first->outputSchema->schema, 'A page written from a brief is also asked for its search fields.');
         self::assertStringContainsString('# Skills', (string) $first->system);
         self::assertStringContainsString('## `cms:richtext`', (string) $first->system);
@@ -757,8 +757,8 @@ final class PageGeneratorTest extends CmsIntegrationTestCase
 
         $request = $this->api->requests[0];
         self::assertContains('meta_title', array_keys($request->outputSchema?->schema['properties'] ?? []));
-        self::assertNotContains('meta_title', $request->outputSchema->schema['required'], 'Both are optional.');
-        self::assertNotContains('meta_description', $request->outputSchema->schema['required']);
+        self::assertContains('meta_title', $request->outputSchema->schema['required'], 'Both are required when asked: a model held to a strict schema leaves an optional key out.');
+        self::assertContains('meta_description', $request->outputSchema->schema['required']);
         self::assertStringContainsString('# What search engines show', $request->messages[0]->content);
         self::assertSame(['meta_title' => 'Conseil en stratégie', 'meta_description' => 'Des services de conseil pour les PME.'], $brief->seo, 'Plain text, on one line.');
 
@@ -805,6 +805,20 @@ final class PageGeneratorTest extends CmsIntegrationTestCase
         self::assertSame(1, $edge->turns);
     }
 
+    public function testAnHtmlFieldOfTheHeaderWithNoTextIsReadAsNothing(): void
+    {
+        $page = $this->createPage('Nos services', published: false);
+        $locale = $this->locale();
+        $otherLocale = 'fr_FR' === $locale ? 'en_US' : 'fr_FR';
+        $source = new Document([new Section('intro', RichTextSection::NAME, ['html' => '<h2>Bonjour</h2>'])]);
+
+        // Seen on a real translation: a summary empty at the source comes back as an empty paragraph.
+        $this->api->answer(FakeAiGateway::response(self::withHeader(['title' => 'Our services', 'summary' => '<p></p>', 'description' => '<p> <br> </p>', 'og_title' => '', 'og_description' => ''])));
+        $translated = $this->generator()->generate(GenerationRequest::translation(GenerationTarget::page($page, $otherLocale), $otherLocale, $source, $locale, new PageHeader('Nos services', '<p></p>', '<p></p>')));
+
+        self::assertEquals(new PageHeader('Our services'), $translated->header, 'An empty paragraph would fill an empty column with nothing to read.');
+    }
+
     public function testTheHeaderOfAPageIsAskedAndReadForATranslationWithASourceHeaderOnly(): void
     {
         $page = $this->createPage('Nos services', published: false);
@@ -821,7 +835,7 @@ final class PageGeneratorTest extends CmsIntegrationTestCase
         $request = $this->api->requests[0];
         foreach ($properties as $property) {
             self::assertContains($property, array_keys($request->outputSchema?->schema['properties'] ?? []));
-            self::assertNotContains($property, $request->outputSchema->schema['required'], 'The header is optional.');
+            self::assertContains($property, $request->outputSchema->schema['required'], 'The header asked for is required.');
         }
 
         self::assertSame(1, $translated->turns);

@@ -83,6 +83,14 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Fixed
 
+- **A translated page gets its header and its search fields for real.** The
+  header of a translated page (title, summary, description, sharing texts) and
+  the search title and description proposed for a page written from a brief or
+  translated were optional keys of the schema the answer is held to, and the
+  model left them out: on the real calls checked, none was written. They are now
+  required whenever they are asked for, an empty string saying there is nothing
+  to propose; an HTML field with no text (an empty paragraph) is read as
+  nothing, so it does not fill an empty column.
 - **A page listed by a warning is named in the language it was found in.** The list
   of pages still showing sample text named a page by its title in the language of the
   screen, and by its number when it had no title there; it now takes the title of the
