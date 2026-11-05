@@ -65,7 +65,7 @@ final readonly class CountryChoices
 
         // For a code it does not know, intl gives the code back; ZZ, above, is
         // the one it names "Unknown Region".
-        if (false === $name || $code === $name) {
+        if ($code === $name) {
             return '';
         }
 
