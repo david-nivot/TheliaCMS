@@ -279,6 +279,25 @@ each, after Q4b.
 - D4: A. Rights unchanged in Q4; the core's right on the item goes in its own change, decided with F4.
 - D5: A. Every difference between the families kept in Q4, as a capability of the target; one alignment commit per difference after Q4b.
 
+## Done (2026-11-05)
+
+- Q4a-0: tests committed alone.
+- Q4a-1 and Q4a-2 in one commit (the intermediate state of Q4a-1 was not kept apart). As built:
+  - `Content/Editing/`: `ContentKey`, `ContentSnapshot`, `Revision`, `RestorableDraft`, `RevisionStore`,
+    `ContentVersions` (renamed from `PageVersions`), `ContentRow`, `ContentTarget`, `ContentWriter`,
+    `PublishedRendering` (moved from `Page/Admin/`, returned by the shared writer).
+  - Page side: `PageRevisionStore`, `PageContentRow`, `PageContentTarget`. Item side: `ItemRevisionStore`,
+    `ItemContentRow`, `ItemContentTarget`, and `ContentTargets` (`forPage`, `forItem`, `forItemKey`), in
+    `Catalogue/Admin/` since it names both families.
+  - The target hands its revision store to `ContentVersions`; no tagged lookup of the stores.
+  - `ItemContentWriter` removed; `forget()` moved to `ItemContentRepository`.
+  - `ContentWriter` reads `CmsSettings::headingCheckBlocks()`, a first import of `Settings` in `Content/`.
+  - One D5 difference not kept, accepted by the developer: the page logs its publication after the transaction, as
+    the item does, instead of inside its `try`. The only observable case was an invalidation failing after the
+    commit, which then called `rollBack()` on a closed transaction.
+  - Not pinned by a test yet: purges and invalidations run after the commit (moving them before it keeps every
+    test green).
+
 ## Steps in order
 
 Each test is written first, run green on 9540187, then sabotaged once (the line named below) to see it red, then

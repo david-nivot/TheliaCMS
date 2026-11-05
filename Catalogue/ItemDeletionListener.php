@@ -20,7 +20,6 @@ use Thelia\Core\Event\Content\ContentDeleteEvent;
 use Thelia\Core\Event\Folder\FolderDeleteEvent;
 use Thelia\Core\Event\Product\ProductDeleteEvent;
 use Thelia\Core\Event\TheliaEvents;
-use TheliaCMS\Catalogue\Admin\ItemContentWriter;
 
 /**
  * A deleted item takes its documents with it. Listened to after the core has
@@ -30,32 +29,32 @@ use TheliaCMS\Catalogue\Admin\ItemContentWriter;
 final readonly class ItemDeletionListener
 {
     public function __construct(
-        private ItemContentWriter $writer,
+        private ItemContentRepository $contents,
     ) {
     }
 
     #[AsEventListener(event: TheliaEvents::PRODUCT_DELETE, priority: -128)]
     public function onProductDelete(ProductDeleteEvent $event): void
     {
-        $this->writer->forget(CatalogueItemType::Product, $event->getProductId());
+        $this->contents->forget(CatalogueItemType::Product, $event->getProductId());
     }
 
     #[AsEventListener(event: TheliaEvents::CATEGORY_DELETE, priority: -128)]
     public function onCategoryDelete(CategoryDeleteEvent $event): void
     {
-        $this->writer->forget(CatalogueItemType::Category, (int) $event->getCategoryId());
+        $this->contents->forget(CatalogueItemType::Category, (int) $event->getCategoryId());
     }
 
     #[AsEventListener(event: TheliaEvents::CONTENT_DELETE, priority: -128)]
     public function onContentDelete(ContentDeleteEvent $event): void
     {
-        $this->writer->forget(CatalogueItemType::Content, (int) $event->getContentId());
+        $this->contents->forget(CatalogueItemType::Content, (int) $event->getContentId());
     }
 
     #[AsEventListener(event: TheliaEvents::FOLDER_DELETE, priority: -128)]
     public function onFolderDelete(FolderDeleteEvent $event): void
     {
-        $this->writer->forget(CatalogueItemType::Folder, $event->getFolderId());
+        $this->contents->forget(CatalogueItemType::Folder, $event->getFolderId());
     }
 
     /**
@@ -72,7 +71,7 @@ final readonly class ItemDeletionListener
         $id = $event->getDealer()?->getId();
 
         if (null !== $id) {
-            $this->writer->forget(CatalogueItemType::Dealer, (int) $id);
+            $this->contents->forget(CatalogueItemType::Dealer, (int) $id);
         }
     }
 }

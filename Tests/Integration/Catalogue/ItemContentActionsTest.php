@@ -20,9 +20,9 @@ use Thelia\Model\Content;
 use Thelia\Model\Lang;
 use Thelia\Model\LangQuery;
 use Thelia\Test\FixtureFactory;
-use TheliaCMS\Catalogue\Admin\ItemContentWriter;
 use TheliaCMS\Catalogue\CatalogueItemType;
 use TheliaCMS\Content\Document;
+use TheliaCMS\Content\Editing\ContentWriter;
 use TheliaCMS\Content\Section;
 use TheliaCMS\Model\CmsItemContent;
 use TheliaCMS\Model\CmsItemContentQuery;
@@ -249,7 +249,7 @@ final class ItemContentActionsTest extends AdminScreenTestCase
         $content = $this->content();
         // A section rendered before any screen leaves the `app` global of Twig without a request.
         $this->client->request('GET', '/admin/cms/pages');
-        $this->getService(ItemContentWriter::class)->saveContent(CatalogueItemType::Content, (int) $content->getId(), $this->locale(), new Document($sections));
+        $this->getService(ContentWriter::class)->saveContent($this->itemTarget(CatalogueItemType::Content, (int) $content->getId(), $this->locale()), new Document($sections));
 
         return $content;
     }

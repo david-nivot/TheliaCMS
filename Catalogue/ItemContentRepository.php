@@ -17,9 +17,10 @@ namespace TheliaCMS\Catalogue;
 use TheliaCMS\Content\Document;
 use TheliaCMS\Model\CmsItemContent;
 use TheliaCMS\Model\CmsItemContentQuery;
+use TheliaCMS\Model\CmsItemRevisionQuery;
 
 /**
- * Reads the documents of the items of the catalogue.
+ * Reads the documents of the items of the catalogue, and forgets them with the item.
  */
 final readonly class ItemContentRepository
 {
@@ -60,5 +61,15 @@ final readonly class ItemContentRepository
         }
 
         return $drafts;
+    }
+
+    /**
+     * Forgets everything the module holds of an item the shop deleted: no
+     * foreign key ties the two (docs/adr/0011), so nothing else would.
+     */
+    public function forget(CatalogueItemType $type, int $id): void
+    {
+        CmsItemContentQuery::create()->filterByItemType($type->value)->filterByItemId($id)->delete();
+        CmsItemRevisionQuery::create()->filterByItemType($type->value)->filterByItemId($id)->delete();
     }
 }

@@ -16,10 +16,10 @@ namespace TheliaCMS\Tests\Integration\Twig;
 
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
-use TheliaCMS\Catalogue\Admin\ItemContentWriter;
 use TheliaCMS\Catalogue\CatalogueItem;
 use TheliaCMS\Catalogue\CatalogueItemType;
 use TheliaCMS\Content\Document;
+use TheliaCMS\Content\Editing\ContentWriter;
 use TheliaCMS\Preview\ItemDraftRequest;
 use TheliaCMS\Preview\ItemPreviewLink;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
@@ -38,13 +38,13 @@ final class ItemContentExtensionTest extends CmsIntegrationTestCase
 
     public function testThePublishedDocumentIsPrintedAndTheDraftIsNot(): void
     {
-        $writer = $this->getService(ItemContentWriter::class);
-        $writer->saveContent(CatalogueItemType::Product, self::PRODUCT_ID, $this->locale(), Document::richText('<h2>Questions</h2><p>En ligne.</p>'));
+        $writer = $this->getService(ContentWriter::class);
+        $writer->saveContent($this->itemTarget(CatalogueItemType::Product, self::PRODUCT_ID, $this->locale()), Document::richText('<h2>Questions</h2><p>En ligne.</p>'));
 
         self::assertSame('', $this->render("{{ cms_item_content('product', id) }}"), 'A draft never reaches the front.');
 
-        $writer->publish(CatalogueItemType::Product, self::PRODUCT_ID, $this->locale());
-        $writer->saveContent(CatalogueItemType::Product, self::PRODUCT_ID, $this->locale(), Document::richText('<h2>Questions</h2><p>Pas encore.</p>'));
+        $writer->publish($this->itemTarget(CatalogueItemType::Product, self::PRODUCT_ID, $this->locale()));
+        $writer->saveContent($this->itemTarget(CatalogueItemType::Product, self::PRODUCT_ID, $this->locale()), Document::richText('<h2>Questions</h2><p>Pas encore.</p>'));
 
         $printed = $this->render("{{ cms_item_content('product', id) }}");
 
@@ -55,24 +55,24 @@ final class ItemContentExtensionTest extends CmsIntegrationTestCase
 
     public function testAGeneratedDocumentIsWrappedInAnElementThatCarriesTheMarkAndAHandWrittenOneIsNot(): void
     {
-        $writer = $this->getService(ItemContentWriter::class);
-        $writer->saveContent(CatalogueItemType::Product, self::PRODUCT_ID, $this->locale(), Document::richText('<h2>Questions</h2><p>Écrit à la main.</p>'));
-        $writer->publish(CatalogueItemType::Product, self::PRODUCT_ID, $this->locale());
+        $writer = $this->getService(ContentWriter::class);
+        $writer->saveContent($this->itemTarget(CatalogueItemType::Product, self::PRODUCT_ID, $this->locale()), Document::richText('<h2>Questions</h2><p>Écrit à la main.</p>'));
+        $writer->publish($this->itemTarget(CatalogueItemType::Product, self::PRODUCT_ID, $this->locale()));
 
         self::assertStringNotContainsString('data-ai-generated', $this->render("{{ cms_item_content('product', id) }}"), 'A document a person wrote is printed as it always was.');
 
-        $writer->saveContent(CatalogueItemType::Product, self::PRODUCT_ID, $this->locale(), Document::richText('<h2>Questions</h2><p>Écrit par le modèle.</p>'), FakeAiGateway::provenance('theliacms.page_generation'));
+        $writer->saveContent($this->itemTarget(CatalogueItemType::Product, self::PRODUCT_ID, $this->locale()), Document::richText('<h2>Questions</h2><p>Écrit par le modèle.</p>'), FakeAiGateway::provenance('theliacms.page_generation'));
 
         self::assertStringNotContainsString('data-ai-generated', $this->render("{{ cms_item_content('product', id) }}"), 'The mark of a draft is not the one of what is online.');
 
-        $writer->publish(CatalogueItemType::Product, self::PRODUCT_ID, $this->locale());
+        $writer->publish($this->itemTarget(CatalogueItemType::Product, self::PRODUCT_ID, $this->locale()));
         $printed = $this->render("{{ cms_item_content('product', id) }}");
 
         self::assertStringStartsWith('<div class="cms-item-content" data-ai-generated="true" data-ai-usage="theliacms.page_generation" data-ai-model="fake-model" data-ai-generated-at="2026-10-28T10:00:00+00:00">', $printed);
         self::assertStringEndsWith('</div>', $printed);
         self::assertStringContainsString('<p>Écrit par le modèle.</p>', $printed);
 
-        $writer->unpublish(CatalogueItemType::Product, self::PRODUCT_ID, $this->locale());
+        $writer->unpublish($this->itemTarget(CatalogueItemType::Product, self::PRODUCT_ID, $this->locale()));
         self::assertSame('', $this->render("{{ cms_item_content('product', id) }}"));
     }
 
@@ -85,10 +85,10 @@ final class ItemContentExtensionTest extends CmsIntegrationTestCase
 
     public function testThePageOpenedFromTheSignedLinkToTheDraftPrintsTheDraft(): void
     {
-        $writer = $this->getService(ItemContentWriter::class);
-        $writer->saveContent(CatalogueItemType::Product, self::PRODUCT_ID, $this->locale(), Document::richText('<h2>Questions</h2><p>En ligne.</p>'));
-        $writer->publish(CatalogueItemType::Product, self::PRODUCT_ID, $this->locale());
-        $writer->saveContent(CatalogueItemType::Product, self::PRODUCT_ID, $this->locale(), Document::richText('<h2>Questions</h2><p>Pas encore.</p>'));
+        $writer = $this->getService(ContentWriter::class);
+        $writer->saveContent($this->itemTarget(CatalogueItemType::Product, self::PRODUCT_ID, $this->locale()), Document::richText('<h2>Questions</h2><p>En ligne.</p>'));
+        $writer->publish($this->itemTarget(CatalogueItemType::Product, self::PRODUCT_ID, $this->locale()));
+        $writer->saveContent($this->itemTarget(CatalogueItemType::Product, self::PRODUCT_ID, $this->locale()), Document::richText('<h2>Questions</h2><p>Pas encore.</p>'));
 
         $links = $this->getService(ItemPreviewLink::class);
         $item = static fn (int $id, string $locale): CatalogueItem => new CatalogueItem(CatalogueItemType::Product, $id, $locale, 'Produit', null, null, null, 'https://shop.test/produit.html');

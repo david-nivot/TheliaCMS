@@ -16,16 +16,16 @@ namespace TheliaCMS\Tests\Integration\Page;
 
 use Symfony\Component\Console\Tester\CommandTester;
 use Thelia\Test\FixtureFactory;
-use TheliaCMS\Catalogue\Admin\ItemContentWriter;
 use TheliaCMS\Catalogue\CatalogueItemType;
 use TheliaCMS\Catalogue\ItemContentRepository;
 use TheliaCMS\Content\Document;
+use TheliaCMS\Content\Editing\ContentWriter;
+use TheliaCMS\Content\Editing\PublishedRendering;
 use TheliaCMS\Http\CachePurgerInterface;
 use TheliaCMS\Http\CacheTags;
 use TheliaCMS\Model\CmsPageContent;
 use TheliaCMS\Model\CmsPageContentQuery;
 use TheliaCMS\Model\CmsPageRevisionQuery;
-use TheliaCMS\Page\Admin\PublishedRendering;
 use TheliaCMS\Page\RenderPublishedCommand;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
 
@@ -108,9 +108,9 @@ final class RenderPublishedCommandTest extends CmsIntegrationTestCase
         $factory = new FixtureFactory($this->getPropelConnection());
         $product = $factory->product($factory->category(), $factory->taxRule(), $factory->currency(), ['ref' => 'RENDER-PUBLISHED']);
         $id = (int) $product->getId();
-        $writer = $this->getService(ItemContentWriter::class);
-        $writer->saveContent(CatalogueItemType::Product, $id, $this->locale(), Document::richText('<h2>Questions</h2><p>Online.</p>'));
-        $writer->publish(CatalogueItemType::Product, $id, $this->locale());
+        $writer = $this->getService(ContentWriter::class);
+        $writer->saveContent($this->itemTarget(CatalogueItemType::Product, $id, $this->locale()), Document::richText('<h2>Questions</h2><p>Online.</p>'));
+        $writer->publish($this->itemTarget(CatalogueItemType::Product, $id, $this->locale()));
         $repository = $this->getService(ItemContentRepository::class);
         $rendered = $this->publishedHtmlOf($id);
         $repository->find(CatalogueItemType::Product, $id, $this->locale())?->setPublishedHtml('<p>old</p>')->save();

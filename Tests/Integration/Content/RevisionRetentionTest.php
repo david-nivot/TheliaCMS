@@ -17,9 +17,9 @@ namespace TheliaCMS\Tests\Integration\Content;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Thelia\Model\Content;
 use Thelia\Test\FixtureFactory;
-use TheliaCMS\Catalogue\Admin\ItemContentWriter;
 use TheliaCMS\Catalogue\CatalogueItemType;
 use TheliaCMS\Content\Document;
+use TheliaCMS\Content\Editing\ContentWriter;
 use TheliaCMS\Model\CmsItemRevisionQuery;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Model\CmsPageRevisionQuery;
@@ -78,13 +78,13 @@ final class RevisionRetentionTest extends CmsIntegrationTestCase
     public function testTwentyOnePublicationsKeepTheTwentyLatestOfAnItem(): void
     {
         $content = $this->content();
-        $writer = $this->getService(ItemContentWriter::class);
+        $writer = $this->getService(ContentWriter::class);
         $id = (int) $content->getId();
         $afterTwenty = [];
 
         for ($i = 1; $i <= 21; ++$i) {
-            $writer->saveContent(CatalogueItemType::Content, $id, $this->locale(), Document::richText(\sprintf('<h2>Version %d</h2>', $i)));
-            $writer->publish(CatalogueItemType::Content, $id, $this->locale());
+            $writer->saveContent($this->itemTarget(CatalogueItemType::Content, $id, $this->locale()), Document::richText(\sprintf('<h2>Version %d</h2>', $i)));
+            $writer->publish($this->itemTarget(CatalogueItemType::Content, $id, $this->locale()));
 
             if (20 === $i) {
                 $afterTwenty = $this->itemRevisionIds($content, null);
@@ -103,14 +103,14 @@ final class RevisionRetentionTest extends CmsIntegrationTestCase
         $page = $this->createPage('Apart', published: false);
         $content = $this->content();
         $pageWriter = $this->getService(CmsPageWriter::class);
-        $itemWriter = $this->getService(ItemContentWriter::class);
+        $itemWriter = $this->getService(ContentWriter::class);
         $id = (int) $content->getId();
 
         for ($i = 1; $i <= 3; ++$i) {
             $pageWriter->saveContent($page, $this->locale(), Document::richText(\sprintf('<h2>Version %d</h2>', $i)));
             $pageWriter->publish($page, $this->locale());
-            $itemWriter->saveContent(CatalogueItemType::Content, $id, $this->locale(), Document::richText(\sprintf('<h2>Version %d</h2>', $i)));
-            $itemWriter->publish(CatalogueItemType::Content, $id, $this->locale());
+            $itemWriter->saveContent($this->itemTarget(CatalogueItemType::Content, $id, $this->locale()), Document::richText(\sprintf('<h2>Version %d</h2>', $i)));
+            $itemWriter->publish($this->itemTarget(CatalogueItemType::Content, $id, $this->locale()));
         }
 
         $this->keepPageDrafts($page, 7);
@@ -124,8 +124,8 @@ final class RevisionRetentionTest extends CmsIntegrationTestCase
         for ($i = 4; $i <= 22; ++$i) {
             $pageWriter->saveContent($page, $this->locale(), Document::richText(\sprintf('<h2>Version %d</h2>', $i)));
             $pageWriter->publish($page, $this->locale());
-            $itemWriter->saveContent(CatalogueItemType::Content, $id, $this->locale(), Document::richText(\sprintf('<h2>Version %d</h2>', $i)));
-            $itemWriter->publish(CatalogueItemType::Content, $id, $this->locale());
+            $itemWriter->saveContent($this->itemTarget(CatalogueItemType::Content, $id, $this->locale()), Document::richText(\sprintf('<h2>Version %d</h2>', $i)));
+            $itemWriter->publish($this->itemTarget(CatalogueItemType::Content, $id, $this->locale()));
         }
 
         self::assertCount(20, $this->pageRevisionIds($page, null));
@@ -188,13 +188,13 @@ final class RevisionRetentionTest extends CmsIntegrationTestCase
     private function keepItemDrafts(Content $content, int $times, ?string $locale = null): array
     {
         $locale ??= $this->locale();
-        $writer = $this->getService(ItemContentWriter::class);
+        $writer = $this->getService(ContentWriter::class);
         $id = (int) $content->getId();
         $all = [];
 
         for ($i = 1; $i <= $times; ++$i) {
-            $writer->saveContent(CatalogueItemType::Content, $id, $locale, Document::richText(\sprintf('<h2>Draft %d</h2>', $i)));
-            $writer->keepDraft(CatalogueItemType::Content, $id, $locale);
+            $writer->saveContent($this->itemTarget(CatalogueItemType::Content, $id, $locale), Document::richText(\sprintf('<h2>Draft %d</h2>', $i)));
+            $writer->keepDraft($this->itemTarget(CatalogueItemType::Content, $id, $locale));
             $all[] = $this->itemRevisionIds($content, 'draft', $locale);
         }
 

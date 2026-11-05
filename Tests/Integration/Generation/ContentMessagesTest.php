@@ -17,9 +17,9 @@ namespace TheliaCMS\Tests\Integration\Generation;
 use Symfony\Component\DomCrawler\Crawler;
 use Thelia\Model\Content;
 use Thelia\Test\FixtureFactory;
-use TheliaCMS\Catalogue\Admin\ItemContentWriter;
 use TheliaCMS\Catalogue\CatalogueItemType;
 use TheliaCMS\Content\Document;
+use TheliaCMS\Content\Editing\ContentWriter;
 use TheliaCMS\Install\LegalPageTemplates;
 use TheliaCMS\Model\CmsItemContentQuery;
 use TheliaCMS\Model\CmsPage;
@@ -102,7 +102,7 @@ final class ContentMessagesTest extends AdminScreenTestCase
         $page = $this->createPage('Titres', published: false);
         $this->getService(CmsPageWriter::class)->saveContent($page, $this->locale(), Document::richText('<h2>Un</h2><h4>Saut</h4>'));
         $content = $this->content();
-        $this->getService(ItemContentWriter::class)->saveContent(CatalogueItemType::Content, (int) $content->getId(), $this->locale(), Document::richText('<h2>Un</h2><h4>Saut</h4>'));
+        $this->getService(ContentWriter::class)->saveContent($this->itemTarget(CatalogueItemType::Content, (int) $content->getId(), $this->locale()), Document::richText('<h2>Un</h2><h4>Saut</h4>'));
 
         $this->withHeadingMode('block', function () use ($page, $content): void {
             self::assertStringContainsString('La page n’a pas été publiée : corrigez d’abord la structure des titres.', $this->answer($this->pageBase($page), 'publish'));
@@ -115,7 +115,7 @@ final class ContentMessagesTest extends AdminScreenTestCase
         $page = $this->createPage('Invalide', published: false);
         CmsPageContentQuery::create()->filterByPageId($page->getId())->findOne()?->setDraftDocument(Document::richText('<p>Écrit par un script.</p>', 'Not an id')->toJson())->save();
         $content = $this->content();
-        $this->getService(ItemContentWriter::class)->saveContent(CatalogueItemType::Content, (int) $content->getId(), $this->locale(), Document::richText('<p>Texte.</p>'));
+        $this->getService(ContentWriter::class)->saveContent($this->itemTarget(CatalogueItemType::Content, (int) $content->getId(), $this->locale()), Document::richText('<p>Texte.</p>'));
         CmsItemContentQuery::create()->filterByItemType('content')->filterByItemId($content->getId())->findOne()?->setDraftDocument(Document::richText('<p>Écrit par un script.</p>', 'Not an id')->toJson())->save();
 
         self::assertStringContainsString('La page n’a pas été publiée : son contenu n’est plus valide. Ouvrez-la dans l’éditeur pour voir ce qu’il faut corriger.', $this->answer($this->pageBase($page), 'publish'));
@@ -126,7 +126,7 @@ final class ContentMessagesTest extends AdminScreenTestCase
     {
         $page = $this->createPage('En ligne', published: false);
         $content = $this->content();
-        $this->getService(ItemContentWriter::class)->saveContent(CatalogueItemType::Content, (int) $content->getId(), $this->locale(), Document::richText('<h2>Titre</h2><p>Texte.</p>'));
+        $this->getService(ContentWriter::class)->saveContent($this->itemTarget(CatalogueItemType::Content, (int) $content->getId(), $this->locale()), Document::richText('<h2>Titre</h2><p>Texte.</p>'));
 
         self::assertStringContainsString('La page est en ligne.', $this->answer($this->pageBase($page), 'publish', [], 'success'));
         self::assertStringContainsString('Le contenu est en ligne sur la page de l’élément.', $this->answer($this->itemBase($content), 'publish', [], 'success'));

@@ -16,9 +16,9 @@ namespace TheliaCMS\Tests\Integration\Content;
 
 use Thelia\Model\Content;
 use Thelia\Test\FixtureFactory;
-use TheliaCMS\Catalogue\Admin\ItemContentWriter;
 use TheliaCMS\Catalogue\CatalogueItemType;
 use TheliaCMS\Content\Document;
+use TheliaCMS\Content\Editing\ContentWriter;
 use TheliaCMS\Model\CmsItemContentQuery;
 use TheliaCMS\Model\CmsItemRevisionQuery;
 use TheliaCMS\Model\CmsPage;
@@ -113,7 +113,7 @@ final class RevisionIsolationTest extends AdminScreenTestCase
         $this->writePageDraft($page, '<h2>Published page</h2>');
         $this->writeItemDraft($content, '<h2>Published item</h2>');
         $this->getService(CmsPageWriter::class)->publish($page, $this->locale());
-        $this->getService(ItemContentWriter::class)->publish(CatalogueItemType::Content, (int) $content->getId(), $this->locale());
+        $this->getService(ContentWriter::class)->publish($this->itemTarget(CatalogueItemType::Content, (int) $content->getId(), $this->locale()));
         $this->writePageDraft($page, '<h2>Page draft</h2>');
         $this->writeItemDraft($content, '<h2>Item draft</h2>');
 
@@ -196,7 +196,7 @@ final class RevisionIsolationTest extends AdminScreenTestCase
 
     private function writeItemDraft(Content $content, string $html, ?string $locale = null): void
     {
-        $this->getService(ItemContentWriter::class)->saveContent(CatalogueItemType::Content, (int) $content->getId(), $locale ?? $this->locale(), Document::richText($html));
+        $this->getService(ContentWriter::class)->saveContent($this->itemTarget(CatalogueItemType::Content, (int) $content->getId(), $locale ?? $this->locale()), Document::richText($html));
     }
 
     private function keepPageDraft(CmsPage $page, string $html, ?string $locale = null): int
@@ -212,11 +212,11 @@ final class RevisionIsolationTest extends AdminScreenTestCase
     private function keepItemDraft(Content $content, string $html, ?string $locale = null): int
     {
         $locale ??= $this->locale();
-        $writer = $this->getService(ItemContentWriter::class);
+        $writer = $this->getService(ContentWriter::class);
         $this->writeItemDraft($content, $html, $locale);
-        $writer->keepDraft(CatalogueItemType::Content, (int) $content->getId(), $locale);
+        $writer->keepDraft($this->itemTarget(CatalogueItemType::Content, (int) $content->getId(), $locale));
 
-        return (int) $writer->previousDrafts(CatalogueItemType::Content, (int) $content->getId(), $locale)[0]['id'];
+        return (int) $writer->previousDrafts($this->itemTarget(CatalogueItemType::Content, (int) $content->getId(), $locale))[0]['id'];
     }
 
     private function restoreOnPage(CmsPage $page, int $revision): void

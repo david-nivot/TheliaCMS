@@ -21,15 +21,16 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use TheliaCMS\Catalogue\Admin\ItemContentWriter;
+use TheliaCMS\Catalogue\Admin\ContentTargets;
 use TheliaCMS\Catalogue\CatalogueItemType;
+use TheliaCMS\Content\Editing\ContentWriter;
+use TheliaCMS\Content\Editing\PublishedRendering;
 use TheliaCMS\Http\ConsoleRequest;
 use TheliaCMS\Model\CmsItemContentQuery;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Model\CmsPageContentQuery;
 use TheliaCMS\Model\CmsPageQuery;
 use TheliaCMS\Page\Admin\CmsPageWriter;
-use TheliaCMS\Page\Admin\PublishedRendering;
 
 /**
  * Renders what is online again from the published documents.
@@ -57,7 +58,8 @@ final class RenderPublishedCommand extends Command
 {
     public function __construct(
         private readonly CmsPageWriter $pages,
-        private readonly ItemContentWriter $items,
+        private readonly ContentWriter $content,
+        private readonly ContentTargets $targets,
         private readonly ConsoleRequest $request,
     ) {
         parent::__construct();
@@ -109,7 +111,7 @@ final class RenderPublishedCommand extends Command
         if ($all) {
             foreach ($this->itemLocales($locales) as [$type, $id, $locale]) {
                 $label = \sprintf('%s #%d %s', $type->value, $id, $locale);
-                $work[] = [$label, fn (): PublishedRendering => $this->items->renderPublishedAgain($type, $id, $locale, !$dryRun)];
+                $work[] = [$label, fn (): PublishedRendering => $this->content->renderPublishedAgain($this->targets->forItemKey($type, $id, $locale), !$dryRun)];
             }
         }
 

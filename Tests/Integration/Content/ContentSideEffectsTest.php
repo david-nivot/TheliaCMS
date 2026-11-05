@@ -15,11 +15,14 @@ declare(strict_types=1);
 namespace TheliaCMS\Tests\Integration\Content;
 
 use Thelia\Test\FixtureFactory;
+use TheliaCMS\Catalogue\Admin\ContentTargets;
 use TheliaCMS\Catalogue\Admin\EmptyItemContentException;
-use TheliaCMS\Catalogue\Admin\ItemContentWriter;
 use TheliaCMS\Catalogue\CatalogueItemType;
 use TheliaCMS\Catalogue\ItemContentRepository;
 use TheliaCMS\Content\Document;
+use TheliaCMS\Content\Editing\ContentTarget;
+use TheliaCMS\Content\Editing\ContentWriter;
+use TheliaCMS\Content\Editing\PublishedRendering;
 use TheliaCMS\Content\InvalidDocumentException;
 use TheliaCMS\Http\CachePurgerInterface;
 use TheliaCMS\Http\CacheTags;
@@ -29,7 +32,6 @@ use TheliaCMS\Model\CmsPageRevisionQuery;
 use TheliaCMS\Model\CmsPageSearchQuery;
 use TheliaCMS\Page\Admin\CmsPageWriter;
 use TheliaCMS\Page\Admin\EmptyPageContentException;
-use TheliaCMS\Page\Admin\PublishedRendering;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
 
 /**
@@ -65,11 +67,11 @@ final class ContentSideEffectsTest extends CmsIntegrationTestCase
     {
         $id = $this->product();
         $writer = $this->itemWriter();
-        $writer->saveContent(CatalogueItemType::Product, $id, $this->locale(), Document::richText('<h2>Questions</h2><p>Sur devis.</p>'));
+        $writer->saveContent($this->itemTarget(CatalogueItemType::Product, $id, $this->locale()), Document::richText('<h2>Questions</h2><p>Sur devis.</p>'));
 
         self::assertSame([], $this->purger->purged, 'Saving a draft purges nothing.');
 
-        $writer->publish(CatalogueItemType::Product, $id, $this->locale());
+        $writer->publish($this->itemTarget(CatalogueItemType::Product, $id, $this->locale()));
 
         self::assertSame(['product-'.$id], $this->purger->purged);
     }
@@ -78,18 +80,18 @@ final class ContentSideEffectsTest extends CmsIntegrationTestCase
     {
         $id = $this->product();
         $writer = $this->itemWriter();
-        $writer->saveContent(CatalogueItemType::Product, $id, $this->locale(), Document::richText('<h2>Questions</h2><p>Sur devis.</p>'));
-        $writer->publish(CatalogueItemType::Product, $id, $this->locale());
+        $writer->saveContent($this->itemTarget(CatalogueItemType::Product, $id, $this->locale()), Document::richText('<h2>Questions</h2><p>Sur devis.</p>'));
+        $writer->publish($this->itemTarget(CatalogueItemType::Product, $id, $this->locale()));
         $this->getService(ItemContentRepository::class)->find(CatalogueItemType::Product, $id, $this->locale())?->setPublishedHtml('<p>old</p>')->save();
         $before = \count($this->purger->purged);
 
-        self::assertSame(PublishedRendering::Rendered, $writer->renderPublishedAgain(CatalogueItemType::Product, $id, $this->locale(), write: false));
+        self::assertSame(PublishedRendering::Rendered, $writer->renderPublishedAgain($this->itemTarget(CatalogueItemType::Product, $id, $this->locale()), write: false));
         self::assertSame([], \array_slice($this->purger->purged, $before), 'A dry run purges nothing.');
 
-        self::assertSame(PublishedRendering::Rendered, $writer->renderPublishedAgain(CatalogueItemType::Product, $id, $this->locale()));
+        self::assertSame(PublishedRendering::Rendered, $writer->renderPublishedAgain($this->itemTarget(CatalogueItemType::Product, $id, $this->locale())));
         self::assertSame(['product-'.$id], \array_slice($this->purger->purged, $before));
 
-        self::assertSame(PublishedRendering::Unchanged, $writer->renderPublishedAgain(CatalogueItemType::Product, $id, $this->locale()));
+        self::assertSame(PublishedRendering::Unchanged, $writer->renderPublishedAgain($this->itemTarget(CatalogueItemType::Product, $id, $this->locale())));
         self::assertSame(['product-'.$id], \array_slice($this->purger->purged, $before), 'Nothing changed, nothing to purge.');
     }
 
@@ -98,15 +100,15 @@ final class ContentSideEffectsTest extends CmsIntegrationTestCase
         $id = $this->product();
         $writer = $this->itemWriter();
 
-        $writer->unpublish(CatalogueItemType::Product, $id, $this->locale());
+        $writer->unpublish($this->itemTarget(CatalogueItemType::Product, $id, $this->locale()));
 
         self::assertSame(['product-'.$id], $this->purger->purged, 'An item without any document is purged all the same.');
 
-        $writer->saveContent(CatalogueItemType::Product, $id, $this->locale(), Document::richText('<h2>Questions</h2><p>Sur devis.</p>'));
-        $writer->publish(CatalogueItemType::Product, $id, $this->locale());
+        $writer->saveContent($this->itemTarget(CatalogueItemType::Product, $id, $this->locale()), Document::richText('<h2>Questions</h2><p>Sur devis.</p>'));
+        $writer->publish($this->itemTarget(CatalogueItemType::Product, $id, $this->locale()));
         $before = \count($this->purger->purged);
 
-        $writer->unpublish(CatalogueItemType::Product, $id, $this->locale());
+        $writer->unpublish($this->itemTarget(CatalogueItemType::Product, $id, $this->locale()));
 
         self::assertSame(['product-'.$id], \array_slice($this->purger->purged, $before));
     }
@@ -117,18 +119,18 @@ final class ContentSideEffectsTest extends CmsIntegrationTestCase
         $writer = $this->itemWriter();
 
         try {
-            $writer->publish(CatalogueItemType::Product, $id, $this->locale());
+            $writer->publish($this->itemTarget(CatalogueItemType::Product, $id, $this->locale()));
             self::fail('Nothing to publish.');
         } catch (EmptyItemContentException) {
         }
 
-        $writer->saveContent(CatalogueItemType::Product, $id, $this->locale(), Document::richText('<h2>Titre</h2><p>Texte</p>'));
+        $writer->saveContent($this->itemTarget(CatalogueItemType::Product, $id, $this->locale()), Document::richText('<h2>Titre</h2><p>Texte</p>'));
         $this->getService(ItemContentRepository::class)->find(CatalogueItemType::Product, $id, $this->locale())
             ?->setDraftDocument(Document::richText('<h2>Titre</h2><p>Texte</p>', 'Not an id')->toJson())
             ->save();
 
         try {
-            $writer->publish(CatalogueItemType::Product, $id, $this->locale());
+            $writer->publish($this->itemTarget(CatalogueItemType::Product, $id, $this->locale()));
             self::fail('A draft the validator refuses is not published.');
         } catch (InvalidDocumentException) {
         }
@@ -182,10 +184,10 @@ final class ContentSideEffectsTest extends CmsIntegrationTestCase
         $page = $this->createPage('Indexed', published: false, html: '<h2>Indexed</h2><p>Un accompagnement sur mesure.</p>');
         $id = $this->product();
         $writer = $this->itemWriter();
-        $writer->saveContent(CatalogueItemType::Product, $id, $this->locale(), Document::richText('<h2>Questions</h2><p>Un accompagnement sur mesure.</p>'));
+        $writer->saveContent($this->itemTarget(CatalogueItemType::Product, $id, $this->locale()), Document::richText('<h2>Questions</h2><p>Un accompagnement sur mesure.</p>'));
 
         $before = CmsPageSearchQuery::create()->count();
-        $writer->publish(CatalogueItemType::Product, $id, $this->locale());
+        $writer->publish($this->itemTarget(CatalogueItemType::Product, $id, $this->locale()));
 
         self::assertSame($before, CmsPageSearchQuery::create()->count(), 'The document of an item is not in the index of the pages.');
         self::assertSame(0, CmsPageSearchQuery::create()->filterByPageId($page->getId())->count());
@@ -203,9 +205,14 @@ final class ContentSideEffectsTest extends CmsIntegrationTestCase
         return (int) $factory->product($factory->category(), $factory->taxRule(), $factory->currency(), ['ref' => 'SIDE-EFFECTS-'.random_int(1000, 9999)])->getId();
     }
 
-    private function itemWriter(): ItemContentWriter
+    private function itemWriter(): ContentWriter
     {
-        return $this->purgingWith(ItemContentWriter::class, $this->purger);
+        return $this->getService(ContentWriter::class);
+    }
+
+    protected function itemTarget(CatalogueItemType $type, int $id, string $locale): ContentTarget
+    {
+        return $this->purgingWith(ContentTargets::class, $this->purger)->forItemKey($type, $id, $locale);
     }
 
     private function pageWriter(): CmsPageWriter

@@ -34,6 +34,7 @@ use TheliaCMS\Catalogue\CatalogueItemType;
 use TheliaCMS\Catalogue\DealerStores;
 use TheliaCMS\Catalogue\ItemContentRepository;
 use TheliaCMS\Content\Document;
+use TheliaCMS\Content\Editing\ContentWriter;
 use TheliaCMS\Content\InvalidDocumentException;
 use TheliaCMS\Content\Pipeline\HeadingChecker;
 use TheliaCMS\Generation\Admin\BriefType;
@@ -68,7 +69,8 @@ final readonly class ItemContentController
         private TranslatorInterface $translator,
         private CatalogueItems $items,
         private ItemContentRepository $contents,
-        private ItemContentWriter $writer,
+        private ContentWriter $writer,
+        private ContentTargets $contentTargets,
         private EditLanguage $languages,
         private HeadingChecker $headings,
         private ItemPreviewLink $previewLinks,
@@ -200,7 +202,7 @@ final readonly class ItemContentController
             $request,
             $this->subject($item, $lang),
             $this->contents->draftDocument($item->type, $item->id, $item->locale),
-            fn (Document $document) => $this->writer->saveContent($item->type, $item->id, $item->locale, $document),
+            fn (Document $document) => $this->writer->saveContent($this->contentTargets->forItem($item), $document),
         );
 
         return $this->afterHand($request, $item, $lang, $problems, 'The section is added at the end of the draft, with example text: edit it by hand.');
@@ -218,7 +220,7 @@ final readonly class ItemContentController
         $this->denyUnlessMayPublish();
 
         try {
-            $this->writer->restoreDraft($item->type, $item->id, $item->locale, $request->request->getInt('revision'));
+            $this->writer->restoreDraft($this->contentTargets->forItem($item), $request->request->getInt('revision'));
             $this->flash($request, 'success', $this->translate('The previous draft is back. The one it replaces is kept in its place.'));
         } catch (\InvalidArgumentException|InvalidDocumentException) {
             $this->flash($request, 'danger', $this->translate('This draft is no longer available.'));
@@ -264,7 +266,7 @@ final readonly class ItemContentController
         $this->denyUnlessMayPublish();
 
         try {
-            $this->writer->publish($item->type, $item->id, $item->locale);
+            $this->writer->publish($this->contentTargets->forItem($item));
         } catch (ItemHeadingStructureException $exception) {
             foreach ($exception->problems as $problem) {
                 $this->flash($request, 'danger', $problem);
@@ -303,7 +305,7 @@ final readonly class ItemContentController
         $item = $this->itemOrFail($type, $id, $lang);
         $this->denyUnlessMayPublish();
 
-        $this->writer->unpublish($item->type, $item->id, $item->locale);
+        $this->writer->unpublish($this->contentTargets->forItem($item));
         $this->flash($request, 'success', $this->translate('The content is offline: the draft is kept.'));
 
         return $this->back($item, $lang);
@@ -325,7 +327,7 @@ final readonly class ItemContentController
             return $this->back($item, $lang);
         }
 
-        $save = fn (Document $document) => $this->writer->saveContent($item->type, $item->id, $item->locale, $document);
+        $save = fn (Document $document) => $this->writer->saveContent($this->contentTargets->forItem($item), $document);
         $subject = $this->subject($item, $lang);
 
         $problems = match ($change) {
@@ -363,8 +365,8 @@ final readonly class ItemContentController
             // writes besides the document is left out. The draft the answer
             // replaces is kept first: it can be put back.
             function (Document $document, ?array $fields = null, ?AiProvenance $provenance = null) use ($item): void {
-                $this->writer->keepDraft($item->type, $item->id, $item->locale);
-                $this->writer->saveContent($item->type, $item->id, $item->locale, $document, $provenance);
+                $this->writer->keepDraft($this->contentTargets->forItem($item));
+                $this->writer->saveContent($this->contentTargets->forItem($item), $document, $provenance);
             },
             $this->screenUrl($item, $lang),
         );
@@ -396,7 +398,7 @@ final readonly class ItemContentController
             testId: 'cms-item-content',
             translationSources: $this->translationSources->forItem($item->type, $item->id, $item->locale),
             draftPagePreviewUrl: $this->previewLinks->pageUrlFor($item),
-            previousDrafts: $this->writer->previousDrafts($item->type, $item->id, $item->locale),
+            previousDrafts: $this->writer->previousDrafts($this->contentTargets->forItem($item)),
         );
     }
 
