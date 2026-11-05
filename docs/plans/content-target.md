@@ -295,8 +295,17 @@ each, after Q4b.
   - One D5 difference not kept, accepted by the developer: the page logs its publication after the transaction, as
     the item does, instead of inside its `try`. The only observable case was an invalidation failing after the
     commit, which then called `rollBack()` on a closed transaction.
-  - Not pinned by a test yet: purges and invalidations run after the commit (moving them before it keeps every
-    test green).
+  - Pinned afterwards (`ContentSideEffectsTest`): purges and invalidations run after the commit, for a page and
+    for an item.
+- Q4b-1 as built:
+  - `Generation/Admin/ContentController` on `AdminControllerSupport` replaces the two controllers (deleted).
+  - `ContentTargetResolver` finds the page by its id, or the item by type and id, and answers 404. The page is
+    looked up before the language, the item after it (its texts are read in it).
+  - `ContentScreenTarget` with `PageScreenTarget` and `ItemScreenTarget`: what the screen reads and does for a
+    family. `draftHtml()` comes from `CmsPageAdminRepository` for a page.
+  - The baseline entries of the two deleted controllers are dropped.
+  - Test added: the lookup order (`ContentScreenTest::testAnUnknownPageDoesNotChangeTheLanguageBeingEdited`): a
+    page that does not exist leaves the language being edited as it was. Red when the language is resolved first.
 
 ## Steps in order
 
