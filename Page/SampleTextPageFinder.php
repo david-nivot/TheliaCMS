@@ -15,11 +15,9 @@ declare(strict_types=1);
 namespace TheliaCMS\Page;
 
 use Propel\Runtime\ActiveQuery\Criteria;
-use Thelia\Model\LangQuery;
 use TheliaCMS\Content\Pipeline\PlaceholderContentChecker;
 use TheliaCMS\Install\LegalPageTemplates;
 use TheliaCMS\Model\CmsPageContentQuery;
-use TheliaCMS\Model\CmsPageQuery;
 
 /**
  * Pages that are online and still say what the installer wrote in them.
@@ -48,6 +46,7 @@ final readonly class SampleTextPageFinder
 
     public function __construct(
         private PlaceholderContentChecker $placeholders,
+        private FoundPageNamer $namer,
     ) {
     }
 
@@ -71,7 +70,7 @@ final readonly class SampleTextPageFinder
 
         return [
             'total' => \count($found),
-            'pages' => $this->named(\array_slice($found, 0, self::NAMED_AT_MOST), $locale),
+            'pages' => $this->namer->named(\array_slice($found, 0, self::NAMED_AT_MOST), $locale),
         ];
     }
 
@@ -145,60 +144,5 @@ final readonly class SampleTextPageFinder
         }
 
         return array_values(array_unique($words));
-    }
-
-    /**
-     * Each page with the title and the language a reader recognises.
-     *
-     * The language is named and carries its identifier, not just its locale: a
-     * page can be written in one language and still be the sample text in
-     * another, so the link has to open the editor on the one that needs writing,
-     * and `fr_FR` is not what somebody editing a site calls French.
-     *
-     * @param list<array{id: int, locale: string}> $found
-     *
-     * @return list<array{id: int, locale: string, language: string, language_id: int, title: string}>
-     */
-    private function named(array $found, string $locale): array
-    {
-        if ([] === $found) {
-            return [];
-        }
-
-        $pages = CmsPageQuery::create()
-            ->filterById(array_column($found, 'id'), Criteria::IN)
-            ->find();
-
-        $titles = [];
-
-        foreach ($pages as $page) {
-            $titles[(int) $page->getId()] = trim((string) $page->setLocale($locale)->getTitle());
-        }
-
-        $languages = [];
-
-        foreach (LangQuery::create()->find() as $lang) {
-            $languages[(string) $lang->getLocale()] = [
-                'id' => (int) $lang->getId(),
-                'title' => trim((string) $lang->getTitle()),
-            ];
-        }
-
-        $named = [];
-
-        foreach ($found as $row) {
-            $title = $titles[$row['id']] ?? '';
-            $language = $languages[$row['locale']] ?? null;
-
-            $named[] = [
-                'id' => $row['id'],
-                'locale' => $row['locale'],
-                'language' => $language['title'] ?? $row['locale'],
-                'language_id' => $language['id'] ?? 0,
-                'title' => '' === $title ? '#'.$row['id'] : $title,
-            ];
-        }
-
-        return $named;
     }
 }

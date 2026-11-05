@@ -293,7 +293,9 @@ draws the latter its own way with a `cms-page-content-preview.html.twig` at
 its root. The choice is kept from one screen to the next.
 Publishing runs the rendered content through a server-side sanitizer, rewrites
 the images and extracts the text for the search index, and the heading
-structure is checked wherever a page goes online (see `heading_check_mode`).
+structure, the images without a description and the links that say nothing are
+checked wherever a page goes online (see `heading_check_mode` and
+`accessibility_check_mode`).
 
 Each language holds its own document: the French and English versions of a
 page are two independent drafts, written from two briefs.
@@ -605,6 +607,12 @@ of the site do not carry documents. The update to 2.6.0 adds
 mandatory in every language unless the image is marked decorative, which
 publishes it with an empty `alt`. An empty attribute on its own cannot say
 whether an image was described or simply forgotten, so the choice is recorded.
+Publishing relies on that record: an image of the library with no description
+in the language of the page, and not decorative, is reported when it is
+published with an empty `alt` (a text written on the section describes it).
+Elsewhere (an image of a component, or pasted in a rich text) only a
+missing `alt` attribute is reported; `aria-hidden` and `role="presentation"`
+mark an image to skip.
 
 Each image shows its dimensions, weight, format, the pages and catalogue items
 using it, and where its description stands in every language. One still in use
@@ -1060,6 +1068,7 @@ Most of them are edited under **CMS > Settings**.
 | `cache_ttl` | `3600` | Seconds a resolved menu is cached for. It is also dropped on every change that affects it, the changes made to contents, folders, categories and products from the screens of the shop included. |
 | `footer_menu_hook` | off | Renders the `footer` menu into the `layout.footer.top` hook of the theme. For a theme that does not call `cms_menu('footer')` itself: without it, a CMS page is reachable only by its address. Leave it off on a theme that already renders the menu, or it appears twice. |
 | `item_content_hook` | on | Prints the document of a product on the `product.content` hook of the theme, and the one of a category on `category.bottom`. Turn it off on a theme that calls `cms_item_content()` for them itself, or the document appears twice. |
+| `accessibility_check_mode` | `warn` | `warn` reports an image with no description, a link with no text and a link that only says "click here" or "read more", and publishes anyway; `block` refuses to publish. Checked wherever a page or a catalogue content goes online through the editor, the settings screen or `thelia_cms:publish`, on the HTML that goes online. Independent of `heading_check_mode`. Pages already online with such a problem are listed on the page list and, on a showcase site, on the dashboard. Import and scheduled publication do not run the check. |
 | `heading_check_mode` | `warn` | `warn` reports heading problems and publishes anyway; `block` refuses to publish. Checked wherever a page goes online: the content screen, the settings screen, `thelia_cms:publish`. |
 | `native_content_notice_dismissed` | `0` | `1` once the notice about existing contents has been closed on the Pages screen. |
 | `generator_effort` | `high` | How hard the model thinks: `low`, `medium`, `high`, `xhigh` or `max`. Anything else falls back to the default. It is passed to the model as its reasoning effort, which only Anthropic models read: on another provider it has no effect. |

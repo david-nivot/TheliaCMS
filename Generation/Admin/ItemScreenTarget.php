@@ -18,6 +18,7 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Thelia\Model\Lang;
 use TheliaCMS\Catalogue\Admin\ContentTargets;
 use TheliaCMS\Catalogue\Admin\EmptyItemContentException;
+use TheliaCMS\Catalogue\Admin\ItemAccessibilityException;
 use TheliaCMS\Catalogue\Admin\ItemContentStatus;
 use TheliaCMS\Catalogue\Admin\ItemHeadingStructureException;
 use TheliaCMS\Catalogue\CatalogueItem;
@@ -209,6 +210,7 @@ final readonly class ItemScreenTarget implements ContentScreenTarget
     {
         return match (true) {
             $refusal instanceof ItemHeadingStructureException => [...$refusal->problems, $this->support->translate('The content was not published: fix the heading structure first.')],
+            $refusal instanceof ItemAccessibilityException => [...$refusal->problems, $this->support->translate('The content was not published: fix the accessibility problems first.')],
             $refusal instanceof EmptyItemContentException => [$this->support->translate('This content is empty: write it before publishing it.')],
             default => null,
         };

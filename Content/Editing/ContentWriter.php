@@ -22,6 +22,7 @@ use TheliaCMS\Content\Document;
 use TheliaCMS\Content\DocumentRenderer;
 use TheliaCMS\Content\DocumentValidator;
 use TheliaCMS\Content\InvalidDocumentException;
+use TheliaCMS\Content\Pipeline\AccessibilityChecker;
 use TheliaCMS\Content\Pipeline\EmptyContentChecker;
 use TheliaCMS\Content\Pipeline\HeadingChecker;
 use TheliaCMS\Content\Pipeline\ImageRewriter;
@@ -48,6 +49,7 @@ final readonly class ContentWriter
         private DocumentValidator $validator,
         private DocumentRenderer $renderer,
         private HeadingChecker $headings,
+        private AccessibilityChecker $accessibility,
         private CmsSettings $settings,
         private ContentVersions $versions,
     ) {
@@ -182,7 +184,7 @@ final readonly class ContentWriter
      *
      * @return list<string> what the author should fix in what went online, in the language of the back office: empty when nothing, and always in `block` mode, which refuses instead
      *
-     * @throws \Throwable               the refusals of the family, the empty-content and the heading exceptions
+     * @throws \Throwable               the refusals of the family, the empty-content, heading and accessibility exceptions
      * @throws InvalidDocumentException when the draft is not a document the catalogue accepts
      */
     public function publish(ContentTarget $target): array
@@ -302,8 +304,16 @@ final readonly class ContentWriter
             throw $target->brokenHeadings($problems);
         }
 
+        // Images and links are judged on the HTML that goes online: the
+        // library says whether an `alt=""` was chosen or forgotten.
+        $inaccessible = $this->accessibility->check($html, $target->key()->locale);
+
+        if ([] !== $inaccessible && $this->settings->accessibilityCheckBlocks()) {
+            throw $target->inaccessible($inaccessible);
+        }
+
         $target->refuseRendered($html);
 
-        return ['html' => $html, 'warnings' => $problems];
+        return ['html' => $html, 'warnings' => [...$problems, ...$inaccessible]];
     }
 }

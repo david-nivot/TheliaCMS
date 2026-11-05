@@ -58,6 +58,11 @@ interface ContentTarget
      */
     public function brokenHeadings(array $problems): \Throwable;
 
+    /**
+     * @param list<string> $problems
+     */
+    public function inaccessible(array $problems): \Throwable;
+
     /** Work that belongs to the transaction of a publication, once the row is written. */
     public function duringPublication(string $html, ConnectionInterface $connection): void;
 

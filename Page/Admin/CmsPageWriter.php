@@ -338,6 +338,7 @@ final readonly class CmsPageWriter
      * @throws EmptyPageContentException       when the draft would put nothing online
      * @throws PlaceholderPageContentException when the draft is still the sample text of a seeded page
      * @throws HeadingStructureException       when the headings are broken and the site keeps such a page offline
+     * @throws AccessibilityException          when an image has no description or a link says nothing, and the site keeps such a page offline
      * @throws ModelPagePublicationException   when the page is the model of its type
      * @throws MissingPageFieldsException      when a field the type requires is empty
      * @throws InvalidDocumentException        when the draft is not a document the catalogue accepts

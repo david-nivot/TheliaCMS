@@ -32,6 +32,7 @@ use TheliaCMS\Generation\HeaderOutcome;
 use TheliaCMS\Generation\PageHeader;
 use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Model\CmsPage;
+use TheliaCMS\Page\Admin\AccessibilityException;
 use TheliaCMS\Page\Admin\CmsPageAdminRepository;
 use TheliaCMS\Page\Admin\CmsPageWriter;
 use TheliaCMS\Page\Admin\EditLanguage;
@@ -233,6 +234,7 @@ final readonly class PageScreenTarget implements ContentScreenTarget
     {
         return match (true) {
             $refusal instanceof HeadingStructureException => [...$refusal->problems, $this->support->translate('The page was not published: fix the heading structure first.')],
+            $refusal instanceof AccessibilityException => [...$refusal->problems, $this->support->translate('The page was not published: fix the accessibility problems first.')],
             $refusal instanceof EmptyPageContentException => [$this->support->translate('This page has no content yet: write it from a brief before publishing it.')],
             $refusal instanceof PlaceholderPageContentException => [$this->support->translate('This page still holds the sample text it was created with: write your own before publishing it.')],
             $refusal instanceof ModelPagePublicationException => [$this->support->translate('This page is the model of its type: it is never published. Start a new page from it instead.')],

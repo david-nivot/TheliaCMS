@@ -26,6 +26,7 @@ use TheliaCMS\Http\ConsoleRequest;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Model\CmsPageContentQuery;
 use TheliaCMS\Model\CmsPageQuery;
+use TheliaCMS\Page\Admin\AccessibilityException;
 use TheliaCMS\Page\Admin\CmsPageWriter;
 use TheliaCMS\Page\Admin\EmptyPageContentException;
 use TheliaCMS\Page\Admin\HeadingStructureException;
@@ -122,6 +123,8 @@ final class PublishPagesCommand extends Command
                 } catch (PlaceholderPageContentException) {
                     $refused[] = \sprintf('#%d %s: still the sample text it was created with', $page->getId(), $locale);
                 } catch (HeadingStructureException $exception) {
+                    $refused[] = \sprintf('#%d %s: %s', $page->getId(), $locale, implode(' ', $exception->problems));
+                } catch (AccessibilityException $exception) {
                     $refused[] = \sprintf('#%d %s: %s', $page->getId(), $locale, implode(' ', $exception->problems));
                 } catch (ModelPagePublicationException) {
                     $refused[] = \sprintf('#%d %s: the model of its type, never published', $page->getId(), $locale);
