@@ -53,6 +53,12 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   without a word. They now report it too, from the HTML that actually went
   online: the settings screen shows the warnings, and the command lists them
   in a "Warnings" section, its `--dry-run` included.
+- **A page published at the turn of a second no longer reads "Modified since
+  publication".** The publication date and the last edit date of the page (and
+  of a product, category or folder description) were each read from the clock,
+  one after the other: when a second turned between the two, the edit came out
+  after the publication and the page showed "Modified since publication" with
+  nothing changed. Both now take the same instant.
 - **A screen of the CMS opened without being logged in leads to the login.**
   A screen under `/admin/cms` opened in the browser with no administrator
   logged in answered a bare 403, "Administrator authentication is required.",

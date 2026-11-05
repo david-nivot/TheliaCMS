@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace TheliaCMS\Tests\Integration\Page;
 
 use Propel\Runtime\ActiveQuery\Criteria;
+use Symfony\Component\Clock\Test\ClockSensitiveTrait;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Model\CmsPageContentQuery;
 use TheliaCMS\Model\CmsPageQuery;
@@ -33,6 +34,8 @@ use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
  */
 final class PageStatusCriteriaTest extends CmsIntegrationTestCase
 {
+    use ClockSensitiveTrait;
+
     public function testTheDatabaseAndThePhpNameTheSameStateForEveryPage(): void
     {
         $locale = $this->locale();
@@ -75,6 +78,23 @@ final class PageStatusCriteriaTest extends CmsIntegrationTestCase
                 \sprintf('"%s" selects %d of the five pages instead of one', $state->value, \count($selected)),
             );
         }
+    }
+
+    public function testAPageJustPublishedIsNotModifiedSincePublication(): void
+    {
+        // The clock is frozen far from the real time: the date of the last
+        // edit has to come from the same instant as the publication date, not
+        // from a second reading of the clock when the row is saved (a second
+        // turning in between made a page read "modified" at once).
+        self::mockTime('2020-01-15 10:00:00');
+        $locale = $this->locale();
+        $page = $this->createPage('Criteria instant', $locale);
+        $content = $this->contentOf($page, $locale);
+
+        self::assertEquals($content?->getPublishedAt(), $content?->getUpdatedAt());
+        self::assertSame(PageStatus::Published, PageStatus::resolve($page, $content));
+        self::assertContains((int) $page->getId(), $this->idsSelectedBy(PageStatus::Published, $locale));
+        self::assertNotContains((int) $page->getId(), $this->idsSelectedBy(PageStatus::ModifiedSincePublish, $locale));
     }
 
     public function testAskingForSeveralStatesSelectsTheirUnion(): void
