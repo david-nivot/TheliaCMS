@@ -98,6 +98,13 @@ shows how to test an update, outside a transaction.
 
 ## Writing tests
 
+- The unit suite loads no Propel model: its bootstrap is the install's
+  autoloader alone, and the generated `Base` classes live under `var/propel`
+  (`new Lang()` fails with `Class "Thelia\Model\Base\Lang" not found`).
+  A service meant for unit tests takes plain values (an id rather than a
+  `Lang`, for instance, as `Http/Admin/AdminControllerSupport` does); what
+  needs a model goes to the integration suite.
+
 - Under DDEV, the web container exports `DATABASE_NAME=db`, which wins over
   `.env.test` when the test caches are built: the integration tests then
   connect to the development database and their guard stops them. Build and
