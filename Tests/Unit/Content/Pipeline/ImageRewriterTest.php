@@ -267,6 +267,80 @@ final class ImageRewriterTest extends TestCase
         self::assertSame(1, substr_count($html, '<picture>'));
     }
 
+    public function testGivesTheMobileSourceOfAPictureItsOwnWidthsAndTheSizesOfTheImage(): void
+    {
+        $html = $this->rewritePicture('<source media="(max-width: 1023px)" srcset="/image-library/9/full/max/0/default.jpg">');
+
+        self::assertStringContainsString('<source media="(max-width: 1023px)" srcset="/image-library/9/full/480,320/0/default.jpg 480w, /image-library/9/full/960,640/0/default.jpg 960w, /image-library/9/full/max/0/default.jpg 1200w" sizes="(max-width: 1440px) 100vw, 1440px">', $html);
+        self::assertStringContainsString('sizes="(max-width: 1440px) 100vw, 1440px"', $this->imageTags($html)[0]);
+        self::assertSame(1, substr_count($html, '<picture>'));
+        self::assertSame(1, substr_count($html, '<source'), 'No WebP alternative is added to a picture that exists.');
+    }
+
+    public function testTakesTheSizesAnImageDeclaresForItsMobileSource(): void
+    {
+        $html = $this->rewritePicture('<source media="(max-width: 1023px)" srcset="/image-library/9/full/max/0/default.jpg">', 'data-cms-sizes="(max-width: 700px) 100vw, 700px"');
+
+        self::assertStringContainsString('sizes="(max-width: 700px) 100vw, 700px">', $html);
+        self::assertStringNotContainsString('data-cms-sizes', $html);
+    }
+
+    public function testDoesNotCarryTheZoneOfTheImageToItsMobileSource(): void
+    {
+        $html = $this->rewritePicture('<source media="(max-width: 1023px)" srcset="/image-library/9/full/max/0/default.jpg">', 'data-cms-crop="50,50,200,500,500"');
+
+        self::assertStringContainsString('<source media="(max-width: 1023px)" srcset="/image-library/9/full/480,320/0/default.jpg 480w', $html);
+        self::assertMatchesRegularExpression('#/image-library/7/\d+,\d+,\d+,\d+/#', $html, 'The image itself is cropped.');
+        self::assertDoesNotMatchRegularExpression('#/image-library/9/\d+,\d+,\d+,\d+/#', $html);
+    }
+
+    public function testLeavesAnExternalSourceOfAPictureAlone(): void
+    {
+        $source = '<source media="(max-width: 1023px)" srcset="https://cdn.test/mobile.jpg">';
+
+        self::assertStringContainsString($source, $this->rewritePicture($source));
+    }
+
+    public function testLeavesAMultipleSourceOfAPictureAlone(): void
+    {
+        $source = '<source media="(max-width: 1023px)" srcset="/image-library/9/full/480,320/0/default.jpg 480w, /image-library/9/full/max/0/default.jpg 1200w">';
+
+        self::assertStringContainsString($source, $this->rewritePicture($source));
+    }
+
+    public function testLeavesASourceWithoutMediaOfAPictureAlone(): void
+    {
+        $source = '<source srcset="/image-library/9/full/max/0/default.jpg">';
+
+        self::assertStringContainsString($source, $this->rewritePicture($source));
+    }
+
+    public function testLeavesAPictureWithoutASourceOfTheLibraryAsItIs(): void
+    {
+        $html = $this->rewritePicture('<source media="(max-width: 1023px)" srcset="https://cdn.test/mobile.jpg"><source srcset="https://cdn.test/a.webp">');
+
+        self::assertSame(2, substr_count($html, '<source'));
+        self::assertStringContainsString('<source media="(max-width: 1023px)" srcset="https://cdn.test/mobile.jpg"><source srcset="https://cdn.test/a.webp">', $html);
+    }
+
+    private function rewritePicture(string $sources, string $imageAttributes = ''): string
+    {
+        $resolver = new class implements MediaResolver {
+            public function fromUrl(string $url): ?MediaFile
+            {
+                return match (1 === preg_match('#^/image-library/(\d+)/#', $url, $m) ? (int) $m[1] : 0) {
+                    7 => new MediaFile(id: 7, format: 'jpg', width: 1600, height: 900),
+                    9 => new MediaFile(id: 9, format: 'jpg', width: 1200, height: 800),
+                    default => null,
+                };
+            }
+        };
+
+        return (string) (new ImageRewriter($resolver))->rewrite(
+            '<picture>'.$sources.'<img src="/image-library/7/full/max/0/default.jpg" alt="" '.$imageAttributes.'></picture>'
+        );
+    }
+
     public function testKeepsTheSurroundingMarkup(): void
     {
         $html = $this->rewrite(

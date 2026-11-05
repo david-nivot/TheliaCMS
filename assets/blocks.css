@@ -277,6 +277,111 @@
     margin: 0;
   }
 
+  /* Highlights ---------------------------------------------------------------- */
+
+  /* One to three blocks at the width of the content: a picture filling its
+     block, the text over a darkened foot of it. Stacked below 48rem; from there
+     two blocks share the width, and the first of three spans both rows. The gap
+     is the one `ImageSlot::column()` counts. */
+  .cms-highlights {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    margin: 0 auto;
+    padding: 0;
+    width: min(75rem, 100% - 2rem);
+    list-style: none;
+  }
+
+  .cms-highlights__item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 14rem;
+    overflow: hidden;
+    background: var(--color-neutral-200, #e5e7eb);
+    color: #fff;
+  }
+
+  /* The publication may wrap the image in a `<picture>`, inline by default; an
+     image written alone (a picture kept elsewhere) fills the block the same way. */
+  .cms-highlights__item picture,
+  .cms-highlights__item > .cms-highlights__image {
+    position: absolute;
+    inset: 0;
+    display: block;
+  }
+
+  .cms-highlights__image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .cms-highlights__content {
+    position: relative;
+    padding: 3rem 1.5rem 1.5rem;
+    background: linear-gradient(to top, rgb(0 0 0 / 0.65) 65%, rgb(0 0 0 / 0));
+  }
+
+  /* The colour is set on the text itself, under the class of the block: a theme
+     rule on `p` beats the colour inherited from the item. The gradient holds
+     65% black under the text, which keeps white at 6:1 or more over a white
+     picture (4.5:1 needed). */
+  .cms-highlights .cms-highlights__title {
+    margin: 0;
+    color: #fff;
+    font-size: var(--font-size-h2-d, 1.75rem);
+    font-weight: var(--font-weight-h2, 600);
+    line-height: 1.2;
+  }
+
+  .cms-highlights .cms-highlights__text {
+    margin: 0.5rem 0 0;
+    color: #fff;
+  }
+
+  .cms-highlights__button {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: 0.625rem 1.25rem;
+    background: #fff;
+    color: #111;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .cms-highlights__button:hover,
+  .cms-highlights__button:focus-visible {
+    background: #111;
+    color: #fff;
+  }
+
+  @media (min-width: 48rem) {
+    .cms-highlights--1 .cms-highlights__item {
+      min-height: 22rem;
+    }
+
+    .cms-highlights--2,
+    .cms-highlights--3 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .cms-highlights--3 {
+      grid-template-rows: repeat(2, 14rem);
+    }
+
+    .cms-highlights--3 .cms-highlights__item--lead {
+      grid-row: span 2;
+    }
+
+    .cms-highlights--2 .cms-highlights__item {
+      min-height: 18rem;
+    }
+  }
+
   /* Image -------------------------------------------------------------------- */
 
   /* `column` is the width of free text, `narrow` the reading column, `full` the

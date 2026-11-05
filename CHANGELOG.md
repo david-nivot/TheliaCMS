@@ -9,6 +9,17 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Added
 
+- **A Highlights section (`cms:highlights`).** A band of one to three blocks,
+  the first one the large one, each a picture under a title, a catchphrase and a
+  button, in the structure of the HeaderHighlights module and drawn by the module
+  (`cms-highlights…` in `assets/blocks.css`, stacked below 48rem). A block may
+  carry a picture for a screen narrower than 1024px (`image_mobile`); without one,
+  the picture of the computer is drawn on every screen. The picture, its link and
+  its button are optional, and the centre kept of a picture is set by the editor,
+  not offered to the generator. The section is added to the dialog of the Text and
+  media family, with its French labels. On publication, the `<source>` of such a
+  `<picture>` gets a set of widths and the `sizes` of its `<img>`, like any picture
+  of the library the author wrote with a media query. No schema change.
 - **The list of sections follows the preview.** Scrolling the preview of a page marks the section on show in the list of the content screen and scrolls the list to it, unless a section is open for editing or being dragged; the scroll asked for by the locate button is not answered, and the motion is dropped under `prefers-reduced-motion`.
 
 ### Fixed
