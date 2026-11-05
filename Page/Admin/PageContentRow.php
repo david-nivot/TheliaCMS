@@ -60,6 +60,11 @@ final readonly class PageContentRow implements ContentRow
         return null !== $this->content->getPublishedAt();
     }
 
+    public function updatedAt(): ?\DateTimeInterface
+    {
+        return $this->content->getUpdatedAt();
+    }
+
     public function saveDraft(string $document, string $html, ?int $updatedBy, ?string $provenance): void
     {
         $this->content
@@ -100,6 +105,21 @@ final readonly class PageContentRow implements ContentRow
     {
         // `updated_at` follows the draft: this is not an edit.
         $this->content->setPublishedHtml($html)->keepUpdateDateUnchanged()->save();
+    }
+
+    public function followedSource(): ?array
+    {
+        $locale = (string) $this->content->getTranslatedFrom();
+        $fingerprint = (string) $this->content->getSourceFingerprint();
+
+        return '' === $locale || '' === $fingerprint ? null : ['locale' => $locale, 'fingerprint' => $fingerprint];
+    }
+
+    public function followSource(string $locale, string $fingerprint): void
+    {
+        // Following a source is not an edit: `updated_at` is what tells that
+        // a page changed since its publication.
+        $this->content->setTranslatedFrom($locale)->setSourceFingerprint($fingerprint)->keepUpdateDateUnchanged()->save();
     }
 
     public function takeOffline(): void

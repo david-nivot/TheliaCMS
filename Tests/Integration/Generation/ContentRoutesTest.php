@@ -45,6 +45,7 @@ final class ContentRoutesTest extends CmsIntegrationTestCase
             'admin.cms.pages.content.revise' => [$page.'/revise', ['POST'], $id],
             'admin.cms.pages.content.section' => [$page.'/section', ['POST'], $id],
             'admin.cms.pages.content.translate' => [$page.'/translate', ['POST'], $id],
+            'admin.cms.pages.content.translation' => [$page.'/translation', ['POST'], $id],
             'admin.cms.pages.content.update' => [$page.'/update', ['POST'], $id],
         ], $this->routesNamed('admin.cms.pages.content.'));
     }
@@ -66,6 +67,7 @@ final class ContentRoutesTest extends CmsIntegrationTestCase
             'admin.cms.catalogue.content.revise' => [$item.'/revise', ['POST'], $requirements],
             'admin.cms.catalogue.content.section' => [$item.'/section', ['POST'], $requirements],
             'admin.cms.catalogue.content.translate' => [$item.'/translate', ['POST'], $requirements],
+            'admin.cms.catalogue.content.translation' => [$item.'/translation', ['POST'], $requirements],
             'admin.cms.catalogue.content.unpublish' => [$item.'/unpublish', ['POST'], $requirements],
             'admin.cms.catalogue.content.update' => [$item.'/update', ['POST'], $requirements],
         ], $this->routesNamed('admin.cms.catalogue.content.'));

@@ -17,6 +17,8 @@ namespace TheliaCMS\Generation\Admin;
 use Thelia\Model\Lang;
 use TheliaCMS\Content\Document;
 use TheliaCMS\Content\Editing\ContentTarget;
+use TheliaCMS\Content\Editing\TranslationLink;
+use TheliaCMS\Content\Editing\TranslationSource;
 use TheliaCMS\Generation\GenerationRequest;
 use TheliaCMS\Generation\GenerationTarget;
 
@@ -53,7 +55,17 @@ interface ContentScreenTarget
      */
     public function translationSources(): array;
 
-    public function translationSource(string $sourceLocale): ?Document;
+    /** The draft of this content in another language, with the fingerprint of its words as read now. */
+    public function translationSource(string $sourceLocale): ?TranslationSource;
+
+    /** What this content was written from, and whether that changed since; null when it follows nothing. */
+    public function translationLink(): ?TranslationLink;
+
+    /** Ties this content to the draft the other language holds now; false when either holds nothing. */
+    public function followTranslation(string $sourceLocale): bool;
+
+    /** Ties this content to the draft it was written from, as it was read before the writing. */
+    public function recordTranslation(string $sourceLocale, TranslationSource $source): void;
 
     /** The request as this family asks the generator for it. */
     public function prepare(GenerationRequest $generation): GenerationRequest;

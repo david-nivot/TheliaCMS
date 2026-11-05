@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Tests\Integration\Dashboard;
 
+use Thelia\Model\LangQuery;
 use TheliaCMS\Dashboard\ShowcaseStats;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
 
@@ -61,6 +62,36 @@ final class ShowcaseStatsTest extends CmsIntegrationTestCase
 
         self::assertNotSame([], $recent);
         self::assertSame('Page modifiée en dernier', $recent[0]['title']);
+    }
+
+    public function testEachActiveLanguageHasItsRowOfPublishedAndTotalPages(): void
+    {
+        $rows = [];
+
+        foreach ($this->collect()['completeness'] as $row) {
+            $rows[$row['locale']] = $row;
+        }
+
+        $locales = array_map(strval(...), LangQuery::create()->filterByActive(true)->select(['Locale'])->find()->getData());
+        self::assertEqualsCanonicalizing($locales, array_keys($rows), 'A row for each active language.');
+
+        $before = $rows[$this->locale()];
+        $page = $this->createPage('Page à compter', published: false);
+        $this->writer()->publish($page, $this->locale());
+
+        $after = [];
+
+        foreach ($this->collect()['completeness'] as $row) {
+            $after[$row['locale']] = $row;
+        }
+
+        self::assertSame($before['total'] + 1, $after[$this->locale()]['total']);
+        self::assertSame($before['published'] + 1, $after[$this->locale()]['published']);
+
+        foreach (array_diff($locales, [$this->locale()]) as $other) {
+            self::assertSame($rows[$other]['total'] + 1, $after[$other]['total'], 'Every language counts the page in its total.');
+            self::assertSame($rows[$other]['published'], $after[$other]['published'], 'Only the language it is published in counts it as published.');
+        }
     }
 
     /**

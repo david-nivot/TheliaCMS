@@ -283,6 +283,33 @@ the signed preview link of the draft.
   word. One language is picked by default, in
   the order of the shop; a select lets the editor choose when there are
   several. The brief form stays at hand for a page written on its own.
+- **Translations that are out of date**: a language written from another one
+  keeps which one (`translated_from`) and the words of that draft then
+  (`source_fingerprint`, a JSON object holding the SHA-256 of the words of
+  each section by section id), on `cms_page_content` and `cms_item_content`
+  alike (`Content\Editing\TranslationFreshness`). The words are the props a
+  translation writes, the ones `TranslationGraft` reads from the answer: an
+  image, a colour, a link, a number or a move of a section is not a change
+  (`Content\TranslatableWords`). Never stored as a status: compared when the
+  screen, the list of pages or the dashboard is read, with the draft of the
+  source as it is then. Once the words differ, the panel says so, names the
+  sections that changed, were added or are gone, and offers to write this
+  language again from the source (the draft it replaces is kept with the
+  previous drafts) or to mark it up to date, which writes nothing in the
+  translation and asks nothing of the generator; put back as it was, the source
+  is up to date again. A language written by hand is followed once tied to
+  the one it translates, from the same panel. The list of pages shows
+  "To be translated again" on the row, and the dashboard of a showcase site
+  counts these pages for each language (`Page\StalePages`: one query for the
+  translated rows and their source drafts, the words compared in PHP; pages in
+  the bin and the models of the page types are left out). Items of the
+  catalogue have it on their content screen only: the module has no list of
+  them. It is the draft of the source that is compared, not what is online. The
+  title and the fields of the page are not part of what is compared. The
+  command `thelia_cms:generate --translate-from` keeps the draft it replaces
+  and records the source the same way, and the copy of a page carries the link.
+  The export and the import do not: a site restored from an export starts with
+  nothing followed.
 - **History**: the calls of the ledger for this page and language, with their
   outcome, turns, duration and cost, what each one left out of the brief, and
   what it needed ("2 corrections, 1 retry, read_url ×2, effort high"). A call
@@ -458,6 +485,24 @@ back office does, and takes no brief. `--effort` sets the effort of this call
 over the one of the settings, which stay as they are. The draft is saved
 through the writer, like a save from the back office; `thelia_cms:publish` puts
 a page online.
+
+The translations written before a site was updated to 2.13 follow nothing.
+`thelia_cms:translations:follow` ties the ones the ledger proves current, and
+is run once after the update on the sites that translate:
+
+```bash
+php Thelia thelia_cms:translations:follow           # says what it would tie, writes nothing
+php Thelia thelia_cms:translations:follow --apply   # writes the links
+```
+
+A translation is tied when the last call of the ledger that wrote its content
+and language is a successful translation (the brief reads `Translated from
+<locale>.`), the language still holds a draft, and the draft of the source was
+not saved after that call started (`updated_at` of its row is not after the
+`created_at` of the call), which is when the source was read: it then holds the
+words the translation was written from. Any other translation stays
+untracked, and is tied by hand from the content screen. A content already
+followed is left as it is, so a second run changes nothing.
 
 ## Tests
 

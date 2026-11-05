@@ -51,6 +51,14 @@
                 </div>
                 <span class="small text-muted" style="width: 4rem">{{ row.published }}/{{ row.total }}</span>
             </li>
+            {% if row.stale > 0 %}
+                {# Pages written from another language whose draft changed since. #}
+                <li class="small mb-1" style="padding-left: 7.5rem" data-testid="cms-dashboard-stale-{{ row.locale }}">
+                    <a href="{{ path('admin.cms.pages.list', { edit_language_id: row.language_id }) }}" class="link-warning">
+                        {{ '%count% page(s) to translate again'|trans({ '%count%': row.stale }, 'theliacms') }}
+                    </a>
+                </li>
+            {% endif %}
         {% endfor %}
     </ul>
 {% endif %}

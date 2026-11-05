@@ -180,6 +180,11 @@
                                                row nobody recognises into a page somebody can go and translate. #}
                                             <span class="badge text-bg-warning ms-2">{{ 'To be translated'|trans({}, 'theliacms') }}</span>
                                         {% endif %}
+                                        {% if row.is_stale_translation %}
+                                            {# Written from another language whose draft changed since: the
+                                               content screen of the page writes it again or marks it up to date. #}
+                                            <a href="{{ row.builder_url }}" class="badge text-bg-warning ms-2 text-decoration-none" data-testid="cms-page-stale-{{ row.id }}">{{ 'To be translated again'|trans({}, 'theliacms') }}</a>
+                                        {% endif %}
                                         {% if row.id == home_page_id %}
                                             <span class="badge bg-primary ms-2">{{ 'Home page'|trans({}, 'theliacms') }}</span>
                                         {% endif %}

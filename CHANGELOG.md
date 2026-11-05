@@ -31,6 +31,26 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   of the library the author wrote with a media query. No schema change.
 - **The list of sections follows the preview.** Scrolling the preview of a page marks the section on show in the list of the content screen and scrolls the list to it, unless a section is open for editing or being dragged; the scroll asked for by the locate button is not answered, and the motion is dropped under `prefers-reduced-motion`.
 
+- **A translation whose source changed is reported.** A language written from
+  another one by the generator (from the content screen or with
+  `thelia_cms:generate --translate-from`) keeps which one and the words of the
+  draft it was written from, section by section. Once the words of that draft
+  change, the content screen says so and names the sections that changed, were
+  added or are gone, and offers to write the language again from it (the draft
+  it replaces is kept with the previous drafts) or to mark it up to date without
+  touching it; the list of pages shows "To be translated again" on the row, and
+  the dashboard of a showcase site counts these pages for each language. An
+  image, a colour, a link or a move of a section is not a change. A language
+  written by hand is followed once tied to the one it translates. Pages and the
+  documents of catalogue items alike, the list and the dashboard for pages only.
+  2.13.0 gives `cms_page_content` and `cms_item_content` the columns
+  `translated_from` and `source_fingerprint` (`Config/update/2.13.0.sql`).
+- **`thelia_cms:translations:follow` ties the translations written before.**
+  The translations already there follow nothing after the update. The command
+  ties the ones the ledger of the generator proves current (the source was not
+  saved after the call that wrote them), says what it would do without
+  `--apply`, and changes nothing the second time.
+
 ### Changed
 
 - **The content screens of pages and catalogue items share one controller and
@@ -42,6 +62,9 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Fixed
 
+- **The command keeps the draft a generation replaces.** `thelia_cms:generate`
+  overwrote the draft of the language it wrote; it now keeps it with the
+  previous drafts first, as the content screen does.
 - **A page written in a second language and published has an address there.**
   A page translated from its content screen and published without its settings
   being saved in that language was online in it with no address of its own:

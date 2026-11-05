@@ -32,6 +32,7 @@ use Thelia\Model\LangQuery;
 use Thelia\Model\ModuleConfigQuery;
 use Thelia\Test\FixtureFactory;
 use TheliaCMS\Content\Document;
+use TheliaCMS\Content\Editing\ContentVersions;
 use TheliaCMS\Content\Section;
 use TheliaCMS\Content\SectionAppearance;
 use TheliaCMS\Generation\Brief;
@@ -286,6 +287,29 @@ final class ContentScreenTest extends AdminScreenTestCase
         $translated = Document::fromJson($content?->getDraftDocument())?->section('content');
         self::assertSame('<h2>Our products</h2>', $translated?->props['html']);
         self::assertSame(['background' => '#f8d7d7', 'padding' => 'medium'], $translated?->appearance->toArray());
+    }
+
+    public function testATranslationWrittenOverADraftKeepsItAndMarksTheNewOneAsTheModelsWork(): void
+    {
+        $page = $this->createPage('Nos tarifs', published: false);
+        $target = LangQuery::create()->filterByActive(true)->filterById(Lang::getDefaultLanguage()->getId(), Criteria::NOT_EQUAL)->orderById()->findOne();
+        self::assertNotNull($target);
+        $this->getService(CmsPageWriter::class)->saveContent($page, $target->getLocale(), Document::richText('<h1>Our prices</h1><p>By hand.</p>'));
+        $this->api->answer(FakeAiGateway::response(
+            self::document([['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h1>Our prices</h1><p>By the model.</p>']]]),
+            provenance: FakeAiGateway::provenance(),
+        ));
+
+        $screen = $this->screen(\sprintf('/admin/cms/pages/%d/content?edit_language_id=%d', $page->getId(), $target->getId()));
+        $token = $this->tokenOfTheForm($screen, \sprintf('/admin/cms/pages/%d/content/generate', $page->getId()));
+
+        self::assertSame(302, $this->send('POST', \sprintf('/admin/cms/pages/%d/content/translate?edit_language_id=%d', $page->getId(), $target->getId()), ['_token' => $token, 'cms_translate' => ['source' => $this->locale()]]));
+
+        $content = CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($target->getLocale())->findOne();
+        self::assertStringContainsString('By the model.', (string) $content?->getDraftHtml());
+        self::assertNotNull($content?->getDraftProvenance(), 'The translation carries the mark of the call.');
+        self::assertSame(1, CmsPageRevisionQuery::create()->filterByPageId($page->getId())->filterByLocale($target->getLocale())->filterByLabel(ContentVersions::DRAFT_LABEL)->count(), 'The draft the translation replaces is kept.');
+        self::assertSame(0, CmsPageRevisionQuery::create()->filterByPageId($page->getId())->filterByLocale($this->locale())->filterByLabel(ContentVersions::DRAFT_LABEL)->count(), 'The source keeps nothing: it was not replaced.');
     }
 
     public function testTheOutcomeOfAnotherPageIsNotShown(): void

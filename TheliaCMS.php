@@ -362,6 +362,9 @@ class TheliaCMS extends BaseModule
                 __DIR__.'/Content/Editing/ContentSnapshot.php',
                 __DIR__.'/Content/Editing/Revision.php',
                 __DIR__.'/Content/Editing/RestorableDraft.php',
+                __DIR__.'/Content/Editing/TranslationSource.php',
+                __DIR__.'/Content/Editing/TranslationLink.php',
+                __DIR__.'/Generation/TranslationBackfillOutcome.php',
                 // Built per call by ContentTargets, around the page or the item they serve.
                 __DIR__.'/Page/Admin/PageContentTarget.php',
                 __DIR__.'/Page/Admin/PageContentRow.php',

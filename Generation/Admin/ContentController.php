@@ -26,6 +26,7 @@ use Thelia\Domain\Ai\AiProvenance;
 use TheliaCMS\Catalogue\CatalogueItemType;
 use TheliaCMS\Content\Document;
 use TheliaCMS\Content\Editing\ContentWriter;
+use TheliaCMS\Content\Editing\TranslationSource;
 use TheliaCMS\Content\InvalidDocumentException;
 use TheliaCMS\Generation\Brief;
 use TheliaCMS\Generation\GenerationRequest;
@@ -240,17 +241,45 @@ final readonly class ContentController
         }
 
         $sourceLocale = (string) $form->getData()['source'];
+        // Read before the model writes: what the translation is later compared
+        // with is the source as it was when it was read, not as it is when the
+        // answer comes.
         $source = $target->translationSource($sourceLocale);
 
         try {
-            $generation = GenerationRequest::translation($target->generationTarget(), $target->locale(), $source ?? new Document([]), $sourceLocale);
+            $generation = GenerationRequest::translation($target->generationTarget(), $target->locale(), $source->document ?? new Document([]), $sourceLocale);
         } catch (\InvalidArgumentException) {
             $this->support->flash($request, 'danger', $this->support->translate('That language holds nothing to write from any more: reload the screen.'));
 
             return $this->back($target);
         }
 
-        return $this->run($request, $target, $generation);
+        return $this->run($request, $target, $generation, $source);
+    }
+
+    /**
+     * This language tied to the draft another one holds now, without asking
+     * the generator: a translation the editor brought up to date by hand, or
+     * a language written by hand from the start.
+     */
+    #[Route(self::PAGE.'/translation', name: 'admin.cms.pages.content.translation', methods: ['POST'], requirements: self::PAGE_REQUIREMENTS)]
+    #[Route(self::ITEM.'/translation', name: 'admin.cms.catalogue.content.translation', methods: ['POST'], requirements: self::ITEM_REQUIREMENTS)]
+    public function followTranslation(Request $request, int $id, ?string $type = null): Response
+    {
+        $target = $this->resolver->resolve($request, $id, $type);
+        $this->denyUnlessMayChange();
+
+        $sourceLocale = (string) $request->request->get('source');
+
+        if (!\in_array($sourceLocale, array_column($target->translationSources(), 'locale'), true) || !$target->followTranslation($sourceLocale)) {
+            $this->support->flash($request, 'danger', $this->support->translate('Both languages must hold a draft to tie one to the other.'));
+
+            return $this->back($target);
+        }
+
+        $this->support->flash($request, 'success', $this->support->translate('This language is marked up to date with the one it was written from.'));
+
+        return $this->back($target);
     }
 
     #[Route(self::PAGE.'/publish', name: 'admin.cms.pages.content.publish', methods: ['POST'], requirements: self::PAGE_REQUIREMENTS)]
@@ -353,16 +382,20 @@ final readonly class ContentController
         return $this->back($target);
     }
 
-    private function run(Request $request, ContentScreenTarget $target, GenerationRequest $generation): Response
+    private function run(Request $request, ContentScreenTarget $target, GenerationRequest $generation, ?TranslationSource $source = null): Response
     {
         return $this->runner->respond(
             $request,
             $target->prepare($generation),
-            function (Document $document, ?array $fields = null, ?AiProvenance $provenance = null, array $seo = []) use ($target): void {
+            function (Document $document, ?array $fields = null, ?AiProvenance $provenance = null, array $seo = []) use ($target, $generation, $source): void {
                 // The draft the answer replaces is kept first: it can be put back.
                 $this->writer->keepDraft($target->contentTarget());
                 $this->writer->saveContent($target->contentTarget(), $document, $provenance);
                 $target->saveAlongside($fields, $seo);
+
+                if (null !== $source && null !== $generation->sourceLocale) {
+                    $target->recordTranslation($generation->sourceLocale, $source);
+                }
             },
             $target->screenUrl(),
         );
