@@ -42,6 +42,12 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Fixed
 
+- **The home page no longer shows an address to set.** The settings screen of
+  the page set as the home page offered the slug and the fixed address, though
+  the page is served at the root of the site and answers on neither. Both
+  fields are now left out, with a note saying why; saving the page keeps the
+  address it has in every language, so the fields are back, filled as they
+  were, on a page that stops being the home page. No schema change.
 - **A page written in a second language and published has an address there.**
   A page translated from its content screen and published without its settings
   being saved in that language was online in it with no address of its own:

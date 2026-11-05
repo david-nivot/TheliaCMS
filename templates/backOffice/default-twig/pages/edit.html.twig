@@ -95,8 +95,12 @@
                 <div class="row g-3">
                     <div class="col-lg-8">
                         {{ form_row(form.title) }}
-                        {{ form_row(form.slug) }}
-                        {{ form_row(form.fixedUrl) }}
+                        {% if is_home %}
+                            <p class="form-text" data-testid="cms-page-home-address-note">{{ 'This is the home page: it is served at the root of the site, so it has no address to set.'|trans({}, 'theliacms') }}</p>
+                        {% else %}
+                            {{ form_row(form.slug) }}
+                            {{ form_row(form.fixedUrl) }}
+                        {% endif %}
                         {{ form_row(form.chapo) }}
                         {{ form_row(form.description) }}
                     </div>
