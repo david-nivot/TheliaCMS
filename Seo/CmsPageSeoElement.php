@@ -20,6 +20,7 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Thelia\Domain\Localization\Service\LangService;
 use Thelia\Model\ConfigQuery;
 use Thelia\Tools\URL;
+use TheliaCMS\Menu\SiteRoot;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Model\CmsPageQuery;
 use TheliaCMS\Page\PublishedPageRepository;
@@ -119,12 +120,16 @@ readonly class CmsPageSeoElement implements SeoElementInterface
      * parent is a normal situation while a section is being written, and
      * linking to that parent would hand a 404 both to the reader and to the
      * BreadcrumbList a search engine reads.
+     *
+     * The home page is left out too: SEOne and the themes start every trail at
+     * the root of the site, which is where the home page answers. Its own trail
+     * is therefore empty.
      */
     public function getSeoBreadcrumb($id): array
     {
         $page = $this->findLocalizedPage($id);
 
-        if (!$page instanceof CmsPage) {
+        if (!$page instanceof CmsPage || $this->isHome($page)) {
             return [];
         }
 
@@ -137,7 +142,7 @@ readonly class CmsPageSeoElement implements SeoElementInterface
         while ($ancestor instanceof CmsPage && !isset($climbed[(int) $ancestor->getId()])) {
             $climbed[(int) $ancestor->getId()] = true;
 
-            if ($this->publishedPages->isReachable($ancestor->getId(), $this->langService->getLocale())) {
+            if (!$this->isHome($ancestor) && $this->publishedPages->isReachable($ancestor->getId(), $this->langService->getLocale())) {
                 array_unshift($breadcrumb, $this->crumb($ancestor));
             }
 
@@ -169,7 +174,15 @@ readonly class CmsPageSeoElement implements SeoElementInterface
 
     private function pageUrl(CmsPage $page): string
     {
-        return URL::getInstance()?->retrieve(TheliaCMS::PAGE_VIEW, $page->getId(), $this->langService->getLocale())->toString() ?? '';
+        $url = URL::getInstance()?->retrieve(TheliaCMS::PAGE_VIEW, $page->getId(), $this->langService->getLocale())->toString() ?? '';
+
+        // The home page answers on the root only: its own address is a 301 to it.
+        return '' !== $url && $this->isHome($page) ? SiteRoot::of($url) : $url;
+    }
+
+    private function isHome(CmsPage $page): bool
+    {
+        return (int) $page->getId() === (int) TheliaCMS::getConfigValue('home_page_id', '0');
     }
 
     private function firstNonEmpty(?string ...$candidates): string

@@ -1,3 +1,3 @@
 {# The fields of the screen the button sits beside, read by rich-text-brief.js. JSON_HEX_TAG keeps a "</script>" in a message from closing the tag. #}
 <script type="application/json" data-cms-text-brief-config>{{ config|json_encode(constant('JSON_HEX_TAG') b-or constant('JSON_HEX_AMP') b-or constant('JSON_UNESCAPED_UNICODE') b-or constant('JSON_UNESCAPED_SLASHES'))|raw }}</script>
-<script src="{{ module_asset('TheliaCMS', 'assets/rich-text-brief.js') }}?v={{ assets_version }}" defer></script>
+<script src="{{ cms_asset('assets/rich-text-brief.js') }}?v={{ assets_version }}" defer></script>

@@ -703,6 +703,103 @@ final class SectionEditScreenTest extends AdminScreenTestCase
         self::assertSame([$one, $three], array_column($document?->section('row')?->props['product_ids'] ?? [], 'id'));
     }
 
+    public function testARowOfAListMovesUpAndDownFromToolsBesideItsFold(): void
+    {
+        $form = $this->screen($this->url($this->pageWithHighlights()))->filter('[data-testid="cms-section-edit-hl"] form[data-cms-section-form]');
+        $translator = $this->getService(TranslatorInterface::class);
+
+        self::assertSame('cms_section_hl[blocks]', $form->filter('[data-cms-items]')->attr('data-cms-items-name'), 'The script renames the fields of the rows from the name of the collection.');
+        self::assertSame(3, $form->filter('li[data-cms-item] > .cms-content__item-tools > button[data-cms-item-up]')->count());
+        self::assertSame(3, $form->filter('li[data-cms-item] > .cms-content__item-tools > button[data-cms-item-down]')->count());
+        self::assertSame($translator->trans('Move this row up', [], TheliaCMS::DOMAIN_NAME), $form->filter('[data-cms-item-up]')->first()->attr('aria-label'));
+        self::assertSame($translator->trans('Move this row down', [], TheliaCMS::DOMAIN_NAME), $form->filter('[data-cms-item-down]')->first()->attr('aria-label'));
+        self::assertSame(0, $form->filter('summary button')->count(), 'No button inside a summary.');
+    }
+
+    public function testEveryRowOfAListIsFoldedUnderItsFirstWordsAndTheListIsCounted(): void
+    {
+        $form = $this->screen($this->url($this->pageWithHighlights()))->filter('[data-testid="cms-section-edit-hl"] form[data-cms-section-form]');
+
+        $folds = $form->filter('li[data-cms-item] > details.cms-content__item-fold');
+        self::assertSame(3, $folds->count(), 'A row of short fields is folded too.');
+        self::assertSame(['Premier', 'Second', 'Troisième'], $folds->each(static fn (Crawler $fold): string => trim($fold->filter('summary')->text())));
+        self::assertSame(0, $form->filter('details.cms-content__item-fold[open]')->count(), 'A row that is in order is folded.');
+        self::assertSame('cms_section_hl_blocks_0_title', $form->filter('summary [data-cms-item-source]')->first()->attr('data-cms-item-source'), 'The script follows the field the words come from.');
+        self::assertSame('3 / 3', trim($form->filter('legend [data-cms-items-count]')->text()));
+
+        $prototype = new Crawler((string) $form->filter('[data-cms-items]')->attr('data-prototype'));
+        self::assertSame(1, $prototype->filter('details.cms-content__item-fold[open]')->count(), 'A new row is open.');
+    }
+
+    public function testARowIsFoldedUnderTheFirstTextThatSaysSomething(): void
+    {
+        $props = [
+            ['name' => 'slides', 'type' => 'items', 'label' => 'Slides', 'max' => 4, 'items' => [
+                ['name' => 'kicker', 'type' => 'text', 'label' => 'Kicker', 'max' => 40],
+                ['name' => 'body', 'type' => 'html', 'label' => 'Body'],
+            ]],
+            ['name' => 'notes', 'type' => 'items', 'label' => 'Notes', 'max' => 4, 'items' => [
+                ['name' => 'body', 'type' => 'html', 'label' => 'Body'],
+            ]],
+        ];
+        $this->getService(SiteComponentRepository::class)->save(new SiteComponent('Slides', 'Slides', 'Slides one after the other.', $props, ['slides' => [], 'notes' => []], '<section></section>'), SiteComponentRepository::STATUS_DRAFT);
+        $page = $this->pageWith([new Section('slides', 'Site:Slides', [
+            'slides' => [['kicker' => '', 'body' => '<p>Le <strong>vélo</strong> en ville</p>'], ['kicker' => 'Nouveau', 'body' => '<p>Ignoré</p>']],
+            'notes' => [['body' => '<h2>Une note</h2><p>de bas de page</p>']],
+        ])]);
+
+        $summaries = $this->screen($this->url($page))->filter('[data-testid="cms-section-edit-slides"] li[data-cms-item] > details > summary')
+            ->each(static fn (Crawler $summary): string => trim((string) preg_replace('/\s+/', ' ', $summary->text())));
+
+        self::assertSame(['Le vélo en ville', 'Nouveau', 'Une note de bas de page'], $summaries, 'An empty line of text gives way to the paragraphs; a row of paragraphs alone reads by them.');
+    }
+
+    public function testTheTitleOfARowTakesTheLineAndTheKeptPartOfItsPictureIsFolded(): void
+    {
+        $form = $this->screen($this->url($this->pageWithHighlights()))->filter('[data-testid="cms-section-edit-hl"] form[data-cms-section-form]');
+
+        self::assertSame(1, $form->filter('input[name="cms_section_hl[blocks][0][title]"][data-cms-wide]')->count(), 'A title of 80 characters is read on the whole line of the row.');
+        self::assertSame(0, $form->filter('input[name="cms_section_hl[blocks][0][button_label]"][data-cms-wide]')->count(), 'A button label of 40 shares its line.');
+        self::assertSame(1, $form->filter('li[data-cms-item]:first-child details.cms-content__more:not([open]) input[name="cms_section_hl[blocks][0][focus_x]"]')->count(), 'The kept part of a picture is folded.');
+        self::assertSame(1, $form->filter('li[data-cms-item]:first-child details.cms-content__more:not([open]) input[name="cms_section_hl[blocks][0][focus_y]"]')->count());
+    }
+
+    public function testRowsSentInAnotherOrderAreSavedInThatOrder(): void
+    {
+        $screen = $this->screen($this->url($page = $this->pageWithHighlights()));
+        $form = $screen->filter('[data-testid="cms-section-edit-hl"] form[data-cms-section-form]')->form();
+        $values = $form->getPhpValues();
+        [$first, $second, $third] = $values['cms_section_hl']['blocks'];
+
+        // What the script sends once the second row is moved to the top: the fields renamed to the order of the rows.
+        $values['cms_section_hl']['blocks'] = [$second, $first, $third];
+        self::assertSame(302, $this->send('POST', $form->getUri(), $values));
+
+        $document = Document::fromJson(CmsPageContentQuery::create()->filterByPageId($page->getId())->findOne()?->getDraftDocument());
+        self::assertSame(['Second', 'Premier', 'Troisième'], array_column($document?->section('hl')?->props['blocks'] ?? [], 'title'));
+
+        // Moved in the page only, with the names left as they were, the order is the one of the indexes: hence the renaming.
+        $values['cms_section_hl']['blocks'] = [1 => $second, 0 => $first, 2 => $third];
+        self::assertSame(302, $this->send('POST', $form->getUri(), $values));
+
+        $document = Document::fromJson(CmsPageContentQuery::create()->filterByPageId($page->getId())->findOne()?->getDraftDocument());
+        self::assertSame(['Premier', 'Second', 'Troisième'], array_column($document?->section('hl')?->props['blocks'] ?? [], 'title'));
+    }
+
+    public function testTheNameOfAListOfTheThemeReadsInTheLanguageOfTheBackOffice(): void
+    {
+        // A list named by its bare name, as a prop of the theme is: the form says it in words of its own.
+        $props = PriceTable::component()->props;
+        $props[1]['name'] = 'products';
+        $props[1]['label'] = 'products';
+        $this->getService(SiteComponentRepository::class)->save(new SiteComponent('ProductGrid', 'Product grid', 'Products side by side.', $props, ['products' => [['name' => 'Basic']]], '<section></section>'), SiteComponentRepository::STATUS_DRAFT);
+        $page = $this->pageWith([new Section('row', 'Site:ProductGrid', ['title' => 'Nos produits', 'products' => [['name' => 'Studio']]])]);
+
+        $legend = $this->screen($this->url($page).'&lang=fr_FR')->filter('[data-testid="cms-section-edit-row"] [data-cms-items] > legend');
+
+        self::assertSame('Produits', trim($legend->getNode(0)?->firstChild->textContent ?? ''), 'The name of a list goes through the translator, as the label of any field.');
+    }
+
     public function testTheSchemaStillRefusesWhatItRefusesToTheModel(): void
     {
         $page = $this->pageWith([
@@ -750,6 +847,13 @@ final class SectionEditScreenTest extends AdminScreenTestCase
         $screen = $this->screen($this->url($page));
         self::assertSame(0, $screen->filter('[data-testid="cms-section-edit-intro"]')->count(), 'Reading the screen is not the right to change a section.');
         self::assertSame(403, $this->send('POST', \sprintf('/admin/cms/pages/%d/content/update', $page->getId()), ['_token' => $this->tokenOfTheScripts($screen), 'cms_section_intro' => ['section' => 'intro', 'html' => 'Refused']]));
+    }
+
+    private function pageWithHighlights(): CmsPage
+    {
+        $block = static fn (string $title): array => ['title' => $title, 'text' => '', 'button_label' => '', 'button_url' => '', 'image' => null, 'image_alt' => '', 'image_mobile' => null, 'focus_x' => 50, 'focus_y' => 50];
+
+        return $this->pageWith([new Section('hl', 'cms:highlights', ['blocks' => [$block('Premier'), $block('Second'), $block('Troisième')]])]);
     }
 
     /**

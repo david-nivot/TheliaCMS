@@ -71,6 +71,9 @@ final readonly class SectionFormBuilder
     /** The longest text drawn on half a line of the form: the default length of a text prop, a title. */
     private const int SHORT_TEXT = 255;
 
+    /** The longest text that stays on a shared line in a row of a list: above, a title is read on the whole line. */
+    private const int NARROW_TEXT = 40;
+
     /** The file and the address fields that go with an image prop. */
     public const string FILE_SUFFIX = '__file';
     public const string ADDRESS_SUFFIX = '__url';
@@ -401,7 +404,9 @@ final readonly class SectionFormBuilder
             // A text of a sentence or more takes the whole line of the form;
             // a short one shares it with its neighbour.
             PropType::Text => $builder->add($prop->name, TextType::class, $common + [
-                'attr' => ['maxlength' => $prop->max ?? 255] + (($prop->max ?? 255) > self::SHORT_TEXT ? ['data-cms-long' => ''] : []),
+                'attr' => ['maxlength' => $prop->max ?? 255]
+                    + (($prop->max ?? 255) > self::SHORT_TEXT ? ['data-cms-long' => ''] : [])
+                    + (($prop->max ?? 255) > self::NARROW_TEXT ? ['data-cms-wide' => ''] : []),
             ]),
             PropType::Url => $builder->add($prop->name, TextType::class, $common + [
                 'attr' => ['maxlength' => $prop->max ?? 2048, 'placeholder' => '/contact'],
@@ -423,7 +428,10 @@ final readonly class SectionFormBuilder
                     'data-cms-picker-searchable' => $prop->searchable ? '1' : null,
                 ]),
             ]),
-            PropType::Items => $builder->add($prop->name, CollectionType::class, $common + [
+            // A field is optional under an optional parent: a list that may
+            // be empty would mark every field of its rows optional. Its
+            // bounds are its own, read by the script and the schema.
+            PropType::Items => $builder->add($prop->name, CollectionType::class, ['required' => true] + $common + [
                 'entry_type' => SectionItemType::class,
                 'entry_options' => ['props' => $prop->items, 'builder' => $this, 'label' => false],
                 'allow_add' => true,

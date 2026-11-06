@@ -14,8 +14,10 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Tests\Integration\Seo;
 
+use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Seo\CmsPageSeoElement;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
+use TheliaCMS\TheliaCMS;
 
 /**
  * The breadcrumb a CMS page hands to SEOne, which is both what the theme shows
@@ -102,6 +104,43 @@ final class CmsPageBreadcrumbTest extends CmsIntegrationTestCase
     {
         self::assertSame([], $this->breadcrumbOf(0));
         self::assertSame([], $this->breadcrumbOf(999999));
+    }
+
+    /**
+     * Every trail already starts at the root of the site: SEOne puts it first in
+     * the BreadcrumbList, and a theme first in the trail it draws. The home page
+     * answers on that root, so its own trail holds nothing more, and an entry for
+     * it would link its own address, a 301 to the root.
+     */
+    public function testTheHomePageHasNoTrailOfItsOwn(): void
+    {
+        $home = $this->createPage('Accueil');
+
+        $this->asHomePage($home, function () use ($home): void {
+            self::assertSame([], $this->breadcrumbOf((int) $home->getId()));
+        });
+    }
+
+    public function testAPageBelowTheHomePageDoesNotNameItAgain(): void
+    {
+        $home = $this->createPage('Accueil');
+        $child = $this->createPage('Nos engagements', parent: (int) $home->getId());
+
+        $this->asHomePage($home, function () use ($child): void {
+            self::assertSame(['Nos engagements'], array_column($this->breadcrumbOf((int) $child->getId()), 'title'));
+        });
+    }
+
+    private function asHomePage(CmsPage $page, callable $check): void
+    {
+        $previous = TheliaCMS::getConfigValue('home_page_id');
+        TheliaCMS::setConfigValue('home_page_id', (string) $page->getId());
+
+        try {
+            $check();
+        } finally {
+            TheliaCMS::setConfigValue('home_page_id', $previous);
+        }
     }
 
     /**

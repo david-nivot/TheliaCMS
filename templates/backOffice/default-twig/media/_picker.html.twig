@@ -42,4 +42,4 @@
         videoNone: 'No video matches.'|trans({}, 'theliacms'),
         meanwhile: 'meanwhile the text of the section: “%alt%”'|trans({}, 'theliacms'),
     }|json_encode|raw }}</script>
-<script src="{{ module_asset('TheliaCMS', 'assets/media-picker.js') }}?v={{ media_picker_version|default('') }}" defer></script>
+<script src="{{ cms_asset('assets/media-picker.js') }}?v={{ media_picker_version|default('') }}" defer></script>

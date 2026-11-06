@@ -16,6 +16,14 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   the list and the field, `{# @prop videos.title The title read under the
   video #}`, gives that field its help in the form. See
   `docs/creating-a-component.md`.
+- **A row of a list moves up or down.** Each row of a list (the blocks of
+  Mises en avant, the rows of a component of the theme) has an up and a down
+  button beside its remove button, reachable by keyboard: the focus stays on
+  the row that moved, and a screen reader is told its new position. The order
+  is the one saved and rendered. Behind it, the script renames the fields of
+  the rows to the order they are in, since the form keeps the rows in the
+  order of their indexes; a row added after a removal now takes an index
+  above every one in place.
 - **Color presets for an SVG.** The **Prepare the SVG** screen offers a preset
   that makes colors of the drawing follow the color of the text
   (`currentColor`): *Keep the colors* (the default), *Monochrome*, or *Main
@@ -37,7 +45,43 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   settings to the following files* carries the preset and its options, not the
   main color, which is each drawing's own.
 
+### Changed
+
+- **Every row of a list is folded under its number and its first words.**
+  A row reads "2. C'est le mois du vélo", the first text it holds (a line of
+  text, else a text of paragraphs), and opens on a click; a new row, and
+  a row with an error, open, the others stay folded, and the words follow what
+  is typed. The list shows its count ("2 / 3") beside its name. The labels
+  of the fields stay on every row (they were hidden from the second row on),
+  a text of more than 40 characters, a title, takes the whole line of its row
+  instead of 150 pixels, and the two numbers that set the kept part of a
+  picture (Mises en avant) are folded under "Kept part of the picture".
+
 ### Fixed
+
+- **A required field of a list row no longer reads "(optional)".** In a list
+  that may hold no row (the rows of a theme component, most native lists),
+  every field of a row was marked optional, the title a row cannot do without
+  included. The form now marks a field of a row as the schema declares it;
+  saving a row with such a field empty was, and stays, refused.
+- **The name and the help of a list read in the language of the back
+  office.** The legend of a list of a theme component, and the help under it,
+  were printed as the theme wrote them, while the label and the help of any
+  other field went through the translator.
+- **The structured data of the home page names `/`.** With SEOne, the home
+  page described itself as a `WebPage` at its own address (`/accueil`), which
+  answers a 301 to `/`, and drew a breadcrumb of one entry to that address,
+  after the root SEOne and the themes already put first. The `WebPage` now
+  names the root of the site, the home page has no breadcrumb of its own, and
+  a page below it no longer repeats it in its trail.
+- **After an update, the back office serves the scripts and stylesheets of
+  the installed module.** The core copies an asset of a module into
+  `public/assets/` the first time a page asks for it and, outside debug mode,
+  never replaces it: after an update, the screens of the module kept the
+  scripts of the version before (no video picker after 2.14.0, an older
+  content editor) until the copy was deleted by hand. The module now replaces
+  its copy whenever it no longer matches the file it ships, at the first page
+  that asks for it.
 
 - **An image of the media library printed without a text is published with
   its description.** A component of the theme (a banner, an image and text

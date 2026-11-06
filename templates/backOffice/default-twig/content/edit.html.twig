@@ -14,7 +14,7 @@
 {% block body_testid %}{{ subject.testId }}{% endblock %}
 
 {% block head_extra %}
-    <link rel="stylesheet" href="{{ module_asset('TheliaCMS', 'assets/content-editor.css') }}?v={{ assets_version }}">
+    <link rel="stylesheet" href="{{ cms_asset('assets/content-editor.css') }}?v={{ assets_version }}">
 {% endblock %}
 
 {% block scripts_extra %}
@@ -25,7 +25,7 @@
        loaded before it. #}
     {{ include('@TheliaCMSModule/backOffice/default-twig/media/_picker.html.twig', { media_picker_version: assets_version }) }}
     {{ include('@TheliaCMSModule/backOffice/default-twig/content/_image_crop.html.twig') }}
-    <script src="{{ module_asset('TheliaCMS', 'assets/content-editor.js') }}?v={{ assets_version }}" defer></script>
+    <script src="{{ cms_asset('assets/content-editor.js') }}?v={{ assets_version }}" defer></script>
 {% endblock %}
 
 {% block body %}
