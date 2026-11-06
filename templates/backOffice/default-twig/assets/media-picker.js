@@ -497,7 +497,8 @@
                 altRow.hidden = !!item;
             }
 
-            if (!item || item.decorative) {
+            // A video has nothing to describe: no text, no link to write one.
+            if (!item || item.decorative || item.video) {
                 return;
             }
 
