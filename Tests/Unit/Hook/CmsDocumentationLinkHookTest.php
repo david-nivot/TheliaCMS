@@ -44,6 +44,7 @@ final class CmsDocumentationLinkHookTest extends TestCase
         yield 'menus' => ['admin.cms.menus.edit', 'menus'];
         yield 'answers of a form' => ['admin.cms.forms.submissions', 'forms'];
         yield 'media' => ['admin.cms.media.list', 'media'];
+        yield 'preparing an SVG' => ['admin.cms.media.svg.show', 'prepare-svg'];
     }
 
     #[DataProvider('screens')]
@@ -66,6 +67,25 @@ final class CmsDocumentationLinkHookTest extends TestCase
     {
         foreach (['_fr_FR.html.twig', '_en_US.html.twig'] as $text) {
             self::assertStringContainsString(\sprintf(' id="%s">', $section), (string) file_get_contents(self::TEXTS.$text), $text);
+        }
+    }
+
+    /**
+     * A help link lands on its part as the page opens; an image above it
+     * that has no size grows once loaded and pushes the part out of sight.
+     */
+    public function testEveryImageOfTheDocumentationKeepsItsPlaceBeforeItLoads(): void
+    {
+        foreach (['_fr_FR.html.twig', '_en_US.html.twig'] as $text) {
+            preg_match_all('#<img [^>]*>#', (string) file_get_contents(self::TEXTS.$text), $images);
+            self::assertNotSame([], $images[0], $text);
+
+            foreach ($images[0] as $image) {
+                self::assertSame(1, preg_match("#assets/documentation/([^']+)'#", $image, $file), $image);
+                $size = getimagesize(self::TEXTS.'../assets/documentation/'.$file[1]);
+                self::assertNotFalse($size, $file[1]);
+                self::assertStringContainsString(\sprintf('width="%d" height="%d"', $size[0], $size[1]), $image, $text.': '.$file[1]);
+            }
         }
     }
 }

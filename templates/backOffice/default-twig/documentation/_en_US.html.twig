@@ -33,7 +33,7 @@
     <h3 id="pages-list">Finding a page</h3>
     <p><strong>CMS &gt; Pages</strong> shows the tree of the site one level at a time. A page that holds others shows how many and opens on its arrow. The <em>Find a page</em> field looks for a word in the titles of the language edited, and the publication state or the visibility narrow the search. The arrows that change the order of pages only show on the tree.</p>
     <figure class="figure d-block my-3">
-        <img class="figure-img img-fluid rounded border" src="{{ module_asset('TheliaCMS', 'assets/documentation/pages-list.en_US.png') }}" alt="The list of pages: the tree of the site, with the title, the publication state, the address and the actions of each page." loading="lazy">
+        <img class="figure-img img-fluid rounded border" src="{{ module_asset('TheliaCMS', 'assets/documentation/pages-list.en_US.png') }}" alt="The list of pages: the tree of the site, with the title, the publication state, the address and the actions of each page." width="1440" height="900" loading="lazy">
         <figcaption class="figure-caption">The list of pages: one row per page, its actions on the right.</figcaption>
     </figure>
     <p>Each row shows the state of the page in the language edited: <em>Draft</em>, <em>Scheduled</em>, <em>Published</em>, <em>Modified since publication</em> or <em>Unpublished</em>. <em>Hide</em> takes the page off the site, in every language; <em>Show</em> puts it back.</p>
@@ -89,7 +89,7 @@
     <h2>The content of a page</h2>
     <p>The content is edited on its own screen: <em>Edit content</em>, from the page. It is made of <strong>sections</strong> laid one under the other, each one a component (a banner, a text, a list of products, a form...). On the left, the brief and the list of sections; on the right, the preview shows the draft the way the site will display it.</p>
     <figure class="figure d-block my-3">
-        <img class="figure-img img-fluid rounded border" src="{{ module_asset('TheliaCMS', 'assets/documentation/content-screen.en_US.png') }}" alt="The content screen: the list of sections on the left, the preview of the page on the right." loading="lazy">
+        <img class="figure-img img-fluid rounded border" src="{{ module_asset('TheliaCMS', 'assets/documentation/content-screen.en_US.png') }}" alt="The content screen: the list of sections on the left, the preview of the page on the right." width="1440" height="900" loading="lazy">
         <figcaption class="figure-caption">Sections are set on the left, the draft is read in the preview on the right.</figcaption>
     </figure>
 
@@ -242,7 +242,7 @@
     <h3 id="site-components">Copying, keeping or deleting a component of the site</h3>
     <p>In <strong>CMS &gt; Components</strong>, the <em>Edit</em> button, on a component made on this site, opens its screen, with its preview, its properties and its history.</p>
     <figure class="figure d-block my-3">
-        <img class="figure-img img-fluid rounded border" src="{{ module_asset('TheliaCMS', 'assets/documentation/site-component.en_US.png') }}" alt="The screen of a component of the site: its preview and the form to copy it into a new component." loading="lazy">
+        <img class="figure-img img-fluid rounded border" src="{{ module_asset('TheliaCMS', 'assets/documentation/site-component.en_US.png') }}" alt="The screen of a component of the site: its preview and the form to copy it into a new component." width="1440" height="900" loading="lazy">
         <figcaption class="figure-caption">The screen of a component of the site: the preview, and the copy form below it.</figcaption>
     </figure>
     <ul>
@@ -291,19 +291,29 @@
     <h3 id="forms">Forms</h3>
     <p><strong>CMS &gt; Forms</strong> creates forms, placed in a page with the form section. A field is a line of text, an email address, several lines, a drop-down list, a tick box, one choice among several, a phone number, a date or an agreement to be contacted. Recipients are set here. Robots are kept out without a captcha. <em>Answers</em> are read, searched by email address, exported (CSV, JSON) and deleted; they go on their own after the retention period of the form (365 days by default).</p>
     <h3 id="media">Media</h3>
-    <p><strong>CMS &gt; Media</strong> keeps the images of the pages (JPEG, PNG, WebP). An image is refused above 10 MB or 25 million pixels, in the library, in a page and in a section. The alternative text is required in every language, except for an image marked decorative: it is what screen readers read and what shows when the image does not load. Each image shows its dimensions, its weight and the pages using it; an image in use cannot be deleted. On publication, images are served in several sizes and in WebP.</p>
+    <p><strong>CMS &gt; Media</strong> keeps the images of the pages (JPEG, PNG, WebP, SVG). An image is refused above 10 MB or 25 million pixels, in the library, in a page and in a section. The alternative text is required in every language, except for an image marked decorative: it is what screen readers read and what shows when the image does not load. Each image shows its dimensions, its weight and the pages using it; an image in use cannot be deleted. On publication, images are served in several sizes and in WebP.</p>
     <h3 id="add-described-image">Adding a described image</h3>
     <ol>
         <li>Open <strong>CMS &gt; Media</strong>. Drop the files on the <em>Drop images here, or choose them</em> frame, or click <em>Add images</em>. Several files at once are fine; a refused file is named with its reason, without stopping the others.</li>
-        <li>When sending is done, click <em>Describe the N image(s) added</em>.</li>
+        <li>When sending is done, click <em>Describe the N images added</em>.</li>
         <li>For each image, type in <em>Alternative text</em> what it shows, for someone who cannot see it, then press Enter or click <em>Save and next</em>. An image that only decorates is marked with <em>It is decorative</em>; <em>Skip</em> leaves it for later.</li>
         <li>The description is written for the language picked with the selector: repeat it in each language of the site.</li>
         <li>Place the image: in the <em>Image</em> tab of a page, or in the form of a section with <em>Choose in the library</em>. The window that opens shows thumbnails; search, filter, then click the image. It tells whether each image is <em>Described</em>, <em>To describe</em> or <em>Decorative</em>.</li>
     </ol>
     <figure class="figure d-block my-3">
-        <img class="figure-img img-fluid rounded border" src="{{ module_asset('TheliaCMS', 'assets/documentation/media-picker.en_US.png') }}" alt="The window to choose an image: thumbnails, a search field and filters." loading="lazy">
+        <img class="figure-img img-fluid rounded border" src="{{ module_asset('TheliaCMS', 'assets/documentation/media-picker.en_US.png') }}" alt="The window to choose an image: thumbnails, a search field and filters." width="1440" height="900" loading="lazy">
         <figcaption class="figure-caption">The window to choose an image: the state of each image reads on its thumbnail.</figcaption>
     </figure>
+    <h3 id="prepare-svg">Preparing an SVG</h3>
+    <p>An SVG file does not go straight into the library: it first goes through the <em>Prepare the SVG</em> screen, one file at a time. The JPEG, PNG and WebP images sent with it are added at once, as usual. When several SVG files are sent together, the top of the screen says where you are (<em>File 2 of 3</em>).</p>
+    <ol>
+        <li><strong>Cleaning</strong>, required. Whatever could run or load content from elsewhere is removed: scripts, event handlers, links to other files or sites, embedded HTML content, animations. Comments and the data of the software that made the file leave too. The list says what was removed or added (a missing <code>viewBox</code>, for instance).</li>
+        <li><strong>Optimization</strong>, also required and lossless: the file gets lighter without any change to how it looks. The title and description written in the file (<code>&lt;title&gt;</code>, <code>&lt;desc&gt;</code>) leave it: the alternative text of the image is what describes the drawing. It is the only method offered for now.</li>
+        <li><em>Add to the media library</em> saves the result; the original is not kept. <em>Do not add this file</em> leaves it out. The images added are then described like the others.</li>
+    </ol>
+    <p>The preview shows the original and the result side by side, on a checkerboard, a light or a dark ground, fitted to the frame or enlarged 1, 4 or 10 times; both previews scroll together; below each, its weight, and below the result the saving.</p>
+    <p>A file that cannot be read safely is refused with its reason: declared entities, invalid XML, an encoding other than UTF-8, a file that is not an SVG, more than 5 MB or 50,000 elements, or a drawing without dimensions. An SVG is served as it is, without sizes or WebP, and whole: a crop set in a section does not apply to it. To replace the one of an image, use <em>Replace the file</em> on its sheet: the new file goes through the same screen.</p>
+    <p>From a page or a section, <em>Send an image</em> in the picker accepts an SVG too: the same screen opens over the editor, and <em>Add and choose</em> adds it to the library and puts it in the field.</p>
     <h3 id="media-list">Finding and sorting images</h3>
     <p>The list shows 48 images a page. It narrows to the images still to describe in the language edited, the unused ones, the decorative ones or one tag, and is ordered newest or oldest first, by title or by weight. The search reads the title, the alternative text, the caption and the tags. <em>Describe them one by one</em> shows the images of the list still to describe, one at a time.</p>
     <p>Images ticked on the list take or lose a tag, are marked decorative or not, or are deleted when nothing uses them; those still used are kept and named.</p>

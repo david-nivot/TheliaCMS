@@ -116,6 +116,17 @@
         });
 
         var status = element('p', 'small text-body-secondary mb-0');
+        // A file sent from here and not added says so apart from the grey line
+        // of the grid, which the next search rewrites.
+        var problem = element('div', 'alert alert-warning small py-2 mb-0');
+        problem.setAttribute('role', 'alert');
+        problem.setAttribute('data-cms-media-picker-problem', '');
+        problem.hidden = true;
+
+        function warn(text) {
+            problem.replaceChildren(element('i', 'bi bi-exclamation-triangle-fill me-2'), document.createTextNode(text));
+            problem.hidden = false;
+        }
         var grid = element('div', 'row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-6 g-2');
         grid.setAttribute('data-cms-media-picker-grid', '');
         grid.style.maxHeight = '60vh';
@@ -135,16 +146,69 @@
         upload.setAttribute('data-cms-media-picker-upload', '');
         var file = element('input', 'd-none');
         file.type = 'file';
-        file.accept = 'image/jpeg,image/png,image/webp';
+        file.accept = 'image/jpeg,image/png,image/webp,image/svg+xml,.svg';
         upload.append(element('i', 'bi bi-upload me-1'), document.createTextNode(m.upload), file);
         var cancel = element('button', 'btn btn-sm btn-outline-secondary', m.cancel);
         cancel.type = 'button';
         actions.append(upload, cancel);
         foot.append(pages, actions);
 
-        body.append(head, tools, status, grid, foot);
+        body.append(head, tools, problem, status, grid, foot);
         dialog.appendChild(body);
         document.body.appendChild(dialog);
+
+        // An SVG is prepared before it joins the library: its screen opens in
+        // a frame over the picker, and the page that ends it hands back the
+        // image added (or why there is none) by a message. Only a message of
+        // this origin, from this frame, is read.
+        var preparation = element('dialog', 'border-0 rounded shadow p-0');
+        preparation.setAttribute('data-cms-media-picker-preparation', '');
+        preparation.setAttribute('aria-label', m.prepare || '');
+        preparation.style.width = 'calc(100vw - 32px)';
+        preparation.style.height = 'calc(100vh - 32px)';
+        preparation.style.maxWidth = 'none';
+        preparation.style.maxHeight = 'none';
+        var frame = element('iframe', 'w-100 h-100 border-0 d-block');
+        frame.title = m.prepare || '';
+        preparation.appendChild(frame);
+        document.body.appendChild(preparation);
+
+        function endPreparation() {
+            preparation.close();
+            frame.src = 'about:blank';
+        }
+
+        preparation.addEventListener('cancel', function () {
+            frame.src = 'about:blank';
+        });
+
+        window.addEventListener('message', function (event) {
+            var answer = event.data;
+
+            if (event.origin !== window.location.origin || event.source !== frame.contentWindow || !answer || answer.type !== 'cms-svg-picked') {
+                return;
+            }
+
+            endPreparation();
+
+            if (!answer.image) {
+                // Refused or expired, the frame says why; left out by the
+                // editor, it is no error.
+                if (answer.message) {
+                    warn(answer.message);
+                } else {
+                    status.textContent = m.notAdded;
+                }
+
+                return;
+            }
+
+            getJson(withParameters(state.endpoint, { id: answer.image })).then(function (one) {
+                if (one && one.items && one.items[0]) {
+                    pick(one.items[0]);
+                }
+            });
+        });
 
         var state = { page: 1, pageCount: 1, current: 0, choose: null, endpoint: '', uploadUrl: '' };
         var typing = null;
@@ -251,13 +315,22 @@
             }
 
             status.textContent = m.sending;
+            problem.hidden = true;
             var body = new FormData();
             body.append('_token', backOfficeToken());
             body.append('files[]', chosen);
-            fetch(withParameters(state.uploadUrl, {}), { method: 'POST', credentials: 'same-origin', headers: { Accept: 'application/json' }, body: body })
+            fetch(withParameters(state.uploadUrl, { picker: 1 }), { method: 'POST', credentials: 'same-origin', headers: { Accept: 'application/json' }, body: body })
                 .then(function (response) { return response.json(); })
                 .then(function (answer) {
                     file.value = '';
+
+                    if (answer && answer.prepare) {
+                        status.textContent = '';
+                        frame.src = answer.prepare;
+                        preparation.showModal();
+
+                        return null;
+                    }
 
                     if (answer && answer.stored && answer.stored[0]) {
                         return getJson(withParameters(state.endpoint, { id: answer.stored[0].id })).then(function (one) {
@@ -267,13 +340,17 @@
                         });
                     }
 
-                    status.textContent = answer && answer.refused && answer.refused[0] ? answer.refused[0].reason : m.failed;
+                    status.textContent = '';
+                    warn(answer && answer.refused && answer.refused[0]
+                        ? (m.refused || '').replace('%name%', answer.refused[0].name).replace('%reason%', answer.refused[0].reason)
+                        : m.sendFailed);
 
                     return null;
                 })
                 .catch(function () {
                     file.value = '';
-                    status.textContent = m.failed;
+                    status.textContent = '';
+                    warn(m.sendFailed);
                 });
         });
 
@@ -284,6 +361,7 @@
                 state.current = options.current;
                 state.choose = options.choose;
                 state.page = 1;
+                problem.hidden = true;
                 upload.hidden = !options.uploadUrl;
                 dialog.showModal();
                 load();

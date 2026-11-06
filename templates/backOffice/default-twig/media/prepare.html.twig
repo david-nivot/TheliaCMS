@@ -1,0 +1,265 @@
+{% extends '@BackOfficeDefaultTwig/base.html.twig' %}
+
+{% block title %}{{ 'Prepare the SVG'|trans({}, 'theliacms') }}{% endblock %}
+{% block body_testid %}cms-media-svg{% endblock %}
+
+{# Opened from the image picker of the editor, the screen fills a frame over
+   the editor: the menus and the footer of the back office stay outside. #}
+{% block side_nav %}{% if not picker %}{{ parent() }}{% endif %}{% endblock %}
+{% block top_nav %}{% if not picker %}{{ parent() }}{% endif %}{% endblock %}
+{% block footer %}{% if not picker %}{{ parent() }}{% endif %}{% endblock %}
+
+{% block content %}
+    {% set carried = route_parameters|filter((value, key) => key != 'token') %}
+
+    {# Backgrounds and zoom are radio buttons read by a selector: no script is
+       needed to see a light drawing on a dark ground, or a small one larger.
+       Zoomed past its frame, the drawing scrolls in it. #}
+    <style>
+        .cms-svg-previews { --cms-svg-zoom: 1; }
+        .cms-svg-previews:has(#cms-svg-zoom-4:checked) { --cms-svg-zoom: 4; }
+        .cms-svg-previews:has(#cms-svg-zoom-10:checked) { --cms-svg-zoom: 10; }
+        .cms-svg-frame { height: 270px; overflow: auto; background: var(--bs-body-bg); }
+        .cms-svg-canvas { display: grid; place-items: center; width: max-content; min-width: 100%; min-height: 100%; }
+        .cms-svg-canvas img {
+            display: block;
+            width: calc(var(--cms-svg-width) * var(--cms-svg-zoom));
+            height: calc(var(--cms-svg-height) * var(--cms-svg-zoom));
+        }
+        /* Fitted, the drawing is laid over the whole frame: a percentage of
+           the frame, whose height is fixed, not of a grid row sized by the
+           drawing itself. */
+        .cms-svg-previews:has(#cms-svg-zoom-fit:checked) .cms-svg-canvas { position: relative; width: 100%; height: 100%; }
+        .cms-svg-previews:has(#cms-svg-zoom-fit:checked) .cms-svg-canvas img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+        .cms-svg-previews:has(#cms-svg-background-checkerboard:checked) .cms-svg-frame {
+            background-color: #fff;
+            background-image: conic-gradient(#d9d9d9 25%, transparent 0 50%, #d9d9d9 0 75%, transparent 0);
+            background-size: 16px 16px;
+        }
+        .cms-svg-previews:has(#cms-svg-background-light:checked) .cms-svg-frame { background: #fff; }
+        .cms-svg-previews:has(#cms-svg-background-dark:checked) .cms-svg-frame { background: #212529; }
+        @media (max-width: 767.98px) { .cms-svg-frame { height: 200px; } }
+    </style>
+
+    <div class="d-flex flex-column gap-3">
+        {# The band of the file: which one it is, and where the editor stands
+           when several were sent together. #}
+        <section class="card" data-testid="cms-svg-band">
+            <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div class="text-break">
+                    <h1 class="h4 mb-1 font-monospace" data-testid="cms-svg-name">{{ file.name }}</h1>
+                    <p class="mb-0 text-body-secondary">{{ 'Check the result before adding it. The original is not kept.'|trans({}, 'theliacms') }}</p>
+                    {% if replace is not null %}
+                        <p class="mb-0 mt-1 text-body-secondary" data-testid="cms-svg-replacing">{{ 'This file replaces the one of an image: the pages that use it show it right away.'|trans({}, 'theliacms') }}</p>
+                    {% endif %}
+                </div>
+                {% if total > 1 %}
+                    <div class="flex-grow-1" style="max-width: 24rem">
+                        <div class="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mb-1">
+                            <span class="fw-semibold" data-testid="cms-svg-position">{{ 'File %position% of %total%'|trans({ '%position%': position, '%total%': total }, 'theliacms') }}</span>
+                            <span class="small text-body-secondary">{{ 'Preparing the SVG files one after the other'|trans({}, 'theliacms') }}</span>
+                        </div>
+                        <div class="progress border bg-body-secondary" role="progressbar" style="height: .5rem" aria-label="{{ 'File %position% of %total%'|trans({ '%position%': position, '%total%': total }, 'theliacms') }}" aria-valuenow="{{ position }}" aria-valuemin="1" aria-valuemax="{{ total }}">
+                            <div class="progress-bar" style="width: {{ (position / total * 100)|round }}%"></div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <div class="row g-3">
+            <div class="col-lg-7">
+                <section class="card h-100 cms-svg-previews" data-testid="cms-svg-preview">
+                    <div class="card-body">
+                        <h2 class="h6 d-flex flex-wrap justify-content-between gap-2">
+                            {{ 'Preview'|trans({}, 'theliacms') }}
+                            <small class="fw-normal text-body-secondary" data-testid="cms-svg-size">{{ result.width|round(2) }} × {{ result.height|round(2) }} px</small>
+                        </h2>
+
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            <div class="btn-group btn-group-sm" role="group" aria-label="{{ 'Background'|trans({}, 'theliacms') }}">
+                                <input type="radio" class="btn-check" name="cms-svg-background" id="cms-svg-background-checkerboard" autocomplete="off" checked>
+                                <label class="btn btn-outline-secondary" for="cms-svg-background-checkerboard">{{ 'Checkerboard'|trans({}, 'theliacms') }}</label>
+                                <input type="radio" class="btn-check" name="cms-svg-background" id="cms-svg-background-light" autocomplete="off">
+                                <label class="btn btn-outline-secondary" for="cms-svg-background-light">{{ 'Light'|trans({}, 'theliacms') }}</label>
+                                <input type="radio" class="btn-check" name="cms-svg-background" id="cms-svg-background-dark" autocomplete="off">
+                                <label class="btn btn-outline-secondary" for="cms-svg-background-dark">{{ 'Dark'|trans({}, 'theliacms') }}</label>
+                            </div>
+                            <div class="btn-group btn-group-sm" role="group" aria-label="{{ 'Zoom'|trans({}, 'theliacms') }}" data-testid="cms-svg-zoom">
+                                {# The preview opens fitted to its frame, whatever the size of the drawing. #}
+                                {% for factor in ['fit', '1', '4', '10'] %}
+                                    <input type="radio" class="btn-check" name="cms-svg-zoom" id="cms-svg-zoom-{{ factor }}" value="{{ factor }}" autocomplete="off" {{ factor == 'fit' ? 'checked' : '' }}>
+                                    <label class="btn btn-outline-secondary" for="cms-svg-zoom-{{ factor }}">{{ factor == 'fit' ? 'Fitted'|trans({}, 'theliacms') : factor ~ '×' }}</label>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="row g-3" style="--cms-svg-width: {{ result.width }}px; --cms-svg-height: {{ result.height }}px">
+                            <div class="col-sm-6">
+                                <figure class="mb-0">
+                                    <div class="cms-svg-frame border rounded" data-cms-svg-frame>
+                                        <div class="cms-svg-canvas"><img src="{{ path('admin.cms.media.svg.original', { token: file.token }) }}" alt="" data-testid="cms-svg-original"></div>
+                                    </div>
+                                    <figcaption class="small mt-2 text-center">{{ 'Original'|trans({}, 'theliacms') }} · <strong>{{ original_weight }}</strong></figcaption>
+                                </figure>
+                            </div>
+                            <div class="col-sm-6">
+                                <figure class="mb-0">
+                                    <div class="cms-svg-frame border rounded" data-cms-svg-frame>
+                                        <div class="cms-svg-canvas"><img src="{{ path('admin.cms.media.svg.result', { token: file.token, level: level }|filter(value => value != '')) }}" alt="" data-testid="cms-svg-result"></div>
+                                    </div>
+                                    <figcaption class="small mt-2 text-center">
+                                        {{ 'Result'|trans({}, 'theliacms') }} · <strong>{{ result_weight }}</strong>
+                                        <span data-testid="cms-svg-gain">
+                                            {% if result.savedBytes > 0 %}
+                                                <span class="text-success fw-semibold" title="{{ '%percent% % lighter (%weight% saved)'|trans({ '%percent%': result.savedPercent, '%weight%': saved_weight }, 'theliacms') }}">{{ '−%percent% %'|trans({ '%percent%': result.savedPercent }, 'theliacms') }}</span>
+                                            {% elseif result.savedBytes < 0 %}
+                                                <span class="text-warning-emphasis">{{ '%weight% heavier'|trans({ '%weight%': saved_weight }, 'theliacms') }}</span>
+                                            {% else %}
+                                                <span class="text-body-secondary">{{ 'No weight saved.'|trans({}, 'theliacms') }}</span>
+                                            {% endif %}
+                                        </span>
+                                    </figcaption>
+                                </figure>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <div class="col-lg-5 d-flex flex-column gap-3">
+                <details class="card" open data-testid="cms-svg-cleaning">
+                    <summary class="card-header fw-semibold">
+                        1. {{ 'Cleaning'|trans({}, 'theliacms') }}
+                        <small class="float-end fw-normal text-body-secondary">
+                            {% if result.changes is empty %}
+                                {{ 'nothing to remove'|trans({}, 'theliacms') }}
+                            {% else %}
+                                {{ '%count% change · required|%count% changes · required'|trans({ '%count%': result.changes|length }, 'theliacms') }}
+                            {% endif %}
+                        </small>
+                    </summary>
+                    <div class="card-body">
+                        {% if entries is empty %}
+                            <p class="text-body-secondary" data-testid="cms-svg-nothing-removed">{{ 'Nothing to remove: the file is safe as it is.'|trans({}, 'theliacms') }}</p>
+                        {% else %}
+                            <ul class="list-unstyled small d-flex flex-column gap-1" data-testid="cms-svg-changes">
+                                {% for entry in entries %}
+                                    <li class="d-flex gap-2 {{ entry.added ? 'text-success-emphasis' : 'text-danger-emphasis' }}">
+                                        <i class="bi {{ entry.added ? 'bi-plus-circle text-success' : 'bi-x-circle text-danger' }}" aria-hidden="true"></i>
+                                        <span>{{ entry.text }}</span>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+
+                    </div>
+                </details>
+
+                <details class="card" open data-testid="cms-svg-optimization">
+                    <summary class="card-header fw-semibold">
+                        2. {{ 'Optimization'|trans({}, 'theliacms') }}
+                        <small class="float-end fw-normal text-body-secondary">{{ 'lossless · required'|trans({}, 'theliacms') }}</small>
+                    </summary>
+                    <div class="card-body">
+                        <p class="small">{{ 'The base optimization is always applied, without any change to how the file looks: titles and descriptions, unused identifiers, editor data, empty or hidden elements, default attributes, needless spaces and digits leave it.'|trans({}, 'theliacms') }}</p>
+                        {% if levels is empty %}
+                            <p class="small text-body-secondary" data-testid="cms-svg-only-method">{{ 'It is the only method available for now; others may be added later.'|trans({}, 'theliacms') }}</p>
+                        {% endif %}
+
+
+                        {% if levels is not empty %}
+                            {# The setting is previewed by a form of its own, which reads the
+                               address and sends nothing else: the buttons of the file below
+                               keep their own form. #}
+                            <form method="get" action="{{ path('admin.cms.media.svg.show', { token: file.token }) }}" class="mt-3" data-testid="cms-svg-levels">
+                                {% for name, value in carried %}
+                                    <input type="hidden" name="{{ name }}" value="{{ value }}">
+                                {% endfor %}
+                                <fieldset class="mb-2">
+                                    <legend class="fs-6">{{ 'Further optimization'|trans({}, 'theliacms') }}</legend>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="level" id="cms-svg-level-none" value="" {{ level == '' ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="cms-svg-level-none">{{ 'None'|trans({}, 'theliacms') }}</label>
+                                    </div>
+                                    {% for option in levels %}
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="level" id="cms-svg-level-{{ option.name }}" value="{{ option.name }}" {{ level == option.name ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="cms-svg-level-{{ option.name }}">
+                                                {{ option.label|trans({}, 'theliacms') }}
+                                                {% if option.changesRendering %}<span class="badge text-bg-warning">{{ 'May change how it looks'|trans({}, 'theliacms') }}</span>{% endif %}
+                                            </label>
+                                        </div>
+                                    {% endfor %}
+                                </fieldset>
+                                <button type="submit" class="btn btn-sm btn-outline-secondary">{{ 'Preview this setting'|trans({}, 'theliacms') }}</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </details>
+
+                {# Last, once the steps were read: what becomes of the file. #}
+                <form method="post" action="{{ path('admin.cms.media.svg.submit', route_parameters) }}" class="card" data-testid="cms-svg-form">
+                    <input type="hidden" name="_token" value="{{ assignToken() }}">
+                    <input type="hidden" name="level" value="{{ level }}">
+
+                    <div class="card-body d-flex flex-column gap-3">
+                        {% if levels is not empty and has_following %}
+                            <div class="form-check mb-0">
+                                <input class="form-check-input" type="checkbox" name="apply_to_following" id="cms-svg-apply-following" value="1" data-testid="cms-svg-apply-following">
+                                <label class="form-check-label" for="cms-svg-apply-following">{{ 'Apply these settings to the following file|Apply these settings to the %count% following files'|trans({ '%count%': total - position }, 'theliacms') }}</label>
+                            </div>
+                        {% endif %}
+
+                        {# The first button is the one Enter presses: it comes first in
+                           the page, and is drawn last. #}
+                        <div class="d-flex flex-row-reverse flex-wrap justify-content-start gap-2">
+                            <button type="submit" name="action" value="add" class="btn btn-primary" data-testid="cms-svg-add">
+                                {{ (replace is not null ? 'Replace the file of the image' : (picker ? 'Add and choose' : 'Add to the media library'))|trans({}, 'theliacms') }}
+                            </button>
+                            <button type="submit" name="action" value="skip" class="btn btn-outline-secondary" data-testid="cms-svg-skip">
+                                {{ 'Do not add this file'|trans({}, 'theliacms') }}
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        {# A zoomed drawing opens on its middle, and the two previews scroll
+           together, so that both show the same part of the drawing. #}
+        (() => {
+            const frames = [...document.querySelectorAll('[data-cms-svg-frame]')];
+            const centre = () => frames.forEach((frame) => {
+                frame.scrollLeft = (frame.scrollWidth - frame.clientWidth) / 2;
+                frame.scrollTop = (frame.scrollHeight - frame.clientHeight) / 2;
+            });
+            // Only a position that differs is written: the frame that follows
+            // then scrolls once, and the one it follows does not move again.
+            frames.forEach((frame) => frame.addEventListener('scroll', () => {
+                frames.filter((other) => other !== frame).forEach((other) => {
+                    if (other.scrollLeft !== frame.scrollLeft || other.scrollTop !== frame.scrollTop) {
+                        other.scrollTo(frame.scrollLeft, frame.scrollTop);
+                    }
+                });
+            }));
+            document.querySelectorAll('input[name="cms-svg-zoom"]').forEach((input) => input.addEventListener('change', centre));
+            centre();
+
+            // One answer per file: a second click while the first is on its
+            // way sends nothing.
+            const answer = document.querySelector('[data-testid="cms-svg-form"]');
+            answer?.addEventListener('submit', (event) => {
+                if (answer.dataset.sent) {
+                    event.preventDefault();
+
+                    return;
+                }
+
+                answer.dataset.sent = '1';
+            });
+        })();
+    </script>
+{% endblock %}

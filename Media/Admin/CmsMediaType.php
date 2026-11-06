@@ -23,19 +23,33 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\Callback;
 use Symfony\Component\Validator\Constraints\Image;
 use Symfony\Component\Validator\Constraints\Length;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use TheliaCMS\Media\Svg\SvgUpload;
 use TheliaCMS\TheliaCMS;
 
 final class CmsMediaType extends AbstractType
 {
     /**
      * SVG is deliberately absent: it is a document that can carry script, and
-     * an uploaded one becomes stored cross-site scripting.
+     * an uploaded one becomes stored cross-site scripting. The fields that take
+     * an image for a page or a section keep this list; the media library has its
+     * own, below.
      */
     public const array ACCEPTED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+    /**
+     * What the media library takes: the same images, and SVG, which never
+     * enters it directly. It is cleaned and shown to the editor on its own
+     * screen first. The extension is there for the systems that give no type to
+     * an SVG file.
+     */
+    public const array LIBRARY_ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml', '.svg'];
 
     /**
      * The ceiling of an uploaded image, in bytes (10 MB, binary: 1024 × 1024 bytes a MB, as `MediaItem` counts) and in pixels
@@ -77,6 +91,23 @@ final class CmsMediaType extends AbstractType
         );
     }
 
+    /**
+     * The constraint of the file that replaces an image of the library: an SVG
+     * is let through, the library cleans it and the editor sees the result
+     * before anything is stored; any other file is held to the constraint of
+     * an image.
+     */
+    public static function replacementConstraint(?TranslatorInterface $translator = null): Callback
+    {
+        return new Callback(static function (mixed $file, ExecutionContextInterface $context) use ($translator): void {
+            if (!$file instanceof UploadedFile || SvgUpload::isSvg($file)) {
+                return;
+            }
+
+            $context->getValidator()->inContext($context)->validate($file, self::imageConstraint($translator));
+        });
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
@@ -114,7 +145,7 @@ final class CmsMediaType extends AbstractType
             ->add('file', FileType::class, [
                 'label' => 'Replace the file',
                 'required' => false,
-                'constraints' => [self::imageConstraint($this->translator)],
+                'constraints' => [self::replacementConstraint($this->translator)],
                 'help' => 'The new file keeps the same address, so the pages using this image show it right away.',
             ])
             ->addEventListener(FormEvents::SUBMIT, self::requireAltUnlessDecorative($this->translator));

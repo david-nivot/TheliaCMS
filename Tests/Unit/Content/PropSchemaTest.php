@@ -103,6 +103,7 @@ final class PropSchemaTest extends TestCase
             '/image-library/17/full/max/0/default.webp' => 17,
             ' /image-library/3/full/480,!/0/default.jpg ' => 3,
             '/image-library/8/full/max/0/default.PNG' => 8,
+            '/image-library/5/full/max/0/default.svg' => 5,
         ];
 
         foreach ($addresses as $address => $id) {

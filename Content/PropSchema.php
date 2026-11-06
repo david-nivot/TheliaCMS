@@ -256,7 +256,7 @@ final readonly class PropSchema
      */
     public static function libraryImageId(string $value): ?int
     {
-        if (1 !== preg_match('#^/image-library/(\d+)/[^/\s?\#]+/[^/\s?\#]+/[^/\s?\#]+/[^/\s?\#.]+\.(?:jpe?g|png|gif|jp2|webp)$#i', trim($value), $matches)) {
+        if (1 !== preg_match('#^/image-library/(\d+)/[^/\s?\#]+/[^/\s?\#]+/[^/\s?\#]+/[^/\s?\#.]+\.(?:jpe?g|png|gif|jp2|webp|svg)$#i', trim($value), $matches)) {
             return null;
         }
 

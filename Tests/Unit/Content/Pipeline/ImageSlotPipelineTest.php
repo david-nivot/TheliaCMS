@@ -52,14 +52,31 @@ final class ImageSlotPipelineTest extends TestCase
         self::assertStringNotContainsString('data-cms-sizes', $html);
     }
 
-    private function publish(string $html): string
+    public function testAnSvgIsPublishedWithoutAPictureOrAWidthSetWhateverTheSectionDeclares(): void
+    {
+        $html = $this->publish('<div class="cms-site cms-site--logo-wall" data-cms-sizes="(min-width: 64rem) 20vw, 50vw"><img src="/image-library/7/full/max/0/default.svg" alt=""></div>', new MediaFile(id: 7, format: 'svg', width: 120, height: 40));
+
+        self::assertStringNotContainsString('<picture', $html);
+        self::assertStringNotContainsString('srcset', $html);
+        self::assertStringNotContainsString('sizes=', $html);
+        self::assertStringNotContainsString('data-cms-sizes', $html);
+        self::assertStringContainsString('src="/image-library/7/full/max/0/default.svg"', $html);
+        self::assertStringContainsString('width="120" height="40"', $html);
+    }
+
+    private function publish(string $html, ?MediaFile $media = null): string
     {
         // Every picture is taken for one of the library, which is what the
         // sections draw with an id: they read the database for it.
-        $resolver = new class implements MediaResolver {
+        $media ??= new MediaFile(id: 7, format: 'jpg', width: 1600, height: 900);
+        $resolver = new class($media) implements MediaResolver {
+            public function __construct(private readonly MediaFile $media)
+            {
+            }
+
             public function fromUrl(string $url): ?MediaFile
             {
-                return '' === $url ? null : new MediaFile(id: 7, format: 'jpg', width: 1600, height: 900);
+                return '' === $url ? null : $this->media;
             }
         };
 

@@ -62,6 +62,9 @@ final class WriteRoutesTest extends AdminScreenTestCase
         'admin.cms.media.edit',
         'admin.cms.media.list',
         'admin.cms.media.picker',
+        'admin.cms.media.svg.original',
+        'admin.cms.media.svg.result',
+        'admin.cms.media.svg.show',
         'admin.cms.menus.create',
         'admin.cms.menus.edit',
         'admin.cms.menus.entry_save',
@@ -102,6 +105,8 @@ final class WriteRoutesTest extends AdminScreenTestCase
         'component' => 'SampleComponent',
         // The type of a catalogue item carrying a document.
         'type' => 'product',
+        // The token of an SVG waiting to be prepared: 32 hexadecimal digits.
+        'token' => '00000000000000000000000000000000',
     ];
 
     public function testEveryWriteIsRefusedWithoutTheToken(): void

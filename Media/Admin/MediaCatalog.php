@@ -17,6 +17,7 @@ namespace TheliaCMS\Media\Admin;
 use Thelia\Model\Lang;
 use Thelia\Model\LangQuery;
 use TheliaCMS\Media\CmsMediaLibrary;
+use TheliaCMS\Media\MediaFile;
 use TheliaCMS\Media\MediaFilter;
 use TheliaLibrary\Model\LibraryImage;
 
@@ -189,12 +190,12 @@ final readonly class MediaCatalog
     private function thumbnailUrl(LibraryImage $image, string $fileName): ?string
     {
         $width = $image->getWidth();
+        $format = pathinfo($fileName, \PATHINFO_EXTENSION);
 
-        if (null === $width || $width <= self::THUMBNAIL_WIDTH) {
+        // An SVG is served whole and cannot be resized: its own file is the thumbnail.
+        if (null === $width || $width <= self::THUMBNAIL_WIDTH || MediaFile::isVectorFormat($format)) {
             return $this->library->publicUrl($image);
         }
-
-        $format = pathinfo($fileName, \PATHINFO_EXTENSION);
 
         return '/image-library/'.$image->getId().'/full/'.self::THUMBNAIL_WIDTH.',!/0/default.'.($format ?: 'jpg');
     }

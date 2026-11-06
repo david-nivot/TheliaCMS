@@ -52,6 +52,7 @@ class CmsDocumentationLinkHook extends BaseHook
         'admin.cms.menus.' => 'menus',
         'admin.cms.forms.' => 'forms',
         'admin.cms.media.' => 'media',
+        'admin.cms.media.svg.' => 'prepare-svg',
     ];
 
     public function __construct(
@@ -77,7 +78,8 @@ class CmsDocumentationLinkHook extends BaseHook
 
     public function onMainBeforeContent(HookRenderEvent $event): void
     {
-        $url = $this->documentation->forRoute((string) $this->requests->getMainRequest()?->attributes->get('_route'));
+        $request = $this->requests->getMainRequest();
+        $url = $this->documentation->forRoute((string) $request?->attributes->get('_route'));
 
         if (null === $url) {
             return;
@@ -86,6 +88,11 @@ class CmsDocumentationLinkHook extends BaseHook
         $event->add($this->twig->render('@TheliaCMSModule/backOffice/default-twig/documentation/_link.html.twig', [
             'url' => $url,
             'label' => $this->trans('Help on this screen', [], TheliaCMS::DOMAIN_NAME),
+            // A screen drawn in a frame (the preparation of an SVG over the
+            // editor) opens the help outside it, not in its place: the browser
+            // says so, and the address of a screen opened by a picker too, for
+            // a browser that does not.
+            'new_tab' => 'iframe' === $request?->headers->get('Sec-Fetch-Dest') || '1' === $request?->query->get('picker'),
         ]));
     }
 

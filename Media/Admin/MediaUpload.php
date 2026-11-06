@@ -25,11 +25,21 @@ final readonly class MediaUpload
     /**
      * @param list<LibraryImage>                                     $stored
      * @param list<array{name: string, refusal: MediaUploadRefusal}> $refused
+     * @param list<array{token: string, name: string}>               $prepared SVG files waiting on the preparation screen, not stored yet
      */
     public function __construct(
         public array $stored,
         public array $refused,
+        public array $prepared = [],
     ) {
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function preparedTokens(): array
+    {
+        return array_column($this->prepared, 'token');
     }
 
     /**

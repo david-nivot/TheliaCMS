@@ -104,6 +104,24 @@ final class MediaUploadScreenTest extends AdminScreenTestCase
         self::assertSame($this->getService(TranslatorInterface::class)->trans($refusal->message(), [], TheliaCMS::DOMAIN_NAME), $messages['tooLarge']);
     }
 
+    /**
+     * The script picks the form of a message by the count it knows once the
+     * files are sent: it receives both forms, and what each button leaves.
+     */
+    public function testTheButtonsAfterARefusalReceiveBothFormsOfTheirMessage(): void
+    {
+        $messages = json_decode((string) $this->screen(self::LIST)->filter('form[data-cms-media-upload]')->attr('data-messages'), true, flags: \JSON_THROW_ON_ERROR);
+        $translator = $this->getService(TranslatorInterface::class);
+
+        foreach (['prepare' => 'Prepare the SVG file|Prepare the %count% SVG files', 'thenDescribe' => ', then describe the image|, then describe the %count% images', 'dropSvg' => 'Do not add this SVG file|Do not add these SVG files', 'describe' => 'Describe the image added|Describe the %count% images added'] as $key => $english) {
+            self::assertSame($translator->trans($english, [], TheliaCMS::DOMAIN_NAME), $messages[$key], $key);
+            self::assertCount(2, explode('|', $messages[$key]), $key.': one form for one item, one for more.');
+        }
+
+        self::assertSame($translator->trans('Describe later', [], TheliaCMS::DOMAIN_NAME), $messages['describeLater']);
+        self::assertArrayNotHasKey('stay', $messages, '"Stay on the list" said nothing of what it left.');
+    }
+
     public function testTheQueueOfASendingHoldsTheImagesOfThatSendingOnly(): void
     {
         $older = (new LibraryImage())->setFileName('plus-ancienne.jpg');
@@ -182,7 +200,7 @@ final class MediaUploadScreenTest extends AdminScreenTestCase
         $form = $this->screen(self::LIST)->filter('form[data-cms-media-upload]');
 
         self::assertSame(1, $form->count());
-        self::assertSame('image/jpeg,image/png,image/webp', $form->attr('data-accepted'));
+        self::assertSame('image/jpeg,image/png,image/webp,image/svg+xml,.svg', $form->attr('data-accepted'));
         self::assertGreaterThan(0, (int) $form->attr('data-max-size'));
         self::assertStringContainsString('/admin/cms/media/describe', (string) $form->attr('data-describe-url'));
     }
