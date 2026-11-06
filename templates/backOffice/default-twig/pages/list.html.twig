@@ -141,8 +141,25 @@
                         </caption>
                         <thead>
                             <tr>
-                                <th scope="col">{{ 'Title'|trans({}, 'theliacms') }}</th>
+                                {# A header sorts the list, a second click reverses it. Plain
+                                   links: the sort is in the address, like every filter. #}
+                                {% set title_sort = filters.sort_headers.title %}
+                                <th scope="col"{% if title_sort.aria_sort != 'none' %} aria-sort="{{ title_sort.aria_sort }}"{% endif %}>
+                                    <a href="{{ title_sort.url }}" class="link-body-emphasis text-decoration-none" data-testid="cms-pages-sort-title">
+                                        {{ 'Title'|trans({}, 'theliacms') }}
+                                        <i class="bi {{ title_sort.aria_sort == 'ascending' ? 'bi-sort-alpha-down' : (title_sort.aria_sort == 'descending' ? 'bi-sort-alpha-down-alt' : 'bi-arrow-down-up text-body-tertiary') }}" aria-hidden="true"></i>
+                                    </a>
+                                </th>
                                 <th scope="col">{{ 'Publication'|trans({}, 'theliacms') }}</th>
+                                {% set modified_sort = filters.sort_headers.modified %}
+                                <th scope="col" class="text-nowrap"{% if modified_sort.aria_sort != 'none' %} aria-sort="{{ modified_sort.aria_sort }}"{% endif %}>
+                                    <a href="{{ modified_sort.url }}" class="link-body-emphasis text-decoration-none" data-testid="cms-pages-sort-modified">
+                                        {{ 'Modified'|trans({}, 'theliacms') }}
+                                        <i class="bi {{ modified_sort.aria_sort == 'ascending' ? 'bi-sort-numeric-down' : (modified_sort.aria_sort == 'descending' ? 'bi-sort-numeric-down-alt' : 'bi-arrow-down-up text-body-tertiary') }}" aria-hidden="true"></i>
+                                    </a>
+                                </th>
+                                {# Under 1200 px the type gives its width to the title. #}
+                                <th scope="col" class="d-none d-xl-table-cell">{{ 'Type'|trans({}, 'theliacms') }}</th>
                                 <th scope="col">{{ 'Address'|trans({}, 'theliacms') }}</th>
                                 <th scope="col" class="text-end datatable-sticky-actions">{{ 'Actions'|trans({}, 'theliacms') }}</th>
                             </tr>
@@ -220,6 +237,10 @@
                                         {% endif %}
                                     </td>
                                     <td><span class="badge {{ row.status_badge }}">{{ row.status_label|trans({}, 'theliacms') }}</span></td>
+                                    <td class="text-muted small text-nowrap" data-testid="cms-page-modified-{{ row.id }}">
+                                        {% if row.modified_at %}<time datetime="{{ row.modified_at|date('c') }}">{{ row.modified_at|date('d/m/Y H:i') }}</time>{% endif %}
+                                    </td>
+                                    <td class="text-muted small d-none d-xl-table-cell" data-testid="cms-page-type-{{ row.id }}">{{ row.type }}</td>
                                     <td class="text-muted small cms-page-address"
                                         {% if row.address %}title="{{ row.address }}"{% endif %}>
                                         {{ row.address ?: 'No address in this language yet'|trans({}, 'theliacms') }}

@@ -18,6 +18,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use TheliaCMS\Page\Admin\PageFilters;
+use TheliaCMS\Page\Admin\PageSort;
 use TheliaCMS\Page\Admin\PageStatus;
 
 /**
@@ -288,6 +289,8 @@ final class PageFiltersTest extends TestCase
             foldChosen: true,
             tag: PageFilters::NO_TAG,
             type: 'recipe',
+            sort: PageSort::Modified,
+            descending: false,
         );
 
         $return = $filters->toReturnParameter();
@@ -330,5 +333,71 @@ final class PageFiltersTest extends TestCase
         $query = PageFilters::returnQuery(new Request(['return' => 'q=+contact+&status[]=draft&status[]=nonsense&open=4,abc']));
 
         self::assertSame(['return' => 'q=contact&status%5B0%5D=draft&open=4'], $query);
+    }
+
+    #[DataProvider('sortCases')]
+    public function testASortIsOneOfThreeAndADirectionOneOfTwo(array $given, ?PageSort $sort, bool $descending): void
+    {
+        $filters = PageFilters::fromRequest(new Request($given));
+
+        self::assertSame($sort, $filters->sort);
+        self::assertSame($descending, $filters->isDescending());
+    }
+
+    /**
+     * @return iterable<string, array{array<string, string>, PageSort|null, bool}>
+     */
+    public static function sortCases(): iterable
+    {
+        yield 'none' => [[], null, false];
+        yield 'a title reads from A' => [['sort' => 'title'], PageSort::Title, false];
+        yield 'a date from the latest' => [['sort' => 'modified'], PageSort::Modified, true];
+        yield 'created, from the latest' => [['sort' => 'created'], PageSort::Created, true];
+        yield 'reversed' => [['sort' => 'title', 'dir' => 'desc'], PageSort::Title, true];
+        yield 'a date from the oldest' => [['sort' => 'modified', 'dir' => 'asc'], PageSort::Modified, false];
+        yield 'an unknown sort' => [['sort' => 'status'], null, false];
+        yield 'an unknown direction' => [['sort' => 'created', 'dir' => 'up'], PageSort::Created, true];
+    }
+
+    public function testASortTurnsTheTreeIntoResults(): void
+    {
+        $sorted = new PageFilters(sort: PageSort::Created);
+
+        self::assertTrue($sorted->isFiltering());
+        self::assertFalse($sorted->withoutFilter(PageFilters::SORT)->isFiltering(), 'Removing the sort gives the tree back.');
+    }
+
+    public function testTheAddressCarriesTheDirectionOnlyWhenItIsNotTheOneTheSortStartsIn(): void
+    {
+        self::assertSame(['sort' => 'modified'], (new PageFilters(sort: PageSort::Modified))->toQueryParams());
+        self::assertSame(['sort' => 'modified'], (new PageFilters(sort: PageSort::Modified, descending: true))->toQueryParams());
+        self::assertSame(['sort' => 'modified', 'dir' => 'asc'], (new PageFilters(sort: PageSort::Modified, descending: false))->toQueryParams());
+        self::assertSame(['sort' => 'title', 'dir' => 'desc'], (new PageFilters(sort: PageSort::Title, descending: true))->toQueryParams());
+        self::assertSame([], (new PageFilters(descending: true))->toQueryParams(), 'A direction without a sort says nothing.');
+    }
+
+    public function testSortingAgainByTheSameOrderReversesItAndAnotherOrderStartsInItsOwnDirection(): void
+    {
+        $byTitle = (new PageFilters(search: 'contact', page: 3))->sortedBy(PageSort::Title);
+
+        self::assertSame(PageSort::Title, $byTitle->sort);
+        self::assertFalse($byTitle->isDescending());
+        self::assertSame(1, $byTitle->page, 'A new order starts on the first page of results.');
+        self::assertSame('contact', $byTitle->search, 'Sorting keeps the filters.');
+
+        self::assertTrue($byTitle->sortedBy(PageSort::Title)->isDescending());
+        self::assertFalse($byTitle->sortedBy(PageSort::Title)->sortedBy(PageSort::Title)->isDescending());
+
+        $reversedTitle = $byTitle->sortedBy(PageSort::Title);
+        self::assertTrue($reversedTitle->sortedBy(PageSort::Modified)->isDescending(), 'Another order starts latest first.');
+        self::assertFalse((new PageFilters(sort: PageSort::Modified, descending: true))->sortedBy(PageSort::Title)->isDescending());
+    }
+
+    public function testRemovingTheSortKeepsTheFiltersAndForgetsTheDirection(): void
+    {
+        $filters = new PageFilters(search: 'contact', tag: 4, sort: PageSort::Title, descending: true);
+
+        self::assertSame(['q' => 'contact', 'tag' => '4'], $filters->withoutFilter(PageFilters::SORT)->toQueryParams());
+        self::assertSame(['q' => 'contact', 'sort' => 'title', 'dir' => 'desc'], $filters->withoutFilter(PageFilters::TAG)->toQueryParams());
     }
 }

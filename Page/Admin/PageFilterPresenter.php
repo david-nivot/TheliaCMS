@@ -41,7 +41,7 @@ final readonly class PageFilterPresenter
      * @param array<string, int>    $counts the live pages in each state, by state, the whole site
      *
      * @return array{
-     *     parameters: array{search: string, statuses: string, visibility: string, tag: string, type: string},
+     *     parameters: array{search: string, statuses: string, visibility: string, tag: string, type: string, sort: string},
      *     search: string,
      *     is_filtering: bool,
      *     is_empty: bool,
@@ -50,7 +50,11 @@ final readonly class PageFilterPresenter
      *     visibility: string,
      *     tag_options: list<array{value: string, label: string, selected: bool}>,
      *     type_options: list<array{value: string, label: string, selected: bool}>,
+     *     sort_options: list<array{value: string, label: string, selected: bool}>,
+     *     sort_headers: array<string, array{url: string, aria_sort: string}>,
+     *     reverse_url: string|null,
      *     chips: list<array{label: string, remove_url: string}>,
+     *     sort_chip: array{label: string, remove_url: string}|null,
      *     clear_url: string,
      *     fold_all_url: string|null,
      *     trash_url: string,
@@ -69,6 +73,7 @@ final readonly class PageFilterPresenter
                 'visibility' => PageFilters::VISIBILITY,
                 'tag' => PageFilters::TAG,
                 'type' => PageFilters::TYPE,
+                'sort' => PageFilters::SORT,
             ],
             'search' => $filters->search,
             'is_filtering' => $filters->isFiltering(),
@@ -84,7 +89,16 @@ final readonly class PageFilterPresenter
             // nothing: no tag on the site, or a single type, hides it.
             'tag_options' => [] === $tags ? [] : $this->tagOptions($filters, $tags),
             'type_options' => \count($types) < 2 ? [] : $this->typeOptions($filters, $types),
+            // Chosen in the bar, or by the headers of the columns it sorts on;
+            // the bar starts a sort in its own direction, the header reverses it.
+            'sort_options' => $this->sortOptions($filters),
+            'sort_headers' => $this->sortHeaders($filters, $languageId),
+            // The creation date has no column, so no header to reverse it from.
+            'reverse_url' => null === $filters->sort
+                ? null
+                : $this->listUrl($filters->sortedBy($filters->sort), $languageId),
             'chips' => $this->chips($filters, $languageId, $tags, $types),
+            'sort_chip' => $this->sortChip($filters, $languageId),
             'clear_url' => $this->listUrl(new PageFilters(open: $filters->open, foldChosen: $filters->foldChosen), $languageId),
             // Offered only when something is unfolded, and there is no "unfold
             // everything": on a site of several hundred pages that button gives
@@ -122,6 +136,40 @@ final readonly class PageFilterPresenter
             EditLanguage::PARAMETER => $languageId,
             ...$filters->toQueryParams(),
         ]);
+    }
+
+    /**
+     * @return list<array{value: string, label: string, selected: bool}>
+     */
+    private function sortOptions(PageFilters $filters): array
+    {
+        return array_map(
+            fn (PageSort $sort): array => [
+                'value' => $sort->value,
+                'label' => $this->translate($sort->label()),
+                'selected' => $sort === $filters->sort,
+            ],
+            PageSort::cases(),
+        );
+    }
+
+    /**
+     * The address and the state of the columns a click sorts on, by sort.
+     *
+     * @return array<string, array{url: string, aria_sort: string}>
+     */
+    private function sortHeaders(PageFilters $filters, int $languageId): array
+    {
+        $headers = [];
+
+        foreach ([PageSort::Title, PageSort::Modified] as $sort) {
+            $headers[$sort->value] = [
+                'url' => $this->listUrl($filters->sortedBy($sort), $languageId),
+                'aria_sort' => $sort !== $filters->sort ? 'none' : ($filters->isDescending() ? 'descending' : 'ascending'),
+            ];
+        }
+
+        return $headers;
     }
 
     /**
@@ -231,6 +279,25 @@ final readonly class PageFilterPresenter
         }
 
         return $chips;
+    }
+
+    /**
+     * The chip of the sort, apart from the filters: a sort keeps every page,
+     * so it cannot follow "Showing only".
+     *
+     * @return array{label: string, remove_url: string}|null
+     */
+    private function sortChip(PageFilters $filters, int $languageId): ?array
+    {
+        if (null === $filters->sort) {
+            return null;
+        }
+
+        // Removing the sort gives the tree back when nothing else is on.
+        return [
+            'label' => $this->translate($filters->sort->chipLabel($filters->isDescending())),
+            'remove_url' => $this->listUrl($filters->withoutFilter(PageFilters::SORT), $languageId),
+        ];
     }
 
     /**

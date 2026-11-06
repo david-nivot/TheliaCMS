@@ -1,6 +1,6 @@
 # Plan: the tools of the page list (N31 to N36)
 
-Status: decided (2026-11-06), coded lot by lot; N36, N31 and N34 done. Read on `main` at 705aa2b
+Status: decided (2026-11-06), coded lot by lot; N36, N31, N34 and N33 done. Read on `main` at 705aa2b
 (2.15.0 + #117). Wave 5 of the roadmap, family "editor". Goal: ship in the same release as
 N51, N52, N54 (2.16.0). Each lot updates this plan in its own commit.
 
@@ -120,14 +120,31 @@ after N35 (decided 2026-11-06 by the maintainer).
   `PageListReturnTest` (row to settings to content and back, publish keeps it, foreign return
   ignored, counts on screen with and without a ticked box).
 
-### 4. N33: sort and two columns (M)
-- `PageFilters`: `sort` (title, modified, created), `dir` (asc, desc), white list; a sort counts
-  as filtering (flat list) with its chip.
-- `results()`: ORDER BY from the white list; empty titles last (`COALESCE`).
-- `PageListRow`: modified date (decision 5) and type label; header links with `aria-sort`;
-  type column hidden under 1200 px.
-- Tests: each sort and direction, rows forms keep `sort`/`dir` (`backToList`), cost constant.
-- Browser proof at 1440 px (table width, pinned actions of 412ec78).
+### 4. N33: sort and two columns (M), done
+- `PageSort` enum (title, modified, created; `startsDescending()`: a title from A, a date from
+  the latest). `PageFilters`: `sort` and `dir` (`asc`, `desc`, anything else is the starting
+  direction), `isDescending()`, `sortedBy()` (same sort reverses, another starts in its own
+  direction, page 1); `dir` written only when it is not the starting one; both in the return
+  parameter; a sort counts as filtering (flat list), `withoutFilter(SORT)` drops both.
+- `CmsPageAdminRepository::ordered()`: raw ORDER BY from the enum only (no input reaches the
+  SQL), rows with nothing to sort on last in both directions (`CASE WHEN … THEN 1`), id as tie
+  break. Modified = `GREATEST(COALESCE(page, content), COALESCE(content, page))` on the content
+  join of `PageStatusCriteria` (one join for states and sort); the row date is
+  `PageListRow::latestOf()` from the content already read, same rule.
+- Columns "Modified" (`d/m/Y H:i`, `<time>`) and "Type" (name, or the code when the type has no
+  title; `d-none d-xl-table-cell`). Headers "Title" and "Modified" are links with `aria-sort` on
+  the sorted one only. "Sort by" select on the second row of the bar, next to the status boxes
+  (five selects on one row cut their values at 1440 px); it starts in the starting direction
+  (`dir` not carried by the form). Chip "Sorted by …, A to Z" apart from the filter chips
+  (`sort_chip`, after them and without "Showing only": a sort keeps every page) and a link
+  "Reverse the order" (the creation date has no header). Search box `col-lg-3` (was 4: "All tags" was cut at
+  1440 px since N31).
+- Tests: `PageFiltersTest` (reading, direction, address, `sortedBy`, removal),
+  `PageListSortTest` (each sort both ways, empty titles last, modified from the content,
+  headers and `aria-sort`, chip, reverse, columns, row forms and the redirect of "Hide" keep
+  `sort`/`dir`, the return of the settings), `PageListingCostTest::testSortingByTheLastChangeCostsTheSameWhateverTheNumberOfMatches`.
+- Browser at 1440 px: table 1120 px, no horizontal scroll, actions pinned. At 1180 px the type
+  column is gone and the table scrolls 122 px under the pinned actions.
 
 ### 5. N32: authors filled everywhere, then filter by date and by author (M+)
 
@@ -168,5 +185,5 @@ Step B, filters:
   `setTag` to add. Steps per decision 7.
 
 ## Not checked
-- How dates are stored (server time zone or UTC) and shown to the admin.
-- Width of the table with two more columns on the pinned-actions layout of 412ec78.
+- How dates are stored (server time zone or UTC) and shown to the admin (N33 shows them as
+  Twig formats them, like the other screens of the module).

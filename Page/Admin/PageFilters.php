@@ -23,7 +23,10 @@ use TheliaCMS\Page\PageTypeCode;
  * The listing has two shapes, and this object decides which one: with nothing
  * asked it is the tree, opened branch by branch; with a word to look for, a
  * state, a tag or a type to keep it is a flat list of results, paginated and
- * ordered by title.
+ * ordered by title unless a sort says otherwise.
+ *
+ * A sort does the same: an order other than the positions of the tree is an
+ * order of rows that are no longer siblings.
  *
  * They are not two screens. A tree hiding the rows that do not match is a tree
  * whose remaining indentation lies about who the parents are, and the position
@@ -39,6 +42,11 @@ final readonly class PageFilters
     public const string OPEN = 'open';
     public const string TAG = 'tag';
     public const string TYPE = 'type';
+    public const string SORT = 'sort';
+    public const string DIRECTION = 'dir';
+
+    public const string ASCENDING = 'asc';
+    public const string DESCENDING = 'desc';
 
     /**
      * The state of the listing carried by the screens opened from it, so their
@@ -47,7 +55,7 @@ final readonly class PageFilters
     public const string RETURN = 'return';
 
     /** The parameters a return may hold, and nothing else. */
-    private const array RETURNABLE = [self::SEARCH, self::STATUSES, self::VISIBILITY, self::PAGE, self::OPEN, self::TAG, self::TYPE];
+    private const array RETURNABLE = [self::SEARCH, self::STATUSES, self::VISIBILITY, self::PAGE, self::OPEN, self::TAG, self::TYPE, self::SORT, self::DIRECTION];
 
     /** A state of the listing never needs more; anything longer is refused. */
     private const int RETURN_MAX_LENGTH = 1000;
@@ -76,6 +84,8 @@ final readonly class PageFilters
      * @param int|null         $tag        the tag to keep, NO_TAG for the pages
      *                                     without one, null for any
      * @param string|null      $type       the code of the page type to keep
+     * @param bool|null        $descending the direction of the sort, null for
+     *                                     the one the sort starts in
      * @param bool             $foldChosen whether the editor said anything about
      *                                     folding at all, which is not the same
      *                                     as having nothing open: a small site
@@ -93,6 +103,8 @@ final readonly class PageFilters
         public bool $foldChosen = false,
         public ?int $tag = null,
         public ?string $type = null,
+        public ?PageSort $sort = null,
+        public ?bool $descending = null,
     ) {
     }
 
@@ -125,6 +137,12 @@ final readonly class PageFilters
             foldChosen: $query->has(self::OPEN),
             tag: self::readTag(trim((string) $query->get(self::TAG, ''))),
             type: self::readType(trim((string) $query->get(self::TYPE, ''))),
+            sort: PageSort::tryFrom(trim((string) $query->get(self::SORT, ''))),
+            descending: match (trim((string) $query->get(self::DIRECTION, ''))) {
+                self::ASCENDING => false,
+                self::DESCENDING => true,
+                default => null,
+            },
         );
     }
 
@@ -218,7 +236,28 @@ final readonly class PageFilters
             || [] !== $this->statuses
             || null !== $this->visible
             || null !== $this->tag
-            || null !== $this->type;
+            || null !== $this->type
+            || null !== $this->sort;
+    }
+
+    /**
+     * Whether the rows come latest first or Z first.
+     */
+    public function isDescending(): bool
+    {
+        return $this->descending ?? $this->sort?->startsDescending() ?? false;
+    }
+
+    /**
+     * Sorted by this order: the same order again reverses it, another one
+     * starts in its own direction.
+     */
+    public function sortedBy(PageSort $sort): self
+    {
+        return $this->with(
+            sort: $sort,
+            descending: $sort === $this->sort ? !$this->isDescending() : $sort->startsDescending(),
+        );
     }
 
     /**
@@ -270,6 +309,15 @@ final readonly class PageFilters
             $params[self::TYPE] = $this->type;
         }
 
+        if (null !== $this->sort) {
+            $params[self::SORT] = $this->sort->value;
+
+            // Left out when it is the one the sort starts in.
+            if ($this->isDescending() !== $this->sort->startsDescending()) {
+                $params[self::DIRECTION] = $this->isDescending() ? self::DESCENDING : self::ASCENDING;
+            }
+        }
+
         if ($this->page > 1) {
             $params[self::PAGE] = (string) $this->page;
         }
@@ -290,6 +338,7 @@ final readonly class PageFilters
             self::VISIBILITY => $this->with(visible: null, unsetVisible: true),
             self::TAG => $this->with(unsetTag: true),
             self::TYPE => $this->with(unsetType: true),
+            self::SORT => $this->with(unsetSort: true),
             default => $this,
         };
     }
@@ -351,6 +400,9 @@ final readonly class PageFilters
         ?bool $foldChosen = null,
         bool $unsetTag = false,
         bool $unsetType = false,
+        ?PageSort $sort = null,
+        ?bool $descending = null,
+        bool $unsetSort = false,
     ): self {
         return new self(
             search: $search ?? $this->search,
@@ -364,6 +416,8 @@ final readonly class PageFilters
             foldChosen: $foldChosen ?? $this->foldChosen,
             tag: $unsetTag ? null : $this->tag,
             type: $unsetType ? null : $this->type,
+            sort: $unsetSort ? null : ($sort ?? $this->sort),
+            descending: $unsetSort ? null : ($descending ?? $this->descending),
         );
     }
 

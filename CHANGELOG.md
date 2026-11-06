@@ -24,6 +24,14 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   returns to that list, with its filters, its page of results and its open
   branches, and keeps doing so after a save, a publication or a change of
   documents.
+- **The list of pages sorts by title, by last change or by creation date**,
+  chosen in **Sort by** or by clicking the **Title** and **Modified** headers;
+  a second click, or **Reverse the order**, turns it around. A sort turns the
+  tree into a flat list with its chip, like a filter; removing the chip gives
+  the tree back. Pages without a title in the language of the list come last.
+- **Two columns on the list of pages: Modified and Type.** The date is the
+  latest change of the page or of its content in the language of the list;
+  the type column hides on screens under 1200 px wide.
 
 ### Changed
 

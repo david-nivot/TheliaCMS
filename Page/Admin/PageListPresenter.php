@@ -30,7 +30,7 @@ use TheliaCMS\TheliaCMS;
  * Everything the page listing renders, assembled in one place.
  *
  * The screen has two shapes and the choice between them is one rule: with a word
- * to look for, a state, a tag or a type to keep, it is a list of results; with
+ * to look for, a state, a tag or a type to keep, or a sort, it is a list of results; with
  * nothing asked, it is the tree. Both produce the same kind of row, so the template has one table
  * and not two.
  */
@@ -75,7 +75,7 @@ final readonly class PageListPresenter
 
         return [
             'is_filtering' => $filters->isFiltering(),
-            'rows' => $this->rows($rows, $filters, $languageId, null === $results, $this->stalePages->ids($locale, array_map(static fn (PageListRow $row): int => $row->id(), $rows)), $tags),
+            'rows' => $this->rows($rows, $filters, $languageId, null === $results, $this->stalePages->ids($locale, array_map(static fn (PageListRow $row): int => $row->id(), $rows)), $tags, $typeNames),
             'results' => $results,
             'live_count' => $liveCount,
             'filters' => $this->filterBar->present($filters, $languageId, $trashCount, $tagNames, $typeNames, $this->pages->statusCounts($locale)),
@@ -137,14 +137,15 @@ final readonly class PageListPresenter
     }
 
     /**
-     * @param list<PageListRow> $rows
-     * @param array<int, true>  $stale   the pages to translate again in this language, by id
-     * @param list<CmsTag>      $allTags every tag of the site, read once for the whole listing:
-     *                                   asking each page for its tag would be a query per line
+     * @param list<PageListRow>     $rows
+     * @param array<int, true>      $stale     the pages to translate again in this language, by id
+     * @param list<CmsTag>          $allTags   every tag of the site, read once for the whole listing:
+     *                                         asking each page for its tag would be a query per line
+     * @param array<string, string> $typeNames the names of the page types, by code
      *
      * @return list<array<string, mixed>>
      */
-    private function rows(array $rows, PageFilters $filters, int $languageId, bool $isTree, array $stale, array $allTags): array
+    private function rows(array $rows, PageFilters $filters, int $languageId, bool $isTree, array $stale, array $allTags, array $typeNames): array
     {
         $firstOfParent = [];
         $lastOfParent = [];
@@ -205,6 +206,9 @@ final readonly class PageListPresenter
                 'tag' => $tags[(int) $row->page->getTagId()]['name'] ?? null,
                 'tag_badge' => $tags[(int) $row->page->getTagId()]['badge'] ?? PageTagColor::NO_COLOR_BADGE,
                 'tag_badge_style' => $tags[(int) $row->page->getTagId()]['badge_style'] ?? '',
+                'modified_at' => $row->modifiedAt,
+                // A type the site no longer describes is named by its code.
+                'type' => $typeNames[(string) $row->page->getPageType()] ?? (string) $row->page->getPageType(),
                 'toggle_url' => $row->hasChildren() ? $this->filterBar->toggleUrl($filters, $languageId, $id) : null,
                 'edit_url' => $this->route('admin.cms.pages.edit', $id, $languageId, extra: $returnQuery),
                 'builder_url' => $this->route('admin.cms.pages.content.edit', $id, $languageId, extra: $returnQuery),

@@ -22,6 +22,7 @@ use TheliaCMS\Model\CmsTag;
 use TheliaCMS\Page\Admin\CmsPageAdminRepository;
 use TheliaCMS\Page\Admin\PageFilters;
 use TheliaCMS\Page\Admin\PageListPresenter;
+use TheliaCMS\Page\Admin\PageSort;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
 use TheliaCMS\Tests\Integration\CountsStatements;
 
@@ -95,6 +96,24 @@ final class PageListingCostTest extends CmsIntegrationTestCase
 
         self::assertGreaterThan($few, $many, 'the second tree added no match, so this compares nothing');
         self::assertSame($fewCost, $manyCost, 'filtering by tag and type costs more when it finds more, so something is asked per row');
+    }
+
+    public function testSortingByTheLastChangeCostsTheSameWhateverTheNumberOfMatches(): void
+    {
+        $repository = $this->getService(CmsPageAdminRepository::class);
+        $locale = $this->locale();
+        $filters = new PageFilters(search: 'Sorted', sort: PageSort::Modified);
+
+        $this->treeOf(1, 2, $locale, 'Sorted');
+        $fewCost = $this->statementsFor(static fn () => $repository->results($locale, $filters));
+        $few = $repository->results($locale, $filters)->total;
+
+        $this->treeOf(4, 2, $locale, 'Sorted');
+        $manyCost = $this->statementsFor(static fn () => $repository->results($locale, $filters));
+        $many = $repository->results($locale, $filters)->total;
+
+        self::assertGreaterThan($few, $many, 'the second tree added no match, so this compares nothing');
+        self::assertSame($fewCost, $manyCost, 'sorting by the last change costs more when it finds more, so something is asked per row');
     }
 
     public function testCountingTheStatesCostsTheSameOnASmallSiteAndOnABigOne(): void

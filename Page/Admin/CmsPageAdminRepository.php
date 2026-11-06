@@ -22,6 +22,7 @@ use TheliaCMS\Model\CmsPageContentQuery;
 use TheliaCMS\Model\CmsPageI18nQuery;
 use TheliaCMS\Model\CmsPageQuery;
 use TheliaCMS\Model\Map\CmsPageI18nTableMap;
+use TheliaCMS\Model\Map\CmsPageTableMap;
 use TheliaCMS\Page\TrashRetention;
 use TheliaCMS\Settings\CmsSettings;
 use TheliaCMS\TheliaCMS;
@@ -63,8 +64,8 @@ final readonly class CmsPageAdminRepository
     }
 
     /**
-     * The pages matching a search or a filter, flat, ordered by title and
-     * cut to one page of results.
+     * The pages matching a search, a filter or a sort, flat, ordered by title
+     * unless sorted otherwise, and cut to one page of results.
      *
      * Ordered by title rather than by position: position only means something
      * among siblings, and these rows are not siblings.
@@ -75,8 +76,7 @@ final readonly class CmsPageAdminRepository
 
         $total = (int) $this->matching($locale, $filters, $now)->count();
         $pages = iterator_to_array(
-            $this->matching($locale, $filters, $now)
-                ->orderBy(CmsPageI18nTableMap::COL_TITLE)
+            $this->ordered($this->matching($locale, $filters, $now), $filters)
                 ->offset(($filters->page - 1) * PageFilters::PER_PAGE)
                 ->limit(PageFilters::PER_PAGE)
                 ->find(),
@@ -323,6 +323,54 @@ final readonly class CmsPageAdminRepository
     }
 
     /**
+     * Orders the results by the sort asked, by title when none is.
+     *
+     * The pages with nothing to sort on come last in both directions: a page
+     * with no title in this language sorted first would push the pages that
+     * have one off the first screen. The identifier settles a tie, so a row
+     * cannot show up on two pages of results.
+     */
+    private function ordered(CmsPageQuery $query, PageFilters $filters): CmsPageQuery
+    {
+        $direction = $filters->isDescending() ? Criteria::DESC : Criteria::ASC;
+        $page = '`'.CmsPageTableMap::TABLE_NAME.'`';
+
+        $value = match ($filters->sort ?? PageSort::Title) {
+            PageSort::Title => '`'.CmsPageI18nTableMap::TABLE_NAME.'`.`title`',
+            PageSort::Modified => self::modifiedSql(),
+            PageSort::Created => $page.'.`created_at`',
+        };
+        $missing = PageSort::Title === ($filters->sort ?? PageSort::Title)
+            ? "COALESCE({$value}, '') = ''"
+            : "({$value}) IS NULL";
+
+        $query->addAscendingOrderByColumn("(CASE WHEN {$missing} THEN 1 ELSE 0 END)");
+
+        if (Criteria::DESC === $direction) {
+            $query->addDescendingOrderByColumn("({$value})");
+        } else {
+            $query->addAscendingOrderByColumn("({$value})");
+        }
+
+        return $query->orderById($direction);
+    }
+
+    /**
+     * When a page was last changed in the language listed: the latest of the
+     * page and of its content, since saving the content does not touch the page
+     * row. Either may be missing; the other then answers alone.
+     *
+     * Kept equal to PageListRow::modifiedAt() by PageListSortTest.
+     */
+    private static function modifiedSql(): string
+    {
+        $page = '`'.CmsPageTableMap::TABLE_NAME.'`.`updated_at`';
+        $content = '`'.PageStatusCriteria::CONTENT_ALIAS.'`.`updated_at`';
+
+        return "GREATEST(COALESCE({$page}, {$content}), COALESCE({$content}, {$page}))";
+    }
+
+    /**
      * The live pages matching the filters, without ordering or limit.
      */
     private function matching(string $locale, PageFilters $filters, \DateTimeInterface $now): CmsPageQuery
@@ -354,8 +402,14 @@ final readonly class CmsPageAdminRepository
             $query->filterByPageType($filters->type);
         }
 
+        // One join of the content row serves the states and the date of the
+        // last change.
+        if ([] !== $filters->statuses || PageSort::Modified === $filters->sort) {
+            PageStatusCriteria::joinContent($query, $locale);
+        }
+
         if ([] !== $filters->statuses) {
-            PageStatusCriteria::restrictTo(PageStatusCriteria::joinContent($query, $locale), $filters->statuses, $now);
+            PageStatusCriteria::restrictTo($query, $filters->statuses, $now);
         }
 
         return $query;
@@ -489,6 +543,7 @@ final readonly class CmsPageAdminRepository
                 address: isset($addresses[$id]) ? '/'.ltrim($addresses[$id], '/') : '',
                 childCount: $childCounts[$id] ?? 0,
                 isOpen: $filters->isOpen($id),
+                modifiedAt: PageListRow::latestOf($page->getUpdatedAt(), ($contents[$id] ?? null)?->getUpdatedAt()),
             );
         }
 
@@ -536,6 +591,7 @@ final readonly class CmsPageAdminRepository
                 isOpen: $row->isOpen,
                 ancestorTitles: $row->ancestorTitles,
                 titleInAnotherLanguage: $found[$row->id()] ?? null,
+                modifiedAt: $row->modifiedAt,
             ),
             $rows,
         );
@@ -654,6 +710,7 @@ final readonly class CmsPageAdminRepository
                 isOpen: $row->isOpen,
                 ancestorTitles: $chain,
                 titleInAnotherLanguage: $row->titleInAnotherLanguage,
+                modifiedAt: $row->modifiedAt,
             );
         }
 
