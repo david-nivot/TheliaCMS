@@ -96,6 +96,48 @@
                 </select>
             </div>
         </div>
+
+        <div class="row g-2 align-items-start mt-1">
+            <div class="col-lg-3 col-md-4">
+                <label class="form-label" for="cms-pages-date">{{ 'Date'|trans({}, 'theliacms') }}</label>
+                <select class="form-select" id="cms-pages-date" name="{{ filters.parameters.date }}"
+                        aria-describedby="cms-pages-date-help" data-testid="cms-pages-date">
+                    {% for option in filters.date_options %}
+                        <option value="{{ option.value }}" {{ option.selected ? 'selected' : '' }}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+                <div class="form-text" id="cms-pages-date-help">{{ 'The publication is the one of the language listed; the scheduled dates are shared by every language.'|trans({}, 'theliacms') }}</div>
+            </div>
+
+            {# ISO in the address, whatever the browser shows: a browser without a
+               date picker takes the same format, said by the hint. #}
+            <div class="col-lg-2 col-md-4">
+                <label class="form-label" for="cms-pages-from">{{ 'From'|trans({}, 'theliacms') }}</label>
+                <input type="date" class="form-control" id="cms-pages-from" name="{{ filters.parameters.from }}"
+                       value="{{ filters.from }}" placeholder="2026-01-31" pattern="\d{4}-\d{2}-\d{2}"
+                       aria-describedby="cms-pages-period-help" data-testid="cms-pages-from">
+            </div>
+
+            <div class="col-lg-2 col-md-4">
+                <label class="form-label" for="cms-pages-to">{{ 'To'|trans({}, 'theliacms') }}</label>
+                <input type="date" class="form-control" id="cms-pages-to" name="{{ filters.parameters.to }}"
+                       value="{{ filters.to }}" placeholder="2026-01-31" pattern="\d{4}-\d{2}-\d{2}"
+                       aria-describedby="cms-pages-period-help" data-testid="cms-pages-to">
+                <div class="form-text" id="cms-pages-period-help">{{ 'Both days included, as 2026-01-31.'|trans({}, 'theliacms') }}</div>
+            </div>
+
+            {% if filters.author_options is not empty %}
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label" for="cms-pages-author">{{ 'Last changed by'|trans({}, 'theliacms') }}</label>
+                    <select class="form-select" id="cms-pages-author" name="{{ filters.parameters.author }}" data-testid="cms-pages-author">
+                        <option value="">{{ 'Anyone'|trans({}, 'theliacms') }}</option>
+                        {% for option in filters.author_options %}
+                            <option value="{{ option.value }}" {{ option.selected ? 'selected' : '' }}>{{ option.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endif %}
+        </div>
     </div>
 
     {% if filters.chips is not empty or filters.sort_chip %}

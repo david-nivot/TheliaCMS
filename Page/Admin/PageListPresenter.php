@@ -69,7 +69,9 @@ final readonly class PageListPresenter
 
         $typeNames = array_map(static fn (PageTypeDetails $details): string => $details->title($locale), $types);
 
-        $filters = $this->unfoldSmallSite($filters->knowing($tagNames, $typeNames), $liveCount);
+        $authors = $this->pages->authors();
+
+        $filters = $this->unfoldSmallSite($filters->knowing($tagNames, $typeNames, $authors), $liveCount);
         $results = $filters->isFiltering() ? $this->pages->results($locale, $filters) : null;
         $rows = null === $results ? $this->pages->branch($locale, $filters) : $results->rows;
 
@@ -78,7 +80,7 @@ final readonly class PageListPresenter
             'rows' => $this->rows($rows, $filters, $languageId, null === $results, $this->stalePages->ids($locale, array_map(static fn (PageListRow $row): int => $row->id(), $rows)), $tags, $typeNames),
             'results' => $results,
             'live_count' => $liveCount,
-            'filters' => $this->filterBar->present($filters, $languageId, $trashCount, $tagNames, $typeNames, $this->pages->statusCounts($locale)),
+            'filters' => $this->filterBar->present($filters, $languageId, $trashCount, $tagNames, $typeNames, $this->pages->statusCounts($locale), $authors),
             'filter_query' => $filters->toQueryParams(),
             'edit_locale' => $locale,
             'edit_language_id' => $languageId,

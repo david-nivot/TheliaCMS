@@ -17,6 +17,7 @@ namespace TheliaCMS\Tests\Unit\Page;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
+use TheliaCMS\Page\Admin\PageDate;
 use TheliaCMS\Page\Admin\PageFilters;
 use TheliaCMS\Page\Admin\PageSort;
 use TheliaCMS\Page\Admin\PageStatus;
@@ -399,5 +400,93 @@ final class PageFiltersTest extends TestCase
 
         self::assertSame(['q' => 'contact', 'tag' => '4'], $filters->withoutFilter(PageFilters::SORT)->toQueryParams());
         self::assertSame(['q' => 'contact', 'sort' => 'title', 'dir' => 'desc'], $filters->withoutFilter(PageFilters::TAG)->toQueryParams());
+    }
+
+    /**
+     * @param array<string, string> $given
+     */
+    #[DataProvider('periods')]
+    public function testAPeriodIsADateAndOneOrTwoDaysOfTheCalendar(array $given, ?PageDate $date, ?string $from, ?string $to): void
+    {
+        $filters = PageFilters::fromRequest(new Request($given));
+
+        self::assertSame($date, $filters->date);
+        self::assertSame($from, $filters->from?->format('Y-m-d H:i:s'));
+        self::assertSame($to, $filters->to?->format('Y-m-d H:i:s'));
+        self::assertSame(null !== $date, $filters->isFiltering(), 'a period turns the tree into results, no period does not');
+    }
+
+    /**
+     * @return iterable<string, array{array<string, string>, PageDate|null, string|null, string|null}>
+     */
+    public static function periods(): iterable
+    {
+        yield 'two days' => [['date' => 'published', 'from' => '2026-02-01', 'to' => '2026-02-10'], PageDate::Published, '2026-02-01 00:00:00', '2026-02-10 00:00:00'];
+        yield 'the last change unless told' => [['from' => '2026-02-01'], PageDate::Modified, '2026-02-01 00:00:00', null];
+        yield 'a date the module does not know is the last change' => [['date' => 'deleted', 'to' => '2026-02-10'], PageDate::Modified, null, '2026-02-10 00:00:00'];
+        yield 'bounds the wrong way round are put back' => [['date' => 'created', 'from' => '2026-03-01', 'to' => '2026-02-01'], PageDate::Created, '2026-02-01 00:00:00', '2026-03-01 00:00:00'];
+        yield 'a day that does not exist is ignored' => [['from' => '2026-02-31', 'to' => '2026-03-01'], PageDate::Modified, null, '2026-03-01 00:00:00'];
+        yield 'a day written another way is ignored' => [['from' => '01/02/2026', 'to' => '2026-2-1'], null, null, null];
+        yield 'a date with no day is no period' => [['date' => 'unpublish_on'], null, null, null];
+        yield 'a time is not a day' => [['from' => '2026-02-01 10:00'], null, null, null];
+    }
+
+    public function testTheAddressCarriesThePeriodAndTheDateOnlyWhenItIsNotTheLastChange(): void
+    {
+        $day = new \DateTimeImmutable('2026-02-01');
+
+        self::assertSame(['from' => '2026-02-01', 'to' => '2026-02-01'], (new PageFilters(date: PageDate::Modified, from: $day, to: $day))->toQueryParams());
+        self::assertSame(['date' => 'publish_on', 'to' => '2026-02-01'], (new PageFilters(date: PageDate::PublishOn, to: $day))->toQueryParams());
+
+        $read = PageFilters::fromRequest(new Request(['date' => 'publish_on', 'to' => '2026-02-01']));
+        self::assertSame(['date' => 'publish_on', 'to' => '2026-02-01'], $read->toQueryParams(), 'read back the same');
+    }
+
+    #[DataProvider('authors')]
+    public function testAnAuthorIsTheIdOfAnAccount(string $given, ?int $expected): void
+    {
+        $filters = PageFilters::fromRequest(new Request(['author' => $given]));
+
+        self::assertSame($expected, $filters->author);
+        self::assertSame(null === $expected ? [] : ['author' => $given], $filters->toQueryParams());
+    }
+
+    /**
+     * @return iterable<string, array{string, int|null}>
+     */
+    public static function authors(): iterable
+    {
+        yield 'an id' => ['12', 12];
+        yield 'zero' => ['0', null];
+        yield 'a negative id' => ['-3', null];
+        yield 'a name' => ['admin', null];
+    }
+
+    public function testAPeriodAndAnAuthorCountAsFiltersAndGoOneByOne(): void
+    {
+        $day = new \DateTimeImmutable('2026-02-01');
+        $filters = new PageFilters(search: 'contact', date: PageDate::Created, from: $day, author: 4);
+
+        self::assertSame(2, $filters->advancedCount());
+        self::assertSame(['q' => 'contact', 'author' => '4'], $filters->withoutFilter(PageFilters::DATE)->toQueryParams());
+        self::assertSame(['q' => 'contact', 'date' => 'created', 'from' => '2026-02-01'], $filters->withoutFilter(PageFilters::AUTHOR)->toQueryParams());
+    }
+
+    public function testAnAuthorWhoChangedNoPageIsDropped(): void
+    {
+        $known = new PageFilters(author: 4);
+        self::assertSame($known, $known->knowing([], [], [4 => 'Jeanne Martin']));
+        // A deleted account still names the pages it changed.
+        self::assertSame(5, (new PageFilters(author: 5))->knowing([], [], [5 => null])->author);
+        self::assertNull((new PageFilters(author: 6))->knowing([], [], [4 => 'Jeanne Martin'])->author);
+    }
+
+    public function testAReturnCarriesThePeriodAndTheAuthor(): void
+    {
+        $filters = new PageFilters(date: PageDate::Published, from: new \DateTimeImmutable('2026-02-01'), to: new \DateTimeImmutable('2026-02-10'), author: 4);
+        $return = $filters->toReturnParameter();
+        self::assertNotNull($return);
+
+        self::assertSame($filters->toQueryParams(), PageFilters::fromReturnParameter($return)->toQueryParams());
     }
 }

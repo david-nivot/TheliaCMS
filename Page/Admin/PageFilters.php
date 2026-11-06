@@ -22,8 +22,8 @@ use TheliaCMS\Page\PageTypeCode;
  *
  * The listing has two shapes, and this object decides which one: with nothing
  * asked it is the tree, opened branch by branch; with a word to look for, a
- * state, a tag or a type to keep it is a flat list of results, paginated and
- * ordered by title unless a sort says otherwise.
+ * state, a tag, a type, a period or an author to keep it is a flat list of
+ * results, paginated and ordered by title unless a sort says otherwise.
  *
  * A sort does the same: an order other than the positions of the tree is an
  * order of rows that are no longer siblings.
@@ -44,6 +44,13 @@ final readonly class PageFilters
     public const string TYPE = 'type';
     public const string SORT = 'sort';
     public const string DIRECTION = 'dir';
+    public const string DATE = 'date';
+    public const string FROM = 'from';
+    public const string TO = 'to';
+    public const string AUTHOR = 'author';
+
+    /** How a day is written in the address: the value of an `<input type="date">`. */
+    public const string DAY_FORMAT = 'Y-m-d';
 
     public const string ASCENDING = 'asc';
     public const string DESCENDING = 'desc';
@@ -55,7 +62,7 @@ final readonly class PageFilters
     public const string RETURN = 'return';
 
     /** The parameters a return may hold, and nothing else. */
-    private const array RETURNABLE = [self::SEARCH, self::STATUSES, self::VISIBILITY, self::PAGE, self::OPEN, self::TAG, self::TYPE, self::SORT, self::DIRECTION];
+    private const array RETURNABLE = [self::SEARCH, self::STATUSES, self::VISIBILITY, self::PAGE, self::OPEN, self::TAG, self::TYPE, self::SORT, self::DIRECTION, self::DATE, self::FROM, self::TO, self::AUTHOR];
 
     /** A state of the listing never needs more; anything longer is refused. */
     private const int RETURN_MAX_LENGTH = 1000;
@@ -79,20 +86,26 @@ final readonly class PageFilters
     public const int OPEN_EVERYTHING_UNDER = 40;
 
     /**
-     * @param list<PageStatus> $statuses
-     * @param list<int>        $open       branches the editor unfolded
-     * @param int|null         $tag        the tag to keep, NO_TAG for the pages
-     *                                     without one, null for any
-     * @param string|null      $type       the code of the page type to keep
-     * @param bool|null        $descending the direction of the sort, null for
-     *                                     the one the sort starts in
-     * @param bool             $foldChosen whether the editor said anything about
-     *                                     folding at all, which is not the same
-     *                                     as having nothing open: a small site
-     *                                     opens by itself, and closing its only
-     *                                     branch leaves an empty list that would
-     *                                     otherwise read as "never chose" and
-     *                                     open it again
+     * @param list<PageStatus>        $statuses
+     * @param list<int>               $open       branches the editor unfolded
+     * @param int|null                $tag        the tag to keep, NO_TAG for the pages
+     *                                            without one, null for any
+     * @param string|null             $type       the code of the page type to keep
+     * @param bool|null               $descending the direction of the sort, null for
+     *                                            the one the sort starts in
+     * @param PageDate|null           $date       the date the period applies to, null
+     *                                            when there is no period
+     * @param \DateTimeImmutable|null $from       the first day kept, at midnight
+     * @param \DateTimeImmutable|null $to         the last day kept, at midnight
+     * @param int|null                $author     the administrator who changed the
+     *                                            pages last
+     * @param bool                    $foldChosen whether the editor said anything about
+     *                                            folding at all, which is not the same
+     *                                            as having nothing open: a small site
+     *                                            opens by itself, and closing its only
+     *                                            branch leaves an empty list that would
+     *                                            otherwise read as "never chose" and
+     *                                            open it again
      */
     public function __construct(
         public string $search = '',
@@ -105,6 +118,10 @@ final readonly class PageFilters
         public ?string $type = null,
         public ?PageSort $sort = null,
         public ?bool $descending = null,
+        public ?PageDate $date = null,
+        public ?\DateTimeImmutable $from = null,
+        public ?\DateTimeImmutable $to = null,
+        public ?int $author = null,
     ) {
     }
 
@@ -123,6 +140,11 @@ final readonly class PageFilters
         }
 
         $visibility = trim((string) $query->get(self::VISIBILITY, ''));
+        [$date, $from, $to] = self::readPeriod(
+            trim((string) $query->get(self::DATE, '')),
+            trim((string) $query->get(self::FROM, '')),
+            trim((string) $query->get(self::TO, '')),
+        );
 
         return new self(
             search: trim((string) $query->get(self::SEARCH, '')),
@@ -143,6 +165,10 @@ final readonly class PageFilters
                 self::DESCENDING => true,
                 default => null,
             },
+            date: $date,
+            from: $from,
+            to: $to,
+            author: self::readId(trim((string) $query->get(self::AUTHOR, ''))),
         );
     }
 
@@ -199,23 +225,26 @@ final readonly class PageFilters
     }
 
     /**
-     * The same state without a tag or a type the site does not have.
+     * The same state without a tag, a type or an author the site does not have.
      *
      * The address only proves a value is shaped like an id or a code; a tag
      * deleted since the address was kept would otherwise filter on nothing and
      * show an empty list with a chip naming nothing.
      *
-     * @param array<int, mixed>    $tags  the tags of the site, by id
-     * @param array<string, mixed> $types the page types of the site, by code
+     * @param array<int, mixed>    $tags    the tags of the site, by id
+     * @param array<string, mixed> $types   the page types of the site, by code
+     * @param array<int, mixed>    $authors the administrators who changed a page last, by id
      */
-    public function knowing(array $tags, array $types): self
+    public function knowing(array $tags, array $types, array $authors = []): self
     {
         // "Without a tag" means nothing on a site that has no tag at all.
         $tagKnown = null === $this->tag
             || ([] !== $tags && (self::NO_TAG === $this->tag || isset($tags[$this->tag])));
         $typeKnown = null === $this->type || isset($types[$this->type]);
+        // A deleted account is null, and still names the pages it changed.
+        $authorKnown = null === $this->author || \array_key_exists($this->author, $authors);
 
-        if ($tagKnown && $typeKnown) {
+        if ($tagKnown && $typeKnown && $authorKnown) {
             return $this;
         }
 
@@ -223,6 +252,7 @@ final readonly class PageFilters
             page: $this->page,
             unsetTag: !$tagKnown,
             unsetType: !$typeKnown,
+            unsetAuthor: !$authorKnown,
         );
     }
 
@@ -237,7 +267,9 @@ final readonly class PageFilters
             || null !== $this->visible
             || null !== $this->tag
             || null !== $this->type
-            || null !== $this->sort;
+            || null !== $this->sort
+            || null !== $this->date
+            || null !== $this->author;
     }
 
     /**
@@ -276,7 +308,9 @@ final readonly class PageFilters
         return \count($this->statuses)
             + (null === $this->visible ? 0 : 1)
             + (null === $this->tag ? 0 : 1)
-            + (null === $this->type ? 0 : 1);
+            + (null === $this->type ? 0 : 1)
+            + (null === $this->date ? 0 : 1)
+            + (null === $this->author ? 0 : 1);
     }
 
     /**
@@ -318,6 +352,25 @@ final readonly class PageFilters
             }
         }
 
+        if (null !== $this->date) {
+            // Left out when it is the one the bar starts on.
+            if (PageDate::Modified !== $this->date) {
+                $params[self::DATE] = $this->date->value;
+            }
+
+            if (null !== $this->from) {
+                $params[self::FROM] = $this->from->format(self::DAY_FORMAT);
+            }
+
+            if (null !== $this->to) {
+                $params[self::TO] = $this->to->format(self::DAY_FORMAT);
+            }
+        }
+
+        if (null !== $this->author) {
+            $params[self::AUTHOR] = (string) $this->author;
+        }
+
         if ($this->page > 1) {
             $params[self::PAGE] = (string) $this->page;
         }
@@ -339,6 +392,8 @@ final readonly class PageFilters
             self::TAG => $this->with(unsetTag: true),
             self::TYPE => $this->with(unsetType: true),
             self::SORT => $this->with(unsetSort: true),
+            self::DATE => $this->with(unsetDate: true),
+            self::AUTHOR => $this->with(unsetAuthor: true),
             default => $this,
         };
     }
@@ -403,6 +458,8 @@ final readonly class PageFilters
         ?PageSort $sort = null,
         ?bool $descending = null,
         bool $unsetSort = false,
+        bool $unsetDate = false,
+        bool $unsetAuthor = false,
     ): self {
         return new self(
             search: $search ?? $this->search,
@@ -418,6 +475,10 @@ final readonly class PageFilters
             type: $unsetType ? null : $this->type,
             sort: $unsetSort ? null : ($sort ?? $this->sort),
             descending: $unsetSort ? null : ($descending ?? $this->descending),
+            date: $unsetDate ? null : $this->date,
+            from: $unsetDate ? null : $this->from,
+            to: $unsetDate ? null : $this->to,
+            author: $unsetAuthor ? null : $this->author,
         );
     }
 
@@ -430,7 +491,51 @@ final readonly class PageFilters
             return self::NO_TAG;
         }
 
+        return self::readId($raw);
+    }
+
+    private static function readId(string $raw): ?int
+    {
         return 1 === preg_match('/^[1-9]\d{0,9}$/D', $raw) ? (int) $raw : null;
+    }
+
+    /**
+     * Which date, from which day, to which day. A day that is not one is
+     * ignored, bounds given the wrong way round are put back, and a date with
+     * no day is no period at all. The date is the last change unless the
+     * address names another.
+     *
+     * @return array{PageDate|null, \DateTimeImmutable|null, \DateTimeImmutable|null}
+     */
+    private static function readPeriod(string $date, string $from, string $to): array
+    {
+        $first = self::readDay($from);
+        $last = self::readDay($to);
+
+        if (null === $first && null === $last) {
+            return [null, null, null];
+        }
+
+        if (null !== $first && null !== $last && $first > $last) {
+            [$first, $last] = [$last, $first];
+        }
+
+        return [PageDate::tryFrom($date) ?? PageDate::Modified, $first, $last];
+    }
+
+    /**
+     * A day of the calendar, written as an `<input type="date">` sends it;
+     * anything else, the 31st of February included, is no day.
+     */
+    private static function readDay(string $raw): ?\DateTimeImmutable
+    {
+        if (1 !== preg_match('/^\d{4}-\d{2}-\d{2}$/D', $raw)) {
+            return null;
+        }
+
+        $day = \DateTimeImmutable::createFromFormat('!'.self::DAY_FORMAT, $raw);
+
+        return false !== $day && $day->format(self::DAY_FORMAT) === $raw ? $day : null;
     }
 
     private static function readType(string $raw): ?string

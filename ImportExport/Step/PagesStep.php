@@ -25,6 +25,7 @@ use TheliaCMS\Model\CmsPageContent;
 use TheliaCMS\Model\CmsPageContentQuery;
 use TheliaCMS\Model\CmsPageSearch;
 use TheliaCMS\Model\CmsPageSearchQuery;
+use TheliaCMS\Page\PageAuthorship;
 use TheliaCMS\Page\PageTypeRepository;
 use TheliaCMS\Search\SearchTextExtractor;
 use TheliaCMS\Zone\HeaderZone;
@@ -42,6 +43,7 @@ final readonly class PagesStep
         private SearchTextExtractor $searchText,
         private PublishedContentSanitizer $sanitizer,
         private HeaderZone $zones,
+        private PageAuthorship $authorship,
     ) {
     }
 
@@ -133,7 +135,8 @@ final readonly class PagesStep
                     ->setTranslatedFields(self::fieldsJson($translation['fields'] ?? null));
             }
 
-            $model->save($connection);
+            // Imported by whoever runs the import, nobody from the command line.
+            $this->authorship->stamp($model)->save($connection);
             $pageIds[$uid] = (int) $model->getId();
 
             $this->importPageContents($model, $document->carriesDocuments() ? $page['contents'] ?? [] : [], $mediaMap, $options, $report, $connection, $demotedZone);

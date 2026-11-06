@@ -32,8 +32,22 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 - **Two columns on the list of pages: Modified and Type.** The date is the
   latest change of the page or of its content in the language of the list;
   the type column hides on screens under 1200 px wide.
+- **The list of pages filters by period and by author.** Pick a date (last
+  change, creation, publication in the language of the list, or the
+  scheduled dates to publish and unpublish on) and one or two days, both
+  included; and **Last changed by** keeps the pages an administrator changed
+  last, an account deleted since named by its number. A day that does not
+  exist is ignored, and two days given the wrong way round are put back.
 
 ### Changed
+
+- **Every change of a page names the administrator who made it.** Saving or
+  generating its content, publishing it or taking it offline, hiding it,
+  moving it, putting it in the bin or back, making it the home page,
+  removing its AI mark, copying it and importing it now record who changed
+  the page last, and who created a new one; nobody when no administrator
+  acts (the command line, the install). On update, a page that named nobody
+  takes the author of its latest draft (`Config/update/2.16.0.sql`).
 
 - **The picture of a block of Mises en avant is framed on the picture.** The
   two numbers "Kept part" of each block give way to its centre, said in a

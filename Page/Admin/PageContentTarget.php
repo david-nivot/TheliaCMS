@@ -27,6 +27,7 @@ use TheliaCMS\Model\CmsPageSearch;
 use TheliaCMS\Model\CmsPageSearchQuery;
 use TheliaCMS\Page\CmsUrlService;
 use TheliaCMS\Page\Field\PageFields;
+use TheliaCMS\Page\PageAuthorship;
 use TheliaCMS\Page\PageInvalidator;
 use TheliaCMS\Search\SearchTextExtractor;
 
@@ -50,6 +51,7 @@ final readonly class PageContentTarget implements ContentTarget
         private SearchTextExtractor $searchText,
         private PageRevisionStore $revisions,
         private CmsUrlService $urls,
+        private PageAuthorship $authorship,
     ) {
     }
 
@@ -164,11 +166,14 @@ final readonly class PageContentTarget implements ContentTarget
 
     public function afterSaved(): void
     {
+        $this->sign();
         $this->activityLog->record('UPDATE', $this->id(), \sprintf('CMS page #%d content edited in %s', $this->id(), $this->locale));
     }
 
     public function afterPublished(bool $wasOnline, bool $withCustomCode): void
     {
+        $this->sign();
+
         // Published again, the page only changes at its own address; for
         // the first time in this language, it appears in its menus too.
         if ($wasOnline) {
@@ -193,11 +198,23 @@ final readonly class PageContentTarget implements ContentTarget
 
     public function afterUnpublished(bool $wasOnline): void
     {
+        $this->sign();
+
         if ($wasOnline) {
             $this->invalidator->presenceChanged($this->id());
         }
 
         $this->activityLog->record('UNPUBLISH', $this->id(), \sprintf('CMS page #%d unpublished in %s', $this->id(), $this->locale));
+    }
+
+    /**
+     * The page is changed by whoever changed its content: the list of pages
+     * filters on it. A rendering done again changes no one's work, and signs
+     * nothing.
+     */
+    public function sign(): void
+    {
+        $this->authorship->sign([$this->id()]);
     }
 
     private function id(): int

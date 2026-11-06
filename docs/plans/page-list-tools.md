@@ -1,6 +1,6 @@
 # Plan: the tools of the page list (N31 to N36)
 
-Status: decided (2026-11-06), coded lot by lot; N36, N31, N34 and N33 done. Read on `main` at 705aa2b
+Status: decided (2026-11-06), coded lot by lot; N36, N31, N34, N33 and N32 done. Read on `main` at 705aa2b
 (2.15.0 + #117). Wave 5 of the roadmap, family "editor". Goal: ship in the same release as
 N51, N52, N54 (2.16.0). Each lot updates this plan in its own commit.
 
@@ -146,7 +146,7 @@ after N35 (decided 2026-11-06 by the maintainer).
 - Browser at 1440 px: table 1120 px, no horizontal scroll, actions pinned. At 1180 px the type
   column is gone and the table scrolls 122 px under the pinned actions.
 
-### 5. N32: authors filled everywhere, then filter by date and by author (M+)
+### 5. N32: authors filled everywhere, then filter by date and by author (M+), done
 
 Step A, authors (decided 2026-11-06): every write of the module that changes a page or its
 content sets `cms_page.updated_by` to the admin acting; every creation sets `created_by`.
@@ -167,6 +167,21 @@ content sets `cms_page.updated_by` to the admin acting; every creation sets `cre
   `cms_page_content.draft_updated_by` of the latest draft, replayable; `created_by` stays empty.
 - Tests: one integration test per write path (updated_by equals the admin), one for "no admin"
   (null).
+- Done: `Page/PageAuthorship` (`author()` from the security context, null without an admin;
+  `stamp()` on a page about to be saved, `created_by` when new; `sign()` a column update of
+  `updated_by` alone, no page event, no `updated_at`, for the writes that do not save the page
+  row). Stamped: `saveDraft`, `saveSeo`, `saveFields`, `toggleVisibility`, `move` (the siblings
+  whose position changed only), `moveToTrash` and `restore` (the whole branch), `copyOf`
+  (duplicate, start from a model), `PageHeaderTranslator`, `HeaderZone::ensure`, `PagesStep`.
+  Signed: content save, publish and unpublish (`PageContentTarget::afterSaved/afterPublished/
+  afterUnpublished`, the header zone through it), `removeProvenance`, `setAsHome`. Not signed:
+  the renderings done again (`renderDraftAgain`, `renderPublishedAgain`: no one's work), the
+  re-addressing of descendants, the documents of a page, the seeders. A generation runs in the
+  request of the admin who started it, or from `GenerateCommand` (nobody): no messenger, no
+  scheduler. `Config/update/2.16.0.sql` fills an empty `updated_by` from the content changed
+  last whose `draft_updated_by` is set (highest id at the same second), replayable.
+  `PageAuthorshipTest` (each path, an author then another, nobody gives null),
+  `AuthorBackfillMigrationTest` (latest draft, tie, a page that names someone, played twice).
 
 Step B, filters:
 - One filter: which date (modified, created, published, online from, taken down on), from, to,
@@ -178,6 +193,27 @@ Step B, filters:
   joined to `admin`), an id with no account shown as "deleted account"; filter on `updated_by`
   only ("last modified by", decided).
 - Tests: each date, bounds inclusive, invalid input, author, deleted account, cost constant.
+- Done: `PageDate` enum (modified, created, published, publish_on, unpublish_on; `sql()` from
+  the enum only, the content join of `PageStatusCriteria` for modified and published; the sort
+  by last change reads the same expression). `PageFilters`: `date`, `from`, `to` (ISO day,
+  `!Y-m-d` read back equal, so 2026-02-31 is no day; bounds swapped back; a date without a day
+  is no period; `date` written only when it is not "modified") and `author` (an id, dropped by
+  `knowing()` when no live page names it, a deleted account kept); both in the return, the
+  chips, `advancedCount`, `withoutFilter`. SQL: `>= day 00:00:00` and `< next day 00:00:00`,
+  compared as stored: TIMESTAMP columns written by PHP in the shop time zone (Europe/Paris on
+  the host), shown by Twig in the same one. `CmsPageAdminRepository::authors()`: one statement,
+  `DISTINCT updated_by` of the live pages left joined to `admin`, null for a deleted account,
+  by name with the deleted ones last. Bar: a third row, "Date" select with its help (publication
+  per language, scheduled dates shared), "From" and "To" (`type=date`, ISO hint for a browser
+  without a picker), "Last changed by" (shown when someone changed a page). Chips "Last
+  modified: from 01/02/2026 to 10/02/2026" and "Last changed by …", "Deleted account #67".
+- Tests: `PageFiltersTest` (periods, address, authors, removal, `knowing`, return),
+  `PageListPeriodAuthorTest` (each date both days included, content wins the last change,
+  publication of the language listed, author, screen and chips, deleted account, unknown author
+  and impossible day ignored), `PageListingCostTest` (period and author cost constant, authors in
+  one statement).
+- Browser at 1440 px in French: the third row fits, no horizontal scroll; deleted account 67 of
+  the dev base listed and filtered.
 
 ### 6. N35: bulk actions (L, next release)
 - Route `admin.cms.pages.bulk`, `pages[]` per row (flat list only), action select, permission
@@ -185,5 +221,6 @@ Step B, filters:
   `setTag` to add. Steps per decision 7.
 
 ## Not checked
-- How dates are stored (server time zone or UTC) and shown to the admin (N33 shows them as
-  Twig formats them, like the other screens of the module).
+- A shop whose PHP time zone differs from the one of its database session: the dates are
+  compared as PHP wrote them, which holds as long as the session time zone does not change
+  between the write and the read.

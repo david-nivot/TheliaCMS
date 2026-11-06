@@ -36,12 +36,13 @@ final readonly class PageFilterPresenter
     }
 
     /**
-     * @param array<int, string>    $tags   the names of the tags of the site, by id
-     * @param array<string, string> $types  the names of the page types, by code
-     * @param array<string, int>    $counts the live pages in each state, by state, the whole site
+     * @param array<int, string>      $tags    the names of the tags of the site, by id
+     * @param array<string, string>   $types   the names of the page types, by code
+     * @param array<string, int>      $counts  the live pages in each state, by state, the whole site
+     * @param array<int, string|null> $authors the administrators who changed a page last, by id, null for a deleted account
      *
      * @return array{
-     *     parameters: array{search: string, statuses: string, visibility: string, tag: string, type: string, sort: string},
+     *     parameters: array{search: string, statuses: string, visibility: string, tag: string, type: string, sort: string, date: string, from: string, to: string, author: string},
      *     search: string,
      *     is_filtering: bool,
      *     is_empty: bool,
@@ -51,6 +52,10 @@ final readonly class PageFilterPresenter
      *     tag_options: list<array{value: string, label: string, selected: bool}>,
      *     type_options: list<array{value: string, label: string, selected: bool}>,
      *     sort_options: list<array{value: string, label: string, selected: bool}>,
+     *     date_options: list<array{value: string, label: string, selected: bool}>,
+     *     from: string,
+     *     to: string,
+     *     author_options: list<array{value: string, label: string, selected: bool}>,
      *     sort_headers: array<string, array{url: string, aria_sort: string}>,
      *     reverse_url: string|null,
      *     chips: list<array{label: string, remove_url: string}>,
@@ -62,7 +67,7 @@ final readonly class PageFilterPresenter
      *     hidden_params: array<string, string>,
      * }
      */
-    public function present(PageFilters $filters, int $languageId, int $trashCount, array $tags = [], array $types = [], array $counts = []): array
+    public function present(PageFilters $filters, int $languageId, int $trashCount, array $tags = [], array $types = [], array $counts = [], array $authors = []): array
     {
         return [
             // The names the form posts under, taken from the object that reads
@@ -74,6 +79,10 @@ final readonly class PageFilterPresenter
                 'tag' => PageFilters::TAG,
                 'type' => PageFilters::TYPE,
                 'sort' => PageFilters::SORT,
+                'date' => PageFilters::DATE,
+                'from' => PageFilters::FROM,
+                'to' => PageFilters::TO,
+                'author' => PageFilters::AUTHOR,
             ],
             'search' => $filters->search,
             'is_filtering' => $filters->isFiltering(),
@@ -92,12 +101,16 @@ final readonly class PageFilterPresenter
             // Chosen in the bar, or by the headers of the columns it sorts on;
             // the bar starts a sort in its own direction, the header reverses it.
             'sort_options' => $this->sortOptions($filters),
+            'date_options' => $this->dateOptions($filters),
+            'from' => $filters->from?->format(PageFilters::DAY_FORMAT) ?? '',
+            'to' => $filters->to?->format(PageFilters::DAY_FORMAT) ?? '',
+            'author_options' => $this->authorOptions($filters, $authors),
             'sort_headers' => $this->sortHeaders($filters, $languageId),
             // The creation date has no column, so no header to reverse it from.
             'reverse_url' => null === $filters->sort
                 ? null
                 : $this->listUrl($filters->sortedBy($filters->sort), $languageId),
-            'chips' => $this->chips($filters, $languageId, $tags, $types),
+            'chips' => $this->chips($filters, $languageId, $tags, $types, $authors),
             'sort_chip' => $this->sortChip($filters, $languageId),
             'clear_url' => $this->listUrl(new PageFilters(open: $filters->open, foldChosen: $filters->foldChosen), $languageId),
             // Offered only when something is unfolded, and there is no "unfold
@@ -151,6 +164,46 @@ final readonly class PageFilterPresenter
             ],
             PageSort::cases(),
         );
+    }
+
+    /**
+     * @return list<array{value: string, label: string, selected: bool}>
+     */
+    private function dateOptions(PageFilters $filters): array
+    {
+        return array_map(
+            fn (PageDate $date): array => [
+                'value' => $date->value,
+                'label' => $this->translate($date->label()),
+                'selected' => $date === ($filters->date ?? PageDate::Modified),
+            ],
+            PageDate::cases(),
+        );
+    }
+
+    /**
+     * @param array<int, string|null> $authors
+     *
+     * @return list<array{value: string, label: string, selected: bool}>
+     */
+    private function authorOptions(PageFilters $filters, array $authors): array
+    {
+        $options = [];
+
+        foreach ($authors as $id => $name) {
+            $options[] = ['value' => (string) $id, 'label' => $this->authorName($id, $name), 'selected' => $id === $filters->author];
+        }
+
+        return $options;
+    }
+
+    /**
+     * An account deleted since is named by its number: two of them would
+     * otherwise read the same.
+     */
+    private function authorName(int $id, ?string $name): string
+    {
+        return $name ?? $this->translate('Deleted account #%id%', ['%id%' => (string) $id]);
     }
 
     /**
@@ -230,12 +283,13 @@ final readonly class PageFilterPresenter
     }
 
     /**
-     * @param array<int, string>    $tags
-     * @param array<string, string> $types
+     * @param array<int, string>      $tags
+     * @param array<string, string>   $types
+     * @param array<int, string|null> $authors
      *
      * @return list<array{label: string, remove_url: string}>
      */
-    private function chips(PageFilters $filters, int $languageId, array $tags, array $types): array
+    private function chips(PageFilters $filters, int $languageId, array $tags, array $types, array $authors): array
     {
         $chips = [];
 
@@ -278,7 +332,33 @@ final readonly class PageFilterPresenter
             ];
         }
 
+        if (null !== $filters->date) {
+            $chips[] = [
+                'label' => $this->translate('%date%: %period%', [
+                    '%date%' => $this->translate($filters->date->label()),
+                    '%period%' => $this->period($filters->from, $filters->to),
+                ]),
+                'remove_url' => $this->listUrl($filters->withoutFilter(PageFilters::DATE), $languageId),
+            ];
+        }
+
+        if (null !== $filters->author) {
+            $chips[] = [
+                'label' => $this->translate('Last changed by %name%', ['%name%' => $this->authorName($filters->author, $authors[$filters->author] ?? null)]),
+                'remove_url' => $this->listUrl($filters->withoutFilter(PageFilters::AUTHOR), $languageId),
+            ];
+        }
+
         return $chips;
+    }
+
+    private function period(?\DateTimeImmutable $from, ?\DateTimeImmutable $to): string
+    {
+        return match (true) {
+            null === $to => $this->translate('from %from%', ['%from%' => (string) $from?->format('d/m/Y')]),
+            null === $from => $this->translate('until %to%', ['%to%' => $to->format('d/m/Y')]),
+            default => $this->translate('from %from% to %to%', ['%from%' => $from->format('d/m/Y'), '%to%' => $to->format('d/m/Y')]),
+        };
     }
 
     /**

@@ -17,9 +17,11 @@ namespace TheliaCMS\Tests\Integration\Page;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Thelia\Model\Lang;
 use Thelia\Model\LangQuery;
+use Thelia\Test\FixtureFactory;
 use TheliaCMS\Model\CmsPageQuery;
 use TheliaCMS\Model\CmsTag;
 use TheliaCMS\Page\Admin\CmsPageAdminRepository;
+use TheliaCMS\Page\Admin\PageDate;
 use TheliaCMS\Page\Admin\PageFilters;
 use TheliaCMS\Page\Admin\PageListPresenter;
 use TheliaCMS\Page\Admin\PageSort;
@@ -114,6 +116,47 @@ final class PageListingCostTest extends CmsIntegrationTestCase
 
         self::assertGreaterThan($few, $many, 'the second tree added no match, so this compares nothing');
         self::assertSame($fewCost, $manyCost, 'sorting by the last change costs more when it finds more, so something is asked per row');
+    }
+
+    public function testFilteringByPeriodAndAuthorCostsTheSameWhateverTheNumberOfMatches(): void
+    {
+        $repository = $this->getService(CmsPageAdminRepository::class);
+        $locale = $this->locale();
+        $author = (int) (new FixtureFactory($this->getPropelConnection()))->admin()->getId();
+        $today = new \DateTimeImmutable('today');
+        $filters = new PageFilters(search: 'Dated', date: PageDate::Published, from: $today, to: $today, author: $author);
+
+        $this->treeOf(1, 2, $locale, 'Dated');
+        CmsPageQuery::create()->update(['UpdatedBy' => $author]);
+        $fewCost = $this->statementsFor(static fn () => $repository->results($locale, $filters));
+        $few = $repository->results($locale, $filters)->total;
+
+        $this->treeOf(4, 2, $locale, 'Dated');
+        CmsPageQuery::create()->update(['UpdatedBy' => $author]);
+        $manyCost = $this->statementsFor(static fn () => $repository->results($locale, $filters));
+        $many = $repository->results($locale, $filters)->total;
+
+        self::assertGreaterThan($few, $many, 'the second tree added no match, so this compares nothing');
+        self::assertSame($fewCost, $manyCost, 'filtering by period and author costs more when it finds more, so something is asked per row');
+    }
+
+    public function testListingTheAuthorsCostsOneStatementWhateverTheirNumber(): void
+    {
+        $repository = $this->getService(CmsPageAdminRepository::class);
+        $fixtures = new FixtureFactory($this->getPropelConnection());
+
+        [$root] = $this->treeOf(1, 2, $this->locale(), 'Authored');
+        CmsPageQuery::create()->filterById($root)->update(['UpdatedBy' => (int) $fixtures->admin()->getId()]);
+        $fewCost = $this->statementsFor(static fn () => $repository->authors());
+
+        foreach ($this->treeOf(3, 0, $this->locale(), 'Authored') as $id) {
+            CmsPageQuery::create()->filterById($id)->update(['UpdatedBy' => (int) $fixtures->admin()->getId()]);
+        }
+
+        $manyCost = $this->statementsFor(static fn () => $repository->authors());
+
+        self::assertSame(1, $fewCost, 'the authors are not read in one statement');
+        self::assertSame($fewCost, $manyCost, 'listing the authors costs more when there are more');
     }
 
     public function testCountingTheStatesCostsTheSameOnASmallSiteAndOnABigOne(): void

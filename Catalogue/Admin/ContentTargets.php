@@ -26,6 +26,7 @@ use TheliaCMS\Page\Admin\PageContentTarget;
 use TheliaCMS\Page\Admin\PageRevisionStore;
 use TheliaCMS\Page\CmsUrlService;
 use TheliaCMS\Page\Field\PageFields;
+use TheliaCMS\Page\PageAuthorship;
 use TheliaCMS\Page\PageInvalidator;
 use TheliaCMS\Search\SearchTextExtractor;
 use TheliaCMS\Zone\HeaderZone;
@@ -49,6 +50,7 @@ final readonly class ContentTargets
         private CachePurger $httpCache,
         private ItemRevisionStore $itemRevisions,
         private CmsUrlService $urls,
+        private PageAuthorship $authorship,
     ) {
     }
 
@@ -65,7 +67,7 @@ final readonly class ContentTargets
 
     private function pageTarget(CmsPage $page, string $locale): PageContentTarget
     {
-        return new PageContentTarget($page, $locale, $this->activityLog, $this->invalidator, $this->fields, $this->placeholders, $this->searchText, $this->pageRevisions, $this->urls);
+        return new PageContentTarget($page, $locale, $this->activityLog, $this->invalidator, $this->fields, $this->placeholders, $this->searchText, $this->pageRevisions, $this->urls, $this->authorship);
     }
 
     public function forItem(CatalogueItem $item): ItemContentTarget

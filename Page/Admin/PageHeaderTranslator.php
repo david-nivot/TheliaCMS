@@ -15,7 +15,6 @@ declare(strict_types=1);
 namespace TheliaCMS\Page\Admin;
 
 use Propel\Runtime\Propel;
-use Thelia\Core\Security\SecurityContext;
 use TheliaCMS\Content\Editing\ContentWriter;
 use TheliaCMS\Content\Pipeline\PublishedContentSanitizer;
 use TheliaCMS\Generation\HeaderOutcome;
@@ -23,6 +22,7 @@ use TheliaCMS\Generation\PageHeader;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Model\CmsPageQuery;
 use TheliaCMS\Page\CmsUrlService;
+use TheliaCMS\Page\PageAuthorship;
 use TheliaCMS\Page\PageInvalidator;
 use TheliaCMS\Page\ReservedSlugException;
 
@@ -41,7 +41,7 @@ final readonly class PageHeaderTranslator
 {
     public function __construct(
         private CmsUrlService $urls,
-        private SecurityContext $securityContext,
+        private PageAuthorship $authorship,
         private CmsActivityLog $activityLog,
         private PublishedContentSanitizer $sanitizer,
         private PageInvalidator $invalidator,
@@ -77,7 +77,7 @@ final readonly class PageHeaderTranslator
             }
 
             if ([] !== $written) {
-                $page->setUpdatedBy($this->securityContext->getAdminUser()?->getId())->save($connection);
+                $this->authorship->stamp($page)->save($connection);
             }
 
             [$address, $parentNotAddressed] = $this->address($page, $locale);

@@ -15,6 +15,8 @@ declare(strict_types=1);
 namespace TheliaCMS\Page\Admin;
 
 use Propel\Runtime\ActiveQuery\Criteria;
+use Propel\Runtime\Propel;
+use Thelia\Model\Map\AdminTableMap;
 use Thelia\Model\RewritingUrlQuery;
 use TheliaCMS\Content\Document;
 use TheliaCMS\Model\CmsPage;
@@ -337,7 +339,7 @@ final readonly class CmsPageAdminRepository
 
         $value = match ($filters->sort ?? PageSort::Title) {
             PageSort::Title => '`'.CmsPageI18nTableMap::TABLE_NAME.'`.`title`',
-            PageSort::Modified => self::modifiedSql(),
+            PageSort::Modified => PageDate::Modified->sql(),
             PageSort::Created => $page.'.`created_at`',
         };
         $missing = PageSort::Title === ($filters->sort ?? PageSort::Title)
@@ -353,21 +355,6 @@ final readonly class CmsPageAdminRepository
         }
 
         return $query->orderById($direction);
-    }
-
-    /**
-     * When a page was last changed in the language listed: the latest of the
-     * page and of its content, since saving the content does not touch the page
-     * row. Either may be missing; the other then answers alone.
-     *
-     * Kept equal to PageListRow::modifiedAt() by PageListSortTest.
-     */
-    private static function modifiedSql(): string
-    {
-        $page = '`'.CmsPageTableMap::TABLE_NAME.'`.`updated_at`';
-        $content = '`'.PageStatusCriteria::CONTENT_ALIAS.'`.`updated_at`';
-
-        return "GREATEST(COALESCE({$page}, {$content}), COALESCE({$content}, {$page}))";
     }
 
     /**
@@ -402,9 +389,13 @@ final readonly class CmsPageAdminRepository
             $query->filterByPageType($filters->type);
         }
 
-        // One join of the content row serves the states and the date of the
-        // last change.
-        if ([] !== $filters->statuses || PageSort::Modified === $filters->sort) {
+        if (null !== $filters->author) {
+            $query->filterByUpdatedBy($filters->author);
+        }
+
+        // One join of the content row serves the states, the date of the last
+        // change and the one of the publication.
+        if ([] !== $filters->statuses || PageSort::Modified === $filters->sort || true === $filters->date?->readsTheContent()) {
             PageStatusCriteria::joinContent($query, $locale);
         }
 
@@ -412,7 +403,58 @@ final readonly class CmsPageAdminRepository
             PageStatusCriteria::restrictTo($query, $filters->statuses, $now);
         }
 
+        if (null !== $filters->date) {
+            $this->restrictToPeriod($query, $filters->date, $filters->from, $filters->to);
+        }
+
         return $query;
+    }
+
+    /**
+     * Keeps the pages whose date falls in the period, both days included. The
+     * dates are compared as they are written, in the time zone of the shop,
+     * which is the one the screens show them in.
+     */
+    private function restrictToPeriod(CmsPageQuery $query, PageDate $date, ?\DateTimeImmutable $from, ?\DateTimeImmutable $to): void
+    {
+        if (null !== $from) {
+            $query->where('('.$date->sql().') >= ?', $from->format('Y-m-d 00:00:00'), \PDO::PARAM_STR);
+        }
+
+        if (null !== $to) {
+            // Before the next day starts: the whole of the last day is kept.
+            $query->where('('.$date->sql().') < ?', $to->modify('+1 day')->format('Y-m-d 00:00:00'), \PDO::PARAM_STR);
+        }
+    }
+
+    /**
+     * The administrators who changed a live page last, by id, with their name,
+     * or null for an account deleted since: what the author filter offers.
+     *
+     * @return array<int, string|null>
+     */
+    public function authors(): array
+    {
+        $page = CmsPageTableMap::TABLE_NAME;
+        $admin = AdminTableMap::TABLE_NAME;
+        $statement = Propel::getConnection('TheliaMain')->prepare(
+            "SELECT DISTINCT `{$page}`.`updated_by` AS id, `{$admin}`.`firstname`, `{$admin}`.`lastname`, `{$admin}`.`login`
+            FROM `{$page}` LEFT JOIN `{$admin}` ON `{$admin}`.`id` = `{$page}`.`updated_by`
+            WHERE `{$page}`.`updated_by` IS NOT NULL AND `{$page}`.`deleted_at` IS NULL AND `{$page}`.`model` = 0"
+        );
+        $statement->execute();
+
+        $authors = [];
+
+        foreach ($statement->fetchAll(\PDO::FETCH_ASSOC) as $row) {
+            $name = trim($row['firstname'].' '.$row['lastname']);
+            $authors[(int) $row['id']] = null === $row['login'] ? null : ('' === $name ? (string) $row['login'] : $name);
+        }
+
+        // The accounts by name, the deleted ones last.
+        uasort($authors, static fn (?string $one, ?string $other): int => [null === $one, (string) $one] <=> [null === $other, (string) $other]);
+
+        return $authors;
     }
 
     /**
