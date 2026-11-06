@@ -300,7 +300,7 @@
                 return;
             }
 
-            // Only videos: nothing to describe, the list shows them.
+            // Only videos: nothing to describe, the list shows them once reloaded.
             if (stored.length === 0) {
                 if (refused === 0) {
                     window.location.reload();
@@ -308,7 +308,7 @@
                     return;
                 }
 
-                var back = element('a', 'btn btn-sm btn-outline-secondary', m.stay);
+                var back = element('a', 'btn btn-sm btn-outline-secondary', counted(m.showVideos, files.length));
                 back.href = window.location.href;
                 done.append(back);
                 done.classList.remove('d-none');

@@ -1307,7 +1307,7 @@ return [
     'The file is larger than the server accepts.' => 'Le fichier dépasse la taille que le serveur accepte.',
     'The file did not arrive whole. Send it again.' => 'Le fichier n’est pas arrivé en entier. Envoyez-le à nouveau.',
     'The file is not a readable image.' => 'Le fichier n’est pas une image lisible.',
-    'Stay on the list' => 'Rester sur la liste',
+    'See the video added|See the %count% videos added' => 'Voir la vidéo ajoutée|Voir les %count% vidéos ajoutées',
     'Drop images or videos here, or choose them' => 'Déposez des images ou des vidéos ici, ou choisissez-les',
     'Not added: %files%.' => 'Non ajoutées : %files%.',
     'Described' => 'Décrite',

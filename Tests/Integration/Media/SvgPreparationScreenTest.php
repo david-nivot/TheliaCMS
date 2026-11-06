@@ -303,10 +303,10 @@ final class SvgPreparationScreenTest extends AdminScreenTestCase
     {
         $form = $this->screen(self::LIST)->filter('form[data-cms-media-upload]');
 
-        self::assertSame('image/jpeg,image/png,image/webp,image/svg+xml,.svg', $form->attr('data-accepted'));
+        self::assertSame('image/jpeg,image/png,image/webp,image/svg+xml,.svg,video/mp4', $form->attr('data-accepted'));
         self::assertSame('00000000000000000000000000000000', $form->attr('data-token-placeholder'));
         self::assertStringContainsString('/admin/cms/media/svg/00000000000000000000000000000000', (string) $form->attr('data-prepare-url'));
-        self::assertSame('image/jpeg,image/png,image/webp,image/svg+xml,.svg', $this->screen(self::LIST)->filter('input[type="file"]')->attr('accept'));
+        self::assertSame('image/jpeg,image/png,image/webp,image/svg+xml,.svg,video/mp4', $this->screen(self::LIST)->filter('input[type="file"]')->attr('accept'));
     }
 
     public function testAFileThatExpiredIsSaidAndTheWayGoesOnWithTheNextOne(): void

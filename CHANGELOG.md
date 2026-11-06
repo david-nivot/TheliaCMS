@@ -9,8 +9,8 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Added
 
-- **MP4 videos in the media library.** The library takes an MP4 next to JPEG,
-  PNG and WebP, up to 50 MB (an image is still held to 10 MB and 25 megapixels).
+- **MP4 videos in the media library.** The library takes an MP4 next to its
+  images (JPEG, PNG, WebP, SVG), up to 50 MB (an image is still held to 10 MB and 25 megapixels).
   The type is the one read in the content of the file, never its extension: a
   text file renamed `.mp4` is refused. A video is shown by a `<video>` element
   in the list and on its sheet, which has no alternative text, no decorative
@@ -22,7 +22,8 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   upload field of an image, the image of a page, an image prop (a video id is
   read as an image that does not exist) and the address of an image of the
   library never serve one, and the bulk "decorative" action leaves it out and
-  does not count it. Requires TheliaLibrary 2.3.
+  does not count it. Videos came with TheliaLibrary 2.3; the 2.4 the SVG
+  images require holds them.
 
 - **A `video` prop type.** A component of the theme or of the site declares a
   prop `video`, at the top level or in the rows of a list (`@prop videos

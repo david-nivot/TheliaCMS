@@ -113,7 +113,7 @@ final class MediaUploadScreenTest extends AdminScreenTestCase
         $messages = json_decode((string) $this->screen(self::LIST)->filter('form[data-cms-media-upload]')->attr('data-messages'), true, flags: \JSON_THROW_ON_ERROR);
         $translator = $this->getService(TranslatorInterface::class);
 
-        foreach (['prepare' => 'Prepare the SVG file|Prepare the %count% SVG files', 'thenDescribe' => ', then describe the image|, then describe the %count% images', 'dropSvg' => 'Do not add this SVG file|Do not add these SVG files', 'describe' => 'Describe the image added|Describe the %count% images added'] as $key => $english) {
+        foreach (['prepare' => 'Prepare the SVG file|Prepare the %count% SVG files', 'thenDescribe' => ', then describe the image|, then describe the %count% images', 'dropSvg' => 'Do not add this SVG file|Do not add these SVG files', 'describe' => 'Describe the image added|Describe the %count% images added', 'showVideos' => 'See the video added|See the %count% videos added'] as $key => $english) {
             self::assertSame($translator->trans($english, [], TheliaCMS::DOMAIN_NAME), $messages[$key], $key);
             self::assertCount(2, explode('|', $messages[$key]), $key.': one form for one item, one for more.');
         }
