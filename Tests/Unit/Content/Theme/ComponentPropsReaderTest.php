@@ -16,7 +16,9 @@ namespace TheliaCMS\Tests\Unit\Content\Theme;
 
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use TheliaCMS\Content\InvalidDocumentException;
 use TheliaCMS\Content\Prop;
+use TheliaCMS\Content\PropSchema;
 use TheliaCMS\Content\PropType;
 use TheliaCMS\Content\Theme\ComponentPropsReader;
 use Twig\Environment;
@@ -193,6 +195,54 @@ final class ComponentPropsReaderTest extends TestCase
         self::assertFalse($fields['note']->required);
         self::assertSame(PropType::Items, $props['extras']->type, 'array<{…}> reads as list<{…}>.');
         self::assertSame([], $read['id_lists'], 'Rows of fields are not lists of ids.');
+    }
+
+    public function testAListMayDeclareHowManyRowsItHolds(): void
+    {
+        $props = $this->byName($this->reader()->readSource(<<<'TWIG'
+            {# @prop videos list<{title: string, video: video}> min:1 max:6 The videos of the recipe #}
+            {# @prop steps string[] max:20 The steps #}
+            {# @prop productIds product[] min:2 max:4 The products #}
+            {# @prop guests list<{name: string}> min:60 Everyone #}
+            {# @prop wrong list<{name: string}> min:5 max:2 Bounds that make no sense #}
+            {# @prop plain list<{name: string}> minimal rows #}
+            {% props videos = [], steps = [], guests = [], wrong = [], plain = [] %}
+            TWIG));
+
+        self::assertSame([1, 6], [$props['videos']->minItems, $props['videos']->maxItems]);
+        self::assertTrue($props['videos']->required, 'A list that needs a row is required.');
+        self::assertSame('The videos of the recipe', $props['videos']->help, 'The bounds are not words of the help.');
+        self::assertSame([0, 20], [$props['steps']->minItems, $props['steps']->maxItems], 'Each bound is optional.');
+        self::assertSame([2, 4], [$props['product_ids']->minItems, $props['product_ids']->maxItems], 'A list of records takes bounds as well.');
+        self::assertSame([60, 60], [$props['guests']->minItems, $props['guests']->maxItems], 'A minimum above the usual ceiling raises it.');
+        self::assertSame([0, 50], [$props['wrong']->minItems, $props['wrong']->maxItems], 'Bounds that make no sense are left out.');
+        self::assertSame('Bounds that make no sense', $props['wrong']->help);
+        self::assertSame([0, 50], [$props['plain']->minItems, $props['plain']->maxItems]);
+        self::assertSame('minimal rows', $props['plain']->help, 'A word that only starts like a bound is the help.');
+
+        $this->expectException(InvalidDocumentException::class);
+        (new PropSchema([$props['videos']]))->normalize(['videos' => []]);
+    }
+
+    public function testAFieldOfARowMayHaveAHelpOfItsOwn(): void
+    {
+        $read = $this->reader()->readSource(<<<'TWIG'
+            {# @prop clipList list<{title: string, coverImage: image|null, rank: int}> The videos #}
+            {# @prop clipList.title The title read under the video #}
+            {# @prop clipList.coverImage Shown before the video plays #}
+            {% props clipList = [] %}
+            TWIG);
+        $props = $this->byName($read);
+
+        self::assertSame(['clip_list'], array_keys($props), 'The help of a field is no prop of its own.');
+
+        $fields = [];
+        foreach ($props['clip_list']->items as $item) {
+            $fields[$item->name] = $item->help;
+        }
+
+        self::assertSame(['title' => 'The title read under the video', 'cover_image' => 'Shown before the video plays', 'rank' => null], $fields);
+        self::assertSame('The videos', $props['clip_list']->help);
     }
 
     public function testARowSpelledAsItsTemplateIsReadUnderTheNamesOfTheSchema(): void

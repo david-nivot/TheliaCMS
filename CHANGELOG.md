@@ -9,6 +9,13 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Added
 
+- **A list of a theme component says how many rows it holds, and each field
+  of its rows can have a help.** After the type of a list, `min:1 max:6` (each
+  optional) bounds its rows, in the editor and at the save, instead of 0 to 50
+  for every list; a list that needs a row is required. A comment named after
+  the list and the field, `{# @prop videos.title The title read under the
+  video #}`, gives that field its help in the form. See
+  `docs/creating-a-component.md`.
 - **A row of a list moves up or down.** Each row of a list (the blocks of
   Mises en avant, the rows of a component of the theme) has an up and a down
   button beside its remove button, reachable by keyboard: the focus stays on
