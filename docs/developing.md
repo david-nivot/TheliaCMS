@@ -34,7 +34,10 @@ shows how to test an update, outside a transaction.
 - **The test container** (`var/cache/test`) is compiled by the bootstrap of
   the integration tests, not by `cache:clear`. After a change to the
   constructor of a service, a new route, a new controller or a new event
-  listener, remove it; the first test recompiles. Without removing anything,
+  listener, remove it; the first test recompiles. Switching the clone of the
+  host between two branches when one adds a service does the same: the whole
+  suite errors before its first assertion until the container is moved aside.
+  Without removing anything,
   `env -u DATABASE_NAME php Thelia cache:clear --env=test --no-debug`
   rebuilds the container the tests run (without unsetting the variable, see
   below, the container built under DDEV connects the tests to the

@@ -334,14 +334,16 @@ body:has(.cms-content) {
     color: inherit;
 }
 
-/* The save button stays in view at the bottom of a long form. */
+/* The save button stays in view at the bottom of a long form. Its band and
+   its top line reach the edges of the drawer through an outset border image,
+   painted outside the box without widening the form: negative side margins
+   made the form 2.5rem wider than its room, scrolled sideways. */
 .cms-content__edit-actions {
     position: sticky;
     bottom: -1rem;
-    margin: 0 -1.25rem -1rem;
-    padding: 0.75rem 1.25rem;
-    border-top: 1px solid var(--bs-border-color, #dee2e6);
-    background: var(--bs-body-bg, #fff);
+    margin-bottom: -1rem;
+    padding: 0.75rem 0;
+    border-image: linear-gradient(var(--bs-border-color, #dee2e6) 1px, var(--bs-body-bg, #fff) 1px) fill 0 / 0 / 0 1.25rem;
 }
 
 /* Most props are optional: the mark says nothing in this form. */
