@@ -155,6 +155,44 @@ final readonly class CmsPageAdminRepository
     }
 
     /**
+     * How many live pages are in each state in this language, the whole site
+     * counted whatever the filters, so a number does not move when a box is
+     * ticked. Models and the bin are out, as on the listing.
+     *
+     * One statement for the five: the same content join, one sum per state, with
+     * the conditions PageStatusCriteria keeps equal to PageStatus::resolve().
+     *
+     * @return array<string, int> by the value of the state, every state present
+     */
+    public function statusCounts(string $locale, ?\DateTimeInterface $now = null): array
+    {
+        $now ??= new \DateTimeImmutable();
+        $query = PageStatusCriteria::joinContent(
+            CmsPageQuery::create()->filterByDeletedAt(null, Criteria::ISNULL)->filterByModel(0),
+            $locale,
+        );
+        $aliases = [];
+
+        foreach (PageStatus::cases() as $status) {
+            $alias = 'count_'.preg_replace('/\W/', '_', $status->value);
+            $aliases[$status->value] = $alias;
+            $query->withColumn('COALESCE(SUM(CASE WHEN '.PageStatusCriteria::sqlFor($status, $now).' THEN 1 ELSE 0 END), 0)', $alias);
+        }
+
+        // A selection of columns comes back as arrays, one row here: the sums
+        // of a query without grouping.
+        $rows = $query->select(array_values($aliases))->find()->getData();
+        $row = \is_array($rows[0] ?? null) ? $rows[0] : [];
+        $counts = [];
+
+        foreach ($aliases as $value => $alias) {
+            $counts[$value] = (int) ($row[$alias] ?? 0);
+        }
+
+        return $counts;
+    }
+
+    /**
      * Identifiers of the pages that have at least one page underneath them, used
      * to unfold a site small enough to be read whole.
      *

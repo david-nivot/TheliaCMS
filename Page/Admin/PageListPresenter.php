@@ -78,7 +78,7 @@ final readonly class PageListPresenter
             'rows' => $this->rows($rows, $filters, $languageId, null === $results, $this->stalePages->ids($locale, array_map(static fn (PageListRow $row): int => $row->id(), $rows)), $tags),
             'results' => $results,
             'live_count' => $liveCount,
-            'filters' => $this->filterBar->present($filters, $languageId, $trashCount, $tagNames, $typeNames),
+            'filters' => $this->filterBar->present($filters, $languageId, $trashCount, $tagNames, $typeNames, $this->pages->statusCounts($locale)),
             'filter_query' => $filters->toQueryParams(),
             'edit_locale' => $locale,
             'edit_language_id' => $languageId,
@@ -170,6 +170,10 @@ final readonly class PageListPresenter
         }
 
         $presented = [];
+        // The screens a row opens carry the state of the list, so their "back to
+        // the list" lands on this list and not on the folded tree.
+        $return = $filters->toReturnParameter();
+        $returnQuery = null === $return ? [] : [PageFilters::RETURN => $return];
 
         foreach ($rows as $index => $row) {
             $parent = (int) $row->page->getParent();
@@ -202,8 +206,8 @@ final readonly class PageListPresenter
                 'tag_badge' => $tags[(int) $row->page->getTagId()]['badge'] ?? PageTagColor::NO_COLOR_BADGE,
                 'tag_badge_style' => $tags[(int) $row->page->getTagId()]['badge_style'] ?? '',
                 'toggle_url' => $row->hasChildren() ? $this->filterBar->toggleUrl($filters, $languageId, $id) : null,
-                'edit_url' => $this->route('admin.cms.pages.edit', $id, $languageId),
-                'builder_url' => $this->route('admin.cms.pages.content.edit', $id, $languageId),
+                'edit_url' => $this->route('admin.cms.pages.edit', $id, $languageId, extra: $returnQuery),
+                'builder_url' => $this->route('admin.cms.pages.content.edit', $id, $languageId, extra: $returnQuery),
                 // The actions that come back to this screen carry the state of it
                 // in their address, so acting on a row does not fold the tree the
                 // editor just opened or drop the search they are working from.
@@ -238,12 +242,16 @@ final readonly class PageListPresenter
         return $row->titleInAnotherLanguage ?? '#'.$row->id();
     }
 
-    private function route(string $name, int $id, int $languageId, ?PageFilters $filters = null): string
+    /**
+     * @param array<string, string> $extra
+     */
+    private function route(string $name, int $id, int $languageId, ?PageFilters $filters = null, array $extra = []): string
     {
         return $this->urls->generate($name, [
             'id' => $id,
             EditLanguage::PARAMETER => $languageId,
             ...$filters?->toQueryParams() ?? [],
+            ...$extra,
         ]);
     }
 

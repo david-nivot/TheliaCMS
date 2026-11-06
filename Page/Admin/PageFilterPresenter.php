@@ -36,8 +36,9 @@ final readonly class PageFilterPresenter
     }
 
     /**
-     * @param array<int, string>    $tags  the names of the tags of the site, by id
-     * @param array<string, string> $types the names of the page types, by code
+     * @param array<int, string>    $tags   the names of the tags of the site, by id
+     * @param array<string, string> $types  the names of the page types, by code
+     * @param array<string, int>    $counts the live pages in each state, by state, the whole site
      *
      * @return array{
      *     parameters: array{search: string, statuses: string, visibility: string, tag: string, type: string},
@@ -45,7 +46,7 @@ final readonly class PageFilterPresenter
      *     is_filtering: bool,
      *     is_empty: bool,
      *     advanced_count: int,
-     *     status_options: list<array{value: string, label: string, badge: string, checked: bool}>,
+     *     status_options: list<array{value: string, label: string, badge: string, checked: bool, count: int}>,
      *     visibility: string,
      *     tag_options: list<array{value: string, label: string, selected: bool}>,
      *     type_options: list<array{value: string, label: string, selected: bool}>,
@@ -57,7 +58,7 @@ final readonly class PageFilterPresenter
      *     hidden_params: array<string, string>,
      * }
      */
-    public function present(PageFilters $filters, int $languageId, int $trashCount, array $tags = [], array $types = []): array
+    public function present(PageFilters $filters, int $languageId, int $trashCount, array $tags = [], array $types = [], array $counts = []): array
     {
         return [
             // The names the form posts under, taken from the object that reads
@@ -73,7 +74,7 @@ final readonly class PageFilterPresenter
             'is_filtering' => $filters->isFiltering(),
             'is_empty' => $filters->isEmpty(),
             'advanced_count' => $filters->advancedCount(),
-            'status_options' => $this->statusOptions($filters),
+            'status_options' => $this->statusOptions($filters, $counts),
             'visibility' => match ($filters->visible) {
                 true => PageFilters::VISIBLE_ONLY,
                 false => PageFilters::HIDDEN_ONLY,
@@ -124,9 +125,11 @@ final readonly class PageFilterPresenter
     }
 
     /**
-     * @return list<array{value: string, label: string, badge: string, checked: bool}>
+     * @param array<string, int> $counts
+     *
+     * @return list<array{value: string, label: string, badge: string, checked: bool, count: int}>
      */
-    private function statusOptions(PageFilters $filters): array
+    private function statusOptions(PageFilters $filters, array $counts): array
     {
         return array_map(
             static fn (PageStatus $status): array => [
@@ -134,6 +137,9 @@ final readonly class PageFilterPresenter
                 'label' => $status->label(),
                 'badge' => $status->badgeClass(),
                 'checked' => \in_array($status, $filters->statuses, true),
+                // Zero stays a box like the others: ticking it says "none", which
+                // is an answer, and a box that vanishes moves the ones after it.
+                'count' => $counts[$status->value] ?? 0,
             ],
             PageStatus::cases(),
         );

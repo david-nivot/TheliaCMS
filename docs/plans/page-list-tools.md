@@ -1,6 +1,6 @@
 # Plan: the tools of the page list (N31 to N36)
 
-Status: decided (2026-11-06), coded lot by lot; N36 and N31 done. Read on `main` at 705aa2b
+Status: decided (2026-11-06), coded lot by lot; N36, N31 and N34 done. Read on `main` at 705aa2b
 (2.15.0 + #117). Wave 5 of the roadmap, family "editor". Goal: ship in the same release as
 N51, N52, N54 (2.16.0). Each lot updates this plan in its own commit.
 
@@ -95,14 +95,30 @@ after N35 (decided 2026-11-06 by the maintainer).
   (each filter, `none`, selects and chips over HTTP, unknown values ignored, row actions and
   the parameters of the pagination keep both), `PageListingCostTest::testFilteringByTagAndTypeCostsTheSameWhateverTheNumberOfMatches`.
 
-### 3. N34: counters per status and return to the filtered list (S + S/M)
-- One query: `SUM(CASE WHEN <sqlFor(status)> THEN 1 ELSE 0 END)` per status on the same content
-  join; label "Draft (4)".
-- Return: a `return` parameter made only of filter parameters, re-read by
-  `PageFilters::fromRequest` (never a URL), added to the edit link of a row, kept by the edit
-  and content screens, used by their "back to the list" link and after save or publish.
-- Tests: counters equal to `PageStatus::resolve` on a fixture set; cost constant; return
-  parameter refused when it holds anything else than filters.
+### 3. N34: counters per status and return to the filtered list (S + S/M), done
+- Counters: `CmsPageAdminRepository::statusCounts($locale)`, one statement (`withColumn` of
+  `COALESCE(SUM(CASE WHEN <sqlFor(status)> THEN 1 ELSE 0 END), 0)` per state on the content join
+  of `PageStatusCriteria`), live pages without models; passed to `PageFilterPresenter::present`
+  (`count` of each status option); label "Draft (4)", count in
+  `cms-pages-status-count-<state>`. Whole site, not the current filters (decision 3).
+- Return: parameter `return` = `http_build_query(toQueryParams())`
+  (`PageFilters::toReturnParameter`, null for the plain list). Read by `fromReturnParameter`:
+  over 1000 characters, a key outside the filters, or a value of the wrong shape (list for a
+  word, word for a list) gives the plain list; otherwise `fromRequest`, so it is rebuilt from
+  filters and never echoed. `PageFilters::returnQuery($request)` passes it on, rebuilt.
+- Carried by: the edit and content links of a row (`PageListPresenter`, only when filtering or
+  unfolded); the settings screen (`back_url`, `return_query` merged into the content link and the
+  publish, unpublish, duplicate, set as home, remove AI mark and documents forms; the settings
+  form posts to its own address); `backToEdit` and `CmsPageDocumentController::backToTab` after a
+  save, publish or document change; `backToList` reads `return` first (set as home); the content
+  screen through `PageScreenTarget::parameters()` (every route, `screenUrl()` after an action, the
+  back link to the settings), built by `ContentTargetResolver` from the request.
+- Not carried: the trash screen and its back link, the header zone (no row on the list).
+- Tests: `PageStatusCriteriaTest::testTheCountersOfTheListAreThePhpStatesOfEveryLivePage`,
+  `PageListingCostTest::testCountingTheStatesCostsTheSameOnASmallSiteAndOnABigOne` (one
+  statement), `PageFiltersTest` (round trip, refused returns, rebuilt return),
+  `PageListReturnTest` (row to settings to content and back, publish keeps it, foreign return
+  ignored, counts on screen with and without a ticked box).
 
 ### 4. N33: sort and two columns (M)
 - `PageFilters`: `sort` (title, modified, created), `dir` (asc, desc), white list; a sort counts

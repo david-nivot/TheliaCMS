@@ -93,7 +93,7 @@ final readonly class CmsPageDocumentController
             $this->support->flash($request, 'success', $this->support->translate('%count% file(s) attached.', ['%count%' => \count($upload->stored)]));
         }
 
-        return $this->backToTab((int) $page->getId(), $lang);
+        return $this->backToTab($request, (int) $page->getId(), $lang);
     }
 
     /**
@@ -112,7 +112,7 @@ final readonly class CmsPageDocumentController
         if (mb_strlen(trim($title)) > self::TITLE_MAX_LENGTH) {
             $this->support->flash($request, 'danger', $this->support->translate('The title is limited to %max% characters.', ['%max%' => self::TITLE_MAX_LENGTH]));
 
-            return $this->backToTab($id, $lang);
+            return $this->backToTab($request, $id, $lang);
         }
 
         $description = $request->request->getString('description');
@@ -120,13 +120,13 @@ final readonly class CmsPageDocumentController
         if (\strlen(trim($description)) > self::DESCRIPTION_MAX_BYTES) {
             $this->support->flash($request, 'danger', $this->support->translate('The description is limited to %max% bytes.', ['%max%' => self::DESCRIPTION_MAX_BYTES]));
 
-            return $this->backToTab($id, $lang);
+            return $this->backToTab($request, $id, $lang);
         }
 
         $this->writer->describe($documentId, $lang->getLocale(), $title, $description);
         $this->support->flash($request, 'success', $this->support->translate('Document saved.'));
 
-        return $this->backToTab($id, $lang);
+        return $this->backToTab($request, $id, $lang);
     }
 
     /**
@@ -145,7 +145,7 @@ final readonly class CmsPageDocumentController
             throw new BadRequestHttpException($exception->getMessage(), $exception);
         }
 
-        return $this->backToTab($id, $lang);
+        return $this->backToTab($request, $id, $lang);
     }
 
     #[Route('/{documentId}/delete', name: 'delete', requirements: ['documentId' => '\d+'], methods: ['POST'])]
@@ -158,7 +158,7 @@ final readonly class CmsPageDocumentController
         $this->writer->delete($documentId);
         $this->support->flash($request, 'success', $this->support->translate('Document deleted.'));
 
-        return $this->backToTab($id, $lang);
+        return $this->backToTab($request, $id, $lang);
     }
 
     /**
@@ -195,8 +195,8 @@ final readonly class CmsPageDocumentController
         $this->support->denyUnless(CmsResources::PAGE, $access, 'You are not allowed to change CMS pages.');
     }
 
-    private function backToTab(int $pageId, Lang $lang): RedirectResponse
+    private function backToTab(Request $request, int $pageId, Lang $lang): RedirectResponse
     {
-        return $this->support->redirectInLanguage('admin.cms.pages.edit', $lang->getId(), ['id' => $pageId], 'tab-documents');
+        return $this->support->redirectInLanguage('admin.cms.pages.edit', $lang->getId(), ['id' => $pageId, ...PageFilters::returnQuery($request)], 'tab-documents');
     }
 }

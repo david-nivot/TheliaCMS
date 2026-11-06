@@ -40,6 +40,18 @@ final readonly class PageFilters
     public const string TAG = 'tag';
     public const string TYPE = 'type';
 
+    /**
+     * The state of the listing carried by the screens opened from it, so their
+     * "back to the list" link lands on the list the editor left.
+     */
+    public const string RETURN = 'return';
+
+    /** The parameters a return may hold, and nothing else. */
+    private const array RETURNABLE = [self::SEARCH, self::STATUSES, self::VISIBILITY, self::PAGE, self::OPEN, self::TAG, self::TYPE];
+
+    /** A state of the listing never needs more; anything longer is refused. */
+    private const int RETURN_MAX_LENGTH = 1000;
+
     public const string VISIBLE_ONLY = 'online';
     public const string HIDDEN_ONLY = 'offline';
 
@@ -114,6 +126,58 @@ final readonly class PageFilters
             tag: self::readTag(trim((string) $query->get(self::TAG, ''))),
             type: self::readType(trim((string) $query->get(self::TYPE, ''))),
         );
+    }
+
+    /**
+     * The state written in a return parameter, or the plain listing when the
+     * parameter holds anything else than the filters of the listing.
+     *
+     * Read back through fromRequest() and written out again by toQueryParams(),
+     * never echoed: a return is a list of filters, not an address, so it cannot
+     * send the editor anywhere but the page list.
+     */
+    public static function fromReturnParameter(string $raw): self
+    {
+        if ('' === $raw || \strlen($raw) > self::RETURN_MAX_LENGTH) {
+            return new self();
+        }
+
+        parse_str($raw, $parameters);
+
+        if ([] !== array_diff(array_map(strval(...), array_keys($parameters)), self::RETURNABLE)) {
+            return new self();
+        }
+
+        try {
+            return self::fromRequest(new Request($parameters));
+        } catch (\UnexpectedValueException) {
+            // A list where a word is expected, or the other way round.
+            return new self();
+        }
+    }
+
+    /**
+     * The return parameter of a request, rebuilt from the filters it holds, to
+     * pass on to the next screen; nothing when there is none.
+     *
+     * @return array<string, string>
+     */
+    public static function returnQuery(Request $request): array
+    {
+        $return = self::fromReturnParameter((string) $request->query->get(self::RETURN, ''))->toReturnParameter();
+
+        return null === $return ? [] : [self::RETURN => $return];
+    }
+
+    /**
+     * This state as a return parameter, or null for the plain listing, which
+     * needs none.
+     */
+    public function toReturnParameter(): ?string
+    {
+        $params = $this->toQueryParams();
+
+        return [] === $params ? null : http_build_query($params);
     }
 
     /**

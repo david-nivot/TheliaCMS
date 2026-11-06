@@ -97,6 +97,21 @@ final class PageListingCostTest extends CmsIntegrationTestCase
         self::assertSame($fewCost, $manyCost, 'filtering by tag and type costs more when it finds more, so something is asked per row');
     }
 
+    public function testCountingTheStatesCostsTheSameOnASmallSiteAndOnABigOne(): void
+    {
+        $repository = $this->getService(CmsPageAdminRepository::class);
+        $locale = $this->locale();
+
+        $this->treeOf(1, 2, $locale, 'Counted');
+        $smallCost = $this->statementsFor(static fn () => $repository->statusCounts($locale));
+
+        $this->treeOf(4, 2, $locale, 'Counted');
+        $bigCost = $this->statementsFor(static fn () => $repository->statusCounts($locale));
+
+        self::assertSame(1, $smallCost, 'the five counters are not read in one statement');
+        self::assertSame($smallCost, $bigCost, 'counting the states costs more on a bigger site');
+    }
+
     public function testAFoldedBranchIsNotRead(): void
     {
         $repository = $this->getService(CmsPageAdminRepository::class);

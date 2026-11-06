@@ -76,7 +76,7 @@
                            {{ status.checked ? 'checked' : '' }} autocomplete="off">
                     <label class="btn btn-sm {{ status.checked ? 'btn-primary' : 'btn-outline-secondary' }}"
                            for="cms-pages-status-{{ status.value }}">
-                        {{ status.label|trans({}, 'theliacms') }}
+                        {{ status.label|trans({}, 'theliacms') }} <span data-testid="cms-pages-status-count-{{ status.value }}">({{ status.count }})</span>
                     </label>
                 {% endfor %}
             </div>

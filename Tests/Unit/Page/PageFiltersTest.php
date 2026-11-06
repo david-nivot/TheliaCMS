@@ -276,4 +276,59 @@ final class PageFiltersTest extends TestCase
         // filter, and a chip saying "Without a tag" would read as a choice.
         self::assertNull((new PageFilters(tag: PageFilters::NO_TAG))->knowing([], $types)->tag);
     }
+
+    public function testAReturnCarriesTheStateOfTheListAndReadsBackTheSame(): void
+    {
+        $filters = new PageFilters(
+            search: 'contact',
+            statuses: [PageStatus::Draft, PageStatus::Scheduled],
+            visible: false,
+            page: 2,
+            open: [4, 9],
+            foldChosen: true,
+            tag: PageFilters::NO_TAG,
+            type: 'recipe',
+        );
+
+        $return = $filters->toReturnParameter();
+        self::assertNotNull($return);
+
+        self::assertSame($filters->toQueryParams(), PageFilters::fromReturnParameter($return)->toQueryParams());
+    }
+
+    public function testThePlainListNeedsNoReturn(): void
+    {
+        self::assertNull((new PageFilters())->toReturnParameter());
+        self::assertSame([], PageFilters::returnQuery(new Request()));
+    }
+
+    #[DataProvider('refusedReturns')]
+    public function testAReturnHoldingAnythingElseThanFiltersIsThePlainList(string $given): void
+    {
+        self::assertSame([], PageFilters::fromReturnParameter($given)->toQueryParams());
+        self::assertSame([], PageFilters::returnQuery(new Request(['return' => $given])));
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function refusedReturns(): iterable
+    {
+        yield 'an address' => ['https://elsewhere.example/admin'];
+        yield 'a path' => ['/admin/cms/pages/4'];
+        yield 'a protocol-relative address' => ['//elsewhere.example'];
+        yield 'a filter and something else' => ['q=contact&next=https://elsewhere.example'];
+        yield 'a list where a word is expected' => ['q[]=contact'];
+        yield 'a word where a list is expected' => ['status=draft'];
+        yield 'too long' => ['q='.str_repeat('a', 1001)];
+    }
+
+    public function testAReturnIsPassedOnRebuiltFromItsFilters(): void
+    {
+        // Values the listing would not keep are dropped on the way, so the next
+        // screen receives what the list understands and not what was typed.
+        $query = PageFilters::returnQuery(new Request(['return' => 'q=+contact+&status[]=draft&status[]=nonsense&open=4,abc']));
+
+        self::assertSame(['return' => 'q=contact&status%5B0%5D=draft&open=4'], $query);
+    }
 }

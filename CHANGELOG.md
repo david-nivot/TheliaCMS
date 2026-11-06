@@ -15,6 +15,15 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   the other filters, with its chip to remove it; the result line says the list
   is flat. The selects show only when there is a choice to make: no tag on the
   site, or a single page type, hides them.
+- **Each state of the list of pages says how many pages it holds**, as in
+  **Draft (4)**. The numbers count the whole site in the language of the
+  list, whatever is ticked, so they do not move when a box is; a state with
+  no page stays a box like the others.
+- **The settings and the content of a page lead back to the list they were
+  opened from.** Opened from a filtered list, their **Back to pages** link
+  returns to that list, with its filters, its page of results and its open
+  branches, and keeps doing so after a save, a publication or a change of
+  documents.
 
 ### Changed
 
