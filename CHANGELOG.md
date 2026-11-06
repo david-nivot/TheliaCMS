@@ -32,6 +32,14 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Fixed
 
+- **After an update, the back office serves the scripts and stylesheets of
+  the installed module.** The core copies an asset of a module into
+  `public/assets/` the first time a page asks for it and, outside debug mode,
+  never replaces it: after an update, the screens of the module kept the
+  scripts of the version before (no video picker after 2.14.0, an older
+  content editor) until the copy was deleted by hand. The module now replaces
+  its copy whenever it no longer matches the file it ships, at the first page
+  that asks for it.
 - **An image of the media library printed without a text is published with
   its description.** A component of the theme (a banner, an image and text
   block) prints the text of its own prop, empty for an image described in the
