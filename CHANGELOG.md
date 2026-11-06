@@ -18,6 +18,17 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   order of their indexes; a row added after a removal now takes an index
   above every one in place.
 
+### Changed
+
+- **Every row of a list is folded under its number and its first words.**
+  A row reads "2. C'est le mois du vélo" and opens on a click; a new row, and
+  a row with an error, open, the others stay folded, and the words follow what
+  is typed. The list shows its count ("2 / 3") beside its name. The labels
+  of the fields stay on every row (they were hidden from the second row on),
+  a text of more than 40 characters, a title, takes the whole line of its row
+  instead of 150 pixels, and the two numbers that set the kept part of a
+  picture (Mises en avant) are folded under "Kept part of the picture".
+
 ### Fixed
 
 - **A required field of a list row no longer reads "(optional)".** In a list

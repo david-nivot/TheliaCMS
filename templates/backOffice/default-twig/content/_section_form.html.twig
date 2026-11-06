@@ -21,6 +21,17 @@
                 {% if file %}{{ form_row(file) }}{% endif %}
                 {% if address %}{{ form_row(address) }}{% endif %}
             </details>
+        {% elseif child.vars.name == 'focus_x' and form.children['focus_y'] is defined and form.children['zoom'] is not defined %}
+            {# The kept part of a picture given as two numbers: folded, open
+               on an error. A picture with a zoom is framed on its own sentence. #}
+            {% set focus_y = form.children['focus_y'] %}
+            <details class="cms-content__more" {{ child.vars.valid and focus_y.vars.valid ? '' : 'open' }}>
+                <summary>{{ 'Kept part of the picture'|trans({}, 'theliacms') }}</summary>
+                <div class="cms-content__item-fields">
+                    {{ form_row(child) }}
+                    {{ form_row(focus_y) }}
+                </div>
+            </details>
         {% elseif child.vars.attr['data-cms-choice-buttons'] is defined %}
             {{ _self.choice_buttons(child) }}
         {% elseif child.vars.name == 'cms_appearance' %}
@@ -62,7 +73,7 @@
                       data-prototype="{{ _self.item(child.vars.prototype, child.vars.full_name ~ '[__name__]')|e('html_attr') }}">
                 {# Translated as the label and the help of any other field. #}
                 {% set domain = child.vars.translation_domain %}
-                <legend class="cms-content__items-legend">{{ domain is same as(false) ? child.vars.label : child.vars.label|trans(child.vars.label_translation_parameters, domain) }}</legend>
+                <legend class="cms-content__items-legend">{{ domain is same as(false) ? child.vars.label : child.vars.label|trans(child.vars.label_translation_parameters, domain) }} <span class="cms-content__items-count" data-cms-items-count>{{ child|length }} / {{ child.vars.attr['data-cms-items-max']|default(12) }}</span></legend>
                 {% if child.vars.help %}<p class="form-text mt-0">{{ domain is same as(false) ? child.vars.help : child.vars.help|trans(child.vars.help_translation_parameters, domain) }}</p>{% endif %}
                 <ol class="cms-content__items-list" data-cms-items-list>
                     {% for item in child %}
@@ -206,26 +217,23 @@
 {% endmacro %}
 
 {#
-    A row whose fields hold a text of several paragraphs is folded under its
-    first words, so a list of slides or panels reads as a list: a new row,
-    and a row with an error, open. A row of short fields stays on its lines.
+    A row is folded under its number and its first words, the first text it
+    holds, so a list of slides, blocks or panels reads as a list: a new row,
+    and a row with an error, open. The tools of a row (up, down, remove) sit
+    beside the fold, never inside its summary. The script keeps the words of
+    the summary in step with the field they come from, named by its id.
 #}
 {% macro item(item) %}
-    {% set long = item.children|filter(child => child.vars.attr['data-cms-html'] is defined)|length > 0 %}
+    {% set named = item.children|filter(child => 'text' in child.vars.block_prefixes and child.vars.attr['data-cms-html'] is not defined and child.vars.attr['data-cms-image-picker'] is not defined and child.vars.attr['data-cms-video-picker'] is not defined and child.vars.attr.placeholder is not defined and not (child.vars.name ends with '__url'))|first %}
+    {% set words = named and named.vars.value is not iterable ? named.vars.value|striptags|trim : '' %}
+    {% set empty = 'A row without a title'|trans({}, 'theliacms') %}
     <li class="cms-content__item-row" data-cms-item>
-        {% if long %}
-            {% set named = item.children|filter(child => 'text' in child.vars.block_prefixes and child.vars.value is not iterable and child.vars.value|striptags|trim is not empty)|first %}
-            <details class="cms-content__item-fold" {{ item.vars.value is empty or not item.vars.valid ? 'open' }}>
-                <summary class="cms-content__item-summary">{{ named ? named.vars.value|striptags|trim|slice(0, 80) : 'A row without a title'|trans({}, 'theliacms') }}</summary>
-                <div class="cms-content__item-fields">
-                    {{ _self.fields(item) }}
-                </div>
-            </details>
-        {% else %}
+        <details class="cms-content__item-fold" {{ item.vars.value is empty or not item.vars.valid ? 'open' }}>
+            <summary class="cms-content__item-summary"><span class="cms-content__item-title" data-cms-item-title data-cms-item-empty="{{ empty|e('html_attr') }}" {% if named %}data-cms-item-source="{{ named.vars.id }}"{% endif %}>{{ words is not empty ? words|slice(0, 80) : empty }}</span></summary>
             <div class="cms-content__item-fields">
                 {{ _self.fields(item) }}
             </div>
-        {% endif %}
+        </details>
         <div class="cms-content__item-tools">
             <button type="button" class="btn btn-sm btn-outline-secondary" data-cms-item-up hidden
                     aria-label="{{ 'Move this row up'|trans({}, 'theliacms') }}" title="{{ 'Move this row up'|trans({}, 'theliacms') }}">

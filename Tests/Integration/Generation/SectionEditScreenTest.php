@@ -716,6 +716,31 @@ final class SectionEditScreenTest extends AdminScreenTestCase
         self::assertSame(0, $form->filter('summary button')->count(), 'No button inside a summary.');
     }
 
+    public function testEveryRowOfAListIsFoldedUnderItsFirstWordsAndTheListIsCounted(): void
+    {
+        $form = $this->screen($this->url($this->pageWithHighlights()))->filter('[data-testid="cms-section-edit-hl"] form[data-cms-section-form]');
+
+        $folds = $form->filter('li[data-cms-item] > details.cms-content__item-fold');
+        self::assertSame(3, $folds->count(), 'A row of short fields is folded too.');
+        self::assertSame(['Premier', 'Second', 'Troisième'], $folds->each(static fn (Crawler $fold): string => trim($fold->filter('summary')->text())));
+        self::assertSame(0, $form->filter('details.cms-content__item-fold[open]')->count(), 'A row that is in order is folded.');
+        self::assertSame('cms_section_hl_blocks_0_title', $form->filter('summary [data-cms-item-source]')->first()->attr('data-cms-item-source'), 'The script follows the field the words come from.');
+        self::assertSame('3 / 3', trim($form->filter('legend [data-cms-items-count]')->text()));
+
+        $prototype = new Crawler((string) $form->filter('[data-cms-items]')->attr('data-prototype'));
+        self::assertSame(1, $prototype->filter('details.cms-content__item-fold[open]')->count(), 'A new row is open.');
+    }
+
+    public function testTheTitleOfARowTakesTheLineAndTheKeptPartOfItsPictureIsFolded(): void
+    {
+        $form = $this->screen($this->url($this->pageWithHighlights()))->filter('[data-testid="cms-section-edit-hl"] form[data-cms-section-form]');
+
+        self::assertSame(1, $form->filter('input[name="cms_section_hl[blocks][0][title]"][data-cms-wide]')->count(), 'A title of 80 characters is read on the whole line of the row.');
+        self::assertSame(0, $form->filter('input[name="cms_section_hl[blocks][0][button_label]"][data-cms-wide]')->count(), 'A button label of 40 shares its line.');
+        self::assertSame(1, $form->filter('li[data-cms-item]:first-child details.cms-content__more:not([open]) input[name="cms_section_hl[blocks][0][focus_x]"]')->count(), 'The kept part of a picture is folded.');
+        self::assertSame(1, $form->filter('li[data-cms-item]:first-child details.cms-content__more:not([open]) input[name="cms_section_hl[blocks][0][focus_y]"]')->count());
+    }
+
     public function testRowsSentInAnotherOrderAreSavedInThatOrder(): void
     {
         $screen = $this->screen($this->url($page = $this->pageWithHighlights()));
@@ -749,7 +774,7 @@ final class SectionEditScreenTest extends AdminScreenTestCase
 
         $legend = $this->screen($this->url($page).'&lang=fr_FR')->filter('[data-testid="cms-section-edit-row"] [data-cms-items] > legend');
 
-        self::assertSame('Produits', trim($legend->text()), 'The name of a list goes through the translator, as the label of any field.');
+        self::assertSame('Produits', trim($legend->getNode(0)?->firstChild->textContent ?? ''), 'The name of a list goes through the translator, as the label of any field.');
     }
 
     public function testTheSchemaStillRefusesWhatItRefusesToTheModel(): void

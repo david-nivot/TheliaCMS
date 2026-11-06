@@ -840,6 +840,7 @@ return [
     'Move this row up' => 'Monter cette ligne',
     'Move this row down' => 'Descendre cette ligne',
     'Row moved to position %position% of %total%' => 'Ligne déplacée en position %position% sur %total%',
+    'Kept part of the picture' => 'Partie gardée de l’image',
     'Search…' => 'Rechercher…',
     'The section is saved in the draft.' => 'La section est enregistrée dans le brouillon.',
     'This section is no longer in the document: reload the screen.' => 'Cette section n’est plus dans le document : rechargez l’écran.',

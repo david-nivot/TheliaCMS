@@ -1904,6 +1904,7 @@
             var min = parseInt(list.getAttribute("data-cms-items-min"), 10) || 0;
             var counter = rows.children.length;
             var name = list.getAttribute("data-cms-items-name") || "";
+            var count = list.querySelector("[data-cms-items-count]");
             var status = list.querySelector("[data-cms-items-status]");
             var head = new RegExp("^" + name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\[[^\\]]*\\]");
 
@@ -1932,10 +1933,29 @@
                 });
             }
 
+            // The words a row is folded under come from one of its fields.
+            function retitle(row) {
+                var label = row.querySelector("[data-cms-item-title]");
+
+                if (!label) {
+                    return;
+                }
+
+                var id = label.getAttribute("data-cms-item-source");
+                var source = id ? row.querySelector('[id="' + id + '"]') : null;
+                var words = source ? source.value.trim() : "";
+
+                label.textContent = words ? words.slice(0, 80) : label.getAttribute("data-cms-item-empty");
+            }
+
             function refresh() {
                 var items = rows.querySelectorAll(":scope > [data-cms-item]");
                 var total = items.length;
                 add.hidden = total >= max;
+
+                if (count) {
+                    count.textContent = total + " / " + max;
+                }
 
                 items.forEach(function (row, index) {
                     var up = row.querySelector(":scope > .cms-content__item-tools > [data-cms-item-up]");
@@ -1959,6 +1979,7 @@
                 holder.innerHTML = prototype.replace(/__name__/g, String(counter++)).trim();
                 var row = holder.content.firstElementChild;
                 rows.appendChild(row);
+                retitle(row);
                 refresh();
 
                 // What the form binds on the rows it was loaded with: the picker of an image and, for a
@@ -2010,6 +2031,14 @@
                     status.textContent = list.getAttribute("data-cms-items-moved")
                         .replace("%position%", String(Array.prototype.indexOf.call(rows.children, row) + 1))
                         .replace("%total%", String(rows.children.length));
+                }
+            });
+
+            rows.addEventListener("input", function (event) {
+                var row = event.target.closest("[data-cms-item]");
+
+                if (row) {
+                    retitle(row);
                 }
             });
 
