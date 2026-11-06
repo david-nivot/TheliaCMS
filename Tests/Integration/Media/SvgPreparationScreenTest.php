@@ -22,6 +22,7 @@ use Thelia\Model\LangQuery;
 use Thelia\Test\FixtureFactory;
 use TheliaCMS\Media\Admin\CmsMediaWriter;
 use TheliaCMS\Media\CmsMediaLibrary;
+use TheliaCMS\Media\Svg\Color\SvgPaints;
 use TheliaCMS\Media\Svg\PreparedSvgStore;
 use TheliaCMS\Security\CmsResources;
 use TheliaCMS\Tests\Integration\Security\AdminScreenTestCase;
@@ -40,6 +41,11 @@ final class SvgPreparationScreenTest extends AdminScreenTestCase
     private const string LIST = '/admin/cms/media';
 
     private const string CLEAN = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0z"/></svg>';
+
+    /** Four dark shapes, a green circle and a white check. */
+    private const string COLORED = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">'
+        .'<path d="M2 2h10v10H2z" fill="#1C1C1C"/><path d="M4 14h6v6H4z" fill="#1c1c1c"/><path d="M14 4h6v4h-6z" fill="#1C1C1C"/>'
+        .'<circle cx="17" cy="17" r="5" fill="#22A06B"/><path d="M15 17l1.5 1.5L19 16" fill="none" stroke="#fff" stroke-width="1.5"/></svg>';
 
     private const string TRAPPED = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" onload="alert(1)"><script>alert(2)</script><path d="M0 0h24v24H0z"/></svg>';
 
@@ -428,6 +434,115 @@ final class SvgPreparationScreenTest extends AdminScreenTestCase
         self::assertStringContainsString($this->said('The SVG declares entities, which are refused. Export it again without them.'), $this->screen($back)->html());
     }
 
+    public function testThePresetsComeFirstAndTheColorsOnlyWhereAMainOneIsChosen(): void
+    {
+        $this->upload([$this->svg('check.svg', self::COLORED)]);
+        $screen = $this->screen($this->remember((string) $this->client->getResponse()->headers->get('Location')));
+
+        self::assertSame('keep', $screen->filter('[data-testid="cms-svg-presets"] input[name="colors"]:checked')->attr('value'), 'The colors are kept until the editor says otherwise.');
+        self::assertSame(['keep', 'monochrome', 'main'], $screen->filter('input[name="colors"]')->each(static fn (Crawler $input): string => (string) $input->attr('value')));
+        self::assertSame(0, $screen->filter('[data-testid="cms-svg-main"], [data-testid="cms-svg-others"], [data-testid="cms-svg-white"]')->count(), 'Kept colors: nothing more to say.');
+        self::assertSame(0, $screen->filter('[data-testid="cms-svg-presets"] button')->count(), 'A choice shows its preview at once: no button for it.');
+        self::assertSame(3, $screen->filter('[data-testid="cms-svg-tints"] img')->count());
+
+        $main = $this->withColors($screen, ['colors' => 'main']);
+        self::assertSame(['#1c1c1c', '#22a06b', '#ffffff'], $main->filter('[data-testid="cms-svg-main"] input[name="main"]')->each(static fn (Crawler $input): string => (string) $input->attr('value')), 'The most used first, the white of a stroke included.');
+        self::assertSame('', $main->filter('[data-testid="cms-svg-others"] input:checked')->attr('value'), 'The others stay as they are at first.');
+        self::assertSame(0, $main->filter('[data-testid="cms-svg-white"]')->count(), 'The others kept: the white is no question.');
+
+        $softened = $this->withColors($main, ['colors' => 'main', 'others' => 'soft']);
+        self::assertSame('soft', $softened->filter('[data-testid="cms-svg-others"] input:checked')->attr('value'));
+        self::assertSame(1, $softened->filter('[data-testid="cms-svg-white"]')->count(), 'The others lighter: the white may follow them.');
+        $this->client->request('GET', (string) $softened->filter('[data-testid="cms-svg-result"]')->attr('src'));
+        self::assertStringContainsString('fill-opacity="0.4"', (string) $this->client->getResponse()->getContent());
+    }
+
+    public function testAPresetIsPreviewedAndStoredAsChosen(): void
+    {
+        $this->upload([$this->svg('check.svg', self::COLORED)]);
+        $screen = $this->withColors($this->screen($this->remember((string) $this->client->getResponse()->headers->get('Location'))), ['colors' => 'monochrome', 'white' => 'keep']);
+
+        self::assertSame(1, $screen->filter('[data-testid="cms-svg-white"]')->count(), 'Monochrome asks about the white of the drawing.');
+        self::assertSame('keep', $screen->filter('[data-testid="cms-svg-white"] input:checked')->attr('value'));
+
+        $this->client->request('GET', (string) $screen->filter('[data-testid="cms-svg-result"]')->attr('src'));
+        $preview = (string) $this->client->getResponse()->getContent();
+        self::assertStringContainsString('currentColor', $preview);
+        self::assertStringNotContainsStringIgnoringCase('#22a06b', $preview);
+        self::assertStringContainsString('#fff', $preview, 'The white was kept.');
+
+        $this->client->request('GET', (string) $screen->filter('[data-testid="cms-svg-tint-dark"]')->attr('src'));
+        self::assertStringContainsString('color="#f8f9fa"', (string) $this->client->getResponse()->getContent(), 'The preview on a dark ground draws the text color it would take.');
+
+        $this->answer($screen, 'add');
+
+        $stored = (string) file_get_contents(TheliaLibrary::getImageDirectory().$this->getService(CmsMediaLibrary::class)->images()[0]->getFileName());
+        self::assertSame($preview, $stored, 'What was previewed is what is stored.');
+        self::assertStringNotContainsString('color=', $stored, 'The tint of a preview never reaches the file.');
+    }
+
+    public function testTheMainColorIsTheEditorsAndIsNotCarriedToTheNextFile(): void
+    {
+        $this->upload([$this->svg('un.svg', self::COLORED), $this->svg('deux.svg', self::COLORED)]);
+        $screen = $this->screen($this->remember((string) $this->client->getResponse()->headers->get('Location')));
+        $screen = $this->withColors($screen, ['colors' => 'main']);
+
+        self::assertSame('#1c1c1c', $screen->filter('input[name="main"]:checked')->attr('value'), 'The color of the most elements comes first.');
+        $screen = $this->withColors($screen, ['colors' => 'main', 'main' => '#22a06b']);
+        self::assertSame('#22a06b', $screen->filter('input[name="main"]:checked')->attr('value'));
+
+        $this->answer($screen, 'add', ['apply_to_following' => '1']);
+        $next = (string) $this->client->getResponse()->headers->get('Location');
+
+        $stored = (string) file_get_contents(TheliaLibrary::getImageDirectory().$this->getService(CmsMediaLibrary::class)->images()[0]->getFileName());
+        self::assertSame(1, substr_count($stored, 'currentColor'), 'Only the green circle follows the text.');
+        self::assertStringContainsString('colors=main', $next, 'The preset goes on to the next file.');
+        self::assertStringNotContainsString('main=%23', $next, 'The main color is the one of each drawing.');
+        self::assertSame('main', $this->screen($next)->filter('input[name="colors"]:checked')->attr('value'));
+    }
+
+    public function testTheMainColorIsChosenInAGridWhereTheLeastUsedFold(): void
+    {
+        $shapes = '';
+
+        for ($index = 0; $index < 15; ++$index) {
+            $shapes .= \sprintf('<path d="M%1$d 0h1v1H%1$dz" fill="hsl(%2$d, 70%%, 50%%)"/>', $index, $index * 24);
+        }
+
+        $this->upload([$this->svg('nuancier.svg', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 15 1">'.$shapes.'</svg>')]);
+        $screen = $this->screen($this->remember((string) $this->client->getResponse()->headers->get('Location')));
+
+        self::assertSame(0, $screen->filter('[data-testid="cms-svg-main"]')->count(), 'Kept colors: no color to choose.');
+        self::assertSame(0, $this->withColors($screen, ['colors' => 'monochrome'])->filter('[data-testid="cms-svg-main"]')->count(), 'Monochrome: no color to choose either.');
+
+        $grid = $this->withColors($screen, ['colors' => 'main'])->filter('[data-testid="cms-svg-main"]');
+        self::assertSame(15, $grid->filter('input[name="main"]')->count(), 'A folded color can still be the main one.');
+        self::assertSame(3, $grid->filter('[data-testid="cms-svg-main-more"] input[name="main"]')->count(), 'Past twelve, the others fold.');
+        self::assertSame($this->said('%count% other color|%count% other colors', ['%count%' => 3]), trim($grid->filter('summary')->text()));
+        self::assertStringStartsWith('#', (string) $grid->filter('label')->first()->attr('title'), 'Its code and its use show on hovering.');
+    }
+
+    public function testADrawingTooComplexToReadKeepsItsColorsAndSaysWhy(): void
+    {
+        // A group drawn again and again: more shapes drawn than are read.
+        $group = str_repeat('<path d="M0 0h1v1H0z" fill="#f00"/>', 1000);
+        $uses = str_repeat('<use href="#g"/>', intdiv(SvgPaints::MAXIMUM_DRAWINGS, 1000) + 1);
+        $this->upload([$this->svg('motif.svg', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 4"><defs><g id="g">'.$group.'</g></defs>'.$uses.'</svg>')]);
+        $screen = $this->screen($this->remember((string) $this->client->getResponse()->headers->get('Location')));
+
+        self::assertSame($this->said('The drawing has too many shapes or style rules to change its colors: they stay as they are.'), trim($screen->filter('[data-testid="cms-svg-too-complex"]')->text()));
+        self::assertSame(0, $screen->filter('[data-testid="cms-svg-presets"]')->count());
+    }
+
+    public function testADrawingThatAlreadyFollowsTheTextSaysSo(): void
+    {
+        $this->upload([$this->svg('icone.svg', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M0 0h16v16H0z" fill="currentColor"/></svg>')]);
+        $screen = $this->screen($this->remember((string) $this->client->getResponse()->headers->get('Location')));
+
+        self::assertSame($this->said('The drawing already takes the color of the text around it.'), trim($screen->filter('[data-testid="cms-svg-no-color"]')->text()));
+        self::assertSame(0, $screen->filter('[data-testid="cms-svg-presets"]')->count());
+    }
+
     /**
      * @param list<UploadedFile> $files
      */
@@ -478,17 +593,51 @@ final class SvgPreparationScreenTest extends AdminScreenTestCase
     /**
      * Answers the form of the screen: "add" or "skip".
      */
-    private function answer(Crawler $screen, string $action): void
+    /**
+     * @param array<string, string> $extra fields the editor set on top of the hidden ones
+     */
+    private function answer(Crawler $screen, string $action, array $extra = []): void
     {
         $form = $screen->filter('[data-testid="cms-svg-form"]');
         self::assertSame(1, $form->count());
 
         $this->client->request('POST', (string) $form->attr('action'), [
-            '_token' => (string) $form->filter('input[name="_token"]')->attr('value'),
+            ...$this->fieldsOf($form),
             'action' => $action,
+            ...$extra,
         ], [], self::SAME_SITE);
 
         self::assertSame(302, $this->client->getResponse()->getStatusCode());
+    }
+
+    /**
+     * The hidden fields of a form, as the browser sends them.
+     *
+     * @return array<string, string>
+     */
+    private function fieldsOf(Crawler $form): array
+    {
+        $fields = [];
+
+        foreach ($form->filter('input[type="hidden"]') as $input) {
+            \assert($input instanceof \DOMElement);
+            $fields[$input->getAttribute('name')] = $input->getAttribute('value');
+        }
+
+        return $fields;
+    }
+
+    /**
+     * The screen as the color form of the screen asks for it, with the values given.
+     *
+     * @param array<string, string> $values
+     */
+    private function withColors(Crawler $screen, array $values): Crawler
+    {
+        $form = $screen->filter('[data-testid="cms-svg-presets"]');
+        self::assertSame(1, $form->count());
+
+        return $this->screen((string) $form->attr('action').'?'.http_build_query([...$this->fieldsOf($form), ...$values]));
     }
 
     private function reloaded(LibraryImage $image): ?LibraryImage

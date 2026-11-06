@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Media\Admin;
 
+use TheliaCMS\Media\Svg\Color\SvgColoring;
 use TheliaCMS\Media\Svg\PreparedSvgStore;
 
 /**
@@ -38,6 +39,8 @@ final readonly class SvgWay
         // Opened from the image picker of the editor, in a frame: the end of
         // the way hands the image back to it instead of opening a screen.
         public bool $picker = false,
+        // The color setting carried from the file before, its main color left out.
+        public SvgColoring $coloring = new SvgColoring(),
     ) {
     }
 
@@ -66,6 +69,7 @@ final readonly class SvgWay
             max($total, \count($queue) + 1),
             '' === $level ? null : $level,
             '1' === self::text($query['picker'] ?? ''),
+            SvgColoring::fromValues($query),
         );
     }
 

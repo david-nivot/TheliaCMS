@@ -15,6 +15,9 @@ declare(strict_types=1);
 namespace TheliaCMS\Tests\Unit\Media\Svg;
 
 use PHPUnit\Framework\TestCase;
+use Psr\Log\AbstractLogger;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use TheliaCMS\Media\Svg\Optimization\FigmaClipRemover;
 use TheliaCMS\Media\Svg\Optimization\GeometryEnvelope;
 use TheliaCMS\Media\Svg\Optimization\SvgOptimizationLevel;
@@ -90,6 +93,29 @@ final class SvgPreparationTest extends TestCase
         self::assertStringNotContainsString('strong', $none->content);
     }
 
+    public function testWhatTheControlRemovesIsLoggedSinceTheEditorIsNotShownIt(): void
+    {
+        $logger = new class extends AbstractLogger {
+            /** @var list<array{string, array<array-key, mixed>}> */
+            public array $records = [];
+
+            public function log($level, string|\Stringable $message, array $context = []): void
+            {
+                $this->records[] = [(string) $level, $context];
+            }
+        };
+        $quiet = clone $logger;
+        $sanitizer = $this->sanitizer(secondChanges: [new SvgChange(SvgChangeKind::RemovedElement, 'script')]);
+
+        $this->preparation($sanitizer, logger: $logger)->prepare(self::ORIGINAL);
+        $this->preparation($this->sanitizer(), logger: $quiet)->prepare(self::ORIGINAL);
+
+        self::assertCount(1, $logger->records);
+        self::assertSame('warning', $logger->records[0][0]);
+        self::assertSame(['removed_element: script'], $logger->records[0][1]['changes']);
+        self::assertSame([], $quiet->records, 'Nothing removed, nothing logged.');
+    }
+
     public function testAFileTheControlCannotReadIsRefused(): void
     {
         $sanitizer = $this->sanitizer(refuseSecond: UnreadableSvgReason::MalformedXml);
@@ -102,7 +128,7 @@ final class SvgPreparationTest extends TestCase
     /**
      * @param list<SvgOptimizationLevel> $levels
      */
-    private function preparation(object $sanitizer, array $levels = []): SvgPreparation
+    private function preparation(object $sanitizer, array $levels = [], LoggerInterface $logger = new NullLogger()): SvgPreparation
     {
         \assert($sanitizer instanceof SvgSanitizerInterface);
         $references = new SvgReferences();
@@ -111,6 +137,7 @@ final class SvgPreparationTest extends TestCase
             $sanitizer,
             new SvgOptimizer(new FigmaClipRemover(new GeometryEnvelope(), $references), new UnreferencedIdRemover($references)),
             new SvgOptimizationLevels($levels),
+            logger: $logger,
         );
     }
 

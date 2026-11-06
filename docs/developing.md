@@ -70,14 +70,16 @@ shows how to test an update, outside a transaction.
   in `var/cache/test/twig`, and a test asserting on the new markup can pass
   on the old one (or miss a Twig error the browser shows). After a change to
   a template, move `var/cache/test/twig` aside before the tests.
-- **Module assets** served by `module_asset()` are copied once into
-  `public/assets/backOffice/default-twig/TheliaCMS/assets/`. After a change to a
-  script or a stylesheet of `templates/backOffice/default-twig/assets/`, copy
-  the file there again (or remove the published directory), and give the
-  template an `assets_version` so the browser drops its copy too. The
-  version is read from the file of the module, not from the copy: a page
-  loaded between the edit and the copy caches the old stylesheet under the
-  new version, and the browser keeps it until a hard reload.
+- **Module assets** go through `cms_asset()`, never `module_asset()` alone:
+  the core copies an asset into
+  `public/assets/backOffice/default-twig/TheliaCMS/assets/` the first time a
+  page asks for it and, outside debug mode, never again, so a site kept the
+  scripts of the version before an update. `cms_asset()` replaces the copy
+  whenever it differs from the file of the module, by size or by date. Give
+  the template an `assets_version` too, so the browser drops its copy: the
+  version is read from the file of the module, and a page loaded between the
+  edit and the copy caches the old stylesheet under the new version, which
+  the browser keeps until a hard reload.
 
 ## Static analysis and code style
 

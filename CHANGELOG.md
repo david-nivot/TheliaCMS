@@ -17,6 +17,26 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   the rows to the order they are in, since the form keeps the rows in the
   order of their indexes; a row added after a removal now takes an index
   above every one in place.
+- **Color presets for an SVG.** The **Prepare the SVG** screen offers a preset
+  that makes colors of the drawing follow the color of the text
+  (`currentColor`): *Keep the colors* (the default), *Monochrome*, or *Main
+  color follows the text*, where the other colors stay as they are or follow
+  the text lighter (40 % opacity). For the last one the colors of the drawing
+  show as a grid of swatches, the most used first (counted per element painted,
+  fill and stroke apart; a shape drawn again by a `<use>` counts again and takes
+  its paint from it), the twelve first shown and the others folded; a click
+  makes another one the main color. When a white may follow the text, the
+  editor says whether it does or stays white; a gradient, which becomes one
+  color, is signalled. Colors are read and written in presentation attributes,
+  `style` attributes and `<style>` rules, comments and strings left as they
+  are; a transparent color keeps its transparency; a mask or a clip, and a
+  gradient or a rule it reads, is never recolored. A drawing with more than
+  50,000 shapes drawn or 1,000 style rules is not read: its colors stay, and
+  the screen says why.
+  The result is previewed on a light ground, a dark ground and next to a colored
+  text, and goes through the cleaning again before it is stored. *Apply these
+  settings to the following files* carries the preset and its options, not the
+  main color, which is each drawing's own.
 
 ### Changed
 
@@ -41,6 +61,14 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   office.** The legend of a list of a theme component, and the help under it,
   were printed as the theme wrote them, while the label and the help of any
   other field went through the translator.
+- **After an update, the back office serves the scripts and stylesheets of
+  the installed module.** The core copies an asset of a module into
+  `public/assets/` the first time a page asks for it and, outside debug mode,
+  never replaces it: after an update, the screens of the module kept the
+  scripts of the version before (no video picker after 2.14.0, an older
+  content editor) until the copy was deleted by hand. The module now replaces
+  its copy whenever it no longer matches the file it ships, at the first page
+  that asks for it.
 - **An image of the media library printed without a text is published with
   its description.** A component of the theme (a banner, an image and text
   block) prints the text of its own prop, empty for an image described in the

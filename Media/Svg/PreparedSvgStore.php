@@ -30,10 +30,10 @@ final readonly class PreparedSvgStore
 {
     public const int LIFETIME_IN_SECONDS = 3600;
 
-    private const string TOKEN_PATTERN = '/^[a-f0-9]{32}$/';
+    private const string TOKEN_PATTERN = '/^[a-f0-9]{32}\z/';
 
     /** The setting a result was prepared with: a level name, or `base`. */
-    private const string SETTING_PATTERN = '/^[a-z0-9-]{1,64}$/';
+    private const string SETTING_PATTERN = '/^[a-z0-9-]{1,64}\z/';
 
     private string $directory;
 
