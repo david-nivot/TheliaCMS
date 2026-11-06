@@ -55,8 +55,10 @@
                       data-cms-items-min="{{ child.vars.attr['data-cms-items-min']|default(0) }}"
                       data-cms-items-max="{{ child.vars.attr['data-cms-items-max']|default(12) }}"
                       data-prototype="{{ _self.item(child.vars.prototype, child.vars.full_name ~ '[__name__]')|e('html_attr') }}">
-                <legend class="cms-content__items-legend">{{ child.vars.label }}</legend>
-                {% if child.vars.help %}<p class="form-text mt-0">{{ child.vars.help }}</p>{% endif %}
+                {# Translated as the label and the help of any other field. #}
+                {% set domain = child.vars.translation_domain %}
+                <legend class="cms-content__items-legend">{{ domain is same as(false) ? child.vars.label : child.vars.label|trans(child.vars.label_translation_parameters, domain) }}</legend>
+                {% if child.vars.help %}<p class="form-text mt-0">{{ domain is same as(false) ? child.vars.help : child.vars.help|trans(child.vars.help_translation_parameters, domain) }}</p>{% endif %}
                 <ol class="cms-content__items-list" data-cms-items-list>
                     {% for item in child %}
                         {{ _self.item(item) }}

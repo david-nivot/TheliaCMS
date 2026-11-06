@@ -703,6 +703,20 @@ final class SectionEditScreenTest extends AdminScreenTestCase
         self::assertSame([$one, $three], array_column($document?->section('row')?->props['product_ids'] ?? [], 'id'));
     }
 
+    public function testTheNameOfAListOfTheThemeReadsInTheLanguageOfTheBackOffice(): void
+    {
+        // A list named by its bare name, as a prop of the theme is: the form says it in words of its own.
+        $props = PriceTable::component()->props;
+        $props[1]['name'] = 'products';
+        $props[1]['label'] = 'products';
+        $this->getService(SiteComponentRepository::class)->save(new SiteComponent('ProductGrid', 'Product grid', 'Products side by side.', $props, ['products' => [['name' => 'Basic']]], '<section></section>'), SiteComponentRepository::STATUS_DRAFT);
+        $page = $this->pageWith([new Section('row', 'Site:ProductGrid', ['title' => 'Nos produits', 'products' => [['name' => 'Studio']]])]);
+
+        $legend = $this->screen($this->url($page).'&lang=fr_FR')->filter('[data-testid="cms-section-edit-row"] [data-cms-items] > legend');
+
+        self::assertSame('Produits', trim($legend->text()), 'The name of a list goes through the translator, as the label of any field.');
+    }
+
     public function testTheSchemaStillRefusesWhatItRefusesToTheModel(): void
     {
         $page = $this->pageWith([

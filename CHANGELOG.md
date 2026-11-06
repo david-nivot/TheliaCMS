@@ -14,6 +14,10 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   every field of a row was marked optional, the title a row cannot do without
   included. The form now marks a field of a row as the schema declares it;
   saving a row with such a field empty was, and stays, refused.
+- **The name and the help of a list read in the language of the back
+  office.** The legend of a list of a theme component, and the help under it,
+  were printed as the theme wrote them, while the label and the help of any
+  other field went through the translator.
 - **An image of the media library printed without a text is published with
   its description.** A component of the theme (a banner, an image and text
   block) prints the text of its own prop, empty for an image described in the
