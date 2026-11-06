@@ -255,6 +255,6 @@
 
 {% block scripts_extra %}
     {% if not is_new %}
-        <script src="{{ module_asset('TheliaCMS', 'assets/menu-editor.js') }}?v={{ assets_version }}" defer></script>
+        <script src="{{ cms_asset('assets/menu-editor.js') }}?v={{ assets_version }}" defer></script>
     {% endif %}
 {% endblock %}
