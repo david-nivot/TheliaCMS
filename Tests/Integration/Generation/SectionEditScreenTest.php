@@ -731,6 +731,29 @@ final class SectionEditScreenTest extends AdminScreenTestCase
         self::assertSame(1, $prototype->filter('details.cms-content__item-fold[open]')->count(), 'A new row is open.');
     }
 
+    public function testARowIsFoldedUnderTheFirstTextThatSaysSomething(): void
+    {
+        $props = [
+            ['name' => 'slides', 'type' => 'items', 'label' => 'Slides', 'max' => 4, 'items' => [
+                ['name' => 'kicker', 'type' => 'text', 'label' => 'Kicker', 'max' => 40],
+                ['name' => 'body', 'type' => 'html', 'label' => 'Body'],
+            ]],
+            ['name' => 'notes', 'type' => 'items', 'label' => 'Notes', 'max' => 4, 'items' => [
+                ['name' => 'body', 'type' => 'html', 'label' => 'Body'],
+            ]],
+        ];
+        $this->getService(SiteComponentRepository::class)->save(new SiteComponent('Slides', 'Slides', 'Slides one after the other.', $props, ['slides' => [], 'notes' => []], '<section></section>'), SiteComponentRepository::STATUS_DRAFT);
+        $page = $this->pageWith([new Section('slides', 'Site:Slides', [
+            'slides' => [['kicker' => '', 'body' => '<p>Le <strong>vélo</strong> en ville</p>'], ['kicker' => 'Nouveau', 'body' => '<p>Ignoré</p>']],
+            'notes' => [['body' => '<h2>Une note</h2><p>de bas de page</p>']],
+        ])]);
+
+        $summaries = $this->screen($this->url($page))->filter('[data-testid="cms-section-edit-slides"] li[data-cms-item] > details > summary')
+            ->each(static fn (Crawler $summary): string => trim((string) preg_replace('/\s+/', ' ', $summary->text())));
+
+        self::assertSame(['Le vélo en ville', 'Nouveau', 'Une note de bas de page'], $summaries, 'An empty line of text gives way to the paragraphs; a row of paragraphs alone reads by them.');
+    }
+
     public function testTheTitleOfARowTakesTheLineAndTheKeptPartOfItsPictureIsFolded(): void
     {
         $form = $this->screen($this->url($this->pageWithHighlights()))->filter('[data-testid="cms-section-edit-hl"] form[data-cms-section-form]');

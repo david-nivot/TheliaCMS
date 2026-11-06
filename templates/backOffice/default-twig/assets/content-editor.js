@@ -1943,7 +1943,8 @@
 
                 var id = label.getAttribute("data-cms-item-source");
                 var source = id ? row.querySelector('[id="' + id + '"]') : null;
-                var words = source ? source.value.trim() : "";
+                // A text of paragraphs is HTML: its words without the tags.
+                var words = source ? source.value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim() : "";
 
                 label.textContent = words ? words.slice(0, 80) : label.getAttribute("data-cms-item-empty");
             }

@@ -224,8 +224,14 @@
     the summary in step with the field they come from, named by its id.
 #}
 {% macro item(item) %}
-    {% set named = item.children|filter(child => 'text' in child.vars.block_prefixes and child.vars.attr['data-cms-html'] is not defined and child.vars.attr['data-cms-image-picker'] is not defined and child.vars.attr['data-cms-video-picker'] is not defined and child.vars.attr.placeholder is not defined and not (child.vars.name ends with '__url'))|first %}
-    {% set words = named and named.vars.value is not iterable ? named.vars.value|striptags|trim : '' %}
+    {# The first text that says something: a line of text, else a text of
+       paragraphs, so a slide made of one text still reads by its words. #}
+    {% set texts = item.children|filter(child => 'text' in child.vars.block_prefixes and child.vars.value is not iterable and child.vars.attr['data-cms-image-picker'] is not defined and child.vars.attr['data-cms-video-picker'] is not defined and child.vars.attr.placeholder is not defined and not (child.vars.name ends with '__url')) %}
+    {% set lines = texts|filter(child => child.vars.attr['data-cms-html'] is not defined) %}
+    {% set paragraphs = texts|filter(child => child.vars.attr['data-cms-html'] is defined) %}
+    {% set named = lines|filter(child => (child.vars.value ?? '')|trim is not empty)|first ?: paragraphs|filter(child => (child.vars.value ?? '')|striptags|trim is not empty)|first ?: lines|first ?: paragraphs|first %}
+    {# A space before each tag, so two paragraphs do not run into one word. #}
+    {% set words = named ? (named.vars.value ?? '')|replace({'<': ' <'})|striptags|trim : '' %}
     {% set empty = 'A row without a title'|trans({}, 'theliacms') %}
     <li class="cms-content__item-row" data-cms-item>
         <details class="cms-content__item-fold" {{ item.vars.value is empty or not item.vars.valid ? 'open' }}>

@@ -21,7 +21,8 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 ### Changed
 
 - **Every row of a list is folded under its number and its first words.**
-  A row reads "2. C'est le mois du vélo" and opens on a click; a new row, and
+  A row reads "2. C'est le mois du vélo", the first text it holds (a line of
+  text, else a text of paragraphs), and opens on a click; a new row, and
   a row with an error, open, the others stay folded, and the words follow what
   is typed. The list shows its count ("2 / 3") beside its name. The labels
   of the fields stay on every row (they were hidden from the second row on),
