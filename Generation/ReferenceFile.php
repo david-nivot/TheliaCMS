@@ -88,8 +88,12 @@ final readonly class ReferenceFile
             throw new ReferenceFileRefusedException(ReferenceFileRefusal::Unreadable);
         }
 
-        // A byte order mark is not text.
-        $text = ltrim($text, "\u{FEFF}");
+        // A byte order mark is not text. Cut as a sequence, never as a list
+        // of bytes: ltrim() would eat the first bytes of a text that starts
+        // with another character sharing them (U+FF08, the Arabic forms).
+        if (str_starts_with($text, "\u{FEFF}")) {
+            $text = substr($text, \strlen("\u{FEFF}"));
+        }
 
         if ('' === trim($text)) {
             throw new ReferenceFileRefusedException(ReferenceFileRefusal::Empty);
@@ -105,7 +109,8 @@ final readonly class ReferenceFile
     /**
      * The name shown to the editor and given to the model as the reference
      * of the file: the base name alone, whatever path the browser sent, with
-     * no control character, at most 120 characters.
+     * no control character, at most 120 characters. A long name is cut on
+     * its stem: the extension, which says what the file is, stays.
      */
     public static function cleanName(string $original): string
     {
@@ -116,7 +121,14 @@ final readonly class ReferenceFile
             return self::FALLBACK_NAME;
         }
 
-        return mb_strlen($name) > self::NAME_LENGTH ? mb_substr($name, 0, self::NAME_LENGTH) : $name;
+        if (mb_strlen($name) <= self::NAME_LENGTH) {
+            return $name;
+        }
+
+        $extension = pathinfo($name, \PATHINFO_EXTENSION);
+        $suffix = '' === $extension ? '' : '.'.$extension;
+
+        return mb_substr($name, 0, self::NAME_LENGTH - mb_strlen($suffix)).$suffix;
     }
 
     /** In characters. */

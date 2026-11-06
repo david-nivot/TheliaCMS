@@ -54,6 +54,24 @@ final class ReferenceFileTest extends TestCase
         self::assertSame('Notes.', ReferenceFile::fromUpload($this->upload('notes.txt', "\u{FEFF}Notes."))->text);
     }
 
+    public function testATextStartingWithACharacterThatSharesTheBytesOfTheByteOrderMarkIsKeptWhole(): void
+    {
+        // U+FF08 is EF BC 88: a trim by bytes would eat its first byte and leave invalid UTF-8.
+        $text = ReferenceFile::fromUpload($this->upload('notes.txt', "\u{FF08}abc"))->text;
+
+        self::assertSame("\u{FF08}abc", $text);
+        self::assertTrue(mb_check_encoding($text, 'UTF-8'));
+    }
+
+    public function testALongNameIsCutOnItsStemAndKeepsItsExtension(): void
+    {
+        $file = ReferenceFile::fromUpload($this->upload(str_repeat('é', 130).'.md', 'Some text.'));
+
+        self::assertSame(120, mb_strlen($file->name));
+        self::assertStringEndsWith('.md', $file->name);
+        self::assertSame(str_repeat('é', 117).'.md', $file->name);
+    }
+
     /**
      * @return iterable<string, array{string, string, ReferenceFileRefusal}>
      */
@@ -110,7 +128,8 @@ final class ReferenceFileTest extends TestCase
         self::assertSame('fiche produit.md', ReferenceFile::cleanName("fiche\u{0}\u{1} produit\r\n.md"));
         self::assertSame('reference.txt', ReferenceFile::cleanName("\u{7}"));
         self::assertSame('reference.txt', ReferenceFile::cleanName("\xE9.md"), 'A name that is not UTF-8 is replaced.');
-        self::assertSame(120, mb_strlen(ReferenceFile::cleanName(str_repeat('é', 130).'.md')));
+        self::assertSame(str_repeat('é', 117).'.md', ReferenceFile::cleanName(str_repeat('é', 130).'.md'));
+        self::assertSame(120, mb_strlen(ReferenceFile::cleanName(str_repeat('é', 130))), 'Without an extension, the name alone is cut.');
     }
 
     public function testAFileWithoutANameOrWithoutTextIsNotOne(): void

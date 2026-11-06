@@ -27,6 +27,7 @@ use Thelia\Domain\Ai\Guardrail\AiGuardrailRunner;
 use Thelia\Domain\Ai\Guardrail\GuardrailAvailability;
 use Thelia\Domain\Ai\Guardrail\GuardrailMode;
 use Thelia\Domain\Ai\Guardrail\GuardrailStage;
+use Thelia\Domain\Ai\Guardrail\GuardrailVerdict;
 use Thelia\Domain\Ai\Provider\AiTargetResolver;
 use Thelia\Domain\Ai\Service\AiSettings;
 use Thelia\Domain\Ai\UntrustedContent;
@@ -87,7 +88,7 @@ final class ReferenceFileGuardrailTest extends CmsIntegrationTestCase
         self::assertSame('theliacms.page.7', $judge->correlationId, 'The judge is logged under the correlation of the call it judges.');
         self::assertSame(AiActorType::System, $judge->actor?->type);
         self::assertSame(1024, $judge->maxOutputTokens);
-        self::assertStringContainsString('"fiche.md"', (string) $judge->system, 'The instructions name the file.');
+        self::assertStringNotContainsString('fiche.md', (string) $judge->system, 'The name of the file is the sender\'s: it never enters the instructions.');
         self::assertStringNotContainsString('Tourné à Lyon', (string) $judge->system, 'Nothing of the file is in the instructions.');
         self::assertStringNotContainsString('Tourné à Lyon', $judge->messages[0]->content);
         self::assertSame([UntrustedSource::VisitorInput, UntrustedSource::Document], array_map(static fn (UntrustedContent $content): UntrustedSource => $content->source, $judge->untrustedContents));
@@ -149,6 +150,30 @@ final class ReferenceFileGuardrailTest extends CmsIntegrationTestCase
 
         self::assertFalse($this->guardrail->supports(GuardrailStage::Output));
         self::assertSame([], $this->api->requests, 'No call was made.');
+    }
+
+    public function testTheGuardrailRunsAtTheInputStageOfTheUsageOfPagesThroughTheRunnerOfTheCore(): void
+    {
+        self::assertTrue($this->guardrail->supports(GuardrailStage::Input));
+
+        // The installed guardrail, through the runner and the selection of the
+        // usage as the admission of the core reads them: the judge of the
+        // test host has no connection, so it fails as unavailable, which in
+        // block mode is a verdict that blocks. A guardrail that did not
+        // support the input stage, or was not installed, would leave no
+        // verdict of its own.
+        $runner = $this->getService(AiGuardrailRunner::class);
+        $registry = $this->getService(AiUsageRegistryInterface::class);
+        $selection = $runner->selection($registry->get(PageGenerator::USAGE), null);
+        $verdicts = $runner->run(GuardrailStage::Input, $this->request(self::FILE), null, $selection);
+
+        self::assertSame([ReferenceFileGuardrail::NAME], array_map(static fn (GuardrailVerdict $verdict): string => $verdict->guardrail, $verdicts));
+        self::assertFalse($verdicts[0]->passed);
+        self::assertSame(GuardrailAvailability::UNAVAILABLE, $verdicts[0]->reason);
+        self::assertTrue($verdicts[0]->blocks());
+
+        $noDocument = new AiRequest(PageGenerator::USAGE, [AiMessage::user('# The brief')], 'Write.');
+        self::assertTrue($runner->run(GuardrailStage::Input, $noDocument, null, $selection)[0]->passed, 'Without a file, the same selection passes without a call.');
     }
 
     public function testTheGuardrailSaysWhetherItCanRunWithoutCallingAnything(): void
