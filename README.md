@@ -62,6 +62,13 @@ Nothing is served on the front until you publish them, and publishing is refused
 while a page still holds the sample text, from the back office and from a command
 alike: the instructions the module wrote are not a legal notice.
 
+On a site with no page yet, the first activation also publishes an example home
+page, in French and in English where those languages are active, and sets it as
+the home page: `/` serves it at once. It opens on its sections, without the
+title band: a free text, then three highlights with no picture, to rewrite and
+illustrate. A site that already has pages gets neither the home page nor the
+legal pages.
+
 A shop that already holds contents (an update, or an install with the demo) is
 told that they stay in Folders, which the back-office menu now reaches from the
 CMS section, and that nothing is converted into pages. The line is written at the
@@ -1340,7 +1347,11 @@ summary, above the sections, which start at level 2
 Flexy, the module ships `templates/frontOffice/flexy/cmspage.html.twig`, found
 as the usual page template of the theme: a page is laid out like a content of
 the shop, with the heading band of the theme (title, summary, breadcrumb) and
-the fields of its type.
+the fields of its type. A page set to **Open on the sections** (General tab, **Title
+band**) has no band: its title stays the level 1 heading, hidden on screen
+(`.cms-page__title--hidden` in `blocks.css`), and its first section starts under
+the header. The fallback template of the module does the same. A theme that
+ships its own page template reads `cms_page.titleBand`.
 
 Every site has the `default` type, which cannot be deleted, and the update to
 1.2.0 turns the three former layouts into the types `default`, `full-width` and

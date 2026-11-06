@@ -90,6 +90,7 @@ final readonly class PublishedPageRepository
             ogImage: $this->libraryImage($page->getOgImageId(), $locale),
             twitterCard: $this->twitterCardOf($page),
             canonical: $this->nullIfBlank($page->getCanonical()),
+            titleBand: 0 !== $page->getTitleBand(),
         );
     }
 
@@ -310,6 +311,7 @@ final readonly class PublishedPageRepository
             ogImage: $this->libraryImage($page->getOgImageId(), $locale),
             twitterCard: $this->twitterCardOf($page),
             canonical: $this->nullIfBlank($page->getCanonical()),
+            titleBand: 0 !== $page->getTitleBand(),
         );
     }
 

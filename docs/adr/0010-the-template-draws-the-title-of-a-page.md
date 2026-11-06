@@ -41,3 +41,14 @@ The fallback of the module, for any other theme, draws the title as an
   `cmspage-{type}.html.twig` draws the title as the level 1 heading.
 - The types screen says such a page is displayed with the usual template of
   the theme: for Flexy, that template comes with the module.
+
+## Amendment (2026-11-06)
+
+A page can open on its own sections (`cms_page.title_band = 0`), a home page
+first of all: the heading band of the theme on a home page showed "Home" and a
+breadcrumb of one step. The decision holds: the template still draws the title
+as the level 1 heading, hidden on screen (`cms-page__title--hidden`, a rule of
+`blocks.css` marked important, since the layer of the module gives way to the
+rules of the theme), and the sections still start at level 2. The summary and
+the breadcrumb are not drawn. The example home page seeded on a new site opens
+this way.

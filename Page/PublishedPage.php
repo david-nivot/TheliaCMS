@@ -33,6 +33,7 @@ final readonly class PublishedPage
      * @param PageImage|null                            $ogImage       the image to show when the page is shared, when it differs from the image of the page
      * @param string|null                               $twitterCard   `summary` or `summary_large_image`, null to leave the choice to the theme
      * @param string|null                               $canonical     the address search engines are pointed at instead of this page, null when the page is its own
+     * @param bool                                      $titleBand     false for a page that opens on its own sections: the template hides its title on screen and keeps it as the level 1 heading
      */
     public function __construct(
         public int $id,
@@ -58,6 +59,7 @@ final readonly class PublishedPage
         public ?PageImage $ogImage = null,
         public ?string $twitterCard = null,
         public ?string $canonical = null,
+        public bool $titleBand = true,
     ) {
     }
 
@@ -91,6 +93,7 @@ final readonly class PublishedPage
             ogImage: $this->ogImage,
             twitterCard: $this->twitterCard,
             canonical: $this->canonical,
+            titleBand: $this->titleBand,
         );
     }
 }

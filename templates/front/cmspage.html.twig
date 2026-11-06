@@ -27,12 +27,17 @@
 {% block body %}
     {{ theme_hook('cmspage.top', {page: cms_page}) }}
 
-    <header class="cms-page__header">
-        <h1 class="cms-page__title">{{ cms_page.title }}</h1>
-        {% if cms_page.chapo %}
-            <div class="cms-page__summary">{{ cms_page.chapo|raw }}</div>
-        {% endif %}
-    </header>
+    {% if cms_page.titleBand %}
+        <header class="cms-page__header">
+            <h1 class="cms-page__title">{{ cms_page.title }}</h1>
+            {% if cms_page.chapo %}
+                <div class="cms-page__summary">{{ cms_page.chapo|raw }}</div>
+            {% endif %}
+        </header>
+    {% else %}
+        {# Opens on its own sections: the title stays the level 1 heading, hidden on screen. #}
+        <h1 class="cms-page__title cms-page__title--hidden">{{ cms_page.title }}</h1>
+    {% endif %}
 
     {% set fields = cms_page_fields(cms_page) %}
     {% if fields is not empty %}

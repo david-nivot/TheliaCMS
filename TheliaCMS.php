@@ -35,6 +35,7 @@ use TheliaCMS\Content\Section\SectionStories;
 use TheliaCMS\Http\SharedCache\CmsSharedCacheContributor;
 use TheliaCMS\Http\SharedCache\CoreSharedCache;
 use TheliaCMS\Http\SharedCache\SharedMaxAgeCapListener;
+use TheliaCMS\Install\HomePageSeeder;
 use TheliaCMS\Install\LegalPagesSeeder;
 use TheliaCMS\Install\MenuSeeder;
 use TheliaCMS\Model\CmsPageContentQuery;
@@ -97,8 +98,10 @@ class TheliaCMS extends BaseModule
             $this->installSchema($con);
 
             // A site that lost this flag but kept its pages (a config purged by
-            // hand, a restored dump) already has its legal pages, or chose not to.
+            // hand, a restored dump) already has its home and legal pages, or
+            // chose not to.
             if (0 === CmsPageQuery::create()->count()) {
+                (new HomePageSeeder())->seed();
                 (new LegalPagesSeeder())->seed();
             }
 

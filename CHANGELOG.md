@@ -37,6 +37,18 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   skipped unless `--replace`, which keeps the old draft as a previous draft;
   `--dry-run` writes nothing and lists every problem; `--url` sets the shop address.
   What the section cannot hold is reported. `/api/header-highlights` is not reproduced.
+- **A page can open on its sections.** A **Title band** choice on the General tab
+  of a page: **Open on the sections** draws neither the heading band of the theme
+  nor the breadcrumb, and the first section starts under the header; the title stays
+  the level 1 heading, hidden on screen (`cms-page__title--hidden`). For a home page
+  or a landing page. Stored in `cms_page.title_band` (`Config/update/2.14.0.sql`, 1
+  for every existing page), copied with the page, carried by the export file
+  (`title_band`; a file without it gives the band), read by a theme as
+  `cms_page.titleBand`.
+- **An example home page on a new site.** The first activation on a site with no page
+  publishes a home page in French and in English (where active) and sets it as the
+  home page: a free text and three highlights with no picture, without the title
+  band. A site with pages gets nothing new.
 
 ### Changed
 

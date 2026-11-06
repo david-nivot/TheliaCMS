@@ -17,6 +17,7 @@ CREATE TABLE `cms_page`
     `visible` TINYINT(4) DEFAULT 1 NOT NULL,
     `page_type` VARCHAR(50) DEFAULT 'default' NOT NULL,
     `model` TINYINT(4) DEFAULT 0 NOT NULL,
+    `title_band` TINYINT(4) DEFAULT 1 NOT NULL,
     `fields` LONGTEXT,
     `image_id` INTEGER,
     `tag_id` INTEGER,
