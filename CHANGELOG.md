@@ -7,6 +7,8 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+## [2.15.0] - 2026-11-06
+
 ### Added
 
 - **A list of a theme component says how many rows it holds, and each field
@@ -2748,7 +2750,8 @@ the published pages.
 - The breadcrumb of a page filed under a draft one offered a link to that page,
   which answers 404, both to the reader and in the `BreadcrumbList`.
 
-[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.14.0...HEAD
+[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.15.0...HEAD
+[2.15.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.15.0
 [2.14.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.14.0
 [2.13.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.13.0
 [2.12.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.12.0
