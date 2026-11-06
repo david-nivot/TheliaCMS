@@ -38,6 +38,16 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   included; and **Last changed by** keeps the pages an administrator changed
   last, an account deleted since named by its number. A day that does not
   exist is ignored, and two days given the wrong way round are put back.
+- **Several pages of the list are answered at once.** On a filtered or
+  sorted list, a box per row and **With the selected pages…** show or hide
+  them, give them a tag or take it off, move them to the bin, or publish or
+  unpublish them in the language of the list; each action takes its own
+  right. The bin and the publication ask again on a screen that says what
+  will happen: the pages under a selected one that go with it, counted once,
+  and each page the publication would refuse, with its reason. The report
+  then names each page refused, and the list comes back with its filters.
+  It works without JavaScript; the tree keeps no box, so a folded branch
+  never goes to the bin unseen.
 
 ### Changed
 

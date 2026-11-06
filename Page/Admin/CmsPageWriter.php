@@ -806,6 +806,116 @@ final readonly class CmsPageWriter
     }
 
     /**
+     * Puts several pages on the site, or takes them off it: a state set, not a
+     * toggle, so a selection that mixes both ends up in the one asked. A page
+     * already in that state is not written, nor the model of a type or the
+     * header zone, which are never online as pages.
+     *
+     * @param list<CmsPage> $pages
+     *
+     * @return list<int> the pages whose visibility changed
+     */
+    public function setVisibility(array $pages, bool $visible): array
+    {
+        $changed = array_values(array_filter(
+            $pages,
+            static fn (CmsPage $page): bool => 0 === $page->getModel() && (1 === $page->getVisible()) !== $visible,
+        ));
+
+        if ([] === $changed) {
+            return [];
+        }
+
+        $ids = $this->saveEach($changed, static fn (CmsPage $page): CmsPage => $page->setVisible($visible ? 1 : 0));
+        $this->invalidator->presenceChanged(...$ids);
+        $this->activityLog->record('UPDATE', $ids[0], \sprintf('CMS pages now %s: %s', $visible ? 'online' : 'offline', implode(', ', $ids)));
+
+        return $ids;
+    }
+
+    /**
+     * Gives several pages the same tag, or none: the tag they had is replaced,
+     * not added to, since a page carries one tag.
+     *
+     * @param list<CmsPage> $pages
+     *
+     * @return list<int> the pages whose tag changed
+     */
+    public function setTag(array $pages, ?int $tagId): array
+    {
+        $changed = array_values(array_filter(
+            $pages,
+            static fn (CmsPage $page): bool => 0 === $page->getModel() && (null === $page->getTagId() ? null : (int) $page->getTagId()) !== $tagId,
+        ));
+
+        if ([] === $changed) {
+            return [];
+        }
+
+        $ids = $this->saveEach($changed, static fn (CmsPage $page): CmsPage => $page->setTagId($tagId));
+        // A tag is drawn by the lists of pages of the site, not by the links to a page.
+        $this->invalidator->contentChanged(...$ids);
+        $this->activityLog->record('UPDATE', $ids[0], \sprintf('CMS pages tagged %s: %s', null === $tagId ? 'with nothing' : '#'.$tagId, implode(', ', $ids)));
+
+        return $ids;
+    }
+
+    /**
+     * The pages `moveToTrash()` would put in the bin for each of these, each
+     * counted once: a page selected with its parent goes with the parent.
+     *
+     * @param list<CmsPage> $pages
+     *
+     * @return list<int>
+     */
+    public function branchesOf(array $pages): array
+    {
+        $ids = [];
+
+        foreach ($pages as $page) {
+            if (isset($ids[(int) $page->getId()])) {
+                continue;
+            }
+
+            foreach ($this->branchOf($page) as $node) {
+                $ids[(int) $node->getId()] = (int) $node->getId();
+            }
+        }
+
+        return array_values($ids);
+    }
+
+    /**
+     * Applies one change to several pages and saves them in one transaction,
+     * stamped with the admin acting: half a selection changed is not a state
+     * anybody asked for.
+     *
+     * @param non-empty-list<CmsPage>    $pages
+     * @param callable(CmsPage): CmsPage $change
+     *
+     * @return non-empty-list<int>
+     */
+    private function saveEach(array $pages, callable $change): array
+    {
+        $connection = Propel::getConnection('TheliaMain');
+        $connection->beginTransaction();
+
+        try {
+            foreach ($pages as $page) {
+                $this->authorship->stamp($change($page))->save($connection);
+            }
+
+            $connection->commit();
+        } catch (\Throwable $throwable) {
+            $connection->rollBack();
+
+            throw $throwable;
+        }
+
+        return array_map(static fn (CmsPage $page): int => (int) $page->getId(), $pages);
+    }
+
+    /**
      * Moves a page one slot up or down among its siblings.
      */
     public function move(CmsPage $page, int $direction): void

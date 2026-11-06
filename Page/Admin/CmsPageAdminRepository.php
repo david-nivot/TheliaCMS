@@ -218,6 +218,83 @@ final readonly class CmsPageAdminRepository
             ->findOne();
     }
 
+    /**
+     * The pages a selection of the list names, in one query: live pages only,
+     * and none of the models or the header zone, which the list never shows.
+     * Any other id is left out.
+     *
+     * @param list<int> $ids
+     *
+     * @return list<CmsPage> by title in this language, then by id
+     */
+    public function selected(array $ids, string $locale): array
+    {
+        $ids = array_values(array_unique(array_filter($ids, static fn (int $id): bool => $id > 0)));
+
+        if ([] === $ids) {
+            return [];
+        }
+
+        return iterator_to_array(
+            CmsPageQuery::create()
+                ->filterById($ids, Criteria::IN)
+                ->filterByDeletedAt(null, Criteria::ISNULL)
+                ->filterByModel(0)
+                ->joinWithI18n($locale, Criteria::LEFT_JOIN)
+                ->addAscendingOrderByColumn(CmsPageI18nTableMap::COL_TITLE)
+                ->orderById()
+                ->find(),
+            false,
+        );
+    }
+
+    /**
+     * The names of these pages in this language, in one query; a page without
+     * one is named by its number.
+     *
+     * @param list<int> $ids
+     *
+     * @return array<int, string> by id, sorted by name
+     */
+    public function titles(array $ids, string $locale): array
+    {
+        if ([] === $ids) {
+            return [];
+        }
+
+        $titles = [];
+
+        foreach (CmsPageQuery::create()->filterById($ids, Criteria::IN)->joinWithI18n($locale, Criteria::LEFT_JOIN)->find() as $page) {
+            $titles[(int) $page->getId()] = $this->label($page, $locale);
+        }
+
+        asort($titles, \SORT_NATURAL | \SORT_FLAG_CASE);
+
+        return $titles;
+    }
+
+    /**
+     * Which of these pages are online in this language, in one query.
+     *
+     * @param list<int> $ids
+     *
+     * @return array<int, true>
+     */
+    public function onlineIn(array $ids, string $locale): array
+    {
+        if ([] === $ids) {
+            return [];
+        }
+
+        $online = [];
+
+        foreach (CmsPageContentQuery::create()->filterByPageId($ids, Criteria::IN)->filterByLocale($locale)->filterByPublishedAt(null, Criteria::ISNOTNULL)->select(['PageId'])->find() as $pageId) {
+            $online[(int) $pageId] = true;
+        }
+
+        return $online;
+    }
+
     public function findDeleted(int $id): ?CmsPage
     {
         return CmsPageQuery::create()

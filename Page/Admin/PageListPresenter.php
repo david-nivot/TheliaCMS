@@ -82,6 +82,16 @@ final readonly class PageListPresenter
             'live_count' => $liveCount,
             'filters' => $this->filterBar->present($filters, $languageId, $trashCount, $tagNames, $typeNames, $this->pages->statusCounts($locale), $authors),
             'filter_query' => $filters->toQueryParams(),
+            // The selection is offered on the flat list only: on the tree, a
+            // folded branch would go to the bin under a box nobody saw ticked.
+            'bulk' => $filters->isFiltering() ? [
+                'url' => $this->urls->generate('admin.cms.pages.bulk', [EditLanguage::PARAMETER => $languageId, ...$filters->toQueryParams()]),
+                'tags' => $tagNames,
+                'no_tag' => CmsPageBulkController::NO_TAG,
+                'language' => (string) $lang->getTitle(),
+                // A changed script is fetched again, not read from the cache of the browser.
+                'script_version' => substr(hash('xxh3', (string) @filemtime(__DIR__.'/../../templates/backOffice/default-twig/assets/page-bulk.js')), 0, 12),
+            ] : null,
             'edit_locale' => $locale,
             'edit_language_id' => $languageId,
             'home_page_id' => (int) TheliaCMS::getConfigValue('home_page_id', 0),

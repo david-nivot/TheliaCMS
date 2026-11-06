@@ -29,7 +29,6 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Model\Lang;
-use TheliaCMS\Content\InvalidDocumentException;
 use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Media\Admin\CmsMediaWriter;
 use TheliaCMS\Media\CmsMediaLibrary;
@@ -82,6 +81,7 @@ final readonly class CmsPageAdminController
         private PageFields $fields,
         private PageDocumentRows $documentRows,
         private PageOnlineMessage $onlineMessage,
+        private PublicationRefusal $refusals,
     ) {
     }
 
@@ -455,32 +455,10 @@ final readonly class CmsPageAdminController
             $this->support->flash($request, 'success', $this->onlineMessage->say($page, $locale));
 
             return true;
-        } catch (HeadingStructureException $exception) {
-            foreach ($exception->problems as $problem) {
-                $this->support->flash($request, 'danger', $problem);
+        } catch (\Throwable $throwable) {
+            foreach ($this->refusals->messages($throwable) ?? throw $throwable as $message) {
+                $this->support->flash($request, 'danger', $message);
             }
-
-            $this->support->flash($request, 'danger', $this->support->translate('The page was not published: fix the heading structure first.'));
-        } catch (AccessibilityException $exception) {
-            foreach ($exception->problems as $problem) {
-                $this->support->flash($request, 'danger', $problem);
-            }
-
-            $this->support->flash($request, 'danger', $this->support->translate('The page was not published: fix the accessibility problems first.'));
-        } catch (InvalidDocumentException $exception) {
-            foreach ($exception->translated($this->translator) as $problem) {
-                $this->support->flash($request, 'danger', $problem);
-            }
-
-            $this->support->flash($request, 'danger', $this->support->translate('The page was not published: its content is no longer valid. Open it in the editor to see what to fix.'));
-        } catch (EmptyPageContentException) {
-            $this->support->flash($request, 'danger', $this->support->translate('This page has no content yet: add at least one block in the editor before publishing it.'));
-        } catch (PlaceholderPageContentException) {
-            $this->support->flash($request, 'danger', $this->support->translate('This page still holds the sample text it was created with: write your own before publishing it.'));
-        } catch (ModelPagePublicationException) {
-            $this->support->flash($request, 'danger', $this->support->translate('This page is the model of its type: it is never published. Start a new page from it instead.'));
-        } catch (MissingPageFieldsException $exception) {
-            $this->support->flash($request, 'danger', $this->support->translate('Fill in the fields this type requires before publishing: %fields%.', ['%fields%' => implode(', ', $exception->labels)]));
         }
 
         return false;

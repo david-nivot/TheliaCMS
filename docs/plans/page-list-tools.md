@@ -1,6 +1,6 @@
 # Plan: the tools of the page list (N31 to N36)
 
-Status: decided (2026-11-06), coded lot by lot; N36, N31, N34, N33 and N32 done. Read on `main` at 705aa2b
+Status: decided (2026-11-06), coded lot by lot; all six done (N36, N31, N34, N33, N32, N35). Read on `main` at 705aa2b
 (2.15.0 + #117). Wave 5 of the roadmap, family "editor". Goal: ship in the same release as
 N51, N52, N54 (2.16.0). Each lot updates this plan in its own commit.
 
@@ -215,12 +215,43 @@ Step B, filters:
 - Browser at 1440 px in French: the third row fits, no horizontal scroll; deleted account 67 of
   the dev base listed and filtered.
 
-### 6. N35: bulk actions (L, next release)
+### 6. N35: bulk actions (L), done
 - Route `admin.cms.pages.bulk`, `pages[]` per row (flat list only), action select, permission
   per action, confirmation dialog, flash report page by page. Writer methods `setVisible` and
   `setTag` to add. Steps per decision 7.
+- Done: `CmsPageBulkController` (its own controller, `POST /admin/cms/pages/bulk`, priority 1)
+  and `PageBulkAction` (show, hide, tag, trash, publish, unpublish, the order of the select;
+  `access()`: DELETE for the bin, UPDATE for the rest, checked per action; `isConfirmed()`: the
+  bin and the publication). `CmsPageAdminRepository::selected()` reads the selection in one
+  statement: live pages, models and header zone out, any other id dropped.
+- Show/hide and tag: `CmsPageWriter::setVisibility()` and `setTag()` set a state (a page already
+  in it is not written nor counted), one transaction, stamped (`PageAuthorship::stamp`), one
+  invalidation (`presenceChanged` for visibility, `contentChanged` for the tag). Tag select
+  `set_tag`: a tag id or `none`; an unknown tag changes nothing.
+- Bin: the confirmation is a screen rendered by the server (`pages/bulk_confirm.html.twig`, works
+  without JavaScript), not a dialog: `CmsPageWriter::branchesOf()` walks the same branches as
+  `moveToTrash()`, so a page ticked with its parent is counted once and the pages under the
+  selection are named. Confirmed, each page goes with its branch, a page already gone with its
+  parent is skipped; the report counts the pages binned.
+- Publication: the same screen runs `assertPublishable` page by page (nothing written) and lists
+  what will go online, with the warnings, and what will be refused, with the reasons
+  (`PublicationRefusal`, shared with the publish button of a page); no button when nothing can
+  go online. Confirmed, each page is published in its own transaction and the report names each
+  refused page. Unpublish counts the pages that were online in the language (`onlineIn`).
+- Screen: the bar and the boxes on the flat list only (decision of the plan: a folded branch
+  would go to the bin unseen); `page-bulk.js` counts, sets the "select every page" box and shows
+  the tag select for the tag only. The form carries the filters; the redirect keeps them.
+- Tests: `PageBulkTest` (set not toggle, nothing to change, tag replaced and taken off and
+  signed, unknown tag, bin confirmation and count, rights per action, publication confirmation
+  and report, no button when all refused, unpublish count, models and binned pages out, flat list
+  only and back with the filters, unknown action),
+  `PageListingCostTest::testReadingASelectionOfTheListCostsOneStatementWhateverItsSize`.
+- Browser at 1440 px in French: bar and box column fit, table 1120 px without horizontal scroll;
+  both confirmation screens; hide then show of a page, flash and filters kept.
 
 ## Not checked
 - A shop whose PHP time zone differs from the one of its database session: the dates are
   compared as PHP wrote them, which holds as long as the session time zone does not change
   between the write and the read.
+- A bulk publication of a full screen of results (fifty pages): each draft is checked twice,
+  on the confirmation and on the publication; not timed.

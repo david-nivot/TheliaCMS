@@ -159,6 +159,22 @@ final class PageListingCostTest extends CmsIntegrationTestCase
         self::assertSame($fewCost, $manyCost, 'listing the authors costs more when there are more');
     }
 
+    public function testReadingASelectionOfTheListCostsOneStatementWhateverItsSize(): void
+    {
+        $repository = $this->getService(CmsPageAdminRepository::class);
+        $locale = $this->locale();
+
+        $few = $this->treeOf(2, 0, $locale, 'Selected');
+        $fewCost = $this->statementsFor(static fn () => $repository->selected($few, $locale));
+
+        $many = [...$few, ...$this->treeOf(6, 0, $locale, 'Selected')];
+        $manyCost = $this->statementsFor(static fn () => $repository->selected($many, $locale));
+
+        self::assertSame(1, $fewCost, 'the selection is not read in one statement');
+        self::assertSame($fewCost, $manyCost, 'reading a selection costs more when it is larger');
+        self::assertCount(8, $repository->selected($many, $locale));
+    }
+
     public function testCountingTheStatesCostsTheSameOnASmallSiteAndOnABigOne(): void
     {
         $repository = $this->getService(CmsPageAdminRepository::class);
