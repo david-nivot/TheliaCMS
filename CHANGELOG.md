@@ -34,7 +34,9 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   counts as used on its sheet and keeps it from being deleted, travels in the
   export of the site like an image does (named by its file, pointed at the
   video of the importing site), and the generator never looks for one: a video
-  id it writes that the library does not hold is left out and said so.
+  id it writes that the library does not hold is left out and said so. The
+  generator of site components is told the type, and the media list counts the
+  videos apart from the images.
 
 - **A header zone.** One block of content, written like a page and drawn under
   the header of every page of the theme, the shop's included, by a theme hook on

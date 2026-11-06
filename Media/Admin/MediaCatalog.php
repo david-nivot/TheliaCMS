@@ -19,6 +19,7 @@ use Thelia\Model\LangQuery;
 use TheliaCMS\Media\CmsMediaLibrary;
 use TheliaCMS\Media\MediaFile;
 use TheliaCMS\Media\MediaFilter;
+use TheliaCMS\Media\MediaKind;
 use TheliaLibrary\Model\LibraryImage;
 
 /**
@@ -99,7 +100,9 @@ final readonly class MediaCatalog
     {
         $counts = $this->library->counts($locale, $search);
 
-        return new MediaTally(total: $counts['total'], undescribed: $counts['undescribed']);
+        $videos = $this->library->counts($locale, $search, MediaKind::Video)['total'];
+
+        return new MediaTally(total: $counts['total'], undescribed: $counts['undescribed'], videos: $videos);
     }
 
     /**

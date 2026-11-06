@@ -116,7 +116,10 @@
            the library. #}
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
             <p class="text-body-secondary small mb-0" data-testid="cms-media-count">
-            {{ '%count% image(s)'|trans({ '%count%': tally.total }, 'theliacms') }}
+            {{ '%count% image(s)'|trans({ '%count%': tally.total - tally.videos }, 'theliacms') }}
+            {%- if tally.videos > 0 %}
+                · {{ '%count% video(s)'|trans({ '%count%': tally.videos }, 'theliacms') }}
+            {%- endif -%}
             {%- if tally.undescribed > 0 %}
                 · <a class="link-warning" href="{{ path('admin.cms.media.list', { edit_language_id: edit_language_id, filter: 'to-describe' }) }}">{{ '%count% still to describe'|trans({ '%count%': tally.undescribed }, 'theliacms') }}</a>
             {%- endif -%}

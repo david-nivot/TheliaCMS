@@ -118,6 +118,18 @@ final class MediaVideoScreenTest extends AdminScreenTestCase
         self::assertNotContains((int) $video->getId(), $library->selection($this->locale(), null, \TheliaCMS\Media\MediaFilter::Decorative));
     }
 
+    public function testTheListCountsTheVideosApartFromTheImages(): void
+    {
+        $this->store();
+        $this->image('Sans description');
+
+        $count = $this->flatten(trim($this->screen('/admin/cms/media')->filter('[data-testid="cms-media-count"]')->text()));
+
+        self::assertMatchesRegularExpression('/^\d+ image\(s\) · 1 video\(s\) · \d+ still to describe/', $count, 'A video is not counted as an image.');
+        $library = $this->getService(CmsMediaLibrary::class);
+        self::assertStringStartsWith(($library->counts($this->locale())['total'] - 1).' image(s)', $count);
+    }
+
     public function testTheDescribeQueueDoesNotOfferAVideo(): void
     {
         $video = $this->store();

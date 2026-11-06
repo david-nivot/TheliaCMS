@@ -28,6 +28,7 @@ use TheliaCMS\Content\Site\SiteComponent;
 use TheliaCMS\Content\Site\SiteComponentRepository;
 use TheliaCMS\Content\Site\SiteComponentUsage;
 use TheliaCMS\Content\Site\SiteComponentValidator;
+use TheliaCMS\Content\Site\SitePropReader;
 use TheliaCMS\Front\BlockStyles;
 use TheliaCMS\Generation\Ai\GatewayFailures;
 use TheliaCMS\Generation\Component\ComponentCandidates;
@@ -81,6 +82,10 @@ final class ComponentGeneratorTest extends CmsIntegrationTestCase
         self::assertStringContainsString('var(--cms-color-accent)', (string) $request->system, 'The tokens of the stylesheet are named.');
         self::assertStringContainsString('`data-cms-sizes`', (string) $request->system, 'The width of the pictures can be declared.');
         self::assertStringContainsString('`data-cms-height`', (string) $request->system);
+
+        foreach (SitePropReader::TYPES as $type) {
+            self::assertStringContainsString('- `'.$type.'`:', (string) $request->system, \sprintf('The type "%s" the site reads is told to the model.', $type));
+        }
         self::assertStringContainsString('# Movement and interaction without script', (string) $request->system, 'The skill on motion is read beside the one on accessibility.');
         self::assertStringContainsString('`cms:richtext`', $request->messages[0]->content, 'The model is told what the site already has.');
         self::assertStringContainsString('Un tableau de prix', $request->messages[0]->content);

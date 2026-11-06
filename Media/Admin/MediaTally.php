@@ -28,6 +28,8 @@ final readonly class MediaTally
     public function __construct(
         public int $total,
         public int $undescribed,
+        /** The videos among the total: they are never to describe. */
+        public int $videos = 0,
     ) {
     }
 }
