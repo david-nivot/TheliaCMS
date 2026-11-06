@@ -21,6 +21,7 @@ use TheliaCMS\Content\Prop;
 use TheliaCMS\Content\PropSchema;
 use TheliaCMS\Content\PropType;
 use TheliaCMS\Content\SectionDefinitionInterface;
+use TheliaCMS\Content\VideoSource;
 use Twig\Error\Error;
 use Twig\Markup;
 
@@ -104,7 +105,7 @@ final readonly class SiteComponentSection implements SectionDefinitionInterface
 
     /**
      * The props as the template reads them: markup marked safe to print as it
-     * is, an image turned into its address (the part its editor keeps of it), the rest as stored.
+     * is, an image turned into its address (the part its editor keeps of it), a video into the address of its file, the rest as stored.
      *
      * @param list<Prop>           $schema
      * @param array<string, mixed> $props
@@ -126,6 +127,7 @@ final readonly class SiteComponentSection implements SectionDefinitionInterface
             $values[$prop->name] = match ($prop->type) {
                 PropType::Html => new Markup((string) $value, 'UTF-8'),
                 PropType::Image => ImageFraming::source($value, $prop->name, $props),
+                PropType::Video => VideoSource::of($value),
                 PropType::Items => array_map(
                     static fn (mixed $item): array => self::forTemplate($prop->items, \is_array($item) ? $item : []),
                     \is_array($value) ? array_values($value) : [],

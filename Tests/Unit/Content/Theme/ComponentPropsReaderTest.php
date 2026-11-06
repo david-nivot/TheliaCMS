@@ -53,6 +53,38 @@ final class ComponentPropsReaderTest extends TestCase
         self::assertSame([], $read['id_lists']);
     }
 
+    public function testAPropMayBeAVideoOfTheLibraryAtTheTopOrInTheRowsOfAList(): void
+    {
+        $read = $this->reader()->readSource(<<<'TWIG'
+            {# @prop title string The heading #}
+            {# @prop clip video The video of the section #}
+            {# @prop teaser video|null A short video, when there is one #}
+            {# @prop videos list<{title: string, video: video, image: image|null, trailer: video|null}> The videos of the gallery #}
+            {% props title, teaser = null, videos = [] %}
+            TWIG);
+        $props = $this->byName($read);
+
+        self::assertSame(PropType::Video, $props['clip']->type);
+        self::assertTrue($props['clip']->required);
+        self::assertSame(PropType::Video, $props['teaser']->type);
+        self::assertFalse($props['teaser']->required, 'video|null is optional.');
+        self::assertSame([], $read['id_lists'], 'A video is no list of records.');
+
+        $fields = [];
+
+        foreach ($props['videos']->items as $item) {
+            $fields[$item->name] = $item;
+        }
+
+        self::assertSame(PropType::Items, $props['videos']->type);
+        self::assertSame(['title', 'video', 'image', 'trailer'], array_keys($fields));
+        self::assertSame(PropType::Video, $fields['video']->type);
+        self::assertTrue($fields['video']->required);
+        self::assertSame(PropType::Image, $fields['image']->type);
+        self::assertSame(PropType::Video, $fields['trailer']->type);
+        self::assertFalse($fields['trailer']->required);
+    }
+
     public function testAListOfRecordsIsRowsOfIdsForTheDocumentAndIsToldApart(): void
     {
         $read = $this->reader()->readSource(<<<'TWIG'

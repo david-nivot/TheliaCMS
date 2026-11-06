@@ -1,6 +1,6 @@
 {#
     The picker of images of the media library: its words, and its script,
-    which binds every `input[data-cms-image-picker]` of the screen.
+    which binds every `input[data-cms-image-picker]` and `input[data-cms-video-picker]` of the screen.
 #}
 <script type="application/json" data-cms-media-picker-messages>{{ {
         title: 'Choose an image'|trans({}, 'theliacms'),
@@ -34,6 +34,12 @@
         failed: 'The library could not be read. Try again.'|trans({}, 'theliacms'),
         describeIt: 'Describe it in the library'|trans({}, 'theliacms'),
         altShown: 'Its text in the library: “%alt%”'|trans({}, 'theliacms'),
+        videoTitle: 'Choose a video'|trans({}, 'theliacms'),
+        noVideo: 'No video'|trans({}, 'theliacms'),
+        goneVideo: 'This video is no longer in the library.'|trans({}, 'theliacms'),
+        videoCount: '%count% video(s)'|trans({}, 'theliacms'),
+        videoUpload: 'Send a video'|trans({}, 'theliacms'),
+        videoNone: 'No video matches.'|trans({}, 'theliacms'),
         meanwhile: 'meanwhile the text of the section: “%alt%”'|trans({}, 'theliacms'),
     }|json_encode|raw }}</script>
 <script src="{{ module_asset('TheliaCMS', 'assets/media-picker.js') }}?v={{ media_picker_version|default('') }}" defer></script>

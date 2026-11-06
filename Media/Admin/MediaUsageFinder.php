@@ -238,6 +238,9 @@ final readonly class MediaUsageFinder
     {
         // The editor project is JSON, and a JSON encoder is free to write the
         // slashes of a URL escaped.
-        return str_contains(str_replace('\\/', '/', $html), '/image-library/'.$imageId.'/');
+        $html = str_replace('\\/', '/', $html);
+
+        // A video is served from a route of its own, which ends on its id.
+        return str_contains($html, '/image-library/'.$imageId.'/') || str_contains($html, '/video-library/'.$imageId.'.mp4');
     }
 }

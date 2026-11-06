@@ -94,6 +94,7 @@ document, and becomes the JSON schema a generator is constrained with.
 | `boolean` | true or false | |
 | `choice` | one of a closed list | membership |
 | `image` | the id of an image of the media library, `null` or `0` for none yet | a positive id |
+| `video` | the id of a video of the media library (or its path `/video-library/{id}.mp4`), `null` or `0` for none yet; the template receives the address of the file | a positive id, never an address of elsewhere |
 | `url` | a path of the site, an absolute http(s), mailto or tel address | nothing else, `javascript:` first of all |
 | `items` | a list of objects, each shaped by item props | count, and each item |
 | `reference` | the id of an item of the site: a page, a menu, a form, a product | a positive id |

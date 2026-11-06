@@ -37,6 +37,9 @@ enum PropType: string
     /** The id of an image of the media library. */
     case Image = 'image';
 
+    /** The id of a video of the media library, which the template receives as the address of the file. */
+    case Video = 'video';
+
     /** An address: absolute, or a path of the site. */
     case Url = 'url';
 

@@ -24,13 +24,17 @@ namespace TheliaCMS\ImportExport;
  *
  * Content refers to an image through the URL of the image route,
  * `/image-library/{id}/full/{size}/0/default.{format}`, in `src`, in `srcset`
- * and in the CSS of a page. Rewriting is therefore done on the id inside that
- * path, and on nothing else: a bare number in the text of a page is not an
- * image reference.
+ * and in the CSS of a page. A video is served from a route of its own,
+ * `/video-library/{id}.mp4`, in the `src` of a `<video>` or in a `data-`
+ * attribute of the theme. Rewriting is therefore done on the id inside those
+ * paths, and on nothing else: a bare number in the text of a page is not a
+ * media reference.
  */
 final readonly class MediaReferences
 {
     private const string PATTERN = '#/image-library/(\d+)/#';
+
+    private const string VIDEO_PATTERN = '#/video-library/(\d+)\.mp4#';
 
     /**
      * Every library id the given fragments point at.
@@ -48,9 +52,11 @@ final readonly class MediaReferences
                 continue;
             }
 
-            if (preg_match_all(self::PATTERN, $fragment, $matches)) {
-                foreach ($matches[1] as $id) {
-                    $ids[(int) $id] = true;
+            foreach ([self::PATTERN, self::VIDEO_PATTERN] as $pattern) {
+                if (preg_match_all($pattern, $fragment, $matches)) {
+                    foreach ($matches[1] as $id) {
+                        $ids[(int) $id] = true;
+                    }
                 }
             }
         }
@@ -76,7 +82,7 @@ final readonly class MediaReferences
             return $fragment;
         }
 
-        return preg_replace_callback(
+        $remapped = preg_replace_callback(
             self::PATTERN,
             static function (array $matches) use ($map): string {
                 $id = (int) $matches[1];
@@ -85,5 +91,15 @@ final readonly class MediaReferences
             },
             $fragment,
         ) ?? $fragment;
+
+        return preg_replace_callback(
+            self::VIDEO_PATTERN,
+            static function (array $matches) use ($map): string {
+                $id = (int) $matches[1];
+
+                return '/video-library/'.($map[$id] ?? $id).'.mp4';
+            },
+            $remapped,
+        ) ?? $remapped;
     }
 }

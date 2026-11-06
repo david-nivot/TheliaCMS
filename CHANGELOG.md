@@ -24,6 +24,18 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   library never serve one, and the bulk "decorative" action leaves it out and
   does not count it. Requires TheliaLibrary 2.3.
 
+- **A `video` prop type.** A component of the theme or of the site declares a
+  prop `video`, at the top level or in the rows of a list (`@prop videos
+  list<{title: string, video: video, image: image|null}>`). The editor picks
+  the video in the media library, filtered on the videos, or sends an MP4 from
+  the field (no address of a video kept elsewhere); the section stores the id
+  and the template receives the address of the file, `/video-library/12.mp4`,
+  or nothing when the id is no video of the library. A video a page plays
+  counts as used on its sheet and keeps it from being deleted, travels in the
+  export of the site like an image does (named by its file, pointed at the
+  video of the importing site), and the generator never looks for one: a video
+  id it writes that the library does not hold is left out and said so.
+
 - **A header zone.** One block of content, written like a page and drawn under
   the header of every page of the theme, the shop's included, by a theme hook on
   `layout.header.bottom` (Flexy fires it on every page). Any section can go in it;

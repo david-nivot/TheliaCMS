@@ -33,10 +33,12 @@ use TheliaCMS\Generation\DocumentChecker;
 use TheliaCMS\Generation\DocumentProblem;
 use TheliaCMS\Generation\GenerationRequest;
 use TheliaCMS\Generation\GenerationTarget;
+use TheliaCMS\Media\CmsMediaLibrary;
 use TheliaCMS\Model\CmsForm;
 use TheliaCMS\Model\CmsMenu;
 use TheliaCMS\Page\PublishedPageRepository;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
+use TheliaCMS\Tests\Support\Mp4Videos;
 use TheliaLibrary\Model\LibraryImage;
 
 /**
@@ -105,6 +107,52 @@ final class DocumentCheckerTest extends CmsIntegrationTestCase
         self::assertCount(1, $problems);
         self::assertSame(DocumentProblem::IMAGE, $problems[0]->kind);
         self::assertStringContainsString(\sprintf('"photo" is the image %d, which the media library does not hold', $video->getId()), $problems[0]->message);
+    }
+
+    /**
+     * The model never looks for a video, but may write an id: one that is no
+     * video of the library, an image included, is told as a video that is not
+     * there, in a prop of the section and in the rows of a list.
+     */
+    public function testAVideoPropMustHoldAVideoOfTheLibrary(): void
+    {
+        $video = Mp4Videos::row($this->getService(CmsMediaLibrary::class), $this->locale());
+        $image = (new LibraryImage())->setLocale($this->locale())->setFileName('checked.png')->setMimeType('image/png')->setTitle('checked');
+        $image->save();
+        $request = $this->request();
+        $problems = fn (mixed $clip, mixed $row = null): array => $this->checker()->problems(new Document([$this->section('all', 'Test:Checked', ['clip' => $clip, 'clips' => null === $row ? [] : [['video' => $row]]])]), $request);
+
+        self::assertSame([], $problems((int) $video->getId(), (int) $video->getId()), 'A video of the library is accepted, at the top and in a row.');
+        self::assertSame([], $problems(null), 'No video yet is not a problem.');
+
+        foreach ([self::MISSING, (int) $image->getId()] as $notAVideo) {
+            $found = $problems($notAVideo);
+
+            self::assertCount(1, $found);
+            self::assertSame(DocumentProblem::VIDEO, $found[0]->kind);
+            self::assertSame(['clip'], $found[0]->path);
+            self::assertStringContainsString(\sprintf('"clip" is the video %d, which the media library does not hold. A video is chosen by the editor', $notAVideo), $found[0]->message);
+        }
+
+        $found = $problems(null, self::MISSING);
+
+        self::assertCount(1, $found);
+        self::assertSame(['clips', 0, 'video'], $found[0]->path);
+        self::assertSame(['clips', 0], $found[0]->rowPath);
+    }
+
+    public function testAVideoThatIsNotThereIsEmptiedAndSaidInTheLanguageOfThePage(): void
+    {
+        $document = new Document([$this->section('card', 'Test:Checked', ['clip' => self::MISSING])]);
+
+        foreach (['fr_FR' => 'Une vidéo de la section "card" n\'est pas dans la médiathèque', 'en_US' => 'A video of the section "card" is not in the media library'] as $locale => $sentence) {
+            $request = $this->request($locale);
+            [$settled, $leftOut] = $this->checker()->settle($document, $this->checker()->problems($document, $request), $request);
+
+            self::assertNull($settled->sections[0]->props['clip'], $locale);
+            self::assertCount(1, $leftOut);
+            self::assertStringStartsWith($sentence, $leftOut[0], $locale);
+        }
     }
 
     public function testAnInternalAddressMustLeadToAPageOfTheSite(): void
@@ -347,6 +395,8 @@ final class DocumentCheckerTest extends CmsIntegrationTestCase
             {
                 return new PropSchema([
                     Prop::image('photo', 'Photo'),
+                    Prop::video('clip', 'Clip'),
+                    Prop::items('clips', 'Clips', [Prop::video('video', 'Video')]),
                     Prop::url('link', 'Link'),
                     Prop::html('html', 'Html'),
                     Prop::reference('product', 'Product', 'a product', false, picker: '/admin/cms/partials/sources/products'),

@@ -36,6 +36,18 @@ final class SitePropReaderTest extends TestCase
         self::assertSame('light', $schema->props[2]->default);
     }
 
+    public function testAVideoIsReadAtTheTopAndInTheRowsOfAList(): void
+    {
+        $schema = (new SitePropReader())->read([
+            ['name' => 'clip', 'type' => 'video', 'label' => 'Clip', 'required' => true],
+            ['name' => 'gallery', 'type' => 'items', 'label' => 'Gallery', 'items' => [['name' => 'video', 'type' => 'video', 'label' => 'Video']]],
+        ]);
+
+        self::assertSame(PropType::Video, $schema->props[0]->type);
+        self::assertTrue($schema->props[0]->required);
+        self::assertSame(PropType::Video, $schema->props[1]->items[0]->type);
+    }
+
     public function testEveryProblemIsListedAtOnce(): void
     {
         try {

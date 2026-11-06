@@ -33,10 +33,10 @@ use TheliaCMS\Content\PropType;
 final readonly class SitePropReader
 {
     /** @var list<string> */
-    public const array TYPES = ['text', 'html', 'integer', 'boolean', 'choice', 'image', 'url', 'items'];
+    public const array TYPES = ['text', 'html', 'integer', 'boolean', 'choice', 'image', 'video', 'url', 'items'];
 
     /** @var list<string> */
-    private const array ITEM_TYPES = ['text', 'html', 'integer', 'boolean', 'choice', 'image', 'url'];
+    private const array ITEM_TYPES = ['text', 'html', 'integer', 'boolean', 'choice', 'image', 'video', 'url'];
 
     private const int MAX_PROPS = 20;
 
@@ -149,6 +149,7 @@ final readonly class SitePropReader
                 PropType::Boolean => Prop::boolean($name, $label, true === $default, $help),
                 PropType::Choice => $this->choice($spec, $name, $label, $help, $where, $problems),
                 PropType::Image => Prop::image($name, $label, $required, $help),
+                PropType::Video => Prop::video($name, $label, $required, $help),
                 PropType::Url => Prop::url($name, $label, \is_string($default) ? $default : '', $required, $help),
                 PropType::Items => $this->items($spec, $name, $label, $help, $where, $problems),
                 default => null,

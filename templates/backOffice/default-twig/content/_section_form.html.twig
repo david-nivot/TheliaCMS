@@ -17,7 +17,7 @@
             {% set file = form.children[base ~ '__file'] ?? null %}
             {% set address = form.children[base ~ '__url'] ?? null %}
             <details class="cms-content__more" {{ address and address.vars.value ? 'open' }}>
-                <summary>{{ 'Another source: a file or an address'|trans({}, 'theliacms') }}</summary>
+                <summary>{{ (address ? 'Another source: a file or an address' : 'Another source: a file')|trans({}, 'theliacms') }}</summary>
                 {% if file %}{{ form_row(file) }}{% endif %}
                 {% if address %}{{ form_row(address) }}{% endif %}
             </details>

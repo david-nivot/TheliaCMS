@@ -99,37 +99,39 @@ final readonly class CmsMediaAdminController
     }
 
     /**
-     * The images a picker shows, a page of the library read as the list reads
-     * it, or the one image `id` names: what a section or a page holds, drawn
-     * before anything is picked. A video is not an image: it is neither listed
-     * nor answered by its id.
+     * The files a picker shows, a page of the library read as the list reads
+     * it, or the one file `id` names: what a section or a page holds, drawn
+     * before anything is picked. The `kind` asked for is `image`, or `video`
+     * for the picker of a video prop; any other value is an image. A file of
+     * the other kind is neither listed nor answered by its id.
      */
     #[Route('/picker', name: 'picker', methods: ['GET'])]
     public function picker(Request $request): JsonResponse
     {
         $locale = $this->editLang($request)->getLocale();
         $id = $request->query->getInt('id');
+        $kind = MediaKind::Video->value === $request->query->getString('kind') ? MediaKind::Video : MediaKind::Image;
 
         if ($id > 0) {
-            $image = $this->library->ownedImage($id, MediaKind::Image);
+            $image = $this->library->ownedImage($id, $kind);
             $item = null === $image ? null : $this->catalog->item($image, $locale, 0);
 
             return new JsonResponse(['items' => null === $item ? [] : [self::picked($item)]], null === $item ? Response::HTTP_NOT_FOUND : Response::HTTP_OK);
         }
 
-        $grid = $this->catalog->browse(MediaQuery::fromRequest($request)->ofKind(MediaKind::Image), $locale, withUsage: false);
+        $grid = $this->catalog->browse(MediaQuery::fromRequest($request)->ofKind($kind), $locale, withUsage: false);
 
         return new JsonResponse([
             'items' => array_map(self::picked(...), $grid->items),
             'total' => $grid->total,
             'page' => $grid->page,
             'pageCount' => $grid->pageCount(),
-            'tags' => $this->library->tagCounts(MediaKind::Image),
+            'tags' => $this->library->tagCounts($kind),
         ]);
     }
 
     /**
-     * @return array{id: int, title: string, thumbnail: ?string, url: string, dimensions: ?string, width: ?int, height: ?int, alt: string, described: bool, decorative: bool}
+     * @return array{id: int, title: string, thumbnail: ?string, url: string, dimensions: ?string, width: ?int, height: ?int, alt: string, described: bool, decorative: bool, video: bool}
      */
     private static function picked(MediaItem $item): array
     {
@@ -144,6 +146,7 @@ final readonly class CmsMediaAdminController
             'alt' => trim((string) $item->alt),
             'described' => $item->isDescribed(),
             'decorative' => $item->decorative,
+            'video' => $item->video,
         ];
     }
 

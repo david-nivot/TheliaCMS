@@ -120,6 +120,7 @@ final readonly class CatalogSheet
             PropType::Boolean => 'true or false',
             PropType::Choice => 'one of '.implode(', ', array_map(static fn (string $value): string => '`'.$value.'`', $prop->offeredChoices())),
             PropType::Image => 'image id from search_media, an https address the brief gives, or null',
+            PropType::Video => 'always null: the video is chosen by the editor',
             PropType::Url => 'url',
             PropType::Items => $prop->scalarItems ? self::scalarListOf($prop) : \sprintf('list of %d to %d items', $prop->minItems ?? 0, $prop->maxItems ?? 12),
             PropType::Reference => 'id from the search tools',
