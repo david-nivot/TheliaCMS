@@ -7,6 +7,14 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Fixed
+
+- **The form of a section no longer runs 20 px wider than its drawer.** The
+  bar of the save button, held at the bottom of the drawer, reached the edges
+  of the drawer through negative side margins, which made the form wider than
+  its room. Its band and its top line now reach the edges without widening
+  the form.
+
 ## [2.15.0] - 2026-11-06
 
 ### Added
