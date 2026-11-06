@@ -26,9 +26,10 @@ use TheliaCMS\TheliaCMS;
 use TheliaLibrary\Model\LibraryImage;
 
 /**
- * The page list and the dashboard name the pages that are online with an
- * image nobody described or a link that says nothing, and send the reader to
- * the content screen of the language that needs the fix.
+ * The page list names the pages that are online with an image nobody
+ * described or a link that says nothing, and sends the reader to the content
+ * screen of the language that needs the fix. The dashboard leaves it to the
+ * page list.
  */
 final class AccessibilityWarningScreensTest extends AdminScreenTestCase
 {
@@ -56,21 +57,27 @@ final class AccessibilityWarningScreensTest extends AdminScreenTestCase
         self::assertSame(0, $this->screen('/admin/cms/pages')->filter('[data-testid="cms-accessibility-warning"]')->count());
     }
 
-    public function testTheDashboardOfAShowcaseSiteShowsIt(): void
+    /**
+     * The home of the back office is read by everybody who logs in, most of
+     * them with nothing to fix in the pages: a list of every page in default
+     * pushed the figures of the site below the fold.
+     */
+    public function testTheDashboardOfAShowcaseSiteLeavesItToThePageList(): void
     {
         $this->onlinePageWithAnUndescribedImage('Galerie du tableau de bord');
         $previous = TheliaCMS::getConfigValue(CmsSettings::SITE_MODE);
         TheliaCMS::setConfigValue(CmsSettings::SITE_MODE, SiteMode::Showcase->value);
 
         try {
-            $warning = $this->screen('/admin')->filter('[data-testid="cms-accessibility-warning"]');
+            $dashboard = $this->screen('/admin');
+            $pageList = $this->screen('/admin/cms/pages');
         } finally {
             TheliaCMS::setConfigValue(CmsSettings::SITE_MODE, $previous ?? SiteMode::Commerce->value);
         }
 
-        self::assertSame(1, $warning->count());
-        self::assertStringContainsString('Galerie du tableau de bord', $warning->text());
-        self::assertSame('H3', strtoupper($warning->filter('h3, h2')->first()->nodeName()), 'Under the h2 of the block.');
+        self::assertSame(1, $dashboard->filter('[data-testid="cms-dashboard"]')->count(), 'The block of the site is still on the dashboard.');
+        self::assertSame(0, $dashboard->filter('[data-testid="cms-accessibility-warning"]')->count());
+        self::assertStringContainsString('Galerie du tableau de bord', $pageList->filter('[data-testid="cms-accessibility-warning"]')->text());
     }
 
     private function onlinePageWithAnUndescribedImage(string $title): CmsPage

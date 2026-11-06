@@ -19,6 +19,12 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 - **In a row of a theme component, the framing of a picture is folded.** The
   proportions and the kept part of a picture, under it in every row, now sit
   in a fold, **Kept part of the picture**, closed by default.
+- **The home of the back office no longer lists the pages with an image or a
+  link to fix.** Everybody who logs in reads it, most of them with nothing to
+  fix in the pages, and on a site with many such pages the list pushed the
+  figures of the site below the fold. The warning stays on the page list
+  (**CMS > Pages**), where the pages are fixed, and publishing still reports
+  the problems of the page being published.
 
 ### Fixed
 
