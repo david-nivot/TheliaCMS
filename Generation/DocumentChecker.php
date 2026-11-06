@@ -41,6 +41,7 @@ use TheliaCMS\Model\CmsPageQuery;
 use TheliaCMS\Page\PublishedPageRepository;
 use TheliaCMS\TheliaCMS;
 use TheliaLibrary\Model\LibraryImageQuery;
+use TheliaLibrary\Service\LibraryImageFileNamer;
 
 /**
  * What a generated document says against what the site holds, once its shape
@@ -239,9 +240,11 @@ final readonly class DocumentChecker
                 continue;
             }
 
-            $problems[] = DocumentProblem::IMAGE === $candidate['kind']
-                ? new DocumentProblem(DocumentProblem::IMAGE, \sprintf('%s: "%s" is the image %d, which the media library does not hold. Take an id from `search_media`, or leave the image empty (0).', $label, $where, $candidate['id']), $section->id, $candidate['path'], $candidate['row'], (string) $candidate['id'])
-                : new DocumentProblem(DocumentProblem::REFERENCE, \sprintf('%s: "%s" is the %s %d, which the site does not hold. Take the id from the search tools, or leave it empty (0).', $label, $where, $kind, $candidate['id']), $section->id, $candidate['path'], $candidate['row'], (string) $candidate['id']);
+            $problems[] = match ($candidate['kind']) {
+                DocumentProblem::IMAGE => new DocumentProblem(DocumentProblem::IMAGE, \sprintf('%s: "%s" is the image %d, which the media library does not hold. Take an id from `search_media`, or leave the image empty (0).', $label, $where, $candidate['id']), $section->id, $candidate['path'], $candidate['row'], (string) $candidate['id']),
+                DocumentProblem::VIDEO => new DocumentProblem(DocumentProblem::VIDEO, \sprintf('%s: "%s" is the video %d, which the media library does not hold. A video is chosen by the editor: leave it empty (0).', $label, $where, $candidate['id']), $section->id, $candidate['path'], $candidate['row'], (string) $candidate['id']),
+                default => new DocumentProblem(DocumentProblem::REFERENCE, \sprintf('%s: "%s" is the %s %d, which the site does not hold. Take the id from the search tools, or leave it empty (0).', $label, $where, $kind, $candidate['id']), $section->id, $candidate['path'], $candidate['row'], (string) $candidate['id']),
+            };
         }
 
         return $problems;
@@ -312,6 +315,7 @@ final readonly class DocumentChecker
 
             match ($prop->type) {
                 PropType::Image => \is_int($value) && $value > 0 ? $visit(DocumentProblem::IMAGE, $prop, $at, $row, $value) : null,
+                PropType::Video => \is_int($value) && $value > 0 ? $visit(DocumentProblem::VIDEO, $prop, $at, $row, $value) : null,
                 PropType::Reference => \is_int($value) && $value > 0 ? $visit(DocumentProblem::REFERENCE, $prop, $at, $row, $value) : null,
                 PropType::Url => \is_string($value) && str_starts_with($value, '/') && !str_starts_with($value, '//') ? $visit(DocumentProblem::ADDRESS, $prop, $at, $row, $value) : null,
                 PropType::Items => \is_array($value) ? $this->collectRows($prop, $value, $at, $visit) : null,
@@ -450,6 +454,7 @@ final readonly class DocumentChecker
 
         return match ($problem->kind) {
             DocumentProblem::IMAGE => $this->translator->trans('An image of the section "%section%" is not in the media library: it is left out.', $parameters, TheliaCMS::DOMAIN_NAME, $locale),
+            DocumentProblem::VIDEO => $this->translator->trans('A video of the section "%section%" is not in the media library: it is left out.', $parameters, TheliaCMS::DOMAIN_NAME, $locale),
             DocumentProblem::ADDRESS => $this->translator->trans('A link of the section "%section%" (%address%) leads to no page of the site: it is left out.', $parameters, TheliaCMS::DOMAIN_NAME, $locale),
             default => $this->translator->trans('The section "%section%" names a record the site does not hold: it is left out.', $parameters, TheliaCMS::DOMAIN_NAME, $locale),
         };
@@ -480,6 +485,10 @@ final readonly class DocumentChecker
             return 'image';
         }
 
+        if (DocumentProblem::VIDEO === $kind) {
+            return 'video';
+        }
+
         if (null !== $prop->picker) {
             $segment = basename(parse_url($prop->picker, \PHP_URL_PATH) ?: $prop->picker);
 
@@ -494,6 +503,43 @@ final readonly class DocumentChecker
     }
 
     /**
+     * The ids that are images of the library: a video is no image, an image
+     * prop holding its id points at nothing. A row with no recorded type is
+     * an image.
+     *
+     * @param list<int> $ids
+     *
+     * @return list<int>
+     */
+    private function libraryImages(array $ids): array
+    {
+        $rows = LibraryImageQuery::create()->filterById($ids, Criteria::IN)->select(['Id', 'MimeType'])->find()->toArray();
+
+        return array_values(array_map(
+            static fn (array $row): int => (int) $row['Id'],
+            array_filter($rows, static fn (array $row): bool => !\in_array($row['MimeType'], LibraryImageFileNamer::VIDEO_MIME_TYPES, true)),
+        ));
+    }
+
+    /**
+     * The ids that are videos of the library: an image id in a video prop
+     * points at nothing a video can be drawn from.
+     *
+     * @param list<int> $ids
+     *
+     * @return list<int>
+     */
+    private function libraryVideos(array $ids): array
+    {
+        $rows = LibraryImageQuery::create()->filterById($ids, Criteria::IN)->select(['Id', 'MimeType'])->find()->toArray();
+
+        return array_values(array_map(
+            static fn (array $row): int => (int) $row['Id'],
+            array_filter($rows, static fn (array $row): bool => \in_array($row['MimeType'], LibraryImageFileNamer::VIDEO_MIME_TYPES, true)),
+        ));
+    }
+
+    /**
      * @param list<int> $ids
      *
      * @return list<int>
@@ -505,7 +551,8 @@ final readonly class DocumentChecker
         }
 
         $found = match ($kind) {
-            'image' => LibraryImageQuery::create()->filterById($ids, Criteria::IN)->select('Id')->find()->toArray(),
+            'image' => $this->libraryImages($ids),
+            'video' => $this->libraryVideos($ids),
             'product' => ProductQuery::create()->filterById($ids, Criteria::IN)->select('Id')->find()->toArray(),
             'category' => CategoryQuery::create()->filterById($ids, Criteria::IN)->select('Id')->find()->toArray(),
             'folder' => FolderQuery::create()->filterById($ids, Criteria::IN)->select('Id')->find()->toArray(),

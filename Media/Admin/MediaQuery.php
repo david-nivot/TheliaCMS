@@ -16,6 +16,7 @@ namespace TheliaCMS\Media\Admin;
 
 use Symfony\Component\HttpFoundation\Request;
 use TheliaCMS\Media\MediaFilter;
+use TheliaCMS\Media\MediaKind;
 use TheliaCMS\Media\MediaOrder;
 
 /**
@@ -30,7 +31,8 @@ final readonly class MediaQuery
     private const int MAX_IMAGES = 200;
 
     /**
-     * @param list<int> $images only these images, as a sending of files names them: read by the describe queue, not by the list
+     * @param list<int>  $images only these images, as a sending of files names them: read by the describe queue, not by the list
+     * @param ?MediaKind $kind   only the images or only the videos; both when null, and never read from the address here
      */
     public function __construct(
         public ?string $search = null,
@@ -39,7 +41,17 @@ final readonly class MediaQuery
         public MediaOrder $order = MediaOrder::Newest,
         public int $page = 1,
         public array $images = [],
+        public ?MediaKind $kind = null,
     ) {
+    }
+
+    /**
+     * The same query narrowed to one kind of file. The list of the library
+     * shows both and leaves it null; a picker names what it takes.
+     */
+    public function ofKind(MediaKind $kind): self
+    {
+        return new self($this->search, $this->filter, $this->tag, $this->order, $this->page, $this->images, $kind);
     }
 
     /**

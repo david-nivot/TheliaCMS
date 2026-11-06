@@ -27,6 +27,7 @@
     {% endembed %}
 
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        {% if item.video %}<span></span>{% else %}
         {# The description is per language and the decorative flag for all of
            them: where the image stands everywhere, without opening it in each
            language. #}
@@ -46,6 +47,7 @@
                 </a>
             {% endfor %}
         </div>
+        {% endif %}
         {{ component('BoLanguageSwitcher', { currentLanguageId: edit_language_id }) }}
     </div>
 
@@ -53,7 +55,11 @@
         <div class="col-lg-5">
             <div class="card">
                 <div class="ratio ratio-4x3 bg-body-secondary rounded-top overflow-hidden">
-                    <img src="{{ item.thumbnailUrl }}" alt="" style="object-fit: scale-down">
+                    {% if item.video %}
+                        <video src="{{ item.url }}" controls preload="metadata" playsinline style="object-fit: scale-down"></video>
+                    {% else %}
+                        <img src="{{ item.thumbnailUrl }}" alt="" style="object-fit: scale-down">
+                    {% endif %}
                 </div>
                 <ul class="list-group list-group-flush small">
                     {% if item.dimensions %}
@@ -119,12 +125,15 @@
                is decorative, and the browser cannot know that. #}
             {{ form_start(form, { attr: { novalidate: 'novalidate' } }) }}
                 <input type="hidden" name="_token" value="{{ assignToken() }}">
-                {{ form_row(form.alt) }}
+                {# A video has neither alternative text nor decorative flag. #}
+                {% if not item.video %}
+                    {{ form_row(form.alt) }}
 
-                {# The back-office form theme renders help inside the label, and
-                   a checkbox label has none — so this one is written out. #}
-                {{ form_row(form.decorative) }}
-                <p class="form-text mt-n2 mb-3">{{ form.decorative.vars.help|trans({}, 'theliacms') }}</p>
+                    {# The back-office form theme renders help inside the label, and
+                       a checkbox label has none — so this one is written out. #}
+                    {{ form_row(form.decorative) }}
+                    <p class="form-text mt-n2 mb-3">{{ form.decorative.vars.help|trans({}, 'theliacms') }}</p>
+                {% endif %}
 
                 {{ form_row(form.caption) }}
                 {{ form_row(form.title) }}
@@ -135,6 +144,7 @@
                 <div class="mb-3 d-none" data-cms-media-replace-preview>
                     <p class="small text-body-secondary mb-1">{{ 'The new file, in place of the current one once saved:'|trans({}, 'theliacms') }}</p>
                     <img class="img-thumbnail" alt="" style="max-height: 200px">
+                    <video class="img-thumbnail d-none" muted playsinline preload="metadata" style="max-height: 200px"></video>
                     <p class="small text-body-secondary mt-1 mb-0" data-cms-media-replace-size></p>
                 </div>
 
@@ -147,7 +157,7 @@
                   action="{{ path('admin.cms.media.delete', list_parameters|merge({ id: item.id, edit_language_id: edit_language_id })) }}">
                 <input type="hidden" name="_token" value="{{ assignToken() }}">
                 <button type="submit" class="btn btn-sm btn-outline-danger" {{ used_by > 0 ? 'disabled' : '' }}>
-                    <i class="bi bi-trash3 me-1" aria-hidden="true"></i>{{ 'Delete this image'|trans({}, 'theliacms') }}
+                    <i class="bi bi-trash3 me-1" aria-hidden="true"></i>{{ (item.video ? 'Delete this video' : 'Delete this image')|trans({}, 'theliacms') }}
                 </button>
                 {% if used_by > 0 %}
                     <span class="form-text d-block">{{ 'Remove it from the pages and items above before deleting it.'|trans({}, 'theliacms') }}</span>
@@ -157,11 +167,11 @@
             <dialog class="border-0 rounded shadow p-0" data-cms-media-delete-dialog aria-labelledby="cms-media-delete-title"
                     style="width: min(480px, calc(100vw - 32px))">
                 <div class="p-4">
-                    <h2 class="h5" id="cms-media-delete-title">{{ 'Delete this image for good?'|trans({}, 'theliacms') }}</h2>
+                    <h2 class="h5" id="cms-media-delete-title">{{ (item.video ? 'Delete this video for good?' : 'Delete this image for good?')|trans({}, 'theliacms') }}</h2>
                     <p class="text-body-secondary">{{ 'Its file is removed. No page uses it, so none changes.'|trans({}, 'theliacms') }}</p>
                     <div class="d-flex justify-content-end gap-2">
                         <button type="button" class="btn btn-outline-secondary" data-cms-media-delete-cancel>{{ 'Cancel'|trans({}, 'theliacms') }}</button>
-                        <button type="button" class="btn btn-danger" data-cms-media-delete-confirm>{{ 'Delete this image'|trans({}, 'theliacms') }}</button>
+                        <button type="button" class="btn btn-danger" data-cms-media-delete-confirm>{{ (item.video ? 'Delete this video' : 'Delete this image')|trans({}, 'theliacms') }}</button>
                     </div>
                 </div>
             </dialog>

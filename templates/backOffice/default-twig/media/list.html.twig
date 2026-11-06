@@ -16,33 +16,37 @@
           data-cms-media-upload
           data-accepted="{{ accepted_mime_types }}"
           data-max-size="{{ max_upload_size }}"
+          data-video-accepted="{{ accepted_video_mime_types }}"
+          data-max-video-size="{{ max_video_upload_size }}"
           data-describe-url="{{ path('admin.cms.media.describe', { edit_language_id: edit_language_id }) }}"
           data-prepare-url="{{ path('admin.cms.media.svg.show', { token: token_placeholder, edit_language_id: edit_language_id }) }}"
           data-token-placeholder="{{ token_placeholder }}"
           data-messages="{{ {
               sending: 'Sending…'|trans({}, 'theliacms'),
               added: 'Added'|trans({}, 'theliacms'),
-              format: 'Only JPEG, PNG, WebP and SVG images can be uploaded.'|trans({}, 'theliacms'),
+              format: 'Only JPEG, PNG, WebP and SVG images, or MP4 videos, can be uploaded.'|trans({}, 'theliacms'),
               prepared: 'To prepare'|trans({}, 'theliacms'),
               prepare: 'Prepare the SVG file|Prepare the %count% SVG files'|trans({}, 'theliacms'),
               thenDescribe: ', then describe the image|, then describe the %count% images'|trans({}, 'theliacms'),
               dropSvg: 'Do not add this SVG file|Do not add these SVG files'|trans({}, 'theliacms'),
               tooLarge: max_upload_refusal|trans({}, 'theliacms'),
+              tooLargeVideo: max_video_upload_refusal|trans({}, 'theliacms'),
               failed: 'The file did not arrive whole. Send it again.'|trans({}, 'theliacms'),
               describe: 'Describe the image added|Describe the %count% images added'|trans({}, 'theliacms'),
               describeLater: 'Describe later'|trans({}, 'theliacms'),
+              showVideos: 'See the video added|See the %count% videos added'|trans({}, 'theliacms'),
           }|json_encode }}">
         <input type="hidden" name="_token" value="{{ assignToken() }}">
         <div class="d-flex flex-wrap gap-3 align-items-center">
             <i class="bi bi-cloud-arrow-up fs-3 text-body-secondary" aria-hidden="true"></i>
             <div class="flex-grow-1">
-                <label class="form-label mb-1 fw-medium" for="cms-media-files">{{ 'Drop images here, or choose them'|trans({}, 'theliacms') }}</label>
+                <label class="form-label mb-1 fw-medium" for="cms-media-files">{{ 'Drop images or videos here, or choose them'|trans({}, 'theliacms') }}</label>
                 <input class="form-control" type="file" id="cms-media-files" name="files[]" multiple
                        accept="{{ accepted_mime_types }}" onchange="this.form.requestSubmit()">
-                <div class="form-text">{{ 'JPEG, PNG, WebP or SVG. Several at once.'|trans({}, 'theliacms') }}</div>
+                <div class="form-text">{{ 'JPEG, PNG, WebP or SVG images, or MP4 videos. Several at once.'|trans({}, 'theliacms') }}</div>
             </div>
             <button type="submit" class="btn btn-primary text-nowrap" data-cms-media-upload-submit>
-                <i class="bi bi-upload me-1" aria-hidden="true"></i>{{ 'Add images'|trans({}, 'theliacms') }}
+                <i class="bi bi-upload me-1" aria-hidden="true"></i>{{ 'Add files'|trans({}, 'theliacms') }}
             </button>
         </div>
         <ul class="list-unstyled small mt-3 mb-0 d-none" data-cms-media-upload-files aria-live="polite"></ul>
@@ -112,7 +116,10 @@
            the library. #}
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
             <p class="text-body-secondary small mb-0" data-testid="cms-media-count">
-            {{ '%count% image(s)'|trans({ '%count%': tally.total }, 'theliacms') }}
+            {{ '%count% image(s)'|trans({ '%count%': tally.total - tally.videos }, 'theliacms') }}
+            {%- if tally.videos > 0 %}
+                · {{ '%count% video(s)'|trans({ '%count%': tally.videos }, 'theliacms') }}
+            {%- endif -%}
             {%- if tally.undescribed > 0 %}
                 · <a class="link-warning" href="{{ path('admin.cms.media.list', { edit_language_id: edit_language_id, filter: 'to-describe' }) }}">{{ '%count% still to describe'|trans({ '%count%': tally.undescribed }, 'theliacms') }}</a>
             {%- endif -%}
@@ -200,8 +207,16 @@
                            {# Size and weight on hover and on the sheet: on a card of a
                               library of hundreds, the name and the state come first. #}
                            title="{{ [item.dimensions, item.weight, item.format ? item.format|upper : null]|filter(v => v)|join(' · ') }}">
-                            <img src="{{ item.thumbnailUrl }}" alt="" loading="lazy" decoding="async"
-                                 style="object-fit: scale-down">
+                            {# No poster is drawn of a video: the browser shows its
+                               first frame from the metadata. No controls here, a
+                               click opens the sheet. #}
+                            {% if item.video %}
+                                <video src="{{ item.url }}" preload="metadata" muted playsinline
+                                       style="object-fit: scale-down"></video>
+                            {% else %}
+                                <img src="{{ item.thumbnailUrl }}" alt="" loading="lazy" decoding="async"
+                                     style="object-fit: scale-down">
+                            {% endif %}
                         </a>
                         <div class="card-body p-2 small">
                             <a class="d-block text-truncate fw-medium text-decoration-none"
@@ -209,7 +224,9 @@
                                title="{{ item.title }}">{{ item.title }}</a>
 
 
-                            {% if not item.isDescribed %}
+                            {% if item.video %}
+                                <span class="badge text-bg-light"><i class="bi bi-camera-video me-1" aria-hidden="true"></i>{{ 'Video'|trans({}, 'theliacms') }}</span>
+                            {% elseif not item.isDescribed %}
                                 <span class="badge text-bg-warning">
                                     <i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>
                                     {{ 'No alternative text'|trans({}, 'theliacms') }}

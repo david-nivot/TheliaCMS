@@ -189,6 +189,11 @@ final readonly class Prop
         return new self($name, PropType::Image, $label, null, $required, $help);
     }
 
+    public static function video(string $name, string $label, bool $required = false, ?string $help = null): self
+    {
+        return new self($name, PropType::Video, $label, null, $required, $help);
+    }
+
     public static function url(string $name, string $label, string $default = '', bool $required = false, ?string $help = null): self
     {
         return new self($name, PropType::Url, $label, $default, $required, $help, max: 2048);
@@ -231,7 +236,7 @@ final readonly class Prop
 
         if (!$this->required) {
             $description .= match ($this->type) {
-                PropType::Image, PropType::Reference => ' 0 when there is none.',
+                PropType::Image, PropType::Video, PropType::Reference => ' 0 when there is none.',
                 PropType::Text, PropType::Html, PropType::Url, PropType::Json => ' Empty when not needed.',
                 PropType::Items => ' An empty list when not needed.',
                 default => '',
@@ -247,6 +252,7 @@ final readonly class Prop
             // the API refuses an integer in an enum of strings.
             PropType::Choice => ['type' => 'string', 'enum' => $this->offeredChoices()],
             PropType::Image => ['type' => $this->required ? ['integer', 'string'] : ['integer', 'string', 'null']],
+            PropType::Video => ['type' => $this->required ? 'integer' : ['integer', 'null']],
             PropType::Url => ['type' => 'string', 'maxLength' => $this->max ?? 2048],
             PropType::Items => [
                 'type' => 'array',

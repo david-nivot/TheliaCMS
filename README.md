@@ -257,7 +257,7 @@ is cheap to change back.
 
 Each section is also **edited by hand**, on the same screen, in a form read
 from the schema of its component: a field per prop, rows added and removed for
-a list, a picker on the media library for an image (thumbnails, search,
+a list, a picker on the media library for an image or a video (thumbnails, search,
 filters, sending), buttons for a choice that gives a pictogram per value
 (`Prop::choice(..., icons: [...])`). A `html` prop is edited in
 the editor of the Tiptap module when it is installed (`thelia/tiptap-module`,
@@ -638,10 +638,12 @@ shows the next one. An image can be answered as decorative or skipped.
 Images selected on the list take or lose a tag, are marked decorative or not,
 or are deleted when nothing uses them; the ones still used are kept and named.
 
-Uploads accept JPEG, PNG and WebP. SVG is refused: it is a document that can
-carry script. Files are dropped on the list or chosen, sent one by one, and a
+Uploads accept JPEG, PNG, WebP and SVG images (10 MB and 25 megapixels at
+most), and MP4 videos (50 MB at most). An SVG can carry script: it is cleaned
+and optimized on its own screen, which shows the result, before it enters the
+library. Files are dropped on the list or chosen, sent one by one, and a
 refused file is named with why without costing the others. The describe queue
-then opens on the images just added.
+then opens on the images just added; a video has nothing to describe.
 
 The images of the catalogue (products, categories, brands, folders, contents)
 are not in the library: the core keeps them in its own tables. To use them in

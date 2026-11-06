@@ -12,6 +12,11 @@
  * fields they are, folded under the image: what they hold is drawn in the
  * same place.
  *
+ * The field of a video (`data-cms-video-picker`, `data-cms-media-kind="video"`)
+ * is the same dialog asked for the videos of the library only: a tile and the
+ * preview of the field play the first frame of the file in a <video>, and
+ * there is no text to give nor picture to crop.
+ *
  * The script binds the fields of the screen once loaded, and content-editor.js
  * calls `CmsMediaPicker.bind(root)` on every form it enhances, a section added
  * since the page loaded included.
@@ -66,6 +71,11 @@
     }
 
     function badge(item) {
+        // A video has nothing to describe: no badge.
+        if (item.video) {
+            return null;
+        }
+
         if (item.decorative) {
             return element('span', 'badge text-bg-light', m.decorative);
         }
@@ -96,6 +106,7 @@
         head.append(title, close);
 
         var tools = element('div', 'row g-2 align-items-end');
+        var filterColumn = null;
         var search = element('input', 'form-control');
         search.type = 'search';
         search.placeholder = m.search;
@@ -113,6 +124,10 @@
             var col = element('div', pair[1]);
             col.appendChild(pair[0]);
             tools.appendChild(col);
+
+            if (pair[0] === filter) {
+                filterColumn = col;
+            }
         });
 
         var status = element('p', 'small text-body-secondary mb-0');
@@ -147,7 +162,8 @@
         var file = element('input', 'd-none');
         file.type = 'file';
         file.accept = 'image/jpeg,image/png,image/webp,image/svg+xml,.svg';
-        upload.append(element('i', 'bi bi-upload me-1'), document.createTextNode(m.upload), file);
+        var uploadText = document.createTextNode(m.upload);
+        upload.append(element('i', 'bi bi-upload me-1'), uploadText, file);
         var cancel = element('button', 'btn btn-sm btn-outline-secondary', m.cancel);
         cancel.type = 'button';
         actions.append(upload, cancel);
@@ -210,12 +226,25 @@
             });
         });
 
-        var state = { page: 1, pageCount: 1, current: 0, choose: null, endpoint: '', uploadUrl: '' };
+        var state = { page: 1, pageCount: 1, current: 0, choose: null, endpoint: '', uploadUrl: '', kind: 'image' };
+
+        function isVideo() {
+            return state.kind === 'video';
+        }
+
+        // The kind is asked of the server only for a video: an image is what it answers without one.
+        function asked(parameters) {
+            if (isVideo()) {
+                parameters.kind = 'video';
+            }
+
+            return parameters;
+        }
         var typing = null;
 
         function load() {
             status.textContent = m.loading;
-            getJson(withParameters(state.endpoint, { search: search.value.trim(), filter: filter.value, tag: tag.value, page: state.page }))
+            getJson(withParameters(state.endpoint, asked({ search: search.value.trim(), filter: isVideo() ? '' : filter.value, tag: tag.value, page: state.page })))
                 .then(function (answer) {
                     if (!answer) {
                         status.textContent = m.failed;
@@ -225,7 +254,7 @@
 
                     state.page = answer.page;
                     state.pageCount = answer.pageCount;
-                    status.textContent = (m.count || '').replace('%count%', String(answer.total));
+                    status.textContent = ((isVideo() ? m.videoCount : m.count) || '').replace('%count%', String(answer.total));
                     position.textContent = (m.page || '').replace('%page%', String(answer.page)).replace('%pages%', String(answer.pageCount));
                     previous.disabled = answer.page <= 1;
                     next.disabled = answer.page >= answer.pageCount;
@@ -252,7 +281,7 @@
             grid.replaceChildren();
 
             if (items.length === 0) {
-                grid.appendChild(element('p', 'text-body-secondary small', m.none));
+                grid.appendChild(element('p', 'text-body-secondary small', isVideo() ? m.videoNone : m.none));
 
                 return;
             }
@@ -269,16 +298,35 @@
                 }
 
                 var frame = element('div', 'ratio ratio-4x3 bg-body-secondary');
-                var image = element('img');
-                image.src = item.thumbnail || item.url;
-                image.alt = '';
-                image.loading = 'lazy';
-                image.style.objectFit = 'scale-down';
-                frame.appendChild(image);
+
+                if (item.video) {
+                    // The file itself, its first frame: nothing is played, nothing but the head of it is loaded.
+                    var clip = element('video');
+                    clip.preload = 'metadata';
+                    clip.muted = true;
+                    clip.setAttribute('playsinline', '');
+                    clip.src = item.url;
+                    clip.style.objectFit = 'scale-down';
+                    frame.appendChild(clip);
+                } else {
+                    var image = element('img');
+                    image.src = item.thumbnail || item.url;
+                    image.alt = '';
+                    image.loading = 'lazy';
+                    image.style.objectFit = 'scale-down';
+                    frame.appendChild(image);
+                }
+
                 var label = element('div', 'p-1 small');
                 var name = element('div', 'text-truncate', item.title);
                 name.title = item.title;
-                label.append(name, badge(item));
+                var described = badge(item);
+                label.append(name);
+
+                if (described) {
+                    label.append(described);
+                }
+
                 tile.append(frame, label);
                 tile.addEventListener('click', function () { pick(item); });
                 col.appendChild(tile);
@@ -333,7 +381,7 @@
                     }
 
                     if (answer && answer.stored && answer.stored[0]) {
-                        return getJson(withParameters(state.endpoint, { id: answer.stored[0].id })).then(function (one) {
+                        return getJson(withParameters(state.endpoint, asked({ id: answer.stored[0].id }))).then(function (one) {
                             if (one && one.items && one.items[0]) {
                                 pick(one.items[0]);
                             }
@@ -356,6 +404,20 @@
 
         picker = {
             open: function (options) {
+                var kind = options.kind === 'video' ? 'video' : 'image';
+
+                // Another kind of file is another list: what was searched or filtered for the one does not carry over.
+                if (kind !== state.kind) {
+                    search.value = '';
+                    filter.value = '';
+                    tag.value = '';
+                }
+
+                state.kind = kind;
+                title.textContent = isVideo() ? (m.videoTitle || m.title) : m.title;
+                uploadText.nodeValue = isVideo() ? (m.videoUpload || m.upload) : m.upload;
+                file.accept = isVideo() ? 'video/mp4' : 'image/jpeg,image/png,image/webp,image/svg+xml,.svg';
+                filterColumn.hidden = isVideo();
                 state.endpoint = options.endpoint;
                 state.uploadUrl = options.uploadUrl;
                 state.current = options.current;
@@ -374,7 +436,8 @@
 
     function bindField(input) {
         input.setAttribute('data-cms-image-bound', '');
-        var endpoint = input.getAttribute('data-cms-image-picker');
+        var video = input.getAttribute('data-cms-media-kind') === 'video';
+        var endpoint = input.getAttribute('data-cms-image-picker') || input.getAttribute('data-cms-video-picker');
         var uploadUrl = input.getAttribute('data-cms-image-upload') || '';
         var holder = input.closest('.mb-3') || input.parentElement;
         var panel = holder.parentElement;
@@ -383,7 +446,7 @@
         // The text of the image the section holds: for a picture kept
         // elsewhere. An image of the library is described in the library, and
         // its text is shown here instead of the field.
-        var altField = panel.querySelector('input[name="' + input.name.replace(/\]$/, '_alt]') + '"]')
+        var altField = video ? null : panel.querySelector('input[name="' + input.name.replace(/\]$/, '_alt]') + '"]')
             || panel.querySelector('input[name="' + input.name.replace(/\[[^\[\]]+\]$/, '[alt]') + '"]');
         var altRow = altField ? (altField.closest('.mb-3') || altField.parentElement) : null;
         var known = {};
@@ -391,15 +454,23 @@
         input.type = 'hidden';
 
         var block = element('div', 'd-flex flex-wrap align-items-center gap-3 border rounded p-2');
-        block.setAttribute('data-cms-image-field', '');
+        // The framing and the crop look for `data-cms-image-field`: a video has none to give.
+        block.setAttribute(video ? 'data-cms-video-field' : 'data-cms-image-field', '');
         var frame = element('div', 'ratio ratio-4x3 bg-body-secondary rounded overflow-hidden flex-shrink-0');
         frame.style.width = '120px';
         var thumbnail = element('img');
         thumbnail.alt = '';
         thumbnail.style.objectFit = 'scale-down';
+        // A video is shown as its first frame, in a <video>: an <img> on its address shows nothing.
+        var clip = element('video');
+        clip.setAttribute('preload', 'metadata');
+        clip.muted = true;
+        clip.setAttribute('playsinline', '');
+        clip.style.objectFit = 'scale-down';
+        clip.hidden = true;
         var empty = element('div', 'align-items-center justify-content-center text-body-secondary');
-        empty.appendChild(element('i', 'bi bi-image fs-2'));
-        frame.append(thumbnail, empty);
+        empty.appendChild(element('i', video ? 'bi bi-camera-video fs-2' : 'bi bi-image fs-2'));
+        frame.append(video ? clip : thumbnail, empty);
         var info = element('div', 'flex-grow-1 small');
         info.style.minWidth = '10rem';
         var name = element('div', 'fw-medium text-break');
@@ -426,7 +497,8 @@
                 altRow.hidden = !!item;
             }
 
-            if (!item || item.decorative) {
+            // A video has nothing to describe: no text, no link to write one.
+            if (!item || item.decorative || item.video) {
                 return;
             }
 
@@ -448,16 +520,19 @@
         }
 
         function show(url, title, label) {
-            thumbnail.hidden = !url;
+            var shown = video ? clip : thumbnail;
+            shown.hidden = !url;
             // Shown as a flex box only when there is no picture: `hidden`
             // loses to a display class, a style does not.
             empty.style.display = url ? 'none' : 'flex';
 
             if (url) {
-                thumbnail.src = url;
+                shown.src = url;
+            } else if (video) {
+                clip.removeAttribute('src');
             }
 
-            name.textContent = title || m.noImage;
+            name.textContent = title || (video ? m.noVideo : m.noImage);
             state.replaceChildren();
 
             if (label) {
@@ -470,6 +545,10 @@
         // What the field shows, for the dialog that frames the image: where it
         // comes from, the whole file and its size when the library knows it.
         function announce(source, url, width, height) {
+            if (video) {
+                return;
+            }
+
             block.setAttribute('data-cms-image-source', source);
             block.setAttribute('data-cms-image-url', url || '');
             block.setAttribute('data-cms-image-width', width ? String(width) : '');
@@ -506,7 +585,7 @@
             }
 
             if (known[id]) {
-                show(known[id].thumbnail || known[id].url, known[id].title, badge(known[id]));
+                show(video ? known[id].url : (known[id].thumbnail || known[id].url), known[id].title, badge(known[id]));
                 describe(known[id]);
                 announce('library', known[id].url, known[id].width, known[id].height);
 
@@ -515,12 +594,12 @@
 
             show(null, '…', null);
             announce('loading', '', 0, 0);
-            getJson(withParameters(endpoint, { id: id })).then(function (answer) {
+            getJson(withParameters(endpoint, video ? { id: id, kind: 'video' } : { id: id })).then(function (answer) {
                 if (answer && answer.items && answer.items[0]) {
                     known[id] = answer.items[0];
                     render();
                 } else {
-                    show(null, m.gone, null);
+                    show(null, video ? m.goneVideo : m.gone, null);
                     announce('gone', '', 0, 0);
                 }
             });
@@ -529,6 +608,7 @@
         choose.addEventListener('click', function () {
             thePicker().open({
                 endpoint: endpoint,
+                kind: video ? 'video' : 'image',
                 uploadUrl: uploadUrl,
                 current: parseInt(input.value || '0', 10),
                 choose: function (item) {
@@ -571,7 +651,7 @@
             }
         }
 
-        (root || document).querySelectorAll('input[data-cms-image-picker]:not([data-cms-image-bound])').forEach(bindField);
+        (root || document).querySelectorAll('input[data-cms-image-picker]:not([data-cms-image-bound]), input[data-cms-video-picker]:not([data-cms-image-bound])').forEach(bindField);
     }
 
     window.CmsMediaPicker = { bind: bind };

@@ -38,7 +38,11 @@
         var done = form.querySelector('[data-cms-media-upload-done]');
         var token = form.querySelector('input[name="_token"]');
         var accepted = (form.getAttribute('data-accepted') || '').split(',');
+        var videoAccepted = (form.getAttribute('data-video-accepted') || '').split(',');
+        // Two ceilings, each already bounded by the limit of PHP: an image
+        // and a video do not weigh the same.
         var maxSize = parseInt(form.getAttribute('data-max-size') || '0', 10);
+        var maxVideoSize = parseInt(form.getAttribute('data-max-video-size') || '0', 10);
         var describeUrl = form.getAttribute('data-describe-url');
         var prepareUrl = form.getAttribute('data-prepare-url');
         var placeholder = form.getAttribute('data-token-placeholder');
@@ -95,7 +99,13 @@
                 return m.format;
             }
 
-            if (maxSize > 0 && file.size > maxSize) {
+            var video = videoAccepted.indexOf(file.type) !== -1;
+
+            if (video && maxVideoSize > 0 && file.size > maxVideoSize) {
+                return m.tooLargeVideo;
+            }
+
+            if (!video && maxSize > 0 && file.size > maxSize) {
                 return m.tooLarge;
             }
 
@@ -168,7 +178,7 @@
 
                     if (request.status === 200 && answer && answer.stored && answer.stored.length > 0) {
                         view.added();
-                        resolve({ id: answer.stored[0].id });
+                        resolve({ id: answer.stored[0].id, video: answer.stored[0].video === true });
 
                         return;
                     }
@@ -221,7 +231,7 @@
                         if (answer && answer.token) {
                             prepared.push(answer.token);
                         } else if (answer) {
-                            stored.push(answer.id);
+                            stored.push(answer);
                         } else {
                             refused++;
                         }
@@ -259,10 +269,13 @@
             return (count === 1 || forms.length === 1 ? forms[0] : forms[1]).replace('%count%', String(count));
         }
 
-        function finish(stored, prepared, refused) {
-            if (stored.length === 0 && prepared.length === 0) {
+        function finish(files, prepared, refused) {
+            if (files.length === 0 && prepared.length === 0) {
                 return;
             }
+
+            // A video has nothing to describe: only the images join the queues.
+            var stored = files.filter(function (file) { return !file.video; }).map(function (file) { return file.id; });
 
             if (prepared.length > 0) {
                 var prepare = prepareQueue(stored, prepared);
@@ -282,6 +295,22 @@
                 var remain = element('a', 'btn btn-sm btn-outline-secondary', counted(m.dropSvg, prepared.length));
                 remain.href = window.location.href;
                 done.append(go, remain);
+                done.classList.remove('d-none');
+
+                return;
+            }
+
+            // Only videos: nothing to describe, the list shows them once reloaded.
+            if (stored.length === 0) {
+                if (refused === 0) {
+                    window.location.reload();
+
+                    return;
+                }
+
+                var back = element('a', 'btn btn-sm btn-outline-secondary', counted(m.showVideos, files.length));
+                back.href = window.location.href;
+                done.append(back);
                 done.classList.remove('d-none');
 
                 return;

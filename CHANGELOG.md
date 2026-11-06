@@ -9,6 +9,37 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Added
 
+- **MP4 videos in the media library.** The library takes an MP4 next to its
+  images (JPEG, PNG, WebP, SVG), up to 50 MB (an image is still held to 10 MB
+  and 25 megapixels); its upload button reads **Add files**.
+  The type is the one read in the content of the file, never its extension: a
+  text file renamed `.mp4` is refused. A video is shown by a `<video>` element
+  in the list and on its sheet, which has no alternative text, no decorative
+  flag and no crop; it never counts as "without alternative text" (badge, queue
+  of the images to describe, filter and counters). Replacing the file of a
+  sheet keeps its nature: a video by an MP4, an image by an image. A video is
+  never offered where a picture is wanted: the image picker of a section and of
+  a page (listed nor found by its id), the image search of the generator, the
+  upload field of an image, the image of a page, an image prop (a video id is
+  read as an image that does not exist) and the address of an image of the
+  library never serve one, and the bulk "decorative" action leaves it out and
+  does not count it. Videos came with TheliaLibrary 2.3; the 2.4 the SVG
+  images require holds them.
+
+- **A `video` prop type.** A component of the theme or of the site declares a
+  prop `video`, at the top level or in the rows of a list (`@prop videos
+  list<{title: string, video: video, image: image|null}>`). The editor picks
+  the video in the media library, filtered on the videos, or sends an MP4 from
+  the field (no address of a video kept elsewhere); the section stores the id
+  and the template receives the address of the file, `/video-library/12.mp4`,
+  or nothing when the id is no video of the library. A video a page plays
+  counts as used on its sheet and keeps it from being deleted, travels in the
+  export of the site like an image does (named by its file, pointed at the
+  video of the importing site), and the generator never looks for one: a video
+  id it writes that the library does not hold is left out and said so. The
+  generator of site components is told the type, and the media list counts the
+  videos apart from the images.
+
 - **A header zone.** One block of content, written like a page and drawn under
   the header of every page of the theme, the shop's included, by a theme hook on
   `layout.header.bottom` (Flexy fires it on every page). Any section can go in it;
@@ -98,6 +129,13 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   the singular or the plural as the count asks.
 
 ### Fixed
+
+- **The home page is linked on `/`.** The sitemap, the results of the search
+  of the site and the privacy link of a form gave the address of the page
+  itself (`/accueil`), which answers a 301 to `/`: a sitemap entry that
+  redirects is reported by a crawler instead of indexed, and the root was not
+  listed at all. The host stays the one of the language, as the menus already
+  did.
 
 - **A help link lands on its part of the documentation the first time.** The
   screenshots of the documentation had no size: once loaded, they grew and

@@ -85,6 +85,11 @@ final readonly class CmsMediaLibrary implements MediaResolver, MediaDescriptions
             return null;
         }
 
+        // A video has its own route: the image ones answer 404 for it.
+        if ($image->isVideo()) {
+            return $this->imageService->getUrlForVideo((int) $image->getId());
+        }
+
         return $this->imageService->getUrlForImage(
             $image->getId(),
             pathinfo($fileName, \PATHINFO_EXTENSION),
@@ -105,7 +110,8 @@ final readonly class CmsMediaLibrary implements MediaResolver, MediaDescriptions
 
         $image = LibraryImageQuery::create()->findPk((int) $matches[1]);
 
-        if (!$image instanceof LibraryImage) {
+        // The image route answers 404 for a video: an address that names one is no image.
+        if (!$image instanceof LibraryImage || $image->isVideo()) {
             return null;
         }
 
@@ -127,7 +133,8 @@ final readonly class CmsMediaLibrary implements MediaResolver, MediaDescriptions
 
     /**
      * The state of every library image the addresses point at, in one
-     * statement: a page of thirty images costs the same as a page of one.
+     * statement: a page of thirty images costs the same as a page of one. A
+     * video has no state: it is never read as an image to describe.
      */
     public function statesOf(array $urls, string $locale): array
     {
@@ -147,8 +154,9 @@ final readonly class CmsMediaLibrary implements MediaResolver, MediaDescriptions
             "SELECT li.id, li.decorative,
                 EXISTS (SELECT 1 FROM library_image_i18n i WHERE i.id = li.id AND i.locale = :locale AND TRIM(COALESCE(i.alt, '')) <> '') AS described
              FROM library_image li
-             WHERE li.id IN (%s) AND li.file_name IS NOT NULL",
+             WHERE li.id IN (%s) AND li.file_name IS NOT NULL AND %s",
             implode(',', array_unique($idsByUrl)),
+            MediaKind::Image->condition(),
         ));
         $statement->execute(['locale' => $locale]);
 
@@ -185,7 +193,8 @@ final readonly class CmsMediaLibrary implements MediaResolver, MediaDescriptions
     {
         $fileName = $image->getFileName();
 
-        if (null === $fileName || (null !== $image->getWidth() && null !== $image->getHeight())) {
+        // A video has no dimensions to read: getimagesize() would say nothing.
+        if (null === $fileName || $image->isVideo() || (null !== $image->getWidth() && null !== $image->getHeight())) {
             return;
         }
 
@@ -209,13 +218,13 @@ final readonly class CmsMediaLibrary implements MediaResolver, MediaDescriptions
      *
      * TheliaLibrary ships no listing service, so the query lives here. A search
      * term matches a title, an alternative text, a caption or one of the image
-     * tags.
+     * tags. Every kind of file is listed unless `$kind` narrows it.
      *
      * @return list<LibraryImage>
      */
-    public function images(?string $search = null, int $limit = 200): array
+    public function images(?string $search = null, int $limit = 200, ?MediaKind $kind = null): array
     {
-        $imageIds = $this->taggedImageIds($this->tagId());
+        $imageIds = $this->ofKind($this->taggedImageIds($this->tagId()), $kind);
 
         if ([] === $imageIds) {
             return [];
@@ -248,9 +257,9 @@ final readonly class CmsMediaLibrary implements MediaResolver, MediaDescriptions
      *
      * @return array{total: int, undescribed: int}
      */
-    public function counts(string $locale, ?string $search = null): array
+    public function counts(string $locale, ?string $search = null, ?MediaKind $kind = null): array
     {
-        $imageIds = $this->taggedImageIds($this->tagId());
+        $imageIds = $this->ofKind($this->taggedImageIds($this->tagId()), $kind);
 
         if (null !== $search && '' !== $search) {
             $imageIds = $this->matching($imageIds, $search);
@@ -269,13 +278,14 @@ final readonly class CmsMediaLibrary implements MediaResolver, MediaDescriptions
      * "Unused" is let through: what uses an image is read from the content of
      * the pages, which the media screens do, not the library.
      *
-     * @param list<int> $only named images, the others left out
+     * @param list<int>  $only named images, the others left out
+     * @param ?MediaKind $kind only the images or only the videos; both when null
      *
      * @return list<int>
      */
-    public function selection(string $locale, ?string $search = null, ?MediaFilter $filter = null, ?string $tag = null, array $only = []): array
+    public function selection(string $locale, ?string $search = null, ?MediaFilter $filter = null, ?string $tag = null, array $only = [], ?MediaKind $kind = null): array
     {
-        $imageIds = $this->taggedImageIds($this->tagId());
+        $imageIds = $this->ofKind($this->taggedImageIds($this->tagId()), $kind);
 
         if ([] !== $only) {
             $imageIds = array_values(array_intersect($imageIds, $only));
@@ -351,9 +361,9 @@ final readonly class CmsMediaLibrary implements MediaResolver, MediaDescriptions
      *
      * @return array<string, int>
      */
-    public function tagCounts(): array
+    public function tagCounts(?MediaKind $kind = null): array
     {
-        $imageIds = $this->taggedImageIds($this->tagId());
+        $imageIds = $this->ofKind($this->taggedImageIds($this->tagId()), $kind);
 
         if ([] === $imageIds) {
             return [];
@@ -384,7 +394,8 @@ final readonly class CmsMediaLibrary implements MediaResolver, MediaDescriptions
     /**
      * The images among these that say nothing in the language: neither a
      * non-blank alternative text there nor decorative. An image with no row
-     * at all in the language says nothing in it either.
+     * at all in the language says nothing in it either. A video is never
+     * among them: it has no alternative text to give.
      *
      * @param list<int> $imageIds
      *
@@ -399,12 +410,36 @@ final readonly class CmsMediaLibrary implements MediaResolver, MediaDescriptions
         $statement = Propel::getConnection('TheliaMain')->prepare(\sprintf(
             "SELECT li.id FROM library_image li
              WHERE li.id IN (%s) AND li.decorative = 0
+             AND %s
              AND NOT EXISTS (SELECT 1 FROM library_image_i18n i WHERE i.id = li.id AND i.locale = :locale AND TRIM(COALESCE(i.alt, '')) <> '')",
             implode(',', array_map('intval', $imageIds)),
+            MediaKind::Image->condition(),
         ));
         $statement->execute(['locale' => $locale]);
 
         return array_map('intval', $statement->fetchAll(\PDO::FETCH_COLUMN));
+    }
+
+    /**
+     * These identifiers narrowed to one kind of file; all of them when none is asked.
+     *
+     * @param list<int> $imageIds
+     *
+     * @return list<int>
+     */
+    private function ofKind(array $imageIds, ?MediaKind $kind): array
+    {
+        if (null === $kind || [] === $imageIds) {
+            return $imageIds;
+        }
+
+        $statement = Propel::getConnection('TheliaMain')->query(\sprintf(
+            'SELECT li.id FROM library_image li WHERE li.id IN (%s) AND %s',
+            implode(',', array_map('intval', $imageIds)),
+            $kind->condition(),
+        ));
+
+        return array_values(array_intersect($imageIds, array_map('intval', $statement->fetchAll(\PDO::FETCH_COLUMN))));
     }
 
     private function existingTagId(string $title): ?int
@@ -418,15 +453,18 @@ final readonly class CmsMediaLibrary implements MediaResolver, MediaDescriptions
      * The image with that identifier, if the CMS owns it.
      *
      * Guards the back-office screens against reaching an image uploaded for a
-     * product: the library is shared, the CMS section is not.
+     * product: the library is shared, the CMS section is not. A `$kind` asked
+     * for answers null for a file of the other: a video is no image.
      */
-    public function ownedImage(int $imageId): ?LibraryImage
+    public function ownedImage(int $imageId, ?MediaKind $kind = null): ?LibraryImage
     {
         if (!\in_array($imageId, $this->taggedImageIds($this->tagId()), true)) {
             return null;
         }
 
-        return LibraryImageQuery::create()->findPk($imageId);
+        $image = LibraryImageQuery::create()->findPk($imageId);
+
+        return null !== $kind && $image instanceof LibraryImage && MediaKind::of($image) !== $kind ? null : $image;
     }
 
     /**

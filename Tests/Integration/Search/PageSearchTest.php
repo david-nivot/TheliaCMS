@@ -14,10 +14,16 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Tests\Integration\Search;
 
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\HttpFoundation\Session\Session;
+use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
 use TheliaCMS\Model\CmsPageQuery;
+use TheliaCMS\Search\Front\CmsSearchController;
 use TheliaCMS\Search\PageSearch;
 use TheliaCMS\Search\SearchTerms;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
+use TheliaCMS\TheliaCMS;
 
 /**
  * The front search runs on a FULLTEXT index filled at publication. What the
@@ -113,6 +119,36 @@ final class PageSearchTest extends CmsIntegrationTestCase
     /**
      * @return array{results: list<\TheliaCMS\Search\SearchResult>, total: int}
      */
+    /**
+     * The home page answers on the root only, its own address being a 301 to
+     * it: a result links to the root, not through the redirect.
+     */
+    public function testTheHomePageIsLinkedOnTheRoot(): void
+    {
+        $home = $this->createPage(
+            'Accueil de la boutique',
+            html: '<h2>Accueil de la boutique</h2><p>Un mot introuvable ailleurs: enluminure.</p>',
+        );
+        $previous = (string) TheliaCMS::getConfigValue('home_page_id', '0');
+        TheliaCMS::setConfigValue('home_page_id', (string) $home->getId());
+
+        $request = Request::create('/recherche', 'GET', ['q' => 'enluminure']);
+        $requests = $this->getService(RequestStack::class);
+        $request->setSession($requests->getMainRequest()?->hasSession() ? $requests->getMainRequest()->getSession() : new Session(new MockArraySessionStorage()));
+        $requests->push($request);
+
+        try {
+            $html = (string) $this->getService(CmsSearchController::class)->search($request)->getContent();
+        } finally {
+            $requests->pop();
+            TheliaCMS::setConfigValue('home_page_id', $previous);
+        }
+
+        self::assertStringContainsString('Accueil de la boutique', $html);
+        self::assertStringNotContainsString('accueil-de-la-boutique', $html, 'Its own address redirects.');
+        self::assertMatchesRegularExpression('#href="https?://[^/"]+/"#', $html);
+    }
+
     private function search(string $words): array
     {
         return $this->getService(PageSearch::class)

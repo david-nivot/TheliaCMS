@@ -23,6 +23,7 @@ use TheliaCMS\Model\CmsPageQuery;
 use TheliaCMS\Model\Map\CmsPageTableMap;
 use TheliaCMS\Security\CmsResources;
 use TheliaCMS\Tests\Integration\Security\AdminScreenTestCase;
+use TheliaCMS\Tests\Support\Mp4Videos;
 use TheliaCMS\TheliaCMS;
 use TheliaLibrary\Model\LibraryImage;
 
@@ -85,6 +86,17 @@ final class PageImagePickerTest extends AdminScreenTestCase
         self::assertSame($image->getId(), $this->save($page, (string) $image->getId()));
         self::assertNull($this->save($page, (string) $foreign->getId()), 'An image the CMS does not own is no image of a page.');
         self::assertNull($this->save($page, ''), 'Removed, the page has no image.');
+    }
+
+    public function testTheIdOfAVideoIsNoImageOfAPage(): void
+    {
+        $page = $this->createPage('Image choisie', published: false);
+        $video = Mp4Videos::row($this->getService(CmsMediaLibrary::class), $this->locale());
+
+        self::assertNull($this->save($page, (string) $video->getId()), 'A video of the library is no image of a page.');
+
+        $image = $this->image('Fauteuil');
+        self::assertSame($image->getId(), $this->save($page, (string) $image->getId()), 'An image is kept as before.');
     }
 
     private function save(CmsPage $page, string $imageId): ?int

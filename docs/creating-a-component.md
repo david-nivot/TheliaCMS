@@ -81,10 +81,11 @@ from two places:
   type and spaces included: `list<{name: string, quantity: string, image:
   image|null}>` (`array<{…}>` reads the same). Each field is typed like a
   prop of its own (text, 500 characters at most, `html`, `int`, `bool`, quoted
-  alternatives, `image`), is required unless its type says `|null`, and gets a
+  alternatives, `image`, `video`), is required unless its type says `|null`, and gets a
   field of the form; a list may hold fifty rows. The component receives a list
   of rows, `item.name`, `item.image` (the address of the picture, as for an
-  `image` prop), under the names the template spells: `imageAlt` is stored as
+  `image` prop; `item.video`, the address of the file, for a `video` field:
+  `list<{title: string, video: video, image: image|null}>`), under the names the template spells: `imageAlt` is stored as
   `image_alt` and comes back as `item.imageAlt`. A field that a row cannot hold, a list or a record such as
   `product`, leaves the whole prop a JSON one. A list of plain strings
   (`list<string>`, `string[]`, and `list<html>`, `html[]` for markup) is one
@@ -97,6 +98,19 @@ from two places:
   picture kept elsewhere),
   handed to the component as the address of the picture, to print in a
   `src`;
+  `video` is a video of the media library, stored as its id (or the path
+  the library serves it from, `/video-library/12.mp4`; never an `https://`
+  address or a page of a video site) and handed to the component as the
+  address of the file, `/video-library/12.mp4`, to print in a `src` or in the
+  `data-` of a Stimulus controller of the theme. An id that is no video of the
+  library (an image, a file gone) reaches the component as nothing, and the
+  template decides to draw nothing; an image prop holding the id of a video
+  does the same. Nothing is cut or resized, so no framing applies. The
+  component draws one element per video, so the page loads nothing until the
+  visitor plays one when the theme sets only the address and
+  `preload="none"` on it (a `preload` or a `poster` of its own is the theme's
+  to write; the module adds neither). The editor picks the video in the
+  library, filtered on the videos, or sends an MP4 from the field;
   `product`, `category`, `folder`, `form` or `menu` is one record,
   picked by its id with the same pickers the partials use (the generator
   finds the id with its search tools); `product[]`, `category[]`, or
@@ -221,7 +235,8 @@ What each method is for:
 - `schema()` declares the props with the constructors of `Content/Prop.php`:
   `Prop::text` (length), `Prop::html` (markup, filtered on the rendered page),
   `Prop::integer` (range), `Prop::boolean`, `Prop::choice` (a closed list),
-  `Prop::image` (an id of the media library), `Prop::url` (a path of the site
+  `Prop::image` (an id of the media library), `Prop::video` (an id of a video of
+  the media library), `Prop::url` (a path of the site
   or an absolute http(s), mailto or tel address), `Prop::items` (a list of
   objects, each shaped by its own props), `Prop::reference` (the id of a page,
   a menu, a form, a product) and `Prop::json`. A prop name is lowercase
@@ -298,7 +313,9 @@ What the generator writes, and what the site checks
 - **Props**, as data: the JSON form of the constructors of `Prop`, read by
   `Content/Site/SitePropReader.php`. The types a template can print: text,
   html, integer, boolean, choice, image (its address reaches the template),
-  url, and items whose props are any of these but items.
+  video (the address of its file reaches the template, which draws it in a
+  `<video>` or a link: a `data-` attribute is not kept on a component of the
+  site), url, and items whose props are any of these but items.
 - **A Twig template** rendered in a Twig of its own with the sandbox on
   (`Content/Site/SiteTemplateRenderer.php`): `if`, `for`, `set`, a few
   filters that shape text, `cycle`, `min`, `max`; no `range` (its loops go

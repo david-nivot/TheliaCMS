@@ -16,6 +16,7 @@ namespace TheliaCMS\Generation\Tool;
 
 use TheliaCMS\Generation\GenerationRequest;
 use TheliaCMS\Media\CmsMediaLibrary;
+use TheliaCMS\Media\MediaKind;
 
 /**
  * The images of the media library, by a part of their title or one of
@@ -53,7 +54,7 @@ final readonly class SearchMediaTool implements GeneratorToolInterface
     public function run(array $input, GenerationRequest $request): string
     {
         $query = trim((string) ($input['query'] ?? ''));
-        $images = $this->library->images('' === $query ? null : $query, self::LIMIT);
+        $images = $this->library->images('' === $query ? null : $query, self::LIMIT, MediaKind::Image);
 
         if ([] === $images) {
             return '' === $query ? 'The media library holds no image yet: leave the image props null.' : 'No image matches. Try another word, or leave the image prop null.';

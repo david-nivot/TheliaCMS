@@ -190,6 +190,7 @@ final readonly class ComponentPrompt
             '- `boolean`: `default` true or false.',
             '- `choice`: `choices`, an object of value => label (values of lowercase letters, digits, hyphens), and a `default` among them. For a variant of the look.',
             '- `image`: a picture of the media library. The template receives its address, or null when there is none.',
+            '- `video`: an MP4 video of the media library. The template receives the address of its file, or null when there is none: print it in a `<video>` with `preload="none"`, never playing on its own with sound.',
             '- `url`: a link, a path of the site or an absolute address.',
             '- `items`: a list of objects, `items` being the props of one (any type but `items`), `min` and `max` (at most 24). For rows, cards, steps.',
             '',

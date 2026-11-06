@@ -19,6 +19,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
 use Thelia\Core\Hook\Theme\ThemeHookInterface;
 use Thelia\Model\LangQuery;
 use Thelia\Tools\URL;
+use TheliaCMS\Menu\SiteRoot;
 use TheliaCMS\Page\ScheduledChanges;
 use TheliaCMS\TheliaCMS;
 
@@ -248,9 +249,19 @@ final readonly class SitemapThemeHook implements ThemeHookInterface
     private function urlOf(URL $urls, int $pageId, string $locale): ?string
     {
         try {
-            return $urls->retrieve(TheliaCMS::PAGE_VIEW, $pageId, $locale)->toString();
+            $url = $urls->retrieve(TheliaCMS::PAGE_VIEW, $pageId, $locale)->toString();
         } catch (\Throwable) {
             return null;
         }
+
+        // The home page answers on "/" only: its own address is a 301 to it
+        // (CmsPageViewListener), and a sitemap entry that redirects is one a
+        // crawler reports instead of indexing. The host stays the one of the
+        // language, as AlternateUrls gives it.
+        if ($pageId === (int) TheliaCMS::getConfigValue('home_page_id', '0')) {
+            return SiteRoot::of($url);
+        }
+
+        return $url;
     }
 }

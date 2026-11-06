@@ -102,7 +102,7 @@ final readonly class PropSchema
                 throw InvalidDocumentException::because([TranslatableText::of('"%s" is required.', $prop->name)]);
             }
 
-            return \in_array($prop->type, [PropType::Image, PropType::Reference], true) ? null : $prop->default;
+            return \in_array($prop->type, [PropType::Image, PropType::Video, PropType::Reference], true) ? null : $prop->default;
         }
 
         return match ($prop->type) {
@@ -112,6 +112,7 @@ final readonly class PropSchema
             PropType::Boolean => $this->boolean($prop, $value),
             PropType::Choice => $this->choice($prop, $value),
             PropType::Image, PropType::Reference => $this->image($prop, $value),
+            PropType::Video => $this->video($prop, $value),
             PropType::Url => $this->url($prop, $value),
             PropType::Items => $this->items($prop, $value),
             PropType::Json => $this->json($prop, $value),
@@ -246,6 +247,53 @@ final readonly class PropSchema
         }
 
         return $id;
+    }
+
+    /**
+     * The id of a video of the media library: a positive integer or nothing.
+     * Nothing comes from outside the library, an https address included, and
+     * the path the library serves a video from, as an editor copies it from a
+     * page, is the id it names.
+     */
+    private function video(Prop $prop, mixed $value): ?int
+    {
+        if (\is_string($value) && null !== ($libraryId = self::libraryVideoId($value))) {
+            $value = $libraryId;
+        }
+
+        if (!\is_int($value) && !(\is_string($value) && 1 === preg_match('/^\d+$/', $value))) {
+            throw InvalidDocumentException::because([TranslatableText::of('"%s" must be %s.', $prop->name, TranslatableText::of('the id of a video of the media library'))]);
+        }
+
+        $id = (int) $value;
+
+        // Zero is "no video yet", as it is for an image.
+        if (0 === $id) {
+            if ($prop->required) {
+                throw InvalidDocumentException::because([TranslatableText::of('"%s" is required.', $prop->name)]);
+            }
+
+            return null;
+        }
+
+        if ($id < 0) {
+            throw InvalidDocumentException::because([TranslatableText::of('"%s" must be %s.', $prop->name, TranslatableText::of('the id of a video of the media library'))]);
+        }
+
+        return $id;
+    }
+
+    /**
+     * The id of the video a path of the media library names, or null when the
+     * value is no such path: `/video-library/{id}.mp4`.
+     */
+    public static function libraryVideoId(string $value): ?int
+    {
+        if (1 !== preg_match('#^/video-library/(\d+)\.mp4$#i', trim($value), $matches)) {
+            return null;
+        }
+
+        return (int) $matches[1];
     }
 
     /**

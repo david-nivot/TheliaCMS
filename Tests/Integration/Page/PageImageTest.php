@@ -18,6 +18,7 @@ use TheliaCMS\Media\Admin\MediaUsageFinder;
 use TheliaCMS\Media\CmsMediaLibrary;
 use TheliaCMS\Page\PublishedPageRepository;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
+use TheliaCMS\Tests\Support\Mp4Videos;
 use TheliaLibrary\Model\LibraryImage;
 
 /**
@@ -40,6 +41,18 @@ final class PageImageTest extends CmsIntegrationTestCase
         self::assertSame((int) $image->getId(), $published->image->id);
         self::assertStringStartsWith('/image-library/'.$image->getId().'/', $published->image->url);
         self::assertSame('Une façade au soleil', $published->image->alt);
+    }
+
+    public function testAVideoLeftAsTheImageOfAPageIsNoImageOfThePublishedPage(): void
+    {
+        $video = Mp4Videos::row($this->getService(CmsMediaLibrary::class), $this->locale());
+        $page = $this->createPage('Page à vidéo');
+        $page->setImageId((int) $video->getId())->save();
+
+        $published = $this->getService(PublishedPageRepository::class)->find((int) $page->getId(), $this->locale());
+
+        self::assertNotNull($published);
+        self::assertNull($published->image, 'No /video-library address in an img, a card or og:image.');
     }
 
     public function testADecorativeImageHasAnEmptyAlternativeText(): void

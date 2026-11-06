@@ -41,6 +41,7 @@ use TheliaCMS\Content\SectionDefinitionInterface;
 use TheliaCMS\Media\Admin\CmsMediaType;
 use TheliaCMS\Media\Admin\CmsMediaWriter;
 use TheliaCMS\Media\CmsMediaLibrary;
+use TheliaCMS\Media\MediaKind;
 use TheliaCMS\Security\CmsResources;
 use TheliaLibrary\Model\LibraryImage;
 
@@ -260,6 +261,7 @@ final readonly class SectionFormBuilder
 
             $values[$prop->name] = match ($prop->type) {
                 PropType::Image => $this->imageFrom($data, $prop),
+                PropType::Video => $this->videoFrom($data, $prop),
                 // An empty choice is "none", which the schema spells 0.
                 PropType::Reference => (int) ($value ?? 0),
                 PropType::Integer => (int) ($value ?? $prop->default ?? 0),
@@ -308,7 +310,7 @@ final readonly class SectionFormBuilder
         $file = $data[$prop->name.self::FILE_SUFFIX] ?? null;
 
         if ($file instanceof UploadedFile && $this->mayUpload()) {
-            $stored = $this->media->add([$file], $this->library->locale())->stored;
+            $stored = $this->media->add([$file], $this->library->locale(), imagesOnly: true)->stored;
 
             if (isset($stored[0]) && $stored[0] instanceof LibraryImage) {
                 return (int) $stored[0]->getId();
@@ -323,10 +325,34 @@ final readonly class SectionFormBuilder
             return $address;
         }
 
-        // An id the screen sent is an image of the library of the CMS, or none.
+        // An id the screen sent is an image of the library of the CMS, or none: a video is no image.
         $id = (int) ($data[$prop->name] ?? 0);
 
-        return $id > 0 && null !== $this->library->ownedImage($id) ? $id : 0;
+        return $id > 0 && null !== $this->library->ownedImage($id, MediaKind::Image) ? $id : 0;
+    }
+
+    /**
+     * A file wins over the choice: it is a step further from "keep what is
+     * there". An id the screen sent is a video of the library of the CMS, or
+     * none: an image is no video.
+     *
+     * @param array<string, mixed> $data
+     */
+    private function videoFrom(array $data, Prop $prop): int
+    {
+        $file = $data[$prop->name.self::FILE_SUFFIX] ?? null;
+
+        if ($file instanceof UploadedFile && $this->mayUpload()) {
+            $stored = $this->media->add([$file], $this->library->locale())->stored;
+
+            if (isset($stored[0]) && $stored[0]->isVideo()) {
+                return (int) $stored[0]->getId();
+            }
+        }
+
+        $id = (int) ($data[$prop->name] ?? 0);
+
+        return $id > 0 && null !== $this->library->ownedImage($id, MediaKind::Video) ? $id : 0;
     }
 
     private function mayUpload(): bool
@@ -389,6 +415,7 @@ final readonly class SectionFormBuilder
                 'choice_translation_domain' => false,
             ] + ([] === $prop->icons ? [] : ['placeholder' => false]) + self::asButtons($prop->icons)),
             PropType::Image => $this->addImage($builder, $prop, $common),
+            PropType::Video => $this->addVideo($builder, $prop, $common),
             PropType::Reference => $builder->add($prop->name, IntegerType::class, $common + [
                 'attr' => array_filter([
                     'min' => 0,
@@ -503,6 +530,36 @@ final readonly class SectionFormBuilder
     }
 
     /**
+     * The video of a section: a choice in the media library, filtered on the
+     * videos, and a file to replace it with for whoever may add to the
+     * library. A video is only ever one of the library: no address kept
+     * elsewhere.
+     *
+     * @param array<string, mixed> $common
+     */
+    private function addVideo(FormBuilderInterface $builder, Prop $prop, array $common): void
+    {
+        $builder->add($prop->name, IntegerType::class, $common + [
+            'attr' => [
+                'min' => 0,
+                'data-cms-video-picker' => $this->urls->generate('admin.cms.media.picker'),
+                'data-cms-media-kind' => MediaKind::Video->value,
+            ] + ($this->mayUpload() ? ['data-cms-image-upload' => $this->urls->generate('admin.cms.media.add')] : []),
+        ]);
+
+        if ($this->mayUpload()) {
+            $builder->add($prop->name.self::FILE_SUFFIX, FileType::class, [
+                'label' => 'Replace with a video file',
+                'required' => false,
+                'translation_domain' => 'theliacms',
+                'constraints' => [CmsMediaType::videoConstraint($this->translator)],
+                'help' => 'The MP4 file joins the media library and takes the place of the video.',
+                'attr' => ['accept' => implode(',', CmsMediaType::ACCEPTED_VIDEO_MIME_TYPES), 'data-cms-video-file' => ''],
+            ]);
+        }
+    }
+
+    /**
      * The props as the form holds them: the ids of an image or a reference
      * are integers and an absent one is nothing, which the form reads as
      * "no choice". The address of a picture kept elsewhere goes to its own
@@ -532,8 +589,13 @@ final readonly class SectionFormBuilder
                 $value = PropSchema::libraryImageId($value) ?? $value;
             }
 
+            // The path the library serves a video from is the id of the video.
+            if (PropType::Video === $prop->type && \is_string($value)) {
+                $value = PropSchema::libraryVideoId($value) ?? $value;
+            }
+
             $data[$prop->name] = match ($prop->type) {
-                PropType::Image => null === $value || 0 === (int) $value ? null : (int) $value,
+                PropType::Image, PropType::Video => null === $value || 0 === (int) $value ? null : (int) $value,
                 PropType::Reference => null === $value ? null : (int) $value,
                 PropType::Choice => null === $value ? null : (string) $value,
                 // A list of scalars is one field per row: each value is wrapped.

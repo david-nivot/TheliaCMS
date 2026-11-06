@@ -19,6 +19,7 @@ use Thelia\Model\LangQuery;
 use TheliaCMS\Media\CmsMediaLibrary;
 use TheliaCMS\Media\MediaFile;
 use TheliaCMS\Media\MediaFilter;
+use TheliaCMS\Media\MediaKind;
 use TheliaLibrary\Model\LibraryImage;
 
 /**
@@ -42,7 +43,7 @@ final readonly class MediaCatalog
      */
     public function browse(MediaQuery $query, string $locale, bool $withUsage = true): MediaGrid
     {
-        $imageIds = $this->library->selection($locale, $query->search, $query->filter, $query->tag);
+        $imageIds = $this->library->selection($locale, $query->search, $query->filter, $query->tag, kind: $query->kind);
 
         if ([] !== $imageIds && MediaFilter::Unused === $query->filter) {
             // What uses an image is read from the content of every page and
@@ -99,7 +100,9 @@ final readonly class MediaCatalog
     {
         $counts = $this->library->counts($locale, $search);
 
-        return new MediaTally(total: $counts['total'], undescribed: $counts['undescribed']);
+        $videos = $this->library->counts($locale, $search, MediaKind::Video)['total'];
+
+        return new MediaTally(total: $counts['total'], undescribed: $counts['undescribed'], videos: $videos);
     }
 
     /**
@@ -111,6 +114,10 @@ final readonly class MediaCatalog
     public function descriptionsOf(LibraryImage $image, string $editedLocale): array
     {
         $descriptions = [];
+
+        if ($image->isVideo()) {
+            return [];
+        }
 
         foreach (LangQuery::create()->filterByActive(1)->orderByPosition()->find() as $language) {
             $locale = (string) $language->getLocale();
@@ -155,6 +162,7 @@ final readonly class MediaCatalog
             format: '' !== pathinfo($fileName, \PATHINFO_EXTENSION) ? pathinfo($fileName, \PATHINFO_EXTENSION) : null,
             tags: $this->library->tagsOf($image),
             usageCount: $usageCount ?? $this->usages->countsFor([(int) $image->getId()])[(int) $image->getId()],
+            video: $image->isVideo(),
         );
     }
 
@@ -189,6 +197,11 @@ final readonly class MediaCatalog
      */
     private function thumbnailUrl(LibraryImage $image, string $fileName): ?string
     {
+        // No thumbnail is drawn of a video: the screens play its file.
+        if ($image->isVideo()) {
+            return null;
+        }
+
         $width = $image->getWidth();
         $format = pathinfo($fileName, \PATHINFO_EXTENSION);
 

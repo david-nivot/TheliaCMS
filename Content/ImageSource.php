@@ -84,7 +84,8 @@ final readonly class ImageSource
 
         $library = LibraryImageQuery::create()->findPk($id);
 
-        return null === $library || null === $library->getFileName() ? null : $library;
+        // A video is no image: it has no `/image-library` address to draw.
+        return null === $library || null === $library->getFileName() || $library->isVideo() ? null : $library;
     }
 
     private static function address(LibraryImage $library, string $region): string
@@ -106,6 +107,11 @@ final readonly class ImageSource
 
         if (null === $library) {
             return trim($sectionAlt);
+        }
+
+        // A video has no alternative text, and no image to put one on.
+        if ($library->isVideo()) {
+            return '';
         }
 
         if (1 === (int) $library->getDecorative()) {

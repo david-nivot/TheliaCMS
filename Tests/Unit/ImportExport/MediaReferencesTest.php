@@ -66,6 +66,26 @@ final class MediaReferencesTest extends TestCase
         self::assertSame($html, (new MediaReferences())->remap($html, [40 => 88]));
     }
 
+    /**
+     * A video is served from its own route: the id inside it is a library id
+     * like the one of an image, and an address that only looks like it is not.
+     */
+    public function testCollectsAndPointsAVideoAtTheOneOfThisSiteToo(): void
+    {
+        $html = '<video src="/video-library/5.mp4" preload="none"></video><button data-video-src="/video-library/9.mp4"></button><img src="/image-library/12/full/max/0/default.jpg">'
+            .'<p>/video-library/70.mov and /video-libraries/71.mp4 are not videos.</p>';
+        $references = new MediaReferences();
+
+        self::assertSame([5, 9, 12], $references->collect([$html]));
+
+        $rewritten = (string) $references->remap($html, [5 => 55, 12 => 88]);
+
+        self::assertStringContainsString('<video src="/video-library/55.mp4"', $rewritten);
+        self::assertStringContainsString('data-video-src="/video-library/9.mp4"', $rewritten, 'A video the importing site does not have keeps its number.');
+        self::assertStringContainsString('/image-library/88/full/max/0/default.jpg', $rewritten);
+        self::assertStringContainsString('/video-library/70.mov', $rewritten);
+    }
+
     public function testHandlesEmptyContent(): void
     {
         $references = new MediaReferences();

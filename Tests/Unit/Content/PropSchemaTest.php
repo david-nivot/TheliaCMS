@@ -116,6 +116,62 @@ final class PropSchemaTest extends TestCase
         self::assertNull($this->schema->normalize(['title' => 'T', 'picture' => '/image-library/0/full/max/0/default.webp', 'items' => [['label' => 'One', 'image' => 7]]])['picture'], 'Zero is no picture, as for an id.');
     }
 
+    /**
+     * The id of a video of the library, or the path the library serves it
+     * from as an editor copies it; nothing from outside the library.
+     */
+    public function testAVideoIsTheIdOfAVideoOfTheLibraryOrItsPath(): void
+    {
+        $schema = new PropSchema([
+            Prop::video('clip', 'Clip'),
+            Prop::items('videos', 'Videos', [Prop::text('title', 'Title'), Prop::video('video', 'Video', required: true)]),
+        ]);
+
+        foreach ([12, '12', '/video-library/12.mp4', ' /video-library/12.MP4 '] as $value) {
+            $values = $schema->normalize(['clip' => $value, 'videos' => [['title' => 'One', 'video' => $value]]]);
+
+            self::assertSame(12, $values['clip'], var_export($value, true));
+            self::assertSame(12, $values['videos'][0]['video'], 'A video of a row reads it the same way.');
+        }
+
+        self::assertNull($schema->normalize(['clip' => 0, 'videos' => []])['clip'], 'Zero is no video yet.');
+        self::assertNull($schema->normalize(['clip' => '0', 'videos' => []])['clip']);
+        self::assertNull($schema->normalize(['clip' => null, 'videos' => []])['clip']);
+        self::assertNull($schema->normalize(['videos' => []])['clip']);
+
+        foreach (['https://videos.example.com/a.mp4', 'http://example.com/a.mp4', '/video-library/12.mov', '/video-library/x.mp4', '/video-library/12/full.mp4', '/image-library/12/full/max/0/default.jpg', -1, '-1', 'twelve', 1.5] as $refused) {
+            try {
+                $schema->normalize(['clip' => $refused, 'videos' => []]);
+                self::fail(var_export($refused, true).' is no video of the library.');
+            } catch (InvalidDocumentException $exception) {
+                self::assertSame(['"clip" must be the id of a video of the media library.'], array_map(static fn (mixed $text): string => (string) $text, $exception->problems), var_export($refused, true));
+            }
+        }
+    }
+
+    public function testARequiredVideoLeftEmptyIsRefused(): void
+    {
+        $required = new PropSchema([Prop::video('clip', 'Clip', required: true)]);
+
+        foreach ([0, '0', null, ''] as $empty) {
+            try {
+                $required->normalize(['clip' => $empty]);
+                self::fail('A required video is not left empty.');
+            } catch (InvalidDocumentException $exception) {
+                self::assertSame('"clip" is required.', (string) $exception->problems[0]);
+            }
+        }
+    }
+
+    public function testTheJsonSchemaOfAVideoIsAnIdOrNothing(): void
+    {
+        $properties = (array) (new PropSchema([Prop::video('clip', 'Clip'), Prop::video('main', 'Main', required: true)]))->toJsonSchema()['properties'];
+
+        self::assertSame(['integer', 'null'], $properties['clip']['type']);
+        self::assertSame('integer', $properties['main']['type']);
+        self::assertStringContainsString('0 when there is none', $properties['clip']['description']);
+    }
+
     public function testAListOfScalarsIsStoredAsAListOfScalars(): void
     {
         $schema = new PropSchema([Prop::items('steps', 'steps', [Prop::text('value', 'value', required: true, max: 20)], 0, 3, scalarItems: true)]);

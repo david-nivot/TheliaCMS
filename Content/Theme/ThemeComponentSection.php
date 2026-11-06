@@ -23,6 +23,7 @@ use TheliaCMS\Content\Prop;
 use TheliaCMS\Content\PropSchema;
 use TheliaCMS\Content\PropType;
 use TheliaCMS\Content\SectionDefinitionInterface;
+use TheliaCMS\Content\VideoSource;
 
 /**
  * A Twig component of the theme, as a section of a document.
@@ -89,7 +90,7 @@ final readonly class ThemeComponentSection implements SectionDefinitionInterface
             $sample[$prop->name] = match ($prop->type) {
                 PropType::Text => '' !== (string) $prop->default ? $prop->default : ($prop->required ? ucfirst(str_replace('_', ' ', $prop->name)) : ''),
                 PropType::Url => '' !== (string) $prop->default ? $prop->default : '#',
-                PropType::Image => null,
+                PropType::Image, PropType::Video => null,
                 PropType::Reference => $prop->required ? 1 : null,
                 PropType::Items => \in_array($prop->name, $this->idLists, true) ? [['id' => 1], ['id' => 2]] : [],
                 default => $prop->default,
@@ -223,18 +224,24 @@ final readonly class ThemeComponentSection implements SectionDefinitionInterface
     {
         $forComponent = [];
         $images = [];
+        $videos = [];
         $rowImages = [];
+        $rowVideos = [];
         $rowLists = [];
 
         foreach ($this->schema->props as $prop) {
             if (PropType::Image === $prop->type) {
                 $images[] = $prop->name;
+            } elseif (PropType::Video === $prop->type) {
+                $videos[] = $prop->name;
             } elseif (PropType::Items === $prop->type && !$prop->scalarItems && !\in_array($prop->name, $this->idLists, true)) {
                 $rowLists[] = $prop->name;
 
                 foreach ($prop->items as $item) {
                     if (PropType::Image === $item->type) {
                         $rowImages[$prop->name][] = $item->name;
+                    } elseif (PropType::Video === $item->type) {
+                        $rowVideos[$prop->name][] = $item->name;
                     }
                 }
             }
@@ -251,8 +258,12 @@ final readonly class ThemeComponentSection implements SectionDefinitionInterface
                 $value = $addresses[$name];
             } elseif (\in_array($name, $images, true)) {
                 $value = ImageFraming::source($value, $name, $stored);
-            } elseif (isset($rowImages[$name]) && \is_array($value)) {
-                $value = $this->rowsWithAddresses($value, $rowImages[$name], \is_array($addresses[$name] ?? null) ? $addresses[$name] : [], $this->rowFraming($name));
+            } elseif (\in_array($name, $videos, true)) {
+                $value = VideoSource::of($value);
+            } elseif (isset($rowImages[$name]) || isset($rowVideos[$name])) {
+                if (\is_array($value)) {
+                    $value = $this->rowsWithAddresses($value, $rowImages[$name] ?? [], \is_array($addresses[$name] ?? null) ? $addresses[$name] : [], $this->rowFraming($name), $rowVideos[$name] ?? []);
+                }
             }
 
             // A row is stored as the schema names its fields and read by the
@@ -286,13 +297,14 @@ final readonly class ThemeComponentSection implements SectionDefinitionInterface
      * picture prop of its own is.
      *
      * @param array<mixed>                      $rows
-     * @param list<string>                      $fields    the picture fields of a row
-     * @param array<int, array<string, string>> $addresses by row and field, instead of reading the field as an id
-     * @param list<Prop>                        $framing   the framing props of a row, which the component is not given
+     * @param list<string>                      $fields      the picture fields of a row
+     * @param array<int, array<string, string>> $addresses   by row and field, instead of reading the field as an id
+     * @param list<Prop>                        $framing     the framing props of a row, which the component is not given
+     * @param list<string>                      $videoFields the video fields of a row, drawn from the address of the file
      *
      * @return array<mixed>
      */
-    private function rowsWithAddresses(array $rows, array $fields, array $addresses, array $framing): array
+    private function rowsWithAddresses(array $rows, array $fields, array $addresses, array $framing, array $videoFields = []): array
     {
         $drawn = [];
 
@@ -306,6 +318,12 @@ final readonly class ThemeComponentSection implements SectionDefinitionInterface
             foreach ($fields as $field) {
                 if (\is_array($row) && \array_key_exists($field, $row)) {
                     $row[$field] = $addresses[$index][$field] ?? ImageFraming::source($row[$field], $field, \is_array($stored) ? $stored : []);
+                }
+            }
+
+            foreach ($videoFields as $field) {
+                if (\is_array($row) && \array_key_exists($field, $row)) {
+                    $row[$field] = VideoSource::of($row[$field]);
                 }
             }
 

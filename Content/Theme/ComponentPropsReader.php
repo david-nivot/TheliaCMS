@@ -35,6 +35,7 @@ use Twig\Environment;
  * Besides the scalar types, `html` is markup, filtered by the writer on the
  * rendered page, and a prop may name what the site holds: `image`
  * for a picture of the media library, handed to the component as its address,
+ * `video` for a video of the library, handed to it as the address of its file,
  * `product`, `category`, `folder`, `form` or `menu` for one record picked by
  * its id, and `product[]` or `category[]` for several, in the order they were
  * picked. The component receives the ids, as it would from a template of the
@@ -340,6 +341,10 @@ final readonly class ComponentPropsReader
             return Prop::image($name, $name, $required, $description);
         }
 
+        if (\in_array('video', $kinds, true)) {
+            return Prop::video($name, $name, $required, $description);
+        }
+
         foreach ($kinds as $kind) {
             if (isset(self::SOURCES[$kind])) {
                 return $this->reference($name, $kind, $required, $description);
@@ -444,6 +449,10 @@ final readonly class ComponentPropsReader
             return Prop::image($name, $name, $required);
         }
 
+        if (\in_array('video', $kinds, true)) {
+            return Prop::video($name, $name, $required);
+        }
+
         if ([] !== $choices) {
             return Prop::choice($name, $name, $choices, (string) array_key_first($choices));
         }
@@ -493,7 +502,7 @@ final readonly class ComponentPropsReader
     private static function namesOneRecord(string $type): bool
     {
         foreach (self::kinds($type) as $kind) {
-            if ('image' === $kind || isset(self::SOURCES[$kind])) {
+            if ('image' === $kind || 'video' === $kind || isset(self::SOURCES[$kind])) {
                 return true;
             }
         }

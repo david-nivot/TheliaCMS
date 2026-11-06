@@ -26,6 +26,7 @@ use Symfony\Component\Form\FormEvents;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\Callback;
+use Symfony\Component\Validator\Constraints\File;
 use Symfony\Component\Validator\Constraints\Image;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
@@ -59,6 +60,29 @@ final class CmsMediaType extends AbstractType
     public const int MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 
     public const int MAX_IMAGE_PIXELS = 25_000_000;
+
+    /**
+     * The videos the library takes: MP4 only, the type finfo reads in the
+     * content of the file and never the extension.
+     */
+    public const array ACCEPTED_VIDEO_MIME_TYPES = ['video/mp4'];
+
+    /**
+     * The ceiling of an uploaded video, in bytes (50 MB, binary as the image
+     * one). Nothing is decoded, so there is no pixel ceiling: it only bounds
+     * the disk and the transfer.
+     */
+    public const int MAX_VIDEO_BYTES = 50 * 1024 * 1024;
+
+    /**
+     * Every type the library list takes in.
+     *
+     * @return list<string>
+     */
+    public static function acceptedUploadMimeTypes(): array
+    {
+        return [...self::LIBRARY_ACCEPTED_TYPES, ...self::ACCEPTED_VIDEO_MIME_TYPES];
+    }
 
     /**
      * Optional: the form is also built without a container.
@@ -108,34 +132,62 @@ final class CmsMediaType extends AbstractType
         });
     }
 
+    /**
+     * The constraint of the file that replaces a video: an MP4 under the
+     * ceiling of a video. An image is never replaced by a video, nor the
+     * reverse: the pages that use the row would publish the wrong element.
+     */
+    public static function videoConstraint(?TranslatorInterface $translator = null): File
+    {
+        $translate = static fn (string $message): string => null === $translator ? $message : $translator->trans($message, [], TheliaCMS::DOMAIN_NAME);
+
+        return new File(
+            maxSize: self::MAX_VIDEO_BYTES,
+            binaryFormat: true,
+            mimeTypes: self::ACCEPTED_VIDEO_MIME_TYPES,
+            maxSizeMessage: $translate('The video is too heavy ({{ size }} {{ suffix }}). It may weigh {{ limit }} {{ suffix }} at most.'),
+            mimeTypesMessage: $translate('A video can only be replaced by an MP4 video.'),
+        );
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
+        $video = true === $options['video'];
+
+        $builder->add('title', TextType::class, [
+            'label' => 'Name',
+            'required' => false,
+            'constraints' => [new Length(max: 255)],
+            'help' => $video ? 'Only used to find the video again in this library.' : 'Only used to find the image again in this library.',
+        ]);
+
+        // A video has no alternative text, no decorative flag: it is not read
+        // by a screen reader as an image is, and the rule below does not apply.
+        if (!$video) {
+            $builder
+                ->add('decorative', CheckboxType::class, [
+                    'label' => 'This image is decorative',
+                    'required' => false,
+                    'help' => 'Decorative images are published with an empty alternative text so screen readers skip them. Use it for backgrounds and separators, never for a photo that carries information.',
+                ])
+                // Declared required so the label says so; the browser is told not
+                // to enforce it (the screen renders the form with `novalidate`)
+                // because the rule below lifts it for a decorative image.
+                ->add('alt', TextType::class, [
+                    'label' => 'Alternative text',
+                    'required' => true,
+                    'constraints' => [new Length(max: 255)],
+                    'help' => 'What the image shows, for people who cannot see it. Translated per language.',
+                ])
+                ->addEventListener(FormEvents::SUBMIT, self::requireAltUnlessDecorative($this->translator));
+        }
+
         $builder
-            ->add('title', TextType::class, [
-                'label' => 'Name',
-                'required' => false,
-                'constraints' => [new Length(max: 255)],
-                'help' => 'Only used to find the image again in this library.',
-            ])
-            ->add('decorative', CheckboxType::class, [
-                'label' => 'This image is decorative',
-                'required' => false,
-                'help' => 'Decorative images are published with an empty alternative text so screen readers skip them. Use it for backgrounds and separators, never for a photo that carries information.',
-            ])
-            // Declared required so the label says so; the browser is told not
-            // to enforce it (the screen renders the form with `novalidate`)
-            // because the rule below lifts it for a decorative image.
-            ->add('alt', TextType::class, [
-                'label' => 'Alternative text',
-                'required' => true,
-                'constraints' => [new Length(max: 255)],
-                'help' => 'What the image shows, for people who cannot see it. Translated per language.',
-            ])
             ->add('caption', TextareaType::class, [
                 'label' => 'Caption',
                 'required' => false,
                 'attr' => ['rows' => 2],
-                'help' => 'Shown next to the image where a theme displays one. Translated per language.',
+                'help' => $video ? 'Shown next to the video where a theme displays one. Translated per language.' : 'Shown next to the image where a theme displays one. Translated per language.',
             ])
             ->add('tags', TextType::class, [
                 'label' => 'Tags',
@@ -145,15 +197,15 @@ final class CmsMediaType extends AbstractType
             ->add('file', FileType::class, [
                 'label' => 'Replace the file',
                 'required' => false,
-                'constraints' => [self::replacementConstraint($this->translator)],
-                'help' => 'The new file keeps the same address, so the pages using this image show it right away.',
-            ])
-            ->addEventListener(FormEvents::SUBMIT, self::requireAltUnlessDecorative($this->translator));
+                'constraints' => [$video ? self::videoConstraint($this->translator) : self::replacementConstraint($this->translator)],
+                'help' => $video ? 'The new file keeps the same address, so the pages using this video show it right away.' : 'The new file keeps the same address, so the pages using this image show it right away.',
+            ]);
     }
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->setDefaults(['translation_domain' => 'theliacms']);
+        $resolver->setDefaults(['translation_domain' => 'theliacms', 'video' => false]);
+        $resolver->setAllowedTypes('video', 'bool');
     }
 
     /**

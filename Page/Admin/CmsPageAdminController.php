@@ -33,6 +33,7 @@ use TheliaCMS\Content\InvalidDocumentException;
 use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Media\Admin\CmsMediaWriter;
 use TheliaCMS\Media\CmsMediaLibrary;
+use TheliaCMS\Media\MediaKind;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Notice\NativeContentNotice;
 use TheliaCMS\Page\CmsUrlService;
@@ -621,7 +622,7 @@ final readonly class CmsPageAdminController
     private function chosenImage(array $data, string $locale): ?int
     {
         if (($data['imageUpload'] ?? null) instanceof UploadedFile) {
-            $stored = $this->media->add([$data['imageUpload']], $locale)->stored;
+            $stored = $this->media->add([$data['imageUpload']], $locale, imagesOnly: true)->stored;
 
             if (isset($stored[0])) {
                 return (int) $stored[0]->getId();
@@ -638,7 +639,7 @@ final readonly class CmsPageAdminController
     {
         $id = (int) $id;
 
-        return $id > 0 && null !== $this->library->ownedImage($id) ? $id : null;
+        return $id > 0 && null !== $this->library->ownedImage($id, MediaKind::Image) ? $id : null;
     }
 
     private function livePageOrFail(int $id): CmsPage
