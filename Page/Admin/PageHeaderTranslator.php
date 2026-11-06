@@ -128,9 +128,9 @@ final readonly class PageHeaderTranslator
      */
     private function address(CmsPage $page, string $locale): array
     {
-        // A model is not a page of the site, and without a title there is
-        // nothing to derive an address from.
-        if (1 === $page->getModel() || '' === trim((string) $page->setLocale($locale)->getTitle())) {
+        // A model and the header zone are not pages of the site, and without a
+        // title there is nothing to derive an address from.
+        if (0 !== $page->getModel() || '' === trim((string) $page->setLocale($locale)->getTitle())) {
             return [null, false];
         }
 

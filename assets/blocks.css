@@ -557,6 +557,14 @@
     text-decoration: underline;
   }
 
+  /* The header zone: what an editor published for the header of every page,
+     drawn under the header of the theme. It takes the width of the window, the
+     sections inside it keep their own. */
+  .cms-zone--header {
+    width: 100%;
+    margin: 0;
+  }
+
   /* Forms ------------------------------------------------------------------- */
 
   .cms-form {

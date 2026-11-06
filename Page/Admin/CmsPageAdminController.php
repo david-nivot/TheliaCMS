@@ -45,6 +45,7 @@ use TheliaCMS\Page\PageTypeRepository;
 use TheliaCMS\Page\ReservedSlugException;
 use TheliaCMS\Security\CmsResources;
 use TheliaCMS\TheliaCMS;
+use TheliaCMS\Zone\HeaderZone;
 use Twig\Environment;
 
 /**
@@ -235,9 +236,13 @@ final readonly class CmsPageAdminController
         $this->denyUnless(AccessManager::UPDATE);
         $lang = $this->editLang($request);
 
-        $this->writer->unpublish($this->livePageOrFail($id), $lang->getLocale());
+        $page = $this->livePageOrFail($id);
+        $this->writer->unpublish($page, $lang->getLocale());
 
-        return $this->backToEdit($id, $lang);
+        // The header zone has no settings screen of its own: it is written on the content screen.
+        return HeaderZone::MODEL === $page->getModel()
+            ? $this->support->redirectInLanguage('admin.cms.pages.content.edit', $lang->getId(), ['id' => $id])
+            : $this->backToEdit($id, $lang);
     }
 
     #[Route('/{id}/remove-ai-mark', name: 'remove_ai_mark', requirements: ['id' => '\d+'], methods: ['POST'])]
@@ -258,10 +263,14 @@ final readonly class CmsPageAdminController
     {
         $this->denyUnless(AccessManager::UPDATE);
 
+        $page = $this->livePageOrFail($id);
+
         try {
-            $this->writer->toggleVisibility($this->livePageOrFail($id));
+            $this->writer->toggleVisibility($page);
         } catch (ModelPageSettingException) {
-            $this->support->flash($request, 'danger', $this->support->translate('This page is the model of its template: it is never online.'));
+            $this->support->flash($request, 'danger', $this->support->translate(HeaderZone::MODEL === $page->getModel()
+                ? 'The header zone is never online as a page: it is drawn in the header of the site once published.'
+                : 'This page is the model of its template: it is never online.'));
         }
 
         return $this->backToList($request);
@@ -307,10 +316,14 @@ final readonly class CmsPageAdminController
     {
         $this->denyUnless(AccessManager::DELETE);
 
+        $page = $this->livePageOrFail($id);
+
         try {
-            $this->writer->moveToTrash($this->livePageOrFail($id));
+            $this->writer->moveToTrash($page);
         } catch (ModelPageSettingException) {
-            $this->support->flash($request, 'danger', $this->support->translate('This page is the model of its template: it is deleted with its template, under CMS > Page templates, never moved to the bin.'));
+            $this->support->flash($request, 'danger', $this->support->translate(HeaderZone::MODEL === $page->getModel()
+                ? 'The header zone cannot be deleted: unpublish it in each language to draw nothing.'
+                : 'This page is the model of its template: it is deleted with its template, under CMS > Page templates, never moved to the bin.'));
         }
 
         return $this->backToList($request);
@@ -531,7 +544,7 @@ final readonly class CmsPageAdminController
             'image' => $page->getImageId(),
             // A model is never online, whatever an older version of the module
             // or an import left in the row.
-            'visible' => $page->isNew() ? 1 : (1 === $page->getModel() ? 0 : $page->getVisible()),
+            'visible' => $page->isNew() ? 1 : (0 !== $page->getModel() ? 0 : $page->getVisible()),
             'publishAt' => $page->getPublishAt(),
             'unpublishAt' => $page->getUnpublishAt(),
             'metaTitle' => $page->isNew() ? null : $page->getMetaTitle(),
@@ -573,7 +586,7 @@ final readonly class CmsPageAdminController
             ->setPageType($data['pageType'] ?? $page->getPageType())
             ->setTagId(null === $data['tag'] ? null : (int) $data['tag'])
             ->setImageId($this->chosenImage($data, $locale))
-            ->setVisible(1 === $page->getModel() ? 0 : (int) $data['visible'])
+            ->setVisible(0 !== $page->getModel() ? 0 : (int) $data['visible'])
             ->setPublishAt($data['publishAt'])
             ->setUnpublishAt($data['unpublishAt']);
 

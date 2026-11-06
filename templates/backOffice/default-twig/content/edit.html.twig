@@ -78,6 +78,12 @@
                         <span class="visually-hidden" id="cms-content-publish-hint">{{ subject.hasContent ? subject.publishHint : 'Nothing to publish yet: write the content first.'|trans({}, 'theliacms') }}</span>
                     </form>
                 {% endif %}
+                {% if may_publish and subject.routes.unpublish is defined %}
+                    <form method="post" action="{{ subject.routes.unpublish }}" class="d-inline" data-testid="cms-content-unpublish">
+                        <input type="hidden" name="_token" value="{{ assignToken() }}">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">{{ 'Unpublish'|trans({}, 'theliacms') }}</button>
+                    </form>
+                {% endif %}
                 {# The draft reads in its whole page, or alone: a CMS page with its
                    header, footer and title, or without; a catalogue item in its
                    own page, when it has one online, or alone. The page first. The
@@ -122,6 +128,14 @@
                 {% endif %}
             </div>
         </header>
+
+        {% if subject.notes is not empty %}
+            <div class="cms-content__notes" data-testid="cms-content-notes">
+                {% for note in subject.notes %}
+                    <p class="alert alert-info small mb-2" role="note">{{ note }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
 
         {# This screen replaces the whole body block, so the flash messages of
            the layout are rendered here, with the outcome of the last call. #}

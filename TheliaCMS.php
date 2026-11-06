@@ -368,6 +368,7 @@ class TheliaCMS extends BaseModule
                 // Built per call by ContentTargets, around the page or the item they serve.
                 __DIR__.'/Page/Admin/PageContentTarget.php',
                 __DIR__.'/Page/Admin/PageContentRow.php',
+                __DIR__.'/Zone/ZoneContentTarget.php',
                 __DIR__.'/Catalogue/Admin/ItemContentTarget.php',
                 __DIR__.'/Catalogue/Admin/ItemContentRow.php',
                 __DIR__.'/Content/PropSchema.php',

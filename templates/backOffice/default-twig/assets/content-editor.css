@@ -79,6 +79,11 @@ body:has(.cms-content) {
     cursor: not-allowed;
 }
 
+.cms-content__notes {
+    flex: 0 0 auto;
+    padding: 0.5rem 1rem 0;
+}
+
 .cms-content__stage {
     display: flex;
     flex: 1 1 auto;

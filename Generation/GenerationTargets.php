@@ -51,7 +51,8 @@ final readonly class GenerationTargets
      */
     private function modelDocument(CmsPage $page, string $locale): ?Document
     {
-        if (1 === $page->getModel()) {
+        // The model of a type is the demo others follow, the header zone follows none.
+        if (0 !== $page->getModel()) {
             return null;
         }
 

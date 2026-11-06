@@ -185,6 +185,17 @@ final class TranslatedHeaderTest extends CmsIntegrationTestCase
         self::assertNull($model->getRewrittenUrl($other), 'A model is not a page of the site: it gets no address.');
     }
 
+    public function testTheHeaderZoneIsGivenItsTextsAndNoAddress(): void
+    {
+        $other = $this->secondLocale();
+        $zone = $this->createPage('Zone', published: false);
+        $zone->setModel(2)->save();
+
+        $this->writer()->saveTranslatedHeader($zone, $other, new PageHeader('Zone', '<p>Summary.</p>'));
+
+        self::assertNull($zone->getRewrittenUrl($other), 'The zone is no page of the site: it gets no address.');
+    }
+
     public function testTheSummaryAndTheDescriptionAreFilteredAsAnEditedPageIs(): void
     {
         $other = $this->secondLocale();

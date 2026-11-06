@@ -7,6 +7,36 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **A header zone.** One block of content, written like a page and drawn under
+  the header of every page of the theme, the shop's included, by a theme hook on
+  `layout.header.bottom` (Flexy fires it on every page). Any section can go in it;
+  a Highlights section is the usual one. It is a hidden page of the CMS
+  (`cms_page.model = 2`): drafts, versions and one publication per language
+  come with it, written on the content screen of a page, reached from **CMS >
+  Header zone** and from the settings screen (the first visit makes the page, by
+  a button that posts). A language with no published zone draws nothing, and the
+  screen lists the languages it is online in. The zone has no address, is in no
+  search, sitemap, list or menu and answers 404 if its page is requested; it
+  cannot be put in the bin or set visible. Publishing it, taking it offline or
+  rendering it again drops the whole site from the shared cache, since every page
+  carries it. Rights: `admin.cms.page`. The screen warns while the
+  HeaderHighlights module is active, which draws in the same place. No schema
+  change, no setting.
+- The export file carries the zone (`zone: true`) and the import finds the zone of
+  the site by its kind, keeps it hidden with its published version, writes it no
+  address, and brings a second zone of a file in as an ordinary draft page, with a
+  warning.
+
+### Changed
+
+- The export file is in format version 4: an older module, which would import the
+  zone as an ordinary visible page, refuses it. A version 3 file still imports.
+- The generator's tool that searches pages and the translation of the header of a
+  page no longer reach the header zone: it is offered as no link target and is
+  given no address.
+
 ## [2.13.0] - 2026-11-05
 
 ### Added

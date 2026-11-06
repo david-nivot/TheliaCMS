@@ -1247,6 +1247,29 @@ is an empty string for a decorative image and null for one nobody has
 described yet. None of the three is rendered by the fallback layout: they are
 what a theme shows about the page elsewhere, a heading block or a card.
 
+### Header zone
+
+A block of content drawn under the header of every page of the theme, the shop's
+pages included, through the theme hook `layout.header.bottom` (Flexy fires it on
+every page; a theme that does not fire it draws nothing). It is written on the
+content screen of a page, opened from **CMS > Header zone** or from the settings
+screen: the first visit offers a button that makes it. Any section can go in it;
+a Highlights section (`cms:highlights`) is the usual one, a band of one to three
+blocks. It is published in each language apart, and a language without a
+published zone draws nothing; the screen says which languages are online.
+
+The zone is a hidden page (`cms_page.model = 2`) with no address: it is in no
+search, sitemap, list or menu, and its page answers 404. It cannot be put in
+the bin or set visible. It is wrapped in `<div class="cms-zone cms-zone--header">`,
+styled in `assets/blocks.css`. Publishing, unpublishing or rendering it again
+drops the whole site from the shared cache, because every page carries it. It
+takes the right `admin.cms.page`. It travels in the export file and the import
+matches it on its kind.
+
+The HeaderHighlights module draws in the same hook: once the zone is published,
+empty the highlights of that module or deactivate it, or the header shows both.
+The screen of the zone says so while the module is active.
+
 ### Page types
 
 A page has one type, picked in the "General" tab, which chooses the template it
@@ -1536,7 +1559,9 @@ key; a file without it holds shared menus. The menu of a language the site
 does not have, or whose code has no shared menu in the file or on the site, is
 left out and named in the report. Since module 2.6.0 the file is in format
 version 3, which an older module refuses rather than write the menu of a
-language over the shared one.
+language over the shared one. The header zone raises it to version 4 for the
+same reason: an older module would import the zone as an ordinary page. A
+version 3 file still imports.
 A component of the file is checked as if the generator had just written it; one
 the site refuses is left out and named. The document of a catalogue item goes
 on the item of the importing site with the same reference (a product) or the

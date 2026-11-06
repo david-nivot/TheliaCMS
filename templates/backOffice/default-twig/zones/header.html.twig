@@ -1,0 +1,29 @@
+{% extends '@BackOfficeDefaultTwig/base.html.twig' %}
+
+{% block title %}{{ 'Header zone'|trans({}, 'theliacms') }}{% endblock %}
+{% block body_testid %}cms-header-zone{% endblock %}
+
+{% block content %}
+    {% embed '@BackOfficeDefaultTwig/_page_header.html.twig' with { title: 'Header zone'|trans({}, 'theliacms') } %}
+        {% block actions %}
+            <a class="btn btn-sm btn-outline-secondary" href="{{ path('admin.cms.pages.list', { edit_language_id: edit_language_id }) }}">
+                <i class="bi bi-arrow-left" aria-hidden="true"></i> {{ 'Back to pages'|trans({}, 'theliacms') }}
+            </a>
+        {% endblock %}
+    {% endembed %}
+
+    <div class="card">
+        <div class="card-body">
+            <p>{{ 'The header zone is a block of content drawn under the header of every page of the site, the shop included. It is written like a page, and published in each language apart.'|trans({}, 'theliacms') }}</p>
+            <p>{{ 'Nothing is drawn until it is published.'|trans({}, 'theliacms') }}</p>
+            {% if may_create %}
+                <form method="post" action="{{ path('admin.cms.zones.header', { edit_language_id: edit_language_id }) }}" data-testid="cms-header-zone-create">
+                    <input type="hidden" name="_token" value="{{ assignToken() }}">
+                    <button type="submit" class="btn btn-primary">{{ 'Create the header zone'|trans({}, 'theliacms') }}</button>
+                </form>
+            {% else %}
+                <p class="text-muted mb-0">{{ 'You are not allowed to change CMS pages.'|trans({}, 'theliacms') }}</p>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

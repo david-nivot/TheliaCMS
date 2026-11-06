@@ -24,6 +24,11 @@
                 <a class="nav-link" href="{{ tags_url }}" data-testid="bo-nav-cms-tags">{{ tags_label }}</a>
             </li>
         {% endif %}
+        {% if zone_url %}
+            <li class="nav-item">
+                <a class="nav-link" href="{{ zone_url }}" data-testid="bo-nav-cms-header-zone">{{ zone_label }}</a>
+            </li>
+        {% endif %}
         {# The folder section of the theme is hidden while the module is active
            (NavigationSectionVoter): the folders and their contents are reached
            from here. #}

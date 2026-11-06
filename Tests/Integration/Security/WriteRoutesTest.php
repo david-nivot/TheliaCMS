@@ -89,6 +89,7 @@ final class WriteRoutesTest extends AdminScreenTestCase
         'admin.cms.skills.list',
         'admin.cms.tags.edit',
         'admin.cms.tags.list',
+        'admin.cms.zones.header',
     ];
 
     /** Placeholder values that match no record, so a refused write had nothing to touch. */

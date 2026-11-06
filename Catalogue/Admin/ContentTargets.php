@@ -17,6 +17,7 @@ namespace TheliaCMS\Catalogue\Admin;
 use TheliaCMS\Catalogue\CatalogueItem;
 use TheliaCMS\Catalogue\CatalogueItemType;
 use TheliaCMS\Catalogue\ItemContentRepository;
+use TheliaCMS\Content\Editing\ContentTarget;
 use TheliaCMS\Content\Pipeline\PlaceholderContentChecker;
 use TheliaCMS\Http\CachePurger;
 use TheliaCMS\Model\CmsPage;
@@ -27,6 +28,8 @@ use TheliaCMS\Page\CmsUrlService;
 use TheliaCMS\Page\Field\PageFields;
 use TheliaCMS\Page\PageInvalidator;
 use TheliaCMS\Search\SearchTextExtractor;
+use TheliaCMS\Zone\HeaderZone;
+use TheliaCMS\Zone\ZoneContentTarget;
 
 /**
  * Builds the `ContentTarget` of a page or of a catalogue item for the shared
@@ -49,7 +52,18 @@ final readonly class ContentTargets
     ) {
     }
 
-    public function forPage(CmsPage $page, string $locale): PageContentTarget
+    /**
+     * The header zone is a page that goes online in the header of every page
+     * of the site, not at an address: it has a target of its own.
+     */
+    public function forPage(CmsPage $page, string $locale): ContentTarget
+    {
+        $target = $this->pageTarget($page, $locale);
+
+        return HeaderZone::MODEL === $page->getModel() ? new ZoneContentTarget($target, $page, $locale, $this->activityLog, $this->httpCache) : $target;
+    }
+
+    private function pageTarget(CmsPage $page, string $locale): PageContentTarget
     {
         return new PageContentTarget($page, $locale, $this->activityLog, $this->invalidator, $this->fields, $this->placeholders, $this->searchText, $this->pageRevisions, $this->urls);
     }

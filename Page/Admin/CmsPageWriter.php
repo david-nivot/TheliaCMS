@@ -422,11 +422,12 @@ final readonly class CmsPageWriter
      *
      * @return list<int> the pages actually binned, deepest first
      *
-     * @throws ModelPageSettingException when the page is the model of its type
+     * @throws ModelPageSettingException when the page is the model of its type or the header zone
      */
     public function moveToTrash(CmsPage $page): array
     {
-        if (1 === $page->getModel()) {
+        // The model of a type goes with its type, the header zone is not a page to remove.
+        if (0 !== $page->getModel()) {
             throw ModelPageSettingException::trash((int) $page->getId());
         }
 
@@ -788,11 +789,11 @@ final readonly class CmsPageWriter
     }
 
     /**
-     * @throws ModelPageSettingException when the page is the model of its type
+     * @throws ModelPageSettingException when the page is the model of its type or the header zone
      */
     public function toggleVisibility(CmsPage $page): void
     {
-        if (1 === $page->getModel()) {
+        if (0 !== $page->getModel()) {
             throw ModelPageSettingException::visibility((int) $page->getId());
         }
 

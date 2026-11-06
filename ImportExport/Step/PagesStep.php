@@ -27,6 +27,7 @@ use TheliaCMS\Model\CmsPageSearch;
 use TheliaCMS\Model\CmsPageSearchQuery;
 use TheliaCMS\Page\PageTypeRepository;
 use TheliaCMS\Search\SearchTextExtractor;
+use TheliaCMS\Zone\HeaderZone;
 
 /**
  * The pages of a file, with their content in every language and their search entry.
@@ -40,6 +41,7 @@ final readonly class PagesStep
         private ImportedContent $content,
         private SearchTextExtractor $searchText,
         private PublishedContentSanitizer $sanitizer,
+        private HeaderZone $zones,
     ) {
     }
 
@@ -57,6 +59,7 @@ final readonly class PagesStep
     ): array {
         $pageIds = [];
         $knownTypes = $this->pageTypes->codes($connection);
+        $zoneImported = false;
 
         foreach ($document->pages() as $page) {
             $uid = (string) ($page['uid'] ?? '');
@@ -68,10 +71,24 @@ final readonly class PagesStep
                 continue;
             }
 
-            $parentUid = null === ($page['parent'] ?? null) ? null : (string) $page['parent'];
-            $parentId = null !== $parentUid ? ($pageIds[$parentUid] ?? 0) : 0;
+            $isZone = true === ($page['zone'] ?? false);
+            $demotedZone = false;
 
-            $existing = $this->addresses->existing($translations, $parentId);
+            // The site has one zone: a second in the file comes in as an
+            // ordinary draft page, as a second model does.
+            if ($isZone && $zoneImported) {
+                $report->warn(\sprintf('Page "%s" is a header zone, and the file holds another one: it was imported as an ordinary draft page.', $uid));
+                $isZone = false;
+                $demotedZone = true;
+            }
+
+            $parentUid = null === ($page['parent'] ?? null) ? null : (string) $page['parent'];
+            $parentId = !$isZone && null !== $parentUid ? ($pageIds[$parentUid] ?? 0) : 0;
+
+            // The zone has no address to be found by: it is the page of the
+            // site that is one, whatever the file calls it.
+            $existing = $isZone ? $this->zones->find($connection) : $this->addresses->existing($translations, $parentId);
+            $zoneImported = $zoneImported || $isZone;
 
             if (null !== $existing && !$options->replace) {
                 $pageIds[$uid] = (int) $existing->getId();
@@ -84,11 +101,12 @@ final readonly class PagesStep
             $isModel = $this->taxonomy->isModel($page, $existing, $report, $connection);
             $model
                 ->setParent($parentId)
-                ->setPosition((int) ($page['position'] ?? 0))
-                // The model of a type is never online, whatever the file says.
-                ->setVisible(!$isModel && ($page['visible'] ?? true) ? 1 : 0)
+                ->setPosition($isZone ? 0 : (int) ($page['position'] ?? 0))
+                // The model of a type, the header zone and a zone left over are
+                // never online as pages, whatever the file says.
+                ->setVisible(!$isModel && !$isZone && !$demotedZone && ($page['visible'] ?? true) ? 1 : 0)
                 ->setPageType($this->taxonomy->pageTypeOf($page, $report, $connection, $knownTypes))
-                ->setModel($isModel ? 1 : 0)
+                ->setModel($isModel ? 1 : ($isZone ? HeaderZone::MODEL : 0))
                 ->setFields(self::fieldsJson($page['fields'] ?? null))
                 ->setTagId($this->taxonomy->tagIdOf($page, $report, $connection))
                 ->setImageId($this->mappedImage($page['image_id'] ?? null, $mediaMap))
@@ -116,9 +134,10 @@ final readonly class PagesStep
             $model->save($connection);
             $pageIds[$uid] = (int) $model->getId();
 
-            $this->importPageContents($model, $document->carriesDocuments() ? $page['contents'] ?? [] : [], $mediaMap, $options, $report, $connection);
+            $this->importPageContents($model, $document->carriesDocuments() ? $page['contents'] ?? [] : [], $mediaMap, $options, $report, $connection, $demotedZone);
 
-            foreach ($translations as $locale => $translation) {
+            // The zone has no address: it is drawn in a header, not served.
+            foreach ($isZone ? [] : $translations as $locale => $translation) {
                 $this->addresses->refresh($model, (string) $locale, $translation['slug'] ?? null, $report);
             }
 
@@ -146,7 +165,7 @@ final readonly class PagesStep
      * @param array<string, mixed> $contents
      * @param array<int, int>      $mediaMap
      */
-    private function importPageContents(CmsPage $page, array $contents, array $mediaMap, ImportOptions $options, ImportReport $report, ConnectionInterface $connection): void
+    private function importPageContents(CmsPage $page, array $contents, array $mediaMap, ImportOptions $options, ImportReport $report, ConnectionInterface $connection, bool $withoutPublished = false): void
     {
         foreach ($contents as $locale => $content) {
             $locale = (string) $locale;
@@ -160,7 +179,8 @@ final readonly class PagesStep
 
             // The model of a type is never published: a version the file
             // gives it, edited by hand or written elsewhere, is left out.
-            $published = 1 === $page->getModel() ? [] : $content;
+            // Nor is a zone left over, imported as a draft page.
+            $published = $withoutPublished || 1 === $page->getModel() ? [] : $content;
             $publishedHtml = $this->content->html($published['published_html'] ?? null, $mediaMap, $options, $report, 'The published version of '.$where);
 
             $model
@@ -187,7 +207,8 @@ final readonly class PagesStep
             // Without this, an imported site answers nothing at all on its own
             // search page: the index is built at publish time, and importing is
             // not publishing.
-            if (null !== $model->getPublishedAt()) {
+            // The zone is in no search: it is no page of the site.
+            if (null !== $model->getPublishedAt() && HeaderZone::MODEL !== $page->getModel()) {
                 $this->index($page, $locale, $publishedHtml, $connection);
             }
         }

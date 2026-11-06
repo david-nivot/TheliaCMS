@@ -35,6 +35,7 @@ use TheliaCMS\Page\Admin\PageOnlineMessage;
 use TheliaCMS\Page\PageTypeRepository;
 use TheliaCMS\Preview\ItemPreviewLink;
 use TheliaCMS\Preview\PreviewLink;
+use TheliaCMS\Zone\Admin\ZoneScreenNotes;
 
 /**
  * Finds what the content screen is about from its address: a page by its id
@@ -62,6 +63,7 @@ final readonly class ContentTargetResolver
         private PageTypeRepository $pageTypes,
         private SiteComponentPermission $componentPermission,
         private PageOnlineMessage $onlineMessage,
+        private ZoneScreenNotes $zoneNotes,
     ) {
     }
 
@@ -103,6 +105,7 @@ final readonly class ContentTargetResolver
             $this->pageTypes,
             $this->componentPermission,
             $this->onlineMessage,
+            $this->zoneNotes,
         );
     }
 
