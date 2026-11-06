@@ -28,7 +28,7 @@
                         <th scope="col">{{ 'Always read'|trans({}, 'theliacms') }}</th>
                         <th scope="col">{{ 'Enabled'|trans({}, 'theliacms') }}</th>
                         <th scope="col">{{ 'Text'|trans({}, 'theliacms') }}</th>
-                        <th scope="col" class="text-end">{{ 'Actions'|trans({}, 'theliacms') }}</th>
+                        <th scope="col" class="text-end datatable-sticky-actions">{{ 'Actions'|trans({}, 'theliacms') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -61,7 +61,7 @@
                                 <span class="fw-medium">{{ skill.name }}</span>
                                 <div class="text-muted small"><code>{{ skill.code }}</code></div>
                             </td>
-                            <td class="text-muted small">{{ skill.description }}</td>
+                            <td class="text-muted small text-wrap" style="min-width: 14rem">{{ skill.description }}</td>
                             <td data-testid="cms-skill-origin-{{ skill.code }}">
                                 {% if skill.origin == 'theme' %}
                                     {{ 'Theme'|trans({}, 'theliacms') }}
@@ -93,7 +93,7 @@
                                     <span class="text-muted small">{{ 'As shipped'|trans({}, 'theliacms') }}</span>
                                 {% endif %}
                             </td>
-                            <td class="text-end">
+                            <td class="text-end datatable-sticky-actions">
                                 <a class="btn btn-sm btn-outline-secondary" href="{{ path('admin.cms.skills.edit', { code: skill.code }) }}" data-testid="cms-skill-edit-{{ skill.code }}">
                                     {% if may_update %}
                                         <i class="bi bi-pencil me-1" aria-hidden="true"></i>{{ 'Edit'|trans({}, 'theliacms') }}
