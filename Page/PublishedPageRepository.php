@@ -453,7 +453,8 @@ final readonly class PublishedPageRepository
 
         $image = LibraryImageQuery::create()->findPk($imageId);
 
-        if (!$image instanceof LibraryImage) {
+        // A video is no image of a page: its address is not one an `<img>` takes.
+        if (!$image instanceof LibraryImage || $image->isVideo()) {
             return null;
         }
 

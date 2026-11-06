@@ -30,6 +30,7 @@ use TheliaCMS\Catalogue\CatalogueItems;
 use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Media\CmsMediaLibrary;
 use TheliaCMS\Media\MediaFilter;
+use TheliaCMS\Media\MediaKind;
 use TheliaCMS\Media\MediaOrder;
 use TheliaCMS\Media\Svg\SvgUpload;
 use TheliaCMS\Page\Admin\EditLanguage;
@@ -100,7 +101,8 @@ final readonly class CmsMediaAdminController
     /**
      * The images a picker shows, a page of the library read as the list reads
      * it, or the one image `id` names: what a section or a page holds, drawn
-     * before anything is picked.
+     * before anything is picked. A video is not an image: it is neither listed
+     * nor answered by its id.
      */
     #[Route('/picker', name: 'picker', methods: ['GET'])]
     public function picker(Request $request): JsonResponse
@@ -109,20 +111,20 @@ final readonly class CmsMediaAdminController
         $id = $request->query->getInt('id');
 
         if ($id > 0) {
-            $image = $this->library->ownedImage($id);
+            $image = $this->library->ownedImage($id, MediaKind::Image);
             $item = null === $image ? null : $this->catalog->item($image, $locale, 0);
 
             return new JsonResponse(['items' => null === $item ? [] : [self::picked($item)]], null === $item ? Response::HTTP_NOT_FOUND : Response::HTTP_OK);
         }
 
-        $grid = $this->catalog->browse(MediaQuery::fromRequest($request), $locale, withUsage: false);
+        $grid = $this->catalog->browse(MediaQuery::fromRequest($request)->ofKind(MediaKind::Image), $locale, withUsage: false);
 
         return new JsonResponse([
             'items' => array_map(self::picked(...), $grid->items),
             'total' => $grid->total,
             'page' => $grid->page,
             'pageCount' => $grid->pageCount(),
-            'tags' => $this->library->tagCounts(),
+            'tags' => $this->library->tagCounts(MediaKind::Image),
         ]);
     }
 
@@ -413,11 +415,18 @@ final readonly class CmsMediaAdminController
                 $this->denyUnless(AccessManager::UPDATE);
                 $decorative = 'decorative' === $request->request->getString('action');
 
-                foreach ($images as $image) {
+                // A video has no decorative flag: it is left as it is and not counted.
+                $described = array_values(array_filter($images, static fn (LibraryImage $image): bool => !$image->isVideo()));
+
+                if ([] === $described) {
+                    return $this->backToList($request, $lang, $this->support->translate('Select at least one image.'), 'warning');
+                }
+
+                foreach ($described as $image) {
                     $this->writer->setDecorative($image, $decorative);
                 }
 
-                return $this->backToList($request, $lang, $this->support->translate($decorative ? '%count% image(s) marked decorative.' : '%count% image(s) no longer decorative.', $count));
+                return $this->backToList($request, $lang, $this->support->translate($decorative ? '%count% image(s) marked decorative.' : '%count% image(s) no longer decorative.', ['%count%' => \count($described)] + $count));
             case 'delete':
                 $this->denyUnless(AccessManager::DELETE);
                 $uses = $this->usages->countsFor(array_map(static fn (LibraryImage $image): int => (int) $image->getId(), $images));

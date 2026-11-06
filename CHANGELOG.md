@@ -16,8 +16,13 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   in the list and on its sheet, which has no alternative text, no decorative
   flag and no crop; it never counts as "without alternative text" (badge, queue
   of the images to describe, filter and counters). Replacing the file of a
-  sheet keeps its nature: a video by an MP4, an image by an image. Requires
-  TheliaLibrary 2.3.
+  sheet keeps its nature: a video by an MP4, an image by an image. A video is
+  never offered where a picture is wanted: the image picker of a section and of
+  a page (listed nor found by its id), the image search of the generator, the
+  upload field of an image, the image of a page, an image prop (a video id is
+  read as an image that does not exist) and the address of an image of the
+  library never serve one, and the bulk "decorative" action leaves it out and
+  does not count it. Requires TheliaLibrary 2.3.
 
 - **A header zone.** One block of content, written like a page and drawn under
   the header of every page of the theme, the shop's included, by a theme hook on

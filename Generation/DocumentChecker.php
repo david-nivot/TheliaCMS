@@ -41,6 +41,7 @@ use TheliaCMS\Model\CmsPageQuery;
 use TheliaCMS\Page\PublishedPageRepository;
 use TheliaCMS\TheliaCMS;
 use TheliaLibrary\Model\LibraryImageQuery;
+use TheliaLibrary\Service\LibraryImageFileNamer;
 
 /**
  * What a generated document says against what the site holds, once its shape
@@ -494,6 +495,25 @@ final readonly class DocumentChecker
     }
 
     /**
+     * The ids that are images of the library: a video is no image, an image
+     * prop holding its id points at nothing. A row with no recorded type is
+     * an image.
+     *
+     * @param list<int> $ids
+     *
+     * @return list<int>
+     */
+    private function libraryImages(array $ids): array
+    {
+        $rows = LibraryImageQuery::create()->filterById($ids, Criteria::IN)->select(['Id', 'MimeType'])->find()->toArray();
+
+        return array_values(array_map(
+            static fn (array $row): int => (int) $row['Id'],
+            array_filter($rows, static fn (array $row): bool => !\in_array($row['MimeType'], LibraryImageFileNamer::VIDEO_MIME_TYPES, true)),
+        ));
+    }
+
+    /**
      * @param list<int> $ids
      *
      * @return list<int>
@@ -505,7 +525,7 @@ final readonly class DocumentChecker
         }
 
         $found = match ($kind) {
-            'image' => LibraryImageQuery::create()->filterById($ids, Criteria::IN)->select('Id')->find()->toArray(),
+            'image' => $this->libraryImages($ids),
             'product' => ProductQuery::create()->filterById($ids, Criteria::IN)->select('Id')->find()->toArray(),
             'category' => CategoryQuery::create()->filterById($ids, Criteria::IN)->select('Id')->find()->toArray(),
             'folder' => FolderQuery::create()->filterById($ids, Criteria::IN)->select('Id')->find()->toArray(),

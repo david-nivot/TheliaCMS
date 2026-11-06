@@ -42,7 +42,7 @@ final readonly class MediaCatalog
      */
     public function browse(MediaQuery $query, string $locale, bool $withUsage = true): MediaGrid
     {
-        $imageIds = $this->library->selection($locale, $query->search, $query->filter, $query->tag);
+        $imageIds = $this->library->selection($locale, $query->search, $query->filter, $query->tag, kind: $query->kind);
 
         if ([] !== $imageIds && MediaFilter::Unused === $query->filter) {
             // What uses an image is read from the content of every page and

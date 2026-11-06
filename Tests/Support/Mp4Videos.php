@@ -15,6 +15,8 @@ declare(strict_types=1);
 namespace TheliaCMS\Tests\Support;
 
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use TheliaCMS\Media\CmsMediaLibrary;
+use TheliaLibrary\Model\LibraryImage;
 
 /**
  * MP4 files made in memory, no binary fixture: the smallest file libmagic
@@ -30,6 +32,20 @@ final class Mp4Videos
             .pack('N9', 0x00010000, 0, 0, 0, 0x00010000, 0, 0, 0, 0x40000000).str_repeat("\0", 24).pack('N', 1);
 
         return self::box('ftyp', 'isom'.pack('N', 512).'isomiso2').self::box('moov', self::box('mvhd', $mvhd));
+    }
+
+    /**
+     * A video of the library of the CMS as a row alone: the type is what tells
+     * a video apart, so a test that only reads rows needs no file on disk.
+     */
+    public static function row(CmsMediaLibrary $library, string $locale, string $title = 'Clip'): LibraryImage
+    {
+        $video = (new LibraryImage())->setFileName(bin2hex(random_bytes(6)).'.mp4')->setMimeType('video/mp4')->setDecorative(0);
+        $video->setLocale($locale)->setTitle($title);
+        $video->save();
+        $library->tag($video);
+
+        return $video;
     }
 
     public static function small(string $name = 'clip.mp4'): UploadedFile

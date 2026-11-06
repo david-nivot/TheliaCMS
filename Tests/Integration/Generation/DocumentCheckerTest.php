@@ -87,6 +87,26 @@ final class DocumentCheckerTest extends CmsIntegrationTestCase
         self::assertCount(1, $this->checker()->problems(new Document([$this->section('all', 'Test:Checked', ['form' => (int) $form->getId()])]), $request), 'A form in the bin is no form.');
     }
 
+    public function testAnImagePropHoldingTheIdOfAVideoIsAnImageThatIsNotThere(): void
+    {
+        $image = (new LibraryImage())->setLocale($this->locale())->setFileName('checked.png')->setMimeType('image/png')->setTitle('checked');
+        $image->save();
+        $untyped = (new LibraryImage())->setLocale($this->locale())->setFileName('old.png')->setTitle('old');
+        $untyped->save();
+        $video = (new LibraryImage())->setLocale($this->locale())->setFileName('clip.mp4')->setMimeType('video/mp4')->setTitle('clip');
+        $video->save();
+        $request = $this->request();
+
+        self::assertSame([], $this->checker()->problems(new Document([$this->section('all', 'Test:Checked', ['photo' => (int) $image->getId()])]), $request));
+        self::assertSame([], $this->checker()->problems(new Document([$this->section('all', 'Test:Checked', ['photo' => (int) $untyped->getId()])]), $request), 'A type never recorded is an image.');
+
+        $problems = $this->checker()->problems(new Document([$this->section('all', 'Test:Checked', ['photo' => (int) $video->getId()])]), $request);
+
+        self::assertCount(1, $problems);
+        self::assertSame(DocumentProblem::IMAGE, $problems[0]->kind);
+        self::assertStringContainsString(\sprintf('"photo" is the image %d, which the media library does not hold', $video->getId()), $problems[0]->message);
+    }
+
     public function testAnInternalAddressMustLeadToAPageOfTheSite(): void
     {
         $online = $this->createPage('Nos tarifs');

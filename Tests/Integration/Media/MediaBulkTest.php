@@ -19,6 +19,7 @@ use Thelia\Test\FixtureFactory;
 use TheliaCMS\Media\CmsMediaLibrary;
 use TheliaCMS\Security\CmsResources;
 use TheliaCMS\Tests\Integration\Security\AdminScreenTestCase;
+use TheliaCMS\Tests\Support\Mp4Videos;
 use TheliaLibrary\Model\LibraryImage;
 use TheliaLibrary\Model\LibraryImageQuery;
 use TheliaLibrary\Model\LibraryImageTagQuery;
@@ -64,6 +65,24 @@ final class MediaBulkTest extends AdminScreenTestCase
 
         $this->bulk('not-decorative', [$image]);
         self::assertSame(0, (int) $this->reloaded($image)->getDecorative());
+    }
+
+    public function testAVideoAmongTheSelectedImagesIsLeftOutOfTheDecorativeAnswerAndOfItsCount(): void
+    {
+        $image = $this->image('Séparateur');
+        $video = Mp4Videos::row($this->getService(CmsMediaLibrary::class), $this->locale());
+
+        self::assertSame(302, $this->bulk('decorative', [$image, $video]));
+        $this->client->followRedirect();
+
+        self::assertStringContainsString('1 image(s) marked decorative.', html_entity_decode((string) $this->client->getResponse()->getContent()), 'The count is what changed, not what was selected.');
+        self::assertSame(1, (int) $this->reloaded($image)->getDecorative());
+        self::assertSame(0, (int) $this->reloaded($video)->getDecorative());
+
+        self::assertSame(302, $this->bulk('not-decorative', [$video]));
+        $this->client->followRedirect();
+
+        self::assertStringContainsString('Select at least one image.', html_entity_decode((string) $this->client->getResponse()->getContent()), 'Nothing changed, nothing announced.');
     }
 
     public function testDeletingKeepsTheImagesAPageStillShowsAndSaysWhich(): void

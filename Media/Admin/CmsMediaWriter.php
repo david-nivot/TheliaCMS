@@ -52,9 +52,12 @@ final readonly class CmsMediaWriter
      * is refused at once, then kept apart for the preparation screen, where the
      * editor sees what the cleaning removed before it enters the library.
      *
+     * An `$imagesOnly` caller (a section, a page: places that draw a picture)
+     * has an MP4 refused as a format it does not take, and nothing is stored.
+     *
      * @param list<UploadedFile> $files
      */
-    public function add(array $files, string $locale): MediaUpload
+    public function add(array $files, string $locale, bool $imagesOnly = false): MediaUpload
     {
         $stored = [];
         $refused = [];
@@ -77,7 +80,7 @@ final readonly class CmsMediaWriter
                 continue;
             }
 
-            $refusal = $this->refusalOf($file);
+            $refusal = $this->refusalOf($file, $imagesOnly);
 
             if (null === $refusal) {
                 try {
@@ -240,7 +243,7 @@ final readonly class CmsMediaWriter
         $this->images->deleteImage($image->getId());
     }
 
-    private function refusalOf(UploadedFile $file): ?MediaUploadRefusal
+    private function refusalOf(UploadedFile $file, bool $imagesOnly): ?MediaUploadRefusal
     {
         if (!$file->isValid()) {
             return \in_array($file->getError(), [\UPLOAD_ERR_INI_SIZE, \UPLOAD_ERR_FORM_SIZE], true)
@@ -249,7 +252,7 @@ final readonly class CmsMediaWriter
         }
 
         // The type read in the content of the file decides, never its extension.
-        if (\in_array($file->getMimeType(), CmsMediaType::ACCEPTED_VIDEO_MIME_TYPES, true)) {
+        if (!$imagesOnly && \in_array($file->getMimeType(), CmsMediaType::ACCEPTED_VIDEO_MIME_TYPES, true)) {
             return $file->getSize() > CmsMediaType::MAX_VIDEO_BYTES ? MediaUploadRefusal::VideoTooHeavy : null;
         }
 

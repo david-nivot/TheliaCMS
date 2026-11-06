@@ -41,6 +41,7 @@ use TheliaCMS\Content\SectionDefinitionInterface;
 use TheliaCMS\Media\Admin\CmsMediaType;
 use TheliaCMS\Media\Admin\CmsMediaWriter;
 use TheliaCMS\Media\CmsMediaLibrary;
+use TheliaCMS\Media\MediaKind;
 use TheliaCMS\Security\CmsResources;
 use TheliaLibrary\Model\LibraryImage;
 
@@ -308,7 +309,7 @@ final readonly class SectionFormBuilder
         $file = $data[$prop->name.self::FILE_SUFFIX] ?? null;
 
         if ($file instanceof UploadedFile && $this->mayUpload()) {
-            $stored = $this->media->add([$file], $this->library->locale())->stored;
+            $stored = $this->media->add([$file], $this->library->locale(), imagesOnly: true)->stored;
 
             if (isset($stored[0]) && $stored[0] instanceof LibraryImage) {
                 return (int) $stored[0]->getId();
@@ -323,10 +324,10 @@ final readonly class SectionFormBuilder
             return $address;
         }
 
-        // An id the screen sent is an image of the library of the CMS, or none.
+        // An id the screen sent is an image of the library of the CMS, or none: a video is no image.
         $id = (int) ($data[$prop->name] ?? 0);
 
-        return $id > 0 && null !== $this->library->ownedImage($id) ? $id : 0;
+        return $id > 0 && null !== $this->library->ownedImage($id, MediaKind::Image) ? $id : 0;
     }
 
     private function mayUpload(): bool
