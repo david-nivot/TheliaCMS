@@ -141,6 +141,12 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   screenshots of the documentation had no size: once loaded, they grew and
   pushed the part a help link had scrolled to out of sight. They now keep
   their place before they load.
+- **The actions of a list stay in sight on a narrow screen.** The lists of
+  skills, components, pages, page types and the bin, and the fields of a
+  form, kept every cell on one line: below about 1440 px the table ran past
+  its card and the buttons of a row (edit, move, delete) were out of view.
+  Descriptions and titles now wrap, and the column of actions stays pinned to
+  the right while the rest scrolls.
 
 ## [2.13.0] - 2026-11-05
 

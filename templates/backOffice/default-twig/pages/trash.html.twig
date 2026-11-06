@@ -65,14 +65,14 @@
                             <th scope="col">{{ 'Title'|trans({}, 'theliacms') }}</th>
                             <th scope="col">{{ 'Deleted on'|trans({}, 'theliacms') }}</th>
                             <th scope="col">{{ 'Deleted for good'|trans({}, 'theliacms') }}</th>
-                            <th scope="col" class="text-end">{{ 'Actions'|trans({}, 'theliacms') }}</th>
+                            <th scope="col" class="text-end datatable-sticky-actions">{{ 'Actions'|trans({}, 'theliacms') }}</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for row in pages %}
                             {% set page = row.page %}
                             <tr>
-                                <td>{{ page.setLocale(edit_locale).title|default('#' ~ page.id) }}</td>
+                                <td class="text-wrap" style="min-width: 14rem">{{ page.setLocale(edit_locale).title|default('#' ~ page.id) }}</td>
                                 <td class="text-muted small">{{ page.deletedAt ? page.deletedAt|date('d/m/Y H:i') : '' }}</td>
                                 <td class="small">
                                     {% if row.days_left is null %}
@@ -85,7 +85,7 @@
                                         </span>
                                     {% endif %}
                                 </td>
-                                <td class="text-end">
+                                <td class="text-end datatable-sticky-actions">
                                     {% if row.restorable %}
                                         <form method="post" action="{{ path('admin.cms.pages.restore', { id: page.id, edit_language_id: edit_language_id }) }}">
                                             <input type="hidden" name="_token" value="{{ assignToken() }}">

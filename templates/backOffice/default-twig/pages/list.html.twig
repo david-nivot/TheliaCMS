@@ -141,14 +141,14 @@
                                 <th scope="col">{{ 'Title'|trans({}, 'theliacms') }}</th>
                                 <th scope="col">{{ 'Publication'|trans({}, 'theliacms') }}</th>
                                 <th scope="col">{{ 'Address'|trans({}, 'theliacms') }}</th>
-                                <th scope="col" class="text-end">{{ 'Actions'|trans({}, 'theliacms') }}</th>
+                                <th scope="col" class="text-end datatable-sticky-actions">{{ 'Actions'|trans({}, 'theliacms') }}</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for row in rows %}
                                 <tr data-testid="cms-page-row-{{ row.id }}" data-row-id="{{ row.id }}"
                                     class="{{ row.visible ? '' : 'cms-page-row--hidden' }}">
-                                    <td>
+                                    <td class="text-wrap" style="min-width: 14rem">
                                         {% if not is_filtering %}
                                             {# Depth is drawn and also written out: indentation alone is
                                                invisible to anybody who is not looking at the screen. #}
@@ -219,7 +219,7 @@
                                         {% if row.address %}title="{{ row.address }}"{% endif %}>
                                         {{ row.address ?: 'No address in this language yet'|trans({}, 'theliacms') }}
                                     </td>
-                                    <td class="text-end">
+                                    <td class="text-end datatable-sticky-actions">
                                         <div class="d-inline-flex gap-1">
                                             {% if not is_filtering %}
                                                 <form method="post" action="{{ row.move_up_url }}">

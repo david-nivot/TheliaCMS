@@ -73,7 +73,7 @@
                                     {% for row in rows %}
                                         <tr class="{{ edited_field and edited_field.id == row.field.id ? 'table-active' : '' }}"
                                             data-testid="cms-form-field-{{ row.field.id }}">
-                                            <td>
+                                            <td class="text-wrap" style="min-width: 14rem">
                                                 <span class="fw-medium">{{ row.field.label|default('') ?: '—' }}</span>
                                                 {% if row.field.required == 1 %}
                                                     <span class="text-danger ms-1" aria-label="{{ 'Required'|trans({}, 'theliacms') }}">*</span>
@@ -87,7 +87,7 @@
                                                     </div>
                                                 {% endif %}
                                             </td>
-                                            <td class="text-end" style="width: 12rem">
+                                            <td class="text-end datatable-sticky-actions" style="width: 12rem">
                                                 <div class="d-inline-flex gap-1">
                                                     <form method="post" action="{{ path('admin.cms.forms.field_move', { id: cms_form.id, fieldId: row.field.id, direction: 'up', edit_language_id: edit_language_id }) }}">
                                                         <input type="hidden" name="_token" value="{{ assignToken() }}">
