@@ -112,6 +112,10 @@ final readonly class MediaCatalog
     {
         $descriptions = [];
 
+        if ($image->isVideo()) {
+            return [];
+        }
+
         foreach (LangQuery::create()->filterByActive(1)->orderByPosition()->find() as $language) {
             $locale = (string) $language->getLocale();
             $alt = trim((string) $image->setLocale($locale)->getAlt());
@@ -155,6 +159,7 @@ final readonly class MediaCatalog
             format: '' !== pathinfo($fileName, \PATHINFO_EXTENSION) ? pathinfo($fileName, \PATHINFO_EXTENSION) : null,
             tags: $this->library->tagsOf($image),
             usageCount: $usageCount ?? $this->usages->countsFor([(int) $image->getId()])[(int) $image->getId()],
+            video: $image->isVideo(),
         );
     }
 
@@ -189,6 +194,11 @@ final readonly class MediaCatalog
      */
     private function thumbnailUrl(LibraryImage $image, string $fileName): ?string
     {
+        // No thumbnail is drawn of a video: the screens play its file.
+        if ($image->isVideo()) {
+            return null;
+        }
+
         $width = $image->getWidth();
         $format = pathinfo($fileName, \PATHINFO_EXTENSION);
 

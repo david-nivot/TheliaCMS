@@ -28,7 +28,11 @@
             {# The image as large as the screen allows: what it shows is what
                the editor has to put into words. #}
             <div class="ratio ratio-4x3 bg-body-secondary rounded overflow-hidden">
-                <img src="{{ item.url }}" alt="" style="object-fit: scale-down">
+                {% if item.video %}
+                    <video src="{{ item.url }}" controls preload="metadata" playsinline style="object-fit: scale-down"></video>
+                {% else %}
+                    <img src="{{ item.url }}" alt="" style="object-fit: scale-down">
+                {% endif %}
             </div>
         </div>
 

@@ -130,6 +130,7 @@
         }
 
         var image = preview.querySelector('img');
+        var video = preview.querySelector('video');
         var size = preview.querySelector('[data-cms-media-replace-size]');
         var url = null;
 
@@ -148,6 +149,23 @@
             }
 
             url = URL.createObjectURL(file);
+
+            // A video is shown by its own element; its size is all that is said.
+            if (video && file.type.indexOf('video/') === 0) {
+                image.classList.add('d-none');
+                video.classList.remove('d-none');
+                video.src = url;
+                size.textContent = Math.max(1, Math.round(file.size / 1024)) + ' kB';
+                preview.classList.remove('d-none');
+
+                return;
+            }
+
+            if (video) {
+                video.classList.add('d-none');
+                image.classList.remove('d-none');
+            }
+
             image.onload = function () {
                 size.textContent = image.naturalWidth + ' × ' + image.naturalHeight + ' px · ' + Math.max(1, Math.round(file.size / 1024)) + ' kB';
             };

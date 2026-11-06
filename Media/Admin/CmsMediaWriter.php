@@ -47,9 +47,9 @@ final readonly class CmsMediaWriter
      * the others are stored.
      *
      * The formats are the ones of the module, not all the ones the library
-     * would take: the screens say JPEG, PNG, WebP and SVG. An SVG is not
-     * stored here: it is cleaned once, so a file that cannot be read is
-     * refused at once, then kept apart for the preparation screen, where the
+     * would take: the screens say JPEG, PNG, WebP and SVG, and MP4 videos. An
+     * SVG is not stored here: it is cleaned once, so a file that cannot be read
+     * is refused at once, then kept apart for the preparation screen, where the
      * editor sees what the cleaning removed before it enters the library.
      *
      * @param list<UploadedFile> $files
@@ -173,7 +173,10 @@ final readonly class CmsMediaWriter
     }
 
     /**
-     * @param array{title: ?string, alt: ?string, caption: ?string, decorative: ?bool, tags: ?string, file: ?UploadedFile} $data
+     * A video has no alternative text and is never decorative: those two are
+     * left as they are, whatever the data holds.
+     *
+     * @param array{title: ?string, alt?: ?string, caption: ?string, decorative?: ?bool, tags: ?string, file: ?UploadedFile} $data
      */
     public function save(LibraryImage $image, string $locale, array $data): void
     {
@@ -187,11 +190,11 @@ final readonly class CmsMediaWriter
             $image->reload();
         }
 
-        $image->setDecorative(true === $data['decorative'] ? 1 : 0);
+        $image->setLocale($locale)->setCaption($data['caption']);
 
-        $image->setLocale($locale)
-            ->setAlt($data['alt'])
-            ->setCaption($data['caption']);
+        if (!$image->isVideo()) {
+            $image->setDecorative(true === ($data['decorative'] ?? null) ? 1 : 0)->setAlt($data['alt'] ?? null);
+        }
 
         $title = null === $data['title'] ? '' : trim($data['title']);
 
@@ -210,6 +213,10 @@ final readonly class CmsMediaWriter
      */
     public function describe(LibraryImage $image, string $locale, ?string $alt, bool $decorative): void
     {
+        if ($image->isVideo()) {
+            return;
+        }
+
         $image->setDecorative($decorative ? 1 : 0);
         $image->setLocale($locale)->setAlt($decorative ? null : $alt);
         $image->save();
@@ -221,6 +228,10 @@ final readonly class CmsMediaWriter
      */
     public function setDecorative(LibraryImage $image, bool $decorative): void
     {
+        if ($image->isVideo()) {
+            return;
+        }
+
         $image->setDecorative($decorative ? 1 : 0)->save();
     }
 
@@ -235,6 +246,11 @@ final readonly class CmsMediaWriter
             return \in_array($file->getError(), [\UPLOAD_ERR_INI_SIZE, \UPLOAD_ERR_FORM_SIZE], true)
                 ? MediaUploadRefusal::TooLarge
                 : MediaUploadRefusal::Failed;
+        }
+
+        // The type read in the content of the file decides, never its extension.
+        if (\in_array($file->getMimeType(), CmsMediaType::ACCEPTED_VIDEO_MIME_TYPES, true)) {
+            return $file->getSize() > CmsMediaType::MAX_VIDEO_BYTES ? MediaUploadRefusal::VideoTooHeavy : null;
         }
 
         if (!\in_array($file->getMimeType(), CmsMediaType::ACCEPTED_MIME_TYPES, true)) {

@@ -25,6 +25,7 @@ use TheliaLibrary\Model\LibraryImageTagQuery;
 use TheliaLibrary\Model\LibraryTag;
 use TheliaLibrary\Model\LibraryTagQuery;
 use TheliaLibrary\Service\ImageService;
+use TheliaLibrary\Service\LibraryImageFileNamer;
 use TheliaLibrary\Service\LibraryImageTagService;
 use TheliaLibrary\TheliaLibrary;
 
@@ -83,6 +84,11 @@ final readonly class CmsMediaLibrary implements MediaResolver, MediaDescriptions
 
         if (null === $fileName) {
             return null;
+        }
+
+        // A video has its own route: the image ones answer 404 for it.
+        if ($image->isVideo()) {
+            return $this->imageService->getUrlForVideo((int) $image->getId());
         }
 
         return $this->imageService->getUrlForImage(
@@ -185,7 +191,8 @@ final readonly class CmsMediaLibrary implements MediaResolver, MediaDescriptions
     {
         $fileName = $image->getFileName();
 
-        if (null === $fileName || (null !== $image->getWidth() && null !== $image->getHeight())) {
+        // A video has no dimensions to read: getimagesize() would say nothing.
+        if (null === $fileName || $image->isVideo() || (null !== $image->getWidth() && null !== $image->getHeight())) {
             return;
         }
 
@@ -384,7 +391,8 @@ final readonly class CmsMediaLibrary implements MediaResolver, MediaDescriptions
     /**
      * The images among these that say nothing in the language: neither a
      * non-blank alternative text there nor decorative. An image with no row
-     * at all in the language says nothing in it either.
+     * at all in the language says nothing in it either. A video is never
+     * among them: it has no alternative text to give.
      *
      * @param list<int> $imageIds
      *
@@ -399,8 +407,10 @@ final readonly class CmsMediaLibrary implements MediaResolver, MediaDescriptions
         $statement = Propel::getConnection('TheliaMain')->prepare(\sprintf(
             "SELECT li.id FROM library_image li
              WHERE li.id IN (%s) AND li.decorative = 0
+             AND (li.mime_type IS NULL OR li.mime_type NOT IN (%s))
              AND NOT EXISTS (SELECT 1 FROM library_image_i18n i WHERE i.id = li.id AND i.locale = :locale AND TRIM(COALESCE(i.alt, '')) <> '')",
             implode(',', array_map('intval', $imageIds)),
+            implode(',', array_map(static fn (string $type): string => "'".$type."'", LibraryImageFileNamer::VIDEO_MIME_TYPES)),
         ));
         $statement->execute(['locale' => $locale]);
 

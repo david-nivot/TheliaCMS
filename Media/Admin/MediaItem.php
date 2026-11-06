@@ -15,7 +15,7 @@ declare(strict_types=1);
 namespace TheliaCMS\Media\Admin;
 
 /**
- * An image as the media screens show it.
+ * An image, or a video, as the media screens show it.
  */
 final readonly class MediaItem
 {
@@ -36,6 +36,7 @@ final readonly class MediaItem
         public ?string $format,
         public array $tags,
         public int $usageCount,
+        public bool $video = false,
     ) {
     }
 
@@ -48,7 +49,8 @@ final readonly class MediaItem
      */
     public function isDescribed(): bool
     {
-        return $this->decorative || (null !== $this->alt && '' !== trim($this->alt));
+        // A video has no alternative text to give: it never waits for one.
+        return $this->video || $this->decorative || (null !== $this->alt && '' !== trim($this->alt));
     }
 
     public function dimensions(): ?string

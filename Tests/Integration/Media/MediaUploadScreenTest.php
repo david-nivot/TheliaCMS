@@ -200,7 +200,7 @@ final class MediaUploadScreenTest extends AdminScreenTestCase
         $form = $this->screen(self::LIST)->filter('form[data-cms-media-upload]');
 
         self::assertSame(1, $form->count());
-        self::assertSame('image/jpeg,image/png,image/webp,image/svg+xml,.svg', $form->attr('data-accepted'));
+        self::assertSame('image/jpeg,image/png,image/webp,image/svg+xml,.svg,video/mp4', $form->attr('data-accepted'));
         self::assertGreaterThan(0, (int) $form->attr('data-max-size'));
         self::assertStringContainsString('/admin/cms/media/describe', (string) $form->attr('data-describe-url'));
     }

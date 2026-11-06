@@ -9,6 +9,16 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Added
 
+- **MP4 videos in the media library.** The library takes an MP4 next to JPEG,
+  PNG and WebP, up to 50 MB (an image is still held to 10 MB and 25 megapixels).
+  The type is the one read in the content of the file, never its extension: a
+  text file renamed `.mp4` is refused. A video is shown by a `<video>` element
+  in the list and on its sheet, which has no alternative text, no decorative
+  flag and no crop; it never counts as "without alternative text" (badge, queue
+  of the images to describe, filter and counters). Replacing the file of a
+  sheet keeps its nature: a video by an MP4, an image by an image. Requires
+  TheliaLibrary 2.3.
+
 - **A header zone.** One block of content, written like a page and drawn under
   the header of every page of the theme, the shop's included, by a theme hook on
   `layout.header.bottom` (Flexy fires it on every page). Any section can go in it;

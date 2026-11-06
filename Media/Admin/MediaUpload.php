@@ -49,4 +49,17 @@ final readonly class MediaUpload
     {
         return array_map(static fn (LibraryImage $image): int => (int) $image->getId(), $this->stored);
     }
+
+    /**
+     * The stored files that wait for a description: the images, not the videos.
+     *
+     * @return list<int>
+     */
+    public function describableIds(): array
+    {
+        return array_values(array_map(
+            static fn (LibraryImage $image): int => (int) $image->getId(),
+            array_filter($this->stored, static fn (LibraryImage $image): bool => !$image->isVideo()),
+        ));
+    }
 }

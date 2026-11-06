@@ -80,13 +80,17 @@ final readonly class CmsMediaAdminController
             'orders' => MediaOrder::cases(),
             'tags' => $this->library->tagCounts(),
             'has_library' => $tally->total > 0,
-            'accepted_mime_types' => implode(',', CmsMediaType::LIBRARY_ACCEPTED_TYPES),
+            'accepted_mime_types' => implode(',', CmsMediaType::acceptedUploadMimeTypes()),
+            'accepted_video_mime_types' => implode(',', CmsMediaType::ACCEPTED_VIDEO_MIME_TYPES),
             // The script puts the token of a prepared SVG where this one stands.
             'token_placeholder' => SvgPreparationController::TOKEN_PLACEHOLDER,
             'max_upload_size' => min(CmsMediaType::MAX_IMAGE_BYTES, (int) UploadedFile::getMaxFilesize()),
-            // The screen refuses a file above that size before sending it: it
-            // names the limit that stops it, the ceiling of the module or PHP's.
+            'max_video_upload_size' => min(CmsMediaType::MAX_VIDEO_BYTES, (int) UploadedFile::getMaxFilesize()),
+            // The screen refuses a file above its ceiling before sending it, an
+            // image and a video each against their own: it names the limit that
+            // stops it, the ceiling of the module or PHP's.
             'max_upload_refusal' => (CmsMediaType::MAX_IMAGE_BYTES <= (int) UploadedFile::getMaxFilesize() ? MediaUploadRefusal::TooHeavy : MediaUploadRefusal::TooLarge)->message(),
+            'max_video_upload_refusal' => (CmsMediaType::MAX_VIDEO_BYTES <= (int) UploadedFile::getMaxFilesize() ? MediaUploadRefusal::VideoTooHeavy : MediaUploadRefusal::TooLarge)->message(),
             'assets_version' => substr(hash('xxh3', (string) @filemtime(__DIR__.'/../../templates/backOffice/default-twig/assets/media-upload.js').(string) @filemtime(__DIR__.'/../../templates/backOffice/default-twig/assets/media-list.js')), 0, 12),
             'edit_locale' => $lang->getLocale(),
             'edit_language_id' => $lang->getId(),
@@ -164,6 +168,7 @@ final readonly class CmsMediaAdminController
                 'stored' => array_map(static fn (LibraryImage $image): array => [
                     'id' => (int) $image->getId(),
                     'title' => (string) $image->setLocale($lang->getLocale())->getTitle(),
+                    'video' => $image->isVideo(),
                 ], $upload->stored),
                 'prepared' => $upload->prepared,
                 // The picker of the editor opens this screen in a frame, which
@@ -180,7 +185,7 @@ final readonly class CmsMediaAdminController
         }
 
         if ([] === $files) {
-            return $this->backToList($request, $lang, $this->support->translate('Choose at least one image to add.'), 'warning');
+            return $this->backToList($request, $lang, $this->support->translate('Choose at least one file to add.'), 'warning');
         }
 
         if ([] !== $upload->refused) {
@@ -213,15 +218,22 @@ final readonly class CmsMediaAdminController
             return $this->support->redirectInLanguage('admin.cms.media.edit', $lang->getId(), ['id' => $upload->stored[0]->getId()]);
         }
 
-        // Several: the describe queue of these images, one after the other.
+        // Several: the describe queue of these images, one after the other. A
+        // video has nothing to describe, so it is not in the queue.
+        $describable = $upload->describableIds();
+
+        if ([] === $describable) {
+            return $this->backToList($request, $lang, $this->support->translate('%count% files added.', ['%count%' => \count($upload->stored)]));
+        }
+
         $this->support->flash($request, 'success', $this->support->translate(
             '%count% images added. Describe each of them before using it in a page.',
-            ['%count%' => \count($upload->stored)],
+            ['%count%' => \count($describable)],
         ));
 
         return $this->support->redirect('admin.cms.media.describe', [
             self::EDIT_LANGUAGE_PARAMETER => $lang->getId(),
-            'images' => implode(',', $upload->storedIds()),
+            'images' => implode(',', $describable),
         ]);
     }
 
@@ -480,14 +492,19 @@ final readonly class CmsMediaAdminController
     {
         $image->setLocale($locale);
 
-        return $this->forms->create(CmsMediaType::class, [
+        $data = [
             'title' => $image->getTitle(),
-            'alt' => $image->getAlt(),
             'caption' => $image->getCaption(),
-            'decorative' => 1 === $image->getDecorative(),
             'tags' => implode(', ', $this->library->tagsOf($image)),
             'file' => null,
-        ]);
+        ];
+
+        // A video has neither alternative text nor decorative flag.
+        if (!$image->isVideo()) {
+            $data += ['alt' => $image->getAlt(), 'decorative' => 1 === $image->getDecorative()];
+        }
+
+        return $this->forms->create(CmsMediaType::class, $data, ['video' => $image->isVideo()]);
     }
 
     private function ownedImageOrFail(int $id): LibraryImage
