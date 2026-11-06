@@ -10,7 +10,8 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 ### Added
 
 - **MP4 videos in the media library.** The library takes an MP4 next to its
-  images (JPEG, PNG, WebP, SVG), up to 50 MB (an image is still held to 10 MB and 25 megapixels).
+  images (JPEG, PNG, WebP, SVG), up to 50 MB (an image is still held to 10 MB
+  and 25 megapixels); its upload button reads **Add files**.
   The type is the one read in the content of the file, never its extension: a
   text file renamed `.mp4` is refused. A video is shown by a `<video>` element
   in the list and on its sheet, which has no alternative text, no decorative

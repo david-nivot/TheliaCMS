@@ -108,6 +108,13 @@ final class MediaUploadScreenTest extends AdminScreenTestCase
      * The script picks the form of a message by the count it knows once the
      * files are sent: it receives both forms, and what each button leaves.
      */
+    public function testTheButtonSpeaksOfFilesSinceItTakesVideosToo(): void
+    {
+        $button = $this->screen(self::LIST)->filter('[data-cms-media-upload-submit]');
+
+        self::assertSame('Add files', trim($button->text()));
+    }
+
     public function testTheButtonsAfterARefusalReceiveBothFormsOfTheirMessage(): void
     {
         $messages = json_decode((string) $this->screen(self::LIST)->filter('form[data-cms-media-upload]')->attr('data-messages'), true, flags: \JSON_THROW_ON_ERROR);

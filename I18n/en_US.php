@@ -48,7 +48,6 @@ return [
     'Add an entry' => 'Add an entry',
     'Add a snippet' => 'Add a snippet',
     'Add fonts' => 'Add fonts',
-    'Add images' => 'Add images',
     'Address' => 'Address',
     'Addresses that keep seeing the site' => 'Addresses that keep seeing the site',
     'Address not found' => 'Address not found',
