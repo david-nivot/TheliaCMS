@@ -703,6 +703,41 @@ final class SectionEditScreenTest extends AdminScreenTestCase
         self::assertSame([$one, $three], array_column($document?->section('row')?->props['product_ids'] ?? [], 'id'));
     }
 
+    public function testARowOfAListMovesUpAndDownFromToolsBesideItsFold(): void
+    {
+        $form = $this->screen($this->url($this->pageWithHighlights()))->filter('[data-testid="cms-section-edit-hl"] form[data-cms-section-form]');
+        $translator = $this->getService(TranslatorInterface::class);
+
+        self::assertSame('cms_section_hl[blocks]', $form->filter('[data-cms-items]')->attr('data-cms-items-name'), 'The script renames the fields of the rows from the name of the collection.');
+        self::assertSame(3, $form->filter('li[data-cms-item] > .cms-content__item-tools > button[data-cms-item-up]')->count());
+        self::assertSame(3, $form->filter('li[data-cms-item] > .cms-content__item-tools > button[data-cms-item-down]')->count());
+        self::assertSame($translator->trans('Move this row up', [], TheliaCMS::DOMAIN_NAME), $form->filter('[data-cms-item-up]')->first()->attr('aria-label'));
+        self::assertSame($translator->trans('Move this row down', [], TheliaCMS::DOMAIN_NAME), $form->filter('[data-cms-item-down]')->first()->attr('aria-label'));
+        self::assertSame(0, $form->filter('summary button')->count(), 'No button inside a summary.');
+    }
+
+    public function testRowsSentInAnotherOrderAreSavedInThatOrder(): void
+    {
+        $screen = $this->screen($this->url($page = $this->pageWithHighlights()));
+        $form = $screen->filter('[data-testid="cms-section-edit-hl"] form[data-cms-section-form]')->form();
+        $values = $form->getPhpValues();
+        [$first, $second, $third] = $values['cms_section_hl']['blocks'];
+
+        // What the script sends once the second row is moved to the top: the fields renamed to the order of the rows.
+        $values['cms_section_hl']['blocks'] = [$second, $first, $third];
+        self::assertSame(302, $this->send('POST', $form->getUri(), $values));
+
+        $document = Document::fromJson(CmsPageContentQuery::create()->filterByPageId($page->getId())->findOne()?->getDraftDocument());
+        self::assertSame(['Second', 'Premier', 'Troisième'], array_column($document?->section('hl')?->props['blocks'] ?? [], 'title'));
+
+        // Moved in the page only, with the names left as they were, the order is the one of the indexes: hence the renaming.
+        $values['cms_section_hl']['blocks'] = [1 => $second, 0 => $first, 2 => $third];
+        self::assertSame(302, $this->send('POST', $form->getUri(), $values));
+
+        $document = Document::fromJson(CmsPageContentQuery::create()->filterByPageId($page->getId())->findOne()?->getDraftDocument());
+        self::assertSame(['Premier', 'Second', 'Troisième'], array_column($document?->section('hl')?->props['blocks'] ?? [], 'title'));
+    }
+
     public function testTheNameOfAListOfTheThemeReadsInTheLanguageOfTheBackOffice(): void
     {
         // A list named by its bare name, as a prop of the theme is: the form says it in words of its own.
@@ -764,6 +799,13 @@ final class SectionEditScreenTest extends AdminScreenTestCase
         $screen = $this->screen($this->url($page));
         self::assertSame(0, $screen->filter('[data-testid="cms-section-edit-intro"]')->count(), 'Reading the screen is not the right to change a section.');
         self::assertSame(403, $this->send('POST', \sprintf('/admin/cms/pages/%d/content/update', $page->getId()), ['_token' => $this->tokenOfTheScripts($screen), 'cms_section_intro' => ['section' => 'intro', 'html' => 'Refused']]));
+    }
+
+    private function pageWithHighlights(): CmsPage
+    {
+        $block = static fn (string $title): array => ['title' => $title, 'text' => '', 'button_label' => '', 'button_url' => '', 'image' => null, 'image_alt' => '', 'image_mobile' => null, 'focus_x' => 50, 'focus_y' => 50];
+
+        return $this->pageWith([new Section('hl', 'cms:highlights', ['blocks' => [$block('Premier'), $block('Second'), $block('Troisième')]])]);
     }
 
     /**

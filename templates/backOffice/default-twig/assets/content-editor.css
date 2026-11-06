@@ -982,8 +982,10 @@ body:has(.cms-content) {
     margin-bottom: 0 !important;
 }
 
-.cms-content__item-remove {
+.cms-content__item-tools {
+    display: flex;
     flex: none;
+    gap: 0.25rem;
 }
 
 /* A folded row: its first words, then its fields once opened. */

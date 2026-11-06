@@ -51,9 +51,14 @@
             </details>
             {% do child.setRendered %}
         {% elseif child.vars.prototype is defined %}
+            {# The script renames the fields of the rows to the order they are
+               in, from the name of the collection: the form keeps the rows in
+               the order of their indexes, not in the order they are sent. #}
             <fieldset class="cms-content__items" data-cms-items
+                      data-cms-items-name="{{ child.vars.full_name }}"
                       data-cms-items-min="{{ child.vars.attr['data-cms-items-min']|default(0) }}"
                       data-cms-items-max="{{ child.vars.attr['data-cms-items-max']|default(12) }}"
+                      data-cms-items-moved="{{ 'Row moved to position %position% of %total%'|trans({}, 'theliacms')|e('html_attr') }}"
                       data-prototype="{{ _self.item(child.vars.prototype, child.vars.full_name ~ '[__name__]')|e('html_attr') }}">
                 {# Translated as the label and the help of any other field. #}
                 {% set domain = child.vars.translation_domain %}
@@ -64,6 +69,7 @@
                         {{ _self.item(item) }}
                     {% endfor %}
                 </ol>
+                <p class="visually-hidden" role="status" aria-live="polite" data-cms-items-status></p>
                 <button type="button" class="btn btn-sm btn-outline-secondary" data-cms-items-add hidden>
                     <i class="bi bi-plus-lg" aria-hidden="true"></i> {{ 'Add a row'|trans({}, 'theliacms') }}
                 </button>
@@ -220,10 +226,20 @@
                 {{ _self.fields(item) }}
             </div>
         {% endif %}
-        <button type="button" class="btn btn-sm btn-outline-danger cms-content__item-remove" data-cms-item-remove hidden
-                aria-label="{{ 'Remove this row'|trans({}, 'theliacms') }}" title="{{ 'Remove this row'|trans({}, 'theliacms') }}">
-            <i class="bi bi-x-lg" aria-hidden="true"></i>
-        </button>
+        <div class="cms-content__item-tools">
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-cms-item-up hidden
+                    aria-label="{{ 'Move this row up'|trans({}, 'theliacms') }}" title="{{ 'Move this row up'|trans({}, 'theliacms') }}">
+                <i class="bi bi-arrow-up" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-cms-item-down hidden
+                    aria-label="{{ 'Move this row down'|trans({}, 'theliacms') }}" title="{{ 'Move this row down'|trans({}, 'theliacms') }}">
+                <i class="bi bi-arrow-down" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger cms-content__item-remove" data-cms-item-remove hidden
+                    aria-label="{{ 'Remove this row'|trans({}, 'theliacms') }}" title="{{ 'Remove this row'|trans({}, 'theliacms') }}">
+                <i class="bi bi-x-lg" aria-hidden="true"></i>
+            </button>
+        </div>
     </li>
 {% endmacro %}
 

@@ -1903,12 +1903,54 @@
             var max = parseInt(list.getAttribute("data-cms-items-max"), 10) || 12;
             var min = parseInt(list.getAttribute("data-cms-items-min"), 10) || 0;
             var counter = rows.children.length;
+            var name = list.getAttribute("data-cms-items-name") || "";
+            var status = list.querySelector("[data-cms-items-status]");
+            var head = new RegExp("^" + name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\[[^\\]]*\\]");
+
+            // A form sent back with an error keeps the indexes of the rows that were removed: a new row
+            // takes an index above every one in place.
+            rows.querySelectorAll("[name]").forEach(function (field) {
+                var found = name && field.name.indexOf(name + "[") === 0 ? parseInt(field.name.slice(name.length + 1), 10) : NaN;
+
+                if (found >= counter) {
+                    counter = found + 1;
+                }
+            });
+
+            // The form keeps the rows in the order of their indexes, whatever the order they are sent in:
+            // the fields are renamed to the order the rows are in. The ids stay, the editor, the picker
+            // and the framing hold on to them.
+            function renumber() {
+                if (!name) {
+                    return;
+                }
+
+                Array.prototype.forEach.call(rows.children, function (row, index) {
+                    row.querySelectorAll("[name]").forEach(function (field) {
+                        field.name = field.name.replace(head, name + "[" + index + "]");
+                    });
+                });
+            }
 
             function refresh() {
-                var count = rows.children.length;
-                add.hidden = count >= max;
-                rows.querySelectorAll(":scope > [data-cms-item] > [data-cms-item-remove]").forEach(function (button) {
-                    button.hidden = count <= min;
+                var items = rows.querySelectorAll(":scope > [data-cms-item]");
+                var total = items.length;
+                add.hidden = total >= max;
+
+                items.forEach(function (row, index) {
+                    var up = row.querySelector(":scope > .cms-content__item-tools > [data-cms-item-up]");
+                    var down = row.querySelector(":scope > .cms-content__item-tools > [data-cms-item-down]");
+                    var remove = row.querySelector(":scope > .cms-content__item-tools > [data-cms-item-remove]");
+
+                    if (up && down) {
+                        up.hidden = down.hidden = total < 2;
+                        up.disabled = index === 0;
+                        down.disabled = index === total - 1;
+                    }
+
+                    if (remove) {
+                        remove.hidden = total <= min;
+                    }
                 });
             }
 
@@ -1936,10 +1978,38 @@
 
             rows.addEventListener("click", function (event) {
                 var remove = event.target.closest("[data-cms-item-remove]");
+                var move = event.target.closest("[data-cms-item-up], [data-cms-item-down]");
 
                 if (remove) {
                     remove.closest("[data-cms-item]").remove();
                     refresh();
+                }
+
+                if (!move || move.disabled) {
+                    return;
+                }
+
+                var row = move.closest("[data-cms-item]");
+                var up = move.hasAttribute("data-cms-item-up");
+                var other = up ? row.previousElementSibling : row.nextElementSibling;
+
+                if (!other) {
+                    return;
+                }
+
+                rows.insertBefore(row, up ? other : other.nextElementSibling);
+                renumber();
+                refresh();
+
+                // The focus stays on the button of the row that moved; at the end of the list that button is
+                // off, and the one of the other direction takes it.
+                var kept = move.disabled ? row.querySelector(":scope > .cms-content__item-tools > " + (up ? "[data-cms-item-down]" : "[data-cms-item-up]")) : move;
+                kept.focus();
+
+                if (status && list.getAttribute("data-cms-items-moved")) {
+                    status.textContent = list.getAttribute("data-cms-items-moved")
+                        .replace("%position%", String(Array.prototype.indexOf.call(rows.children, row) + 1))
+                        .replace("%total%", String(rows.children.length));
                 }
             });
 

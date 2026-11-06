@@ -7,6 +7,17 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **A row of a list moves up or down.** Each row of a list (the blocks of
+  Mises en avant, the rows of a component of the theme) has an up and a down
+  button beside its remove button, reachable by keyboard: the focus stays on
+  the row that moved, and a screen reader is told its new position. The order
+  is the one saved and rendered. Behind it, the script renames the fields of
+  the rows to the order they are in, since the form keeps the rows in the
+  order of their indexes; a row added after a removal now takes an index
+  above every one in place.
+
 ### Fixed
 
 - **A required field of a list row no longer reads "(optional)".** In a list
