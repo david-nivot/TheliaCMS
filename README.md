@@ -1270,6 +1270,45 @@ The HeaderHighlights module draws in the same hook: once the zone is published,
 empty the highlights of that module or deactivate it, or the header shows both.
 The screen of the zone says so while the module is active.
 
+#### Migrating from HeaderHighlights
+
+`thelia_cms:import:header-highlights` copies the banner of HeaderHighlights into
+the zone, as a draft, so the editor does not write it again:
+
+```bash
+php Thelia thelia_cms:import:header-highlights --dry-run --url https://www.example.com/
+php Thelia thelia_cms:import:header-highlights --url https://www.example.com/
+```
+
+- In each active language where HeaderHighlights holds a text, one Highlights
+  section is written in the **draft** of the zone (the zone is made if there is
+  none). Nothing is published and HeaderHighlights is not touched: read the
+  draft on the content screen of the zone, publish it, then empty or remove
+  HeaderHighlights.
+- Blocks are ordered by their number (1 is the large one). Title, catchphrase,
+  call to action and address of the desktop row become the title, the catchphrase,
+  the button and its address; its image becomes the image; the image of the mobile
+  row of the same number becomes the image for a narrow screen (none when there is
+  no such row, or when it is the same file).
+- Images are copied to the media library, one item per distinct file, titled after
+  the block title of the default language. A file is recognised by the SHA-1 of its
+  content: run again, nothing is copied twice. The library item is not described
+  (alternative text): describe it before publishing.
+- A language whose zone already holds a draft is skipped, with a message.
+  `--replace` writes over it; the previous draft stays available as a previous
+  draft on the content screen.
+- `--dry-run` writes nothing (no image, no zone, no draft) and prints, per
+  language, what would be written and every problem. `--url` is the address of
+  the shop, over `url_site`.
+- What the section has no place for is reported, not invented: the texts of a
+  mobile row that differ from the desktop ones, a second image of a block, a block
+  after the third, a mobile block without a desktop one, a button missing its words
+  or its address. `/api/header-highlights` is not reproduced: a site that reads it
+  keeps HeaderHighlights.
+- Exit code: 0 when done or when there is nothing to import (the tables absent or
+  empty), 1 when a language could not be written (a text longer than the section
+  accepts, for instance).
+
 ### Page types
 
 A page has one type, picked in the "General" tab, which chooses the template it
