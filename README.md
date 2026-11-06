@@ -206,10 +206,21 @@ tree that is not on screen. The arrows that reorder a page only appear on the
 tree, since a position moved from a filtered list is a position among pages you
 cannot see. The bin has the same search box.
 
+On a list of results, a box on each row selects the page, and **With the
+selected pages…** answers them at once: shown or hidden on the site, a tag given
+or taken off, moved to the bin, published or unpublished in the language of the
+list. Each action takes its own right, so an editor who may change pages may
+not empty them into the bin. The bin and the publication ask again on a screen
+that says what will really happen: the pages under a selected one go with it
+and are counted, once, and the publication runs its checks on each page first
+and names the ones it would refuse, with the reason. The report that follows
+names each page refused. The tree has no box: a page ticked there would take a
+folded branch to the bin unseen.
+
 The screen works without a mouse. Branches open on links, moves are buttons, and
 re-parenting a page is the **Parent** field of its edit form. It also works with
 JavaScript switched off, apart from the confirmation before a page goes to the
-bin.
+bin from its row; the selection of several pages asks on a screen of its own.
 
 Reading it costs the same on a site of six hundred pages as on a site of seven:
 the state, the address and the number of pages underneath are read for the whole

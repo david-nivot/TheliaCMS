@@ -14,11 +14,17 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Tests\Integration\Page;
 
+use Propel\Runtime\ActiveQuery\Criteria;
 use Thelia\Model\Lang;
 use Thelia\Model\LangQuery;
+use Thelia\Test\FixtureFactory;
+use TheliaCMS\Model\CmsPageQuery;
+use TheliaCMS\Model\CmsTag;
 use TheliaCMS\Page\Admin\CmsPageAdminRepository;
+use TheliaCMS\Page\Admin\PageDate;
 use TheliaCMS\Page\Admin\PageFilters;
 use TheliaCMS\Page\Admin\PageListPresenter;
+use TheliaCMS\Page\Admin\PageSort;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
 use TheliaCMS\Tests\Integration\CountsStatements;
 
@@ -72,6 +78,116 @@ final class PageListingCostTest extends CmsIntegrationTestCase
 
         self::assertGreaterThan($few, $many, 'the second tree added no match, so this compares nothing');
         self::assertSame($fewCost, $manyCost, 'searching costs more when it finds more, so something is asked per row');
+    }
+
+    public function testFilteringByTagAndTypeCostsTheSameWhateverTheNumberOfMatches(): void
+    {
+        $repository = $this->getService(CmsPageAdminRepository::class);
+        $locale = $this->locale();
+        $tag = (new CmsTag())->setName('Costly tag');
+        $tag->save();
+        $filters = new PageFilters(tag: (int) $tag->getId(), type: 'default');
+
+        $this->tagAll($this->treeOf(1, 2, $locale, 'Tagged'), $tag);
+        $fewCost = $this->statementsFor(static fn () => $repository->results($locale, $filters));
+        $few = $repository->results($locale, $filters)->total;
+
+        $this->tagAll($this->treeOf(4, 2, $locale, 'Tagged'), $tag);
+        $manyCost = $this->statementsFor(static fn () => $repository->results($locale, $filters));
+        $many = $repository->results($locale, $filters)->total;
+
+        self::assertGreaterThan($few, $many, 'the second tree added no match, so this compares nothing');
+        self::assertSame($fewCost, $manyCost, 'filtering by tag and type costs more when it finds more, so something is asked per row');
+    }
+
+    public function testSortingByTheLastChangeCostsTheSameWhateverTheNumberOfMatches(): void
+    {
+        $repository = $this->getService(CmsPageAdminRepository::class);
+        $locale = $this->locale();
+        $filters = new PageFilters(search: 'Sorted', sort: PageSort::Modified);
+
+        $this->treeOf(1, 2, $locale, 'Sorted');
+        $fewCost = $this->statementsFor(static fn () => $repository->results($locale, $filters));
+        $few = $repository->results($locale, $filters)->total;
+
+        $this->treeOf(4, 2, $locale, 'Sorted');
+        $manyCost = $this->statementsFor(static fn () => $repository->results($locale, $filters));
+        $many = $repository->results($locale, $filters)->total;
+
+        self::assertGreaterThan($few, $many, 'the second tree added no match, so this compares nothing');
+        self::assertSame($fewCost, $manyCost, 'sorting by the last change costs more when it finds more, so something is asked per row');
+    }
+
+    public function testFilteringByPeriodAndAuthorCostsTheSameWhateverTheNumberOfMatches(): void
+    {
+        $repository = $this->getService(CmsPageAdminRepository::class);
+        $locale = $this->locale();
+        $author = (int) (new FixtureFactory($this->getPropelConnection()))->admin()->getId();
+        $today = new \DateTimeImmutable('today');
+        $filters = new PageFilters(search: 'Dated', date: PageDate::Published, from: $today, to: $today, author: $author);
+
+        $this->treeOf(1, 2, $locale, 'Dated');
+        CmsPageQuery::create()->update(['UpdatedBy' => $author]);
+        $fewCost = $this->statementsFor(static fn () => $repository->results($locale, $filters));
+        $few = $repository->results($locale, $filters)->total;
+
+        $this->treeOf(4, 2, $locale, 'Dated');
+        CmsPageQuery::create()->update(['UpdatedBy' => $author]);
+        $manyCost = $this->statementsFor(static fn () => $repository->results($locale, $filters));
+        $many = $repository->results($locale, $filters)->total;
+
+        self::assertGreaterThan($few, $many, 'the second tree added no match, so this compares nothing');
+        self::assertSame($fewCost, $manyCost, 'filtering by period and author costs more when it finds more, so something is asked per row');
+    }
+
+    public function testListingTheAuthorsCostsOneStatementWhateverTheirNumber(): void
+    {
+        $repository = $this->getService(CmsPageAdminRepository::class);
+        $fixtures = new FixtureFactory($this->getPropelConnection());
+
+        [$root] = $this->treeOf(1, 2, $this->locale(), 'Authored');
+        CmsPageQuery::create()->filterById($root)->update(['UpdatedBy' => (int) $fixtures->admin()->getId()]);
+        $fewCost = $this->statementsFor(static fn () => $repository->authors());
+
+        foreach ($this->treeOf(3, 0, $this->locale(), 'Authored') as $id) {
+            CmsPageQuery::create()->filterById($id)->update(['UpdatedBy' => (int) $fixtures->admin()->getId()]);
+        }
+
+        $manyCost = $this->statementsFor(static fn () => $repository->authors());
+
+        self::assertSame(1, $fewCost, 'the authors are not read in one statement');
+        self::assertSame($fewCost, $manyCost, 'listing the authors costs more when there are more');
+    }
+
+    public function testReadingASelectionOfTheListCostsOneStatementWhateverItsSize(): void
+    {
+        $repository = $this->getService(CmsPageAdminRepository::class);
+        $locale = $this->locale();
+
+        $few = $this->treeOf(2, 0, $locale, 'Selected');
+        $fewCost = $this->statementsFor(static fn () => $repository->selected($few, $locale));
+
+        $many = [...$few, ...$this->treeOf(6, 0, $locale, 'Selected')];
+        $manyCost = $this->statementsFor(static fn () => $repository->selected($many, $locale));
+
+        self::assertSame(1, $fewCost, 'the selection is not read in one statement');
+        self::assertSame($fewCost, $manyCost, 'reading a selection costs more when it is larger');
+        self::assertCount(8, $repository->selected($many, $locale));
+    }
+
+    public function testCountingTheStatesCostsTheSameOnASmallSiteAndOnABigOne(): void
+    {
+        $repository = $this->getService(CmsPageAdminRepository::class);
+        $locale = $this->locale();
+
+        $this->treeOf(1, 2, $locale, 'Counted');
+        $smallCost = $this->statementsFor(static fn () => $repository->statusCounts($locale));
+
+        $this->treeOf(4, 2, $locale, 'Counted');
+        $bigCost = $this->statementsFor(static fn () => $repository->statusCounts($locale));
+
+        self::assertSame(1, $smallCost, 'the five counters are not read in one statement');
+        self::assertSame($smallCost, $bigCost, 'counting the states costs more on a bigger site');
     }
 
     public function testAFoldedBranchIsNotRead(): void
@@ -178,6 +294,17 @@ final class PageListingCostTest extends CmsIntegrationTestCase
         self::assertNotNull($lang, \sprintf('the shop has no language for "%s"', $locale));
 
         return $lang;
+    }
+
+    /**
+     * Tags the pages at the root and every page under them.
+     *
+     * @param list<int> $roots
+     */
+    private function tagAll(array $roots, CmsTag $tag): void
+    {
+        CmsPageQuery::create()->filterById($roots, Criteria::IN)->_or()->filterByParent($roots, Criteria::IN)
+            ->update(['TagId' => (int) $tag->getId()]);
     }
 
     /**

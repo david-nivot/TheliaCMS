@@ -13,7 +13,7 @@
 
     <div class="card-body pb-2">
         <div class="row g-2 align-items-end">
-            <div class="col-md-6">
+            <div class="col-lg-3 col-md-12">
                 <label class="form-label" for="cms-pages-search">{{ 'Find a page'|trans({}, 'theliacms') }}</label>
                 <input type="search" class="form-control" id="cms-pages-search" name="{{ filters.parameters.search }}"
                        value="{{ filters.search }}"
@@ -21,7 +21,7 @@
                        data-testid="cms-pages-search-input">
             </div>
 
-            <div class="col-md-3">
+            <div class="col-lg col-md-4">
                 <label class="form-label" for="cms-pages-visibility">{{ 'On the site'|trans({}, 'theliacms') }}</label>
                 <select class="form-select" id="cms-pages-visibility" name="{{ filters.parameters.visibility }}"
                         data-testid="cms-pages-visibility">
@@ -31,7 +31,31 @@
                 </select>
             </div>
 
-            <div class="col-md-3 d-flex gap-2">
+            {% if filters.tag_options is not empty %}
+                <div class="col-lg col-md-4">
+                    <label class="form-label" for="cms-pages-tag">{{ 'Tag'|trans({}, 'theliacms') }}</label>
+                    <select class="form-select" id="cms-pages-tag" name="{{ filters.parameters.tag }}" data-testid="cms-pages-tag">
+                        <option value="">{{ 'Any tag'|trans({}, 'theliacms') }}</option>
+                        {% for option in filters.tag_options %}
+                            <option value="{{ option.value }}" {{ option.selected ? 'selected' : '' }}>{{ option.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endif %}
+
+            {% if filters.type_options is not empty %}
+                <div class="col-lg col-md-4">
+                    <label class="form-label" for="cms-pages-type">{{ 'Page type'|trans({}, 'theliacms') }}</label>
+                    <select class="form-select" id="cms-pages-type" name="{{ filters.parameters.type }}" data-testid="cms-pages-type">
+                        <option value="">{{ 'Any type'|trans({}, 'theliacms') }}</option>
+                        {% for option in filters.type_options %}
+                            <option value="{{ option.value }}" {{ option.selected ? 'selected' : '' }}>{{ option.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endif %}
+
+            <div class="col-lg-auto col-md-12 d-flex gap-2">
                 <button type="submit" class="btn btn-primary flex-grow-1 flex-shrink-0" data-testid="cms-pages-search-submit">
                     <i class="bi bi-search me-1" aria-hidden="true"></i>{{ 'Search'|trans({}, 'theliacms') }}
                 </button>
@@ -43,33 +67,103 @@
             </div>
         </div>
 
-        <fieldset class="mt-3">
-            <legend class="form-label mb-2">{{ 'Publication'|trans({}, 'theliacms') }}</legend>
-            <div class="d-flex flex-wrap gap-2" data-testid="cms-pages-status-filters">
-                {% for status in filters.status_options %}
-                    <input type="checkbox" class="btn-check" name="{{ filters.parameters.statuses }}[]"
-                           id="cms-pages-status-{{ status.value }}" value="{{ status.value }}"
-                           {{ status.checked ? 'checked' : '' }} autocomplete="off">
-                    <label class="btn btn-sm {{ status.checked ? 'btn-primary' : 'btn-outline-secondary' }}"
-                           for="cms-pages-status-{{ status.value }}">
-                        {{ status.label|trans({}, 'theliacms') }}
-                    </label>
-                {% endfor %}
+        <div class="row g-2 align-items-end mt-1">
+            <fieldset class="col-lg">
+                <legend class="form-label mb-2">{{ 'Publication'|trans({}, 'theliacms') }}</legend>
+                <div class="d-flex flex-wrap gap-2" data-testid="cms-pages-status-filters">
+                    {% for status in filters.status_options %}
+                        <input type="checkbox" class="btn-check" name="{{ filters.parameters.statuses }}[]"
+                               id="cms-pages-status-{{ status.value }}" value="{{ status.value }}"
+                               {{ status.checked ? 'checked' : '' }} autocomplete="off">
+                        <label class="btn btn-sm {{ status.checked ? 'btn-primary' : 'btn-outline-secondary' }}"
+                               for="cms-pages-status-{{ status.value }}">
+                            {{ status.label|trans({}, 'theliacms') }} <span data-testid="cms-pages-status-count-{{ status.value }}">({{ status.count }})</span>
+                        </label>
+                    {% endfor %}
+                </div>
+            </fieldset>
+
+            <div class="col-lg-3 col-md-6">
+                {# Not a filter, so not in the row of filters. Starts the sort in its
+                   own direction: A to Z, latest first; the headers of the table
+                   reverse it. #}
+                <label class="form-label" for="cms-pages-sort">{{ 'Sort by'|trans({}, 'theliacms') }}</label>
+                <select class="form-select" id="cms-pages-sort" name="{{ filters.parameters.sort }}" data-testid="cms-pages-sort">
+                    <option value="">{{ 'Default order'|trans({}, 'theliacms') }}</option>
+                    {% for option in filters.sort_options %}
+                        <option value="{{ option.value }}" {{ option.selected ? 'selected' : '' }}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
             </div>
-        </fieldset>
+        </div>
+
+        <div class="row g-2 align-items-start mt-1">
+            <div class="col-lg-3 col-md-4">
+                <label class="form-label" for="cms-pages-date">{{ 'Date'|trans({}, 'theliacms') }}</label>
+                <select class="form-select" id="cms-pages-date" name="{{ filters.parameters.date }}"
+                        aria-describedby="cms-pages-date-help" data-testid="cms-pages-date">
+                    {% for option in filters.date_options %}
+                        <option value="{{ option.value }}" {{ option.selected ? 'selected' : '' }}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+                <div class="form-text" id="cms-pages-date-help">{{ 'The publication is the one of the language listed; the scheduled dates are shared by every language.'|trans({}, 'theliacms') }}</div>
+            </div>
+
+            {# ISO in the address, whatever the browser shows: a browser without a
+               date picker takes the same format, said by the hint. #}
+            <div class="col-lg-2 col-md-4">
+                <label class="form-label" for="cms-pages-from">{{ 'From'|trans({}, 'theliacms') }}</label>
+                <input type="date" class="form-control" id="cms-pages-from" name="{{ filters.parameters.from }}"
+                       value="{{ filters.from }}" placeholder="2026-01-31" pattern="\d{4}-\d{2}-\d{2}"
+                       aria-describedby="cms-pages-period-help" data-testid="cms-pages-from">
+            </div>
+
+            <div class="col-lg-2 col-md-4">
+                <label class="form-label" for="cms-pages-to">{{ 'To'|trans({}, 'theliacms') }}</label>
+                <input type="date" class="form-control" id="cms-pages-to" name="{{ filters.parameters.to }}"
+                       value="{{ filters.to }}" placeholder="2026-01-31" pattern="\d{4}-\d{2}-\d{2}"
+                       aria-describedby="cms-pages-period-help" data-testid="cms-pages-to">
+                <div class="form-text" id="cms-pages-period-help">{{ 'Both days included, as 2026-01-31.'|trans({}, 'theliacms') }}</div>
+            </div>
+
+            {% if filters.author_options is not empty %}
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label" for="cms-pages-author">{{ 'Last changed by'|trans({}, 'theliacms') }}</label>
+                    <select class="form-select" id="cms-pages-author" name="{{ filters.parameters.author }}" data-testid="cms-pages-author">
+                        <option value="">{{ 'Anyone'|trans({}, 'theliacms') }}</option>
+                        {% for option in filters.author_options %}
+                            <option value="{{ option.value }}" {{ option.selected ? 'selected' : '' }}>{{ option.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endif %}
+        </div>
     </div>
 
-    {% if filters.chips is not empty %}
+    {% if filters.chips is not empty or filters.sort_chip %}
         <div class="card-footer d-flex flex-wrap align-items-center gap-2 py-2" data-testid="cms-pages-active-filters">
-            <span class="text-muted small">{{ 'Showing only'|trans({}, 'theliacms') }}</span>
-            {% for chip in filters.chips %}
-                <a class="badge rounded-pill text-bg-light border text-decoration-none d-inline-flex align-items-center gap-1"
-                   href="{{ chip.remove_url }}">
-                    {{ chip.label }}
+            {% if filters.chips is not empty %}
+                <span class="text-muted small">{{ 'Showing only'|trans({}, 'theliacms') }}</span>
+                {% for chip in filters.chips %}
+                    <a class="badge rounded-pill text-bg-light border text-decoration-none d-inline-flex align-items-center gap-1"
+                       href="{{ chip.remove_url }}">
+                        {{ chip.label }}
+                        <i class="bi bi-x-lg" aria-hidden="true"></i>
+                        <span class="visually-hidden">{{ 'Remove this filter'|trans({}, 'theliacms') }}</span>
+                    </a>
+                {% endfor %}
+            {% endif %}
+            {% if filters.sort_chip %}
+                {# A sort keeps every page: it is not something "shown only", so it
+                   comes after the filters, without their label. #}
+                <a class="badge rounded-pill text-bg-light border text-decoration-none d-inline-flex align-items-center gap-1{{ filters.chips is not empty ? ' ms-2' : '' }}"
+                   href="{{ filters.sort_chip.remove_url }}" data-testid="cms-pages-sort-chip">
+                    {{ filters.sort_chip.label }}
                     <i class="bi bi-x-lg" aria-hidden="true"></i>
-                    <span class="visually-hidden">{{ 'Remove this filter'|trans({}, 'theliacms') }}</span>
+                    <span class="visually-hidden">{{ 'Remove this sort'|trans({}, 'theliacms') }}</span>
                 </a>
-            {% endfor %}
+                <a class="small" href="{{ filters.reverse_url }}" data-testid="cms-pages-sort-reverse">{{ 'Reverse the order'|trans({}, 'theliacms') }}</a>
+            {% endif %}
         </div>
     {% endif %}
 </form>

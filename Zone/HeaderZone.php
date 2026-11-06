@@ -21,6 +21,7 @@ use Thelia\Model\LangQuery;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Model\CmsPageContentQuery;
 use TheliaCMS\Model\CmsPageQuery;
+use TheliaCMS\Page\PageAuthorship;
 use TheliaCMS\TheliaCMS;
 
 /**
@@ -40,6 +41,7 @@ final readonly class HeaderZone
 
     public function __construct(
         private TranslatorInterface $translator,
+        private PageAuthorship $authorship,
     ) {
     }
 
@@ -77,7 +79,7 @@ final readonly class HeaderZone
             $zone->setLocale($locale)->setTitle($this->translator->trans('Header zone', [], TheliaCMS::DOMAIN_NAME, $locale));
         }
 
-        $zone->save();
+        $this->authorship->stamp($zone)->save();
 
         return $zone;
     }

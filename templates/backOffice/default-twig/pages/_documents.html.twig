@@ -3,7 +3,7 @@
     each action is a POST of its own, written at once, so the form of the page
     never holds another form.
 #}
-{% set documents_url = path('admin.cms.pages.documents.add', { id: page.id, edit_language_id: edit_language_id }) %}
+{% set documents_url = path('admin.cms.pages.documents.add', { id: page.id, edit_language_id: edit_language_id }|merge(return_query|default({}))) %}
 
 <div class="tab-pane fade" id="tab-documents" role="tabpanel" data-testid="cms-page-documents">
     <p class="text-muted">
@@ -68,7 +68,7 @@
                             </a>
                             {% if may_change_documents %}
                                 {% for move in [{ ids: document.moveUp, route: 'up', icon: 'bi-arrow-up', label: 'Move %title% up' }, { ids: document.moveDown, route: 'down', icon: 'bi-arrow-down', label: 'Move %title% down' }] %}
-                                    <form method="post" action="{{ path('admin.cms.pages.documents.order', { id: page.id, edit_language_id: edit_language_id }) }}">
+                                    <form method="post" action="{{ path('admin.cms.pages.documents.order', { id: page.id, edit_language_id: edit_language_id }|merge(return_query|default({}))) }}">
                                         <input type="hidden" name="_token" value="{{ assignToken() }}">
                                         {% for id in move.ids ?? [] %}<input type="hidden" name="documents[]" value="{{ id }}">{% endfor %}
                                         <button type="submit" class="btn btn-sm btn-outline-secondary" {{ move.ids is null ? 'disabled' : '' }}
@@ -91,7 +91,7 @@
                     </div>
 
                     {% if may_change_documents %}
-                        <form method="post" class="row g-2 mt-1 ms-2" action="{{ path('admin.cms.pages.documents.describe', { id: page.id, documentId: document.id, edit_language_id: edit_language_id }) }}">
+                        <form method="post" class="row g-2 mt-1 ms-2" action="{{ path('admin.cms.pages.documents.describe', { id: page.id, documentId: document.id, edit_language_id: edit_language_id }|merge(return_query|default({}))) }}">
                             <input type="hidden" name="_token" value="{{ assignToken() }}">
                             <div class="col-lg-4">
                                 <label class="form-label small mb-1" for="cms-page-document-title-input-{{ document.id }}">{{ 'Title'|trans({}, 'theliacms') }}</label>
@@ -117,7 +117,7 @@
                                 <p class="text-body-secondary">{{ '%name% and its file are removed, in every language. A link to it written in a page stops working.'|trans({ '%name%': document.originalName }, 'theliacms') }}</p>
                                 <div class="d-flex justify-content-end gap-2">
                                     <form method="dialog"><button type="submit" class="btn btn-outline-secondary" data-testid="cms-page-document-delete-cancel-{{ document.id }}">{{ 'Cancel'|trans({}, 'theliacms') }}</button></form>
-                                    <form method="post" action="{{ path('admin.cms.pages.documents.delete', { id: page.id, documentId: document.id, edit_language_id: edit_language_id }) }}">
+                                    <form method="post" action="{{ path('admin.cms.pages.documents.delete', { id: page.id, documentId: document.id, edit_language_id: edit_language_id }|merge(return_query|default({}))) }}">
                                         <input type="hidden" name="_token" value="{{ assignToken() }}">
                                         <button type="submit" class="btn btn-danger" data-testid="cms-page-document-delete-confirm-{{ document.id }}">{{ 'Delete this document'|trans({}, 'theliacms') }}</button>
                                     </form>

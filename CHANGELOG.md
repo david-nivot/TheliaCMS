@@ -7,7 +7,57 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **The list of pages filters by tag and by page type.** Two selects join the
+  filter bar of **CMS > Pages**: **Tag** (one tag, or **Pages without a tag**)
+  and **Page type**. Each one turns the tree into a flat list of results, like
+  the other filters, with its chip to remove it; the result line says the list
+  is flat. The selects show only when there is a choice to make: no tag on the
+  site, or a single page type, hides them.
+- **Each state of the list of pages says how many pages it holds**, as in
+  **Draft (4)**. The numbers count the whole site in the language of the
+  list, whatever is ticked, so they do not move when a box is; a state with
+  no page stays a box like the others.
+- **The settings and the content of a page lead back to the list they were
+  opened from.** Opened from a filtered list, their **Back to pages** link
+  returns to that list, with its filters, its page of results and its open
+  branches, and keeps doing so after a save, a publication or a change of
+  documents.
+- **The list of pages sorts by title, by last change or by creation date**,
+  chosen in **Sort by** or by clicking the **Title** and **Modified** headers;
+  a second click, or **Reverse the order**, turns it around. A sort turns the
+  tree into a flat list with its chip, like a filter; removing the chip gives
+  the tree back. Pages without a title in the language of the list come last.
+- **Two columns on the list of pages: Modified and Type.** The date is the
+  latest change of the page or of its content in the language of the list;
+  the type column hides on screens under 1200 px wide.
+- **The list of pages filters by period and by author.** Pick a date (last
+  change, creation, publication in the language of the list, or the
+  scheduled dates to publish and unpublish on) and one or two days, both
+  included; and **Last changed by** keeps the pages an administrator changed
+  last, an account deleted since named by its number. A day that does not
+  exist is ignored, and two days given the wrong way round are put back.
+- **Several pages of the list are answered at once.** On a filtered or
+  sorted list, a box per row and **With the selected pages…** show or hide
+  them, give them a tag or take it off, move them to the bin, or publish or
+  unpublish them in the language of the list; each action takes its own
+  right. The bin and the publication ask again on a screen that says what
+  will happen: the pages under a selected one that go with it, counted once,
+  and each page the publication would refuse, with its reason. The report
+  then names each page refused, and the list comes back with its filters.
+  It works without JavaScript; the tree keeps no box, so a folded branch
+  never goes to the bin unseen.
+
 ### Changed
+
+- **Every change of a page names the administrator who made it.** Saving or
+  generating its content, publishing it or taking it offline, hiding it,
+  moving it, putting it in the bin or back, making it the home page,
+  removing its AI mark, copying it and importing it now record who changed
+  the page last, and who created a new one; nobody when no administrator
+  acts (the command line, the install). On update, a page that named nobody
+  takes the author of its latest draft (`Config/update/2.16.0.sql`).
 
 - **The picture of a block of Mises en avant is framed on the picture.** The
   two numbers "Kept part" of each block give way to its centre, said in a
@@ -25,6 +75,12 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   figures of the site below the fold. The warning stays on the page list
   (**CMS > Pages**), where the pages are fixed, and publishing still reports
   the problems of the page being published.
+- **The list of pages says which translation is missing.** "To be translated"
+  and "To be translated again" could sit side by side on a row without saying
+  which one to deal with. They become **Settings to translate** (no title in
+  the language of the list; leads to the settings of the page) and **Content
+  to translate again** (the source changed since; leads to the content
+  screen). A page with both reasons shows both.
 
 ### Fixed
 

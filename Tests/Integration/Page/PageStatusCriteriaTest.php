@@ -19,6 +19,7 @@ use Symfony\Component\Clock\Test\ClockSensitiveTrait;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Model\CmsPageContentQuery;
 use TheliaCMS\Model\CmsPageQuery;
+use TheliaCMS\Page\Admin\CmsPageAdminRepository;
 use TheliaCMS\Page\Admin\PageStatus;
 use TheliaCMS\Page\Admin\PageStatusCriteria;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
@@ -61,6 +62,31 @@ final class PageStatusCriteriaTest extends CmsIntegrationTestCase
                 \sprintf('PHP does not see page #%d as "%s"', $page->getId(), $expected),
             );
         }
+    }
+
+    public function testTheCountersOfTheListAreThePhpStatesOfEveryLivePage(): void
+    {
+        $locale = $this->locale();
+        $repository = $this->getService(CmsPageAdminRepository::class);
+        $before = $repository->statusCounts($locale);
+
+        $this->onePageInEachState($locale);
+        // Two more drafts, so no state counts the same as another by chance.
+        $this->createPage('Criteria second draft', $locale, published: false);
+        $this->createPage('Criteria third draft', $locale, published: false);
+
+        // What PHP says of every live page of the site, models and bin out, as
+        // the listing shows them.
+        $expected = array_fill_keys(array_map(static fn (PageStatus $status): string => $status->value, PageStatus::cases()), 0);
+
+        foreach (CmsPageQuery::create()->filterByDeletedAt(null, Criteria::ISNULL)->filterByModel(0)->find() as $page) {
+            ++$expected[PageStatus::resolve($page, $this->contentOf($page, $locale))->value];
+        }
+
+        $counts = $repository->statusCounts($locale);
+
+        self::assertSame($expected, $counts, 'the counters of the list do not say what PHP says of the pages');
+        self::assertSame($before[PageStatus::Draft->value] + 3, $counts[PageStatus::Draft->value], 'the three drafts added are not counted');
     }
 
     public function testAPageIsSelectedByExactlyOneState(): void

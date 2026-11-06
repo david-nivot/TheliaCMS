@@ -1,0 +1,89 @@
+{% extends '@BackOfficeDefaultTwig/base.html.twig' %}
+
+{% set is_trash = action == 'trash' %}
+{% set heading = is_trash
+    ? 'Move %count% page(s) to the bin?'|trans({ '%count%': total }, 'theliacms')
+    : 'Publish the selected pages in “%language%”?'|trans({ '%language%': language }, 'theliacms') %}
+
+{% block title %}{{ heading }}{% endblock %}
+{% block body_testid %}cms-pages-bulk-confirm{% endblock %}
+
+{% block content %}
+    {% embed '@BackOfficeDefaultTwig/_page_header.html.twig' with { title: heading } %}
+        {% block actions %}
+            <a class="btn btn-sm btn-outline-secondary" href="{{ cancel_url }}">
+                <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>
+                {{ 'Back to pages'|trans({}, 'theliacms') }}
+            </a>
+        {% endblock %}
+    {% endembed %}
+
+    <div class="card" style="max-width: 48rem">
+        <div class="card-body">
+            {% if is_trash %}
+                {# Counted on the pages, not on the boxes: a page goes with
+                   everything under it, and a page ticked with its parent
+                   goes once. #}
+                <p data-testid="cms-pages-bulk-total">
+                    {% if inside is empty %}
+                        {{ '%count% page(s) selected go to the bin.'|trans({ '%count%': selected|length }, 'theliacms') }}
+                    {% else %}
+                        {{ '%count% page(s) go to the bin: the %selected% selected and %inside% page(s) under them.'|trans({ '%count%': total, '%selected%': selected|length, '%inside%': inside|length }, 'theliacms') }}
+                    {% endif %}
+                </p>
+                <h2 class="h6">{{ 'Selected'|trans({}, 'theliacms') }}</h2>
+                <ul data-testid="cms-pages-bulk-selected">
+                    {% for title in selected %}<li>{{ title }}</li>{% endfor %}
+                </ul>
+                {% if inside is not empty %}
+                    <h2 class="h6">{{ 'Under them, not selected but going with them'|trans({}, 'theliacms') }}</h2>
+                    <ul data-testid="cms-pages-bulk-inside">
+                        {% for title in inside %}<li>{{ title }}</li>{% endfor %}
+                    </ul>
+                {% endif %}
+                <p class="text-body-secondary small mb-0">{{ 'Their addresses stop answering at once. The bin gives them back with the pages under them.'|trans({}, 'theliacms') }}</p>
+            {% else %}
+                {# Checked as the publication checks them, without writing
+                   anything: the count announced is the one reached. #}
+                {% if ready is not empty %}
+                    <h2 class="h6" data-testid="cms-pages-bulk-ready-count">{{ '%count% page(s) will go online'|trans({ '%count%': ready|length }, 'theliacms') }}</h2>
+                    <ul data-testid="cms-pages-bulk-ready">
+                        {% for page in ready %}
+                            <li>
+                                {{ page.title }}
+                                {% for warning in page.warnings %}<div class="small text-warning-emphasis">{{ warning }}</div>{% endfor %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                {% if refused is not empty %}
+                    <h2 class="h6" data-testid="cms-pages-bulk-refused-count">{{ '%count% page(s) will be refused'|trans({ '%count%': refused|length }, 'theliacms') }}</h2>
+                    <ul data-testid="cms-pages-bulk-refused">
+                        {% for page in refused %}
+                            <li>
+                                {{ page.title }}
+                                {% for reason in page.reasons %}<div class="small text-danger-emphasis">{{ reason }}</div>{% endfor %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            {% endif %}
+        </div>
+        <div class="card-footer d-flex flex-wrap justify-content-end gap-2">
+            <a class="btn btn-outline-secondary" href="{{ cancel_url }}">{{ 'Cancel'|trans({}, 'theliacms') }}</a>
+            {% if is_trash or ready is not empty %}
+                <form method="post" action="{{ confirm_url }}" data-testid="cms-pages-bulk-confirm-form">
+                    <input type="hidden" name="_token" value="{{ assignToken() }}">
+                    <input type="hidden" name="action" value="{{ action }}">
+                    <input type="hidden" name="confirmed" value="1">
+                    {% for id in page_ids %}<input type="hidden" name="pages[]" value="{{ id }}">{% endfor %}
+                    <button type="submit" class="btn {{ is_trash ? 'btn-danger' : 'btn-primary' }}">
+                        {{ is_trash
+                            ? 'Move %count% page(s) to the bin'|trans({ '%count%': total }, 'theliacms')
+                            : 'Publish %count% page(s)'|trans({ '%count%': ready|length }, 'theliacms') }}
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

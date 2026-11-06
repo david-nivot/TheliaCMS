@@ -27,12 +27,13 @@ use TheliaCMS\Model\CmsPage;
 final readonly class PageListRow
 {
     /**
-     * @param int          $depth                  0 for a page at the root of the site
-     * @param string       $address                the address visitors use, leading slash included
-     * @param int          $childCount             pages directly underneath, bin excluded
-     * @param bool         $isOpen                 whether the branch is unfolded
-     * @param list<string> $ancestorTitles         the pages above it, closest last
-     * @param string|null  $titleInAnotherLanguage a title to show when this language has none
+     * @param int                     $depth                  0 for a page at the root of the site
+     * @param string                  $address                the address visitors use, leading slash included
+     * @param int                     $childCount             pages directly underneath, bin excluded
+     * @param bool                    $isOpen                 whether the branch is unfolded
+     * @param list<string>            $ancestorTitles         the pages above it, closest last
+     * @param string|null             $titleInAnotherLanguage a title to show when this language has none
+     * @param \DateTimeImmutable|null $modifiedAt             the last change of the page or of its content in this language
      */
     public function __construct(
         public CmsPage $page,
@@ -43,7 +44,29 @@ final readonly class PageListRow
         public bool $isOpen = false,
         public array $ancestorTitles = [],
         public ?string $titleInAnotherLanguage = null,
+        public ?\DateTimeImmutable $modifiedAt = null,
     ) {
+    }
+
+    /**
+     * The latest of the page and of its content: saving the content does not
+     * touch the page row, so the page alone would date a page rewritten this
+     * morning from the day its settings were last saved.
+     *
+     * The same rule as the sort of the listing, CmsPageAdminRepository::modifiedSql().
+     */
+    public static function latestOf(mixed $page, mixed $content): ?\DateTimeImmutable
+    {
+        $dates = array_values(array_filter(
+            [$page, $content],
+            static fn (mixed $date): bool => $date instanceof \DateTimeInterface,
+        ));
+
+        if ([] === $dates) {
+            return null;
+        }
+
+        return \DateTimeImmutable::createFromInterface(max($dates));
     }
 
     public function id(): int

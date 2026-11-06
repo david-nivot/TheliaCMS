@@ -73,6 +73,9 @@ final readonly class PageScreenTarget implements ContentScreenTarget
         'component_keep' => 'admin.cms.pages.content.component.keep',
     ];
 
+    /**
+     * @param array<string, string> $returnQuery the list the editor came from, carried by every route of the screen
+     */
     public function __construct(
         private CmsPage $page,
         private Lang $lang,
@@ -90,6 +93,7 @@ final readonly class PageScreenTarget implements ContentScreenTarget
         private SiteComponentPermission $componentPermission,
         private PageOnlineMessage $onlineMessage,
         private ZoneScreenNotes $zoneNotes,
+        private array $returnQuery = [],
     ) {
     }
 
@@ -267,7 +271,7 @@ final readonly class PageScreenTarget implements ContentScreenTarget
      */
     private function parameters(): array
     {
-        return ['id' => $this->page->getId(), EditLanguage::PARAMETER => $this->lang->getId()];
+        return ['id' => $this->page->getId(), EditLanguage::PARAMETER => $this->lang->getId(), ...$this->returnQuery];
     }
 
     /**

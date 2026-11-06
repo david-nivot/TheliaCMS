@@ -28,6 +28,7 @@
            takes its text from 4.5 to 1 down to 2 to 1, so the rows hardest to read
            end up being the ones that need attention. */
         .cms-page-row--hidden > td:first-child { box-shadow: inset 3px 0 0 0 var(--bs-secondary-color); }
+        .cms-pages-select { width: 2.5rem; }
         /* The address of a page four levels down is long enough to push the
            actions off the side of the table, where nobody scrolls to find them.
            Cut on screen, whole in the markup, so it is still read out and still
@@ -113,6 +114,9 @@
                             {{ 'Pages %first% to %last% of %total%'|trans({ '%first%': results.firstOnPage, '%last%': results.lastOnPage, '%total%': results.total }, 'theliacms') }}
                         {% endif %}
                     </span>
+                    <span class="text-muted small" data-testid="cms-pages-flat-list">
+                        {{ 'Flat list, without the tree: clear the filters to see the tree again.'|trans({}, 'theliacms') }}
+                    </span>
                 {% else %}
                     <span>{{ 'Structure of the site'|trans({}, 'theliacms') }}</span>
                     {% if filters.fold_all_url %}
@@ -129,6 +133,46 @@
                     <a class="btn btn-sm btn-outline-secondary" href="{{ filters.clear_url }}">{{ 'Show every page again'|trans({}, 'theliacms') }}</a>
                 </div>
             {% else %}
+                {% if bulk %}
+                    {# Several pages answered at once. The boxes of the rows belong to
+                       this form by their `form` attribute; without the script it works
+                       as it is, the script counts the boxes and shows the tag select
+                       for the tag only. The bin and the publication ask again on a
+                       screen of their own, which says what will really happen. #}
+                    <form method="post" id="cms-pages-bulk" action="{{ bulk.url }}" data-cms-pages-bulk data-testid="cms-pages-bulk"
+                          class="d-flex flex-wrap align-items-center gap-2 px-3 py-2 border-bottom bg-body-tertiary">
+                        <input type="hidden" name="_token" value="{{ assignToken() }}">
+                        <span class="small text-body-secondary me-1" data-cms-pages-selected aria-live="polite" hidden
+                              data-none="{{ 'No page selected'|trans({}, 'theliacms') }}"
+                              data-some="{{ '%count% page(s) selected'|trans({}, 'theliacms') }}"></span>
+                        <label class="visually-hidden" for="cms-pages-bulk-action">{{ 'With the selected pages'|trans({}, 'theliacms') }}</label>
+                        <select class="form-select form-select-sm w-auto" id="cms-pages-bulk-action" name="action" data-cms-pages-bulk-action>
+                            <option value="">{{ 'With the selected pages…'|trans({}, 'theliacms') }}</option>
+                            <option value="show">{{ 'Show on the site'|trans({}, 'theliacms') }}</option>
+                            <option value="hide">{{ 'Hide from the site'|trans({}, 'theliacms') }}</option>
+                            {% if bulk.tags is not empty %}
+                                <option value="tag">{{ 'Set the tag'|trans({}, 'theliacms') }}</option>
+                            {% endif %}
+                            <option value="trash">{{ 'Move to the bin…'|trans({}, 'theliacms') }}</option>
+                            <option value="publish">{{ 'Publish in “%language%”…'|trans({ '%language%': bulk.language }, 'theliacms') }}</option>
+                            <option value="unpublish">{{ 'Unpublish in “%language%”'|trans({ '%language%': bulk.language }, 'theliacms') }}</option>
+                        </select>
+                        {% if bulk.tags is not empty %}
+                            <span data-cms-pages-bulk-tag>
+                                <label class="visually-hidden" for="cms-pages-bulk-tag">{{ 'Tag to give'|trans({}, 'theliacms') }}</label>
+                                <select class="form-select form-select-sm w-auto" id="cms-pages-bulk-tag" name="set_tag">
+                                    <option value="">{{ 'Tag to give…'|trans({}, 'theliacms') }}</option>
+                                    {% for id, name in bulk.tags %}
+                                        <option value="{{ id }}">{{ name }}</option>
+                                    {% endfor %}
+                                    <option value="{{ bulk.no_tag }}">{{ 'No tag (take it off)'|trans({}, 'theliacms') }}</option>
+                                </select>
+                            </span>
+                        {% endif %}
+                        <button type="submit" class="btn btn-sm btn-primary" data-cms-pages-bulk-apply>{{ 'Apply'|trans({}, 'theliacms') }}</button>
+                    </form>
+                {% endif %}
+
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
                         <caption class="visually-hidden">
@@ -138,8 +182,31 @@
                         </caption>
                         <thead>
                             <tr>
-                                <th scope="col">{{ 'Title'|trans({}, 'theliacms') }}</th>
+                                {% if bulk %}
+                                    <th scope="col" class="cms-pages-select">
+                                        <input class="form-check-input" type="checkbox" id="cms-pages-select-all" data-cms-pages-select-all hidden>
+                                        <label class="visually-hidden" for="cms-pages-select-all">{{ 'Select every page of this list'|trans({}, 'theliacms') }}</label>
+                                    </th>
+                                {% endif %}
+                                {# A header sorts the list, a second click reverses it. Plain
+                                   links: the sort is in the address, like every filter. #}
+                                {% set title_sort = filters.sort_headers.title %}
+                                <th scope="col"{% if title_sort.aria_sort != 'none' %} aria-sort="{{ title_sort.aria_sort }}"{% endif %}>
+                                    <a href="{{ title_sort.url }}" class="link-body-emphasis text-decoration-none" data-testid="cms-pages-sort-title">
+                                        {{ 'Title'|trans({}, 'theliacms') }}
+                                        <i class="bi {{ title_sort.aria_sort == 'ascending' ? 'bi-sort-alpha-down' : (title_sort.aria_sort == 'descending' ? 'bi-sort-alpha-down-alt' : 'bi-arrow-down-up text-body-tertiary') }}" aria-hidden="true"></i>
+                                    </a>
+                                </th>
                                 <th scope="col">{{ 'Publication'|trans({}, 'theliacms') }}</th>
+                                {% set modified_sort = filters.sort_headers.modified %}
+                                <th scope="col" class="text-nowrap"{% if modified_sort.aria_sort != 'none' %} aria-sort="{{ modified_sort.aria_sort }}"{% endif %}>
+                                    <a href="{{ modified_sort.url }}" class="link-body-emphasis text-decoration-none" data-testid="cms-pages-sort-modified">
+                                        {{ 'Modified'|trans({}, 'theliacms') }}
+                                        <i class="bi {{ modified_sort.aria_sort == 'ascending' ? 'bi-sort-numeric-down' : (modified_sort.aria_sort == 'descending' ? 'bi-sort-numeric-down-alt' : 'bi-arrow-down-up text-body-tertiary') }}" aria-hidden="true"></i>
+                                    </a>
+                                </th>
+                                {# Under 1200 px the type gives its width to the title. #}
+                                <th scope="col" class="d-none d-xl-table-cell">{{ 'Type'|trans({}, 'theliacms') }}</th>
                                 <th scope="col">{{ 'Address'|trans({}, 'theliacms') }}</th>
                                 <th scope="col" class="text-end datatable-sticky-actions">{{ 'Actions'|trans({}, 'theliacms') }}</th>
                             </tr>
@@ -148,6 +215,13 @@
                             {% for row in rows %}
                                 <tr data-testid="cms-page-row-{{ row.id }}" data-row-id="{{ row.id }}"
                                     class="{{ row.visible ? '' : 'cms-page-row--hidden' }}">
+                                    {% if bulk %}
+                                        <td class="cms-pages-select">
+                                            <input class="form-check-input" type="checkbox" form="cms-pages-bulk" name="pages[]" value="{{ row.id }}"
+                                                   id="cms-pages-select-{{ row.id }}" data-cms-pages-select data-testid="cms-page-select-{{ row.id }}">
+                                            <label class="visually-hidden" for="cms-pages-select-{{ row.id }}">{{ 'Select %title%'|trans({ '%title%': row.title }, 'theliacms') }}</label>
+                                        </td>
+                                    {% endif %}
                                     <td class="text-wrap" style="min-width: 14rem">
                                         {% if not is_filtering %}
                                             {# Depth is drawn and also written out: indentation alone is
@@ -176,15 +250,17 @@
 
                                         <a href="{{ row.edit_url }}" class="fw-medium {{ row.is_untranslated ? 'fst-italic' : '' }}">{{ row.title }}</a>
 
+                                        {# Two reasons, two labels, each leading to the screen that settles it;
+                                           a page can have both, and then shows both. #}
                                         {% if row.is_untranslated %}
-                                            {# The name comes from another language. Saying so is what turns a
-                                               row nobody recognises into a page somebody can go and translate. #}
-                                            <span class="badge text-bg-warning ms-2">{{ 'To be translated'|trans({}, 'theliacms') }}</span>
+                                            {# The name comes from another language: the title is written in the
+                                               settings of the page, in the language of the list. #}
+                                            <a href="{{ row.edit_url }}" class="badge text-bg-warning ms-2 text-decoration-none" data-testid="cms-page-untranslated-{{ row.id }}">{{ 'Settings to translate'|trans({}, 'theliacms') }}</a>
                                         {% endif %}
                                         {% if row.is_stale_translation %}
                                             {# Written from another language whose draft changed since: the
                                                content screen of the page writes it again or marks it up to date. #}
-                                            <a href="{{ row.builder_url }}" class="badge text-bg-warning ms-2 text-decoration-none" data-testid="cms-page-stale-{{ row.id }}">{{ 'To be translated again'|trans({}, 'theliacms') }}</a>
+                                            <a href="{{ row.builder_url }}" class="badge text-bg-warning ms-2 text-decoration-none" data-testid="cms-page-stale-{{ row.id }}">{{ 'Content to translate again'|trans({}, 'theliacms') }}</a>
                                         {% endif %}
                                         {% if row.id == home_page_id %}
                                             <span class="badge bg-primary ms-2">{{ 'Home page'|trans({}, 'theliacms') }}</span>
@@ -215,6 +291,10 @@
                                         {% endif %}
                                     </td>
                                     <td><span class="badge {{ row.status_badge }}">{{ row.status_label|trans({}, 'theliacms') }}</span></td>
+                                    <td class="text-muted small text-nowrap" data-testid="cms-page-modified-{{ row.id }}">
+                                        {% if row.modified_at %}<time datetime="{{ row.modified_at|date('c') }}">{{ row.modified_at|date('d/m/Y H:i') }}</time>{% endif %}
+                                    </td>
+                                    <td class="text-muted small d-none d-xl-table-cell" data-testid="cms-page-type-{{ row.id }}">{{ row.type }}</td>
                                     <td class="text-muted small cms-page-address"
                                         {% if row.address %}title="{{ row.address }}"{% endif %}>
                                         {{ row.address ?: 'No address in this language yet'|trans({}, 'theliacms') }}
@@ -280,5 +360,9 @@
                 {% endif %}
             {% endif %}
         </div>
+    {% endif %}
+
+    {% if bulk %}
+        <script src="{{ cms_asset('assets/page-bulk.js') }}?v={{ bulk.script_version }}" defer></script>
     {% endif %}
 {% endblock %}

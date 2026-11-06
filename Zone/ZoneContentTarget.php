@@ -101,6 +101,7 @@ final readonly class ZoneContentTarget implements ContentTarget
 
     public function afterPublished(bool $wasOnline, bool $withCustomCode): void
     {
+        $this->page->sign();
         $this->httpCache->purge([CacheTags::SITE]);
         $this->activityLog->record('PUBLISH', $this->id(), \sprintf('CMS header zone published in %s%s', $this->locale, $withCustomCode ? ' (custom code allowed)' : ''));
     }
@@ -112,6 +113,7 @@ final readonly class ZoneContentTarget implements ContentTarget
 
     public function afterUnpublished(bool $wasOnline): void
     {
+        $this->page->sign();
         $this->httpCache->purge([CacheTags::SITE]);
         $this->activityLog->record('UNPUBLISH', $this->id(), \sprintf('CMS header zone unpublished in %s', $this->locale));
     }

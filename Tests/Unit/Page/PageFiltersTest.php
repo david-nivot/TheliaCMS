@@ -17,7 +17,9 @@ namespace TheliaCMS\Tests\Unit\Page;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
+use TheliaCMS\Page\Admin\PageDate;
 use TheliaCMS\Page\Admin\PageFilters;
+use TheliaCMS\Page\Admin\PageSort;
 use TheliaCMS\Page\Admin\PageStatus;
 
 /**
@@ -182,5 +184,309 @@ final class PageFiltersTest extends TestCase
     {
         self::assertSame(1, PageFilters::fromRequest(new Request(['page' => '-4']))->page);
         self::assertSame(1, PageFilters::fromRequest(new Request(['page' => '0']))->page);
+    }
+
+    #[DataProvider('tagCases')]
+    public function testATagIsAnIdOrTheWordForNone(string $given, ?int $expected): void
+    {
+        self::assertSame($expected, PageFilters::fromRequest(new Request(['tag' => $given]))->tag);
+    }
+
+    /**
+     * @return iterable<string, array{string, int|null}>
+     */
+    public static function tagCases(): iterable
+    {
+        yield 'an id' => ['12', 12];
+        yield 'none' => ['none', PageFilters::NO_TAG];
+        yield 'any' => ['', null];
+        yield 'zero' => ['0', null];
+        yield 'negative' => ['-3', null];
+        yield 'not digits' => ['12abc', null];
+        yield 'too long' => ['12345678901', null];
+    }
+
+    #[DataProvider('typeCases')]
+    public function testATypeIsACodeAndNothingElse(string $given, ?string $expected): void
+    {
+        self::assertSame($expected, PageFilters::fromRequest(new Request(['type' => $given]))->type);
+    }
+
+    /**
+     * @return iterable<string, array{string, string|null}>
+     */
+    public static function typeCases(): iterable
+    {
+        yield 'a code' => ['recipe', 'recipe'];
+        yield 'with a dash' => ['blog-post', 'blog-post'];
+        yield 'any' => ['', null];
+        yield 'upper case' => ['Recipe', null];
+        yield 'a path' => ['../recipe', null];
+    }
+
+    public function testATagOrATypeTurnsTheTreeIntoResults(): void
+    {
+        $tagged = PageFilters::fromRequest(new Request(['tag' => 'none']));
+        self::assertTrue($tagged->isFiltering());
+        self::assertSame(1, $tagged->advancedCount());
+        self::assertSame(['tag' => 'none'], $tagged->toQueryParams());
+
+        $typed = PageFilters::fromRequest(new Request(['type' => 'recipe', 'tag' => '4']));
+        self::assertTrue($typed->isFiltering());
+        self::assertSame(2, $typed->advancedCount());
+        self::assertSame(['tag' => '4', 'type' => 'recipe'], $typed->toQueryParams());
+    }
+
+    public function testRemovingTheTagOrTheTypeKeepsTheOthers(): void
+    {
+        $filters = new PageFilters(search: 'contact', page: 3, open: [4], tag: 7, type: 'recipe');
+
+        $withoutTag = $filters->withoutFilter(PageFilters::TAG);
+        self::assertNull($withoutTag->tag);
+        self::assertSame('recipe', $withoutTag->type);
+        self::assertSame('contact', $withoutTag->search);
+        self::assertSame(1, $withoutTag->page);
+
+        $withoutType = $filters->withoutFilter(PageFilters::TYPE);
+        self::assertNull($withoutType->type);
+        self::assertSame(7, $withoutType->tag);
+
+        // Every other change keeps both.
+        self::assertSame(7, $filters->withoutFilter(PageFilters::SEARCH)->tag);
+        self::assertSame('recipe', $filters->withoutStatus(PageStatus::Draft)->type);
+        self::assertSame('recipe', $filters->toggling(9)->type);
+    }
+
+    public function testATagOrATypeTheSiteDoesNotHaveIsDropped(): void
+    {
+        $tags = [7 => 'News'];
+        $types = ['default' => 'Page', 'recipe' => 'Recipe'];
+
+        $known = new PageFilters(page: 2, tag: 7, type: 'recipe');
+        self::assertSame($known, $known->knowing($tags, $types), 'known values are kept as they are');
+
+        $unknownTag = (new PageFilters(page: 2, tag: 8, type: 'recipe'))->knowing($tags, $types);
+        self::assertNull($unknownTag->tag);
+        self::assertSame('recipe', $unknownTag->type);
+        self::assertSame(2, $unknownTag->page);
+
+        $unknownType = (new PageFilters(tag: PageFilters::NO_TAG, type: 'event'))->knowing($tags, $types);
+        self::assertSame(PageFilters::NO_TAG, $unknownType->tag);
+        self::assertNull($unknownType->type);
+
+        // On a site without tags, every page is without one: the filter is no
+        // filter, and a chip saying "Without a tag" would read as a choice.
+        self::assertNull((new PageFilters(tag: PageFilters::NO_TAG))->knowing([], $types)->tag);
+    }
+
+    public function testAReturnCarriesTheStateOfTheListAndReadsBackTheSame(): void
+    {
+        $filters = new PageFilters(
+            search: 'contact',
+            statuses: [PageStatus::Draft, PageStatus::Scheduled],
+            visible: false,
+            page: 2,
+            open: [4, 9],
+            foldChosen: true,
+            tag: PageFilters::NO_TAG,
+            type: 'recipe',
+            sort: PageSort::Modified,
+            descending: false,
+        );
+
+        $return = $filters->toReturnParameter();
+        self::assertNotNull($return);
+
+        self::assertSame($filters->toQueryParams(), PageFilters::fromReturnParameter($return)->toQueryParams());
+    }
+
+    public function testThePlainListNeedsNoReturn(): void
+    {
+        self::assertNull((new PageFilters())->toReturnParameter());
+        self::assertSame([], PageFilters::returnQuery(new Request()));
+    }
+
+    #[DataProvider('refusedReturns')]
+    public function testAReturnHoldingAnythingElseThanFiltersIsThePlainList(string $given): void
+    {
+        self::assertSame([], PageFilters::fromReturnParameter($given)->toQueryParams());
+        self::assertSame([], PageFilters::returnQuery(new Request(['return' => $given])));
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function refusedReturns(): iterable
+    {
+        yield 'an address' => ['https://elsewhere.example/admin'];
+        yield 'a path' => ['/admin/cms/pages/4'];
+        yield 'a protocol-relative address' => ['//elsewhere.example'];
+        yield 'a filter and something else' => ['q=contact&next=https://elsewhere.example'];
+        yield 'a list where a word is expected' => ['q[]=contact'];
+        yield 'a word where a list is expected' => ['status=draft'];
+        yield 'too long' => ['q='.str_repeat('a', 1001)];
+    }
+
+    public function testAReturnIsPassedOnRebuiltFromItsFilters(): void
+    {
+        // Values the listing would not keep are dropped on the way, so the next
+        // screen receives what the list understands and not what was typed.
+        $query = PageFilters::returnQuery(new Request(['return' => 'q=+contact+&status[]=draft&status[]=nonsense&open=4,abc']));
+
+        self::assertSame(['return' => 'q=contact&status%5B0%5D=draft&open=4'], $query);
+    }
+
+    #[DataProvider('sortCases')]
+    public function testASortIsOneOfThreeAndADirectionOneOfTwo(array $given, ?PageSort $sort, bool $descending): void
+    {
+        $filters = PageFilters::fromRequest(new Request($given));
+
+        self::assertSame($sort, $filters->sort);
+        self::assertSame($descending, $filters->isDescending());
+    }
+
+    /**
+     * @return iterable<string, array{array<string, string>, PageSort|null, bool}>
+     */
+    public static function sortCases(): iterable
+    {
+        yield 'none' => [[], null, false];
+        yield 'a title reads from A' => [['sort' => 'title'], PageSort::Title, false];
+        yield 'a date from the latest' => [['sort' => 'modified'], PageSort::Modified, true];
+        yield 'created, from the latest' => [['sort' => 'created'], PageSort::Created, true];
+        yield 'reversed' => [['sort' => 'title', 'dir' => 'desc'], PageSort::Title, true];
+        yield 'a date from the oldest' => [['sort' => 'modified', 'dir' => 'asc'], PageSort::Modified, false];
+        yield 'an unknown sort' => [['sort' => 'status'], null, false];
+        yield 'an unknown direction' => [['sort' => 'created', 'dir' => 'up'], PageSort::Created, true];
+    }
+
+    public function testASortTurnsTheTreeIntoResults(): void
+    {
+        $sorted = new PageFilters(sort: PageSort::Created);
+
+        self::assertTrue($sorted->isFiltering());
+        self::assertFalse($sorted->withoutFilter(PageFilters::SORT)->isFiltering(), 'Removing the sort gives the tree back.');
+    }
+
+    public function testTheAddressCarriesTheDirectionOnlyWhenItIsNotTheOneTheSortStartsIn(): void
+    {
+        self::assertSame(['sort' => 'modified'], (new PageFilters(sort: PageSort::Modified))->toQueryParams());
+        self::assertSame(['sort' => 'modified'], (new PageFilters(sort: PageSort::Modified, descending: true))->toQueryParams());
+        self::assertSame(['sort' => 'modified', 'dir' => 'asc'], (new PageFilters(sort: PageSort::Modified, descending: false))->toQueryParams());
+        self::assertSame(['sort' => 'title', 'dir' => 'desc'], (new PageFilters(sort: PageSort::Title, descending: true))->toQueryParams());
+        self::assertSame([], (new PageFilters(descending: true))->toQueryParams(), 'A direction without a sort says nothing.');
+    }
+
+    public function testSortingAgainByTheSameOrderReversesItAndAnotherOrderStartsInItsOwnDirection(): void
+    {
+        $byTitle = (new PageFilters(search: 'contact', page: 3))->sortedBy(PageSort::Title);
+
+        self::assertSame(PageSort::Title, $byTitle->sort);
+        self::assertFalse($byTitle->isDescending());
+        self::assertSame(1, $byTitle->page, 'A new order starts on the first page of results.');
+        self::assertSame('contact', $byTitle->search, 'Sorting keeps the filters.');
+
+        self::assertTrue($byTitle->sortedBy(PageSort::Title)->isDescending());
+        self::assertFalse($byTitle->sortedBy(PageSort::Title)->sortedBy(PageSort::Title)->isDescending());
+
+        $reversedTitle = $byTitle->sortedBy(PageSort::Title);
+        self::assertTrue($reversedTitle->sortedBy(PageSort::Modified)->isDescending(), 'Another order starts latest first.');
+        self::assertFalse((new PageFilters(sort: PageSort::Modified, descending: true))->sortedBy(PageSort::Title)->isDescending());
+    }
+
+    public function testRemovingTheSortKeepsTheFiltersAndForgetsTheDirection(): void
+    {
+        $filters = new PageFilters(search: 'contact', tag: 4, sort: PageSort::Title, descending: true);
+
+        self::assertSame(['q' => 'contact', 'tag' => '4'], $filters->withoutFilter(PageFilters::SORT)->toQueryParams());
+        self::assertSame(['q' => 'contact', 'sort' => 'title', 'dir' => 'desc'], $filters->withoutFilter(PageFilters::TAG)->toQueryParams());
+    }
+
+    /**
+     * @param array<string, string> $given
+     */
+    #[DataProvider('periods')]
+    public function testAPeriodIsADateAndOneOrTwoDaysOfTheCalendar(array $given, ?PageDate $date, ?string $from, ?string $to): void
+    {
+        $filters = PageFilters::fromRequest(new Request($given));
+
+        self::assertSame($date, $filters->date);
+        self::assertSame($from, $filters->from?->format('Y-m-d H:i:s'));
+        self::assertSame($to, $filters->to?->format('Y-m-d H:i:s'));
+        self::assertSame(null !== $date, $filters->isFiltering(), 'a period turns the tree into results, no period does not');
+    }
+
+    /**
+     * @return iterable<string, array{array<string, string>, PageDate|null, string|null, string|null}>
+     */
+    public static function periods(): iterable
+    {
+        yield 'two days' => [['date' => 'published', 'from' => '2026-02-01', 'to' => '2026-02-10'], PageDate::Published, '2026-02-01 00:00:00', '2026-02-10 00:00:00'];
+        yield 'the last change unless told' => [['from' => '2026-02-01'], PageDate::Modified, '2026-02-01 00:00:00', null];
+        yield 'a date the module does not know is the last change' => [['date' => 'deleted', 'to' => '2026-02-10'], PageDate::Modified, null, '2026-02-10 00:00:00'];
+        yield 'bounds the wrong way round are put back' => [['date' => 'created', 'from' => '2026-03-01', 'to' => '2026-02-01'], PageDate::Created, '2026-02-01 00:00:00', '2026-03-01 00:00:00'];
+        yield 'a day that does not exist is ignored' => [['from' => '2026-02-31', 'to' => '2026-03-01'], PageDate::Modified, null, '2026-03-01 00:00:00'];
+        yield 'a day written another way is ignored' => [['from' => '01/02/2026', 'to' => '2026-2-1'], null, null, null];
+        yield 'a date with no day is no period' => [['date' => 'unpublish_on'], null, null, null];
+        yield 'a time is not a day' => [['from' => '2026-02-01 10:00'], null, null, null];
+    }
+
+    public function testTheAddressCarriesThePeriodAndTheDateOnlyWhenItIsNotTheLastChange(): void
+    {
+        $day = new \DateTimeImmutable('2026-02-01');
+
+        self::assertSame(['from' => '2026-02-01', 'to' => '2026-02-01'], (new PageFilters(date: PageDate::Modified, from: $day, to: $day))->toQueryParams());
+        self::assertSame(['date' => 'publish_on', 'to' => '2026-02-01'], (new PageFilters(date: PageDate::PublishOn, to: $day))->toQueryParams());
+
+        $read = PageFilters::fromRequest(new Request(['date' => 'publish_on', 'to' => '2026-02-01']));
+        self::assertSame(['date' => 'publish_on', 'to' => '2026-02-01'], $read->toQueryParams(), 'read back the same');
+    }
+
+    #[DataProvider('authors')]
+    public function testAnAuthorIsTheIdOfAnAccount(string $given, ?int $expected): void
+    {
+        $filters = PageFilters::fromRequest(new Request(['author' => $given]));
+
+        self::assertSame($expected, $filters->author);
+        self::assertSame(null === $expected ? [] : ['author' => $given], $filters->toQueryParams());
+    }
+
+    /**
+     * @return iterable<string, array{string, int|null}>
+     */
+    public static function authors(): iterable
+    {
+        yield 'an id' => ['12', 12];
+        yield 'zero' => ['0', null];
+        yield 'a negative id' => ['-3', null];
+        yield 'a name' => ['admin', null];
+    }
+
+    public function testAPeriodAndAnAuthorCountAsFiltersAndGoOneByOne(): void
+    {
+        $day = new \DateTimeImmutable('2026-02-01');
+        $filters = new PageFilters(search: 'contact', date: PageDate::Created, from: $day, author: 4);
+
+        self::assertSame(2, $filters->advancedCount());
+        self::assertSame(['q' => 'contact', 'author' => '4'], $filters->withoutFilter(PageFilters::DATE)->toQueryParams());
+        self::assertSame(['q' => 'contact', 'date' => 'created', 'from' => '2026-02-01'], $filters->withoutFilter(PageFilters::AUTHOR)->toQueryParams());
+    }
+
+    public function testAnAuthorWhoChangedNoPageIsDropped(): void
+    {
+        $known = new PageFilters(author: 4);
+        self::assertSame($known, $known->knowing([], [], [4 => 'Jeanne Martin']));
+        // A deleted account still names the pages it changed.
+        self::assertSame(5, (new PageFilters(author: 5))->knowing([], [], [5 => null])->author);
+        self::assertNull((new PageFilters(author: 6))->knowing([], [], [4 => 'Jeanne Martin'])->author);
+    }
+
+    public function testAReturnCarriesThePeriodAndTheAuthor(): void
+    {
+        $filters = new PageFilters(date: PageDate::Published, from: new \DateTimeImmutable('2026-02-01'), to: new \DateTimeImmutable('2026-02-10'), author: 4);
+        $return = $filters->toReturnParameter();
+        self::assertNotNull($return);
+
+        self::assertSame($filters->toQueryParams(), PageFilters::fromReturnParameter($return)->toQueryParams());
     }
 }

@@ -15,6 +15,8 @@ declare(strict_types=1);
 namespace TheliaCMS\Page\Admin;
 
 use Propel\Runtime\ActiveQuery\Criteria;
+use Propel\Runtime\Propel;
+use Thelia\Model\Map\AdminTableMap;
 use Thelia\Model\RewritingUrlQuery;
 use TheliaCMS\Content\Document;
 use TheliaCMS\Model\CmsPage;
@@ -22,6 +24,7 @@ use TheliaCMS\Model\CmsPageContentQuery;
 use TheliaCMS\Model\CmsPageI18nQuery;
 use TheliaCMS\Model\CmsPageQuery;
 use TheliaCMS\Model\Map\CmsPageI18nTableMap;
+use TheliaCMS\Model\Map\CmsPageTableMap;
 use TheliaCMS\Page\TrashRetention;
 use TheliaCMS\Settings\CmsSettings;
 use TheliaCMS\TheliaCMS;
@@ -63,8 +66,8 @@ final readonly class CmsPageAdminRepository
     }
 
     /**
-     * The pages matching a search or a state filter, flat, ordered by title and
-     * cut to one page of results.
+     * The pages matching a search, a filter or a sort, flat, ordered by title
+     * unless sorted otherwise, and cut to one page of results.
      *
      * Ordered by title rather than by position: position only means something
      * among siblings, and these rows are not siblings.
@@ -75,8 +78,7 @@ final readonly class CmsPageAdminRepository
 
         $total = (int) $this->matching($locale, $filters, $now)->count();
         $pages = iterator_to_array(
-            $this->matching($locale, $filters, $now)
-                ->orderBy(CmsPageI18nTableMap::COL_TITLE)
+            $this->ordered($this->matching($locale, $filters, $now), $filters)
                 ->offset(($filters->page - 1) * PageFilters::PER_PAGE)
                 ->limit(PageFilters::PER_PAGE)
                 ->find(),
@@ -155,6 +157,44 @@ final readonly class CmsPageAdminRepository
     }
 
     /**
+     * How many live pages are in each state in this language, the whole site
+     * counted whatever the filters, so a number does not move when a box is
+     * ticked. Models and the bin are out, as on the listing.
+     *
+     * One statement for the five: the same content join, one sum per state, with
+     * the conditions PageStatusCriteria keeps equal to PageStatus::resolve().
+     *
+     * @return array<string, int> by the value of the state, every state present
+     */
+    public function statusCounts(string $locale, ?\DateTimeInterface $now = null): array
+    {
+        $now ??= new \DateTimeImmutable();
+        $query = PageStatusCriteria::joinContent(
+            CmsPageQuery::create()->filterByDeletedAt(null, Criteria::ISNULL)->filterByModel(0),
+            $locale,
+        );
+        $aliases = [];
+
+        foreach (PageStatus::cases() as $status) {
+            $alias = 'count_'.preg_replace('/\W/', '_', $status->value);
+            $aliases[$status->value] = $alias;
+            $query->withColumn('COALESCE(SUM(CASE WHEN '.PageStatusCriteria::sqlFor($status, $now).' THEN 1 ELSE 0 END), 0)', $alias);
+        }
+
+        // A selection of columns comes back as arrays, one row here: the sums
+        // of a query without grouping.
+        $rows = $query->select(array_values($aliases))->find()->getData();
+        $row = \is_array($rows[0] ?? null) ? $rows[0] : [];
+        $counts = [];
+
+        foreach ($aliases as $value => $alias) {
+            $counts[$value] = (int) ($row[$alias] ?? 0);
+        }
+
+        return $counts;
+    }
+
+    /**
      * Identifiers of the pages that have at least one page underneath them, used
      * to unfold a site small enough to be read whole.
      *
@@ -176,6 +216,83 @@ final readonly class CmsPageAdminRepository
             ->filterById($id)
             ->filterByDeletedAt(null, Criteria::ISNULL)
             ->findOne();
+    }
+
+    /**
+     * The pages a selection of the list names, in one query: live pages only,
+     * and none of the models or the header zone, which the list never shows.
+     * Any other id is left out.
+     *
+     * @param list<int> $ids
+     *
+     * @return list<CmsPage> by title in this language, then by id
+     */
+    public function selected(array $ids, string $locale): array
+    {
+        $ids = array_values(array_unique(array_filter($ids, static fn (int $id): bool => $id > 0)));
+
+        if ([] === $ids) {
+            return [];
+        }
+
+        return iterator_to_array(
+            CmsPageQuery::create()
+                ->filterById($ids, Criteria::IN)
+                ->filterByDeletedAt(null, Criteria::ISNULL)
+                ->filterByModel(0)
+                ->joinWithI18n($locale, Criteria::LEFT_JOIN)
+                ->addAscendingOrderByColumn(CmsPageI18nTableMap::COL_TITLE)
+                ->orderById()
+                ->find(),
+            false,
+        );
+    }
+
+    /**
+     * The names of these pages in this language, in one query; a page without
+     * one is named by its number.
+     *
+     * @param list<int> $ids
+     *
+     * @return array<int, string> by id, sorted by name
+     */
+    public function titles(array $ids, string $locale): array
+    {
+        if ([] === $ids) {
+            return [];
+        }
+
+        $titles = [];
+
+        foreach (CmsPageQuery::create()->filterById($ids, Criteria::IN)->joinWithI18n($locale, Criteria::LEFT_JOIN)->find() as $page) {
+            $titles[(int) $page->getId()] = $this->label($page, $locale);
+        }
+
+        asort($titles, \SORT_NATURAL | \SORT_FLAG_CASE);
+
+        return $titles;
+    }
+
+    /**
+     * Which of these pages are online in this language, in one query.
+     *
+     * @param list<int> $ids
+     *
+     * @return array<int, true>
+     */
+    public function onlineIn(array $ids, string $locale): array
+    {
+        if ([] === $ids) {
+            return [];
+        }
+
+        $online = [];
+
+        foreach (CmsPageContentQuery::create()->filterByPageId($ids, Criteria::IN)->filterByLocale($locale)->filterByPublishedAt(null, Criteria::ISNOTNULL)->select(['PageId'])->find() as $pageId) {
+            $online[(int) $pageId] = true;
+        }
+
+        return $online;
     }
 
     public function findDeleted(int $id): ?CmsPage
@@ -285,6 +402,39 @@ final readonly class CmsPageAdminRepository
     }
 
     /**
+     * Orders the results by the sort asked, by title when none is.
+     *
+     * The pages with nothing to sort on come last in both directions: a page
+     * with no title in this language sorted first would push the pages that
+     * have one off the first screen. The identifier settles a tie, so a row
+     * cannot show up on two pages of results.
+     */
+    private function ordered(CmsPageQuery $query, PageFilters $filters): CmsPageQuery
+    {
+        $direction = $filters->isDescending() ? Criteria::DESC : Criteria::ASC;
+        $page = '`'.CmsPageTableMap::TABLE_NAME.'`';
+
+        $value = match ($filters->sort ?? PageSort::Title) {
+            PageSort::Title => '`'.CmsPageI18nTableMap::TABLE_NAME.'`.`title`',
+            PageSort::Modified => PageDate::Modified->sql(),
+            PageSort::Created => $page.'.`created_at`',
+        };
+        $missing = PageSort::Title === ($filters->sort ?? PageSort::Title)
+            ? "COALESCE({$value}, '') = ''"
+            : "({$value}) IS NULL";
+
+        $query->addAscendingOrderByColumn("(CASE WHEN {$missing} THEN 1 ELSE 0 END)");
+
+        if (Criteria::DESC === $direction) {
+            $query->addDescendingOrderByColumn("({$value})");
+        } else {
+            $query->addAscendingOrderByColumn("({$value})");
+        }
+
+        return $query->orderById($direction);
+    }
+
+    /**
      * The live pages matching the filters, without ordering or limit.
      */
     private function matching(string $locale, PageFilters $filters, \DateTimeInterface $now): CmsPageQuery
@@ -306,11 +456,82 @@ final readonly class CmsPageAdminRepository
             $query->filterByVisible($filters->visible ? 1 : 0);
         }
 
+        if (PageFilters::NO_TAG === $filters->tag) {
+            $query->filterByTagId(null, Criteria::ISNULL);
+        } elseif (null !== $filters->tag) {
+            $query->filterByTagId($filters->tag);
+        }
+
+        if (null !== $filters->type) {
+            $query->filterByPageType($filters->type);
+        }
+
+        if (null !== $filters->author) {
+            $query->filterByUpdatedBy($filters->author);
+        }
+
+        // One join of the content row serves the states, the date of the last
+        // change and the one of the publication.
+        if ([] !== $filters->statuses || PageSort::Modified === $filters->sort || true === $filters->date?->readsTheContent()) {
+            PageStatusCriteria::joinContent($query, $locale);
+        }
+
         if ([] !== $filters->statuses) {
-            PageStatusCriteria::restrictTo(PageStatusCriteria::joinContent($query, $locale), $filters->statuses, $now);
+            PageStatusCriteria::restrictTo($query, $filters->statuses, $now);
+        }
+
+        if (null !== $filters->date) {
+            $this->restrictToPeriod($query, $filters->date, $filters->from, $filters->to);
         }
 
         return $query;
+    }
+
+    /**
+     * Keeps the pages whose date falls in the period, both days included. The
+     * dates are compared as they are written, in the time zone of the shop,
+     * which is the one the screens show them in.
+     */
+    private function restrictToPeriod(CmsPageQuery $query, PageDate $date, ?\DateTimeImmutable $from, ?\DateTimeImmutable $to): void
+    {
+        if (null !== $from) {
+            $query->where('('.$date->sql().') >= ?', $from->format('Y-m-d 00:00:00'), \PDO::PARAM_STR);
+        }
+
+        if (null !== $to) {
+            // Before the next day starts: the whole of the last day is kept.
+            $query->where('('.$date->sql().') < ?', $to->modify('+1 day')->format('Y-m-d 00:00:00'), \PDO::PARAM_STR);
+        }
+    }
+
+    /**
+     * The administrators who changed a live page last, by id, with their name,
+     * or null for an account deleted since: what the author filter offers.
+     *
+     * @return array<int, string|null>
+     */
+    public function authors(): array
+    {
+        $page = CmsPageTableMap::TABLE_NAME;
+        $admin = AdminTableMap::TABLE_NAME;
+        $statement = Propel::getConnection('TheliaMain')->prepare(
+            "SELECT DISTINCT `{$page}`.`updated_by` AS id, `{$admin}`.`firstname`, `{$admin}`.`lastname`, `{$admin}`.`login`
+            FROM `{$page}` LEFT JOIN `{$admin}` ON `{$admin}`.`id` = `{$page}`.`updated_by`
+            WHERE `{$page}`.`updated_by` IS NOT NULL AND `{$page}`.`deleted_at` IS NULL AND `{$page}`.`model` = 0"
+        );
+        $statement->execute();
+
+        $authors = [];
+
+        foreach ($statement->fetchAll(\PDO::FETCH_ASSOC) as $row) {
+            $name = trim($row['firstname'].' '.$row['lastname']);
+            $authors[(int) $row['id']] = null === $row['login'] ? null : ('' === $name ? (string) $row['login'] : $name);
+        }
+
+        // The accounts by name, the deleted ones last.
+        uasort($authors, static fn (?string $one, ?string $other): int => [null === $one, (string) $one] <=> [null === $other, (string) $other]);
+
+        return $authors;
     }
 
     /**
@@ -441,6 +662,7 @@ final readonly class CmsPageAdminRepository
                 address: isset($addresses[$id]) ? '/'.ltrim($addresses[$id], '/') : '',
                 childCount: $childCounts[$id] ?? 0,
                 isOpen: $filters->isOpen($id),
+                modifiedAt: PageListRow::latestOf($page->getUpdatedAt(), ($contents[$id] ?? null)?->getUpdatedAt()),
             );
         }
 
@@ -488,6 +710,7 @@ final readonly class CmsPageAdminRepository
                 isOpen: $row->isOpen,
                 ancestorTitles: $row->ancestorTitles,
                 titleInAnotherLanguage: $found[$row->id()] ?? null,
+                modifiedAt: $row->modifiedAt,
             ),
             $rows,
         );
@@ -606,6 +829,7 @@ final readonly class CmsPageAdminRepository
                 isOpen: $row->isOpen,
                 ancestorTitles: $chain,
                 titleInAnotherLanguage: $row->titleInAnotherLanguage,
+                modifiedAt: $row->modifiedAt,
             );
         }
 

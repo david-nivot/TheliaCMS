@@ -16,8 +16,10 @@ namespace TheliaCMS\Page\Admin;
 
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Thelia\Model\Lang;
+use TheliaCMS\Model\CmsTag;
 use TheliaCMS\Page\PageTagColor;
 use TheliaCMS\Page\PageTagRepository;
+use TheliaCMS\Page\PageTypeDetails;
 use TheliaCMS\Page\PageTypeRepository;
 use TheliaCMS\Page\PublishedAccessibilityFinder;
 use TheliaCMS\Page\SampleTextPageFinder;
@@ -28,8 +30,8 @@ use TheliaCMS\TheliaCMS;
  * Everything the page listing renders, assembled in one place.
  *
  * The screen has two shapes and the choice between them is one rule: with a word
- * to look for or a state to keep, it is a list of results; with nothing asked, it
- * is the tree. Both produce the same kind of row, so the template has one table
+ * to look for, a state, a tag or a type to keep, or a sort, it is a list of results; with
+ * nothing asked, it is the tree. Both produce the same kind of row, so the template has one table
  * and not two.
  */
 final readonly class PageListPresenter
@@ -55,18 +57,41 @@ final readonly class PageListPresenter
         $languageId = (int) $lang->getId();
         $liveCount = $this->pages->countLive();
         $trashCount = $this->pages->countInTrash();
+        // Read once for the whole screen: the filter bar, the chips and the
+        // rows all name tags and types.
+        $tags = $this->tags->all();
+        $types = $this->types->allDetails();
+        $tagNames = [];
 
-        $filters = $this->unfoldSmallSite($filters, $liveCount);
+        foreach ($tags as $tag) {
+            $tagNames[(int) $tag->getId()] = (string) $tag->getName();
+        }
+
+        $typeNames = array_map(static fn (PageTypeDetails $details): string => $details->title($locale), $types);
+
+        $authors = $this->pages->authors();
+
+        $filters = $this->unfoldSmallSite($filters->knowing($tagNames, $typeNames, $authors), $liveCount);
         $results = $filters->isFiltering() ? $this->pages->results($locale, $filters) : null;
         $rows = null === $results ? $this->pages->branch($locale, $filters) : $results->rows;
 
         return [
             'is_filtering' => $filters->isFiltering(),
-            'rows' => $this->rows($rows, $filters, $languageId, null === $results, $this->stalePages->ids($locale, array_map(static fn (PageListRow $row): int => $row->id(), $rows))),
+            'rows' => $this->rows($rows, $filters, $languageId, null === $results, $this->stalePages->ids($locale, array_map(static fn (PageListRow $row): int => $row->id(), $rows)), $tags, $typeNames),
             'results' => $results,
             'live_count' => $liveCount,
-            'filters' => $this->filterBar->present($filters, $languageId, $trashCount),
+            'filters' => $this->filterBar->present($filters, $languageId, $trashCount, $tagNames, $typeNames, $this->pages->statusCounts($locale), $authors),
             'filter_query' => $filters->toQueryParams(),
+            // The selection is offered on the flat list only: on the tree, a
+            // folded branch would go to the bin under a box nobody saw ticked.
+            'bulk' => $filters->isFiltering() ? [
+                'url' => $this->urls->generate('admin.cms.pages.bulk', [EditLanguage::PARAMETER => $languageId, ...$filters->toQueryParams()]),
+                'tags' => $tagNames,
+                'no_tag' => CmsPageBulkController::NO_TAG,
+                'language' => (string) $lang->getTitle(),
+                // A changed script is fetched again, not read from the cache of the browser.
+                'script_version' => substr(hash('xxh3', (string) @filemtime(__DIR__.'/../../templates/backOffice/default-twig/assets/page-bulk.js')), 0, 12),
+            ] : null,
             'edit_locale' => $locale,
             'edit_language_id' => $languageId,
             'home_page_id' => (int) TheliaCMS::getConfigValue('home_page_id', 0),
@@ -78,7 +103,7 @@ final readonly class PageListPresenter
             // Pages online with an image nobody described or a link that says
             // nothing: published before the check, or by a path that skips it.
             'accessibility_pages' => $this->accessibilityPages->publishedPagesWithProblems($locale),
-            'page_templates' => $this->pageTemplates($locale),
+            'page_templates' => $this->pageTemplates($locale, $types),
         ];
     }
 
@@ -86,14 +111,16 @@ final readonly class PageListPresenter
      * The types a page can be started from: the ones with a model, a brief
      * or fields. A type that is only a code is picked in the form of a page.
      *
+     * @param array<string, PageTypeDetails> $types by code
+     *
      * @return list<array{code: string, title: string, has_model: bool}>
      */
-    private function pageTemplates(string $locale): array
+    private function pageTemplates(string $locale, array $types): array
     {
         $models = $this->types->modelIds();
         $templates = [];
 
-        foreach ($this->types->allDetails() as $code => $details) {
+        foreach ($types as $code => $details) {
             if (!isset($models[$code]) && !$details->isTemplate()) {
                 continue;
             }
@@ -122,20 +149,21 @@ final readonly class PageListPresenter
     }
 
     /**
-     * @param list<PageListRow> $rows
-     * @param array<int, true>  $stale the pages to translate again in this language, by id
+     * @param list<PageListRow>     $rows
+     * @param array<int, true>      $stale     the pages to translate again in this language, by id
+     * @param list<CmsTag>          $allTags   every tag of the site, read once for the whole listing:
+     *                                         asking each page for its tag would be a query per line
+     * @param array<string, string> $typeNames the names of the page types, by code
      *
      * @return list<array<string, mixed>>
      */
-    private function rows(array $rows, PageFilters $filters, int $languageId, bool $isTree, array $stale): array
+    private function rows(array $rows, PageFilters $filters, int $languageId, bool $isTree, array $stale, array $allTags, array $typeNames): array
     {
         $firstOfParent = [];
         $lastOfParent = [];
-        // One query for the whole listing: asking each page for its tag would
-        // be a query per line.
         $tags = [];
 
-        foreach ($this->tags->all() as $tag) {
+        foreach ($allTags as $tag) {
             $color = PageTagColor::fromStored($tag->getColor(), $tag->getTextColor());
             $tags[(int) $tag->getId()] = [
                 'name' => (string) $tag->getName(),
@@ -155,6 +183,10 @@ final readonly class PageListPresenter
         }
 
         $presented = [];
+        // The screens a row opens carry the state of the list, so their "back to
+        // the list" lands on this list and not on the folded tree.
+        $return = $filters->toReturnParameter();
+        $returnQuery = null === $return ? [] : [PageFilters::RETURN => $return];
 
         foreach ($rows as $index => $row) {
             $parent = (int) $row->page->getParent();
@@ -186,9 +218,12 @@ final readonly class PageListPresenter
                 'tag' => $tags[(int) $row->page->getTagId()]['name'] ?? null,
                 'tag_badge' => $tags[(int) $row->page->getTagId()]['badge'] ?? PageTagColor::NO_COLOR_BADGE,
                 'tag_badge_style' => $tags[(int) $row->page->getTagId()]['badge_style'] ?? '',
+                'modified_at' => $row->modifiedAt,
+                // A type the site no longer describes is named by its code.
+                'type' => $typeNames[(string) $row->page->getPageType()] ?? (string) $row->page->getPageType(),
                 'toggle_url' => $row->hasChildren() ? $this->filterBar->toggleUrl($filters, $languageId, $id) : null,
-                'edit_url' => $this->route('admin.cms.pages.edit', $id, $languageId),
-                'builder_url' => $this->route('admin.cms.pages.content.edit', $id, $languageId),
+                'edit_url' => $this->route('admin.cms.pages.edit', $id, $languageId, extra: $returnQuery),
+                'builder_url' => $this->route('admin.cms.pages.content.edit', $id, $languageId, extra: $returnQuery),
                 // The actions that come back to this screen carry the state of it
                 // in their address, so acting on a row does not fold the tree the
                 // editor just opened or drop the search they are working from.
@@ -223,12 +258,16 @@ final readonly class PageListPresenter
         return $row->titleInAnotherLanguage ?? '#'.$row->id();
     }
 
-    private function route(string $name, int $id, int $languageId, ?PageFilters $filters = null): string
+    /**
+     * @param array<string, string> $extra
+     */
+    private function route(string $name, int $id, int $languageId, ?PageFilters $filters = null, array $extra = []): string
     {
         return $this->urls->generate($name, [
             'id' => $id,
             EditLanguage::PARAMETER => $languageId,
             ...$filters?->toQueryParams() ?? [],
+            ...$extra,
         ]);
     }
 

@@ -329,7 +329,7 @@ the signed preview link of the draft.
   translation and asks nothing of the generator; put back as it was, the source
   is up to date again. A language written by hand is followed once tied to
   the one it translates, from the same panel. The list of pages shows
-  "To be translated again" on the row, and the dashboard of a showcase site
+  "Content to translate again" on the row, and the dashboard of a showcase site
   counts these pages for each language (`Page\StalePages`: one query for the
   translated rows and their source drafts, the words compared in PHP; pages in
   the bin and the models of the page types are left out). Items of the

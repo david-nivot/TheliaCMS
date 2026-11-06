@@ -29,7 +29,6 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Model\Lang;
-use TheliaCMS\Content\InvalidDocumentException;
 use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Media\Admin\CmsMediaWriter;
 use TheliaCMS\Media\CmsMediaLibrary;
@@ -82,6 +81,7 @@ final readonly class CmsPageAdminController
         private PageFields $fields,
         private PageDocumentRows $documentRows,
         private PageOnlineMessage $onlineMessage,
+        private PublicationRefusal $refusals,
     ) {
     }
 
@@ -145,7 +145,7 @@ final readonly class CmsPageAdminController
             $this->writer->saveDraft($page, $lang->getLocale(), new PageDraft(title: mb_substr($title, 0, 255)));
         }
 
-        return $this->backToEdit((int) $page->getId(), $lang);
+        return $this->backToEdit($request, (int) $page->getId(), $lang);
     }
 
     /**
@@ -228,7 +228,7 @@ final readonly class CmsPageAdminController
 
         $this->publishPage($request, $this->livePageOrFail($id), $lang->getLocale());
 
-        return $this->backToEdit($id, $lang);
+        return $this->backToEdit($request, $id, $lang);
     }
 
     #[Route('/{id}/unpublish', name: 'unpublish', requirements: ['id' => '\d+'], methods: ['POST'])]
@@ -243,7 +243,7 @@ final readonly class CmsPageAdminController
         // The header zone has no settings screen of its own: it is written on the content screen.
         return HeaderZone::MODEL === $page->getModel()
             ? $this->support->redirectInLanguage('admin.cms.pages.content.edit', $lang->getId(), ['id' => $id])
-            : $this->backToEdit($id, $lang);
+            : $this->backToEdit($request, $id, $lang);
     }
 
     #[Route('/{id}/remove-ai-mark', name: 'remove_ai_mark', requirements: ['id' => '\d+'], methods: ['POST'])]
@@ -256,7 +256,7 @@ final readonly class CmsPageAdminController
             $this->support->flash($request, 'success', $this->support->translate('The AI mark has been removed from this page in this language.'));
         }
 
-        return $this->backToEdit($id, $lang);
+        return $this->backToEdit($request, $id, $lang);
     }
 
     #[Route('/{id}/visibility', name: 'visibility', requirements: ['id' => '\d+'], methods: ['POST'])]
@@ -299,7 +299,7 @@ final readonly class CmsPageAdminController
             $this->support->translate('(copy)'),
         );
 
-        return $this->backToEdit((int) $copy->getId(), $lang);
+        return $this->backToEdit($request, (int) $copy->getId(), $lang);
     }
 
     #[Route('/{id}/set-as-home', name: 'set_as_home', requirements: ['id' => '\\d+'], methods: ['POST'])]
@@ -390,7 +390,7 @@ final readonly class CmsPageAdminController
                     $this->publishPage($request, $page, $locale);
                 }
 
-                return $this->backToEdit((int) $page->getId(), $lang);
+                return $this->backToEdit($request, (int) $page->getId(), $lang);
             } catch (InvalidFieldsException $exception) {
                 foreach ($exception->translated($this->translator) as $problem) {
                     $form->addError(new FormError($problem));
@@ -407,6 +407,13 @@ final readonly class CmsPageAdminController
         $type = $this->pageTypes->details((string) $page->getPageType());
 
         return new Response($this->twig->render(self::EDIT_TEMPLATE, [
+            // The list the editor came from, and what carries it to the next
+            // screen and through the actions of this one.
+            'back_url' => $this->urls->generate('admin.cms.pages.list', [
+                self::EDIT_LANGUAGE_PARAMETER => $lang->getId(),
+                ...PageFilters::fromReturnParameter((string) $request->query->get(PageFilters::RETURN, ''))->toQueryParams(),
+            ]),
+            'return_query' => PageFilters::returnQuery($request),
             'is_model' => 1 === $page->getModel(),
             'page_type_title' => $type->title($locale),
             'has_fields' => !$type->fields()->isEmpty(),
@@ -448,32 +455,10 @@ final readonly class CmsPageAdminController
             $this->support->flash($request, 'success', $this->onlineMessage->say($page, $locale));
 
             return true;
-        } catch (HeadingStructureException $exception) {
-            foreach ($exception->problems as $problem) {
-                $this->support->flash($request, 'danger', $problem);
+        } catch (\Throwable $throwable) {
+            foreach ($this->refusals->messages($throwable) ?? throw $throwable as $message) {
+                $this->support->flash($request, 'danger', $message);
             }
-
-            $this->support->flash($request, 'danger', $this->support->translate('The page was not published: fix the heading structure first.'));
-        } catch (AccessibilityException $exception) {
-            foreach ($exception->problems as $problem) {
-                $this->support->flash($request, 'danger', $problem);
-            }
-
-            $this->support->flash($request, 'danger', $this->support->translate('The page was not published: fix the accessibility problems first.'));
-        } catch (InvalidDocumentException $exception) {
-            foreach ($exception->translated($this->translator) as $problem) {
-                $this->support->flash($request, 'danger', $problem);
-            }
-
-            $this->support->flash($request, 'danger', $this->support->translate('The page was not published: its content is no longer valid. Open it in the editor to see what to fix.'));
-        } catch (EmptyPageContentException) {
-            $this->support->flash($request, 'danger', $this->support->translate('This page has no content yet: add at least one block in the editor before publishing it.'));
-        } catch (PlaceholderPageContentException) {
-            $this->support->flash($request, 'danger', $this->support->translate('This page still holds the sample text it was created with: write your own before publishing it.'));
-        } catch (ModelPagePublicationException) {
-            $this->support->flash($request, 'danger', $this->support->translate('This page is the model of its type: it is never published. Start a new page from it instead.'));
-        } catch (MissingPageFieldsException $exception) {
-            $this->support->flash($request, 'danger', $this->support->translate('Fill in the fields this type requires before publishing: %fields%.', ['%fields%' => implode(', ', $exception->labels)]));
         }
 
         return false;
@@ -668,16 +653,31 @@ final readonly class CmsPageAdminController
      * branches, same page of results. Moving a page that landed them back on a
      * folded tree would make reordering a subtree a fight with the screen.
      */
+    /**
+     * Back to the list: the one named by a return parameter when the action was
+     * sent from a screen opened from the list, else the one whose filters the
+     * action carries itself (the buttons of a row).
+     */
     private function backToList(Request $request): RedirectResponse
     {
         return $this->support->redirect('admin.cms.pages.list', [
             self::EDIT_LANGUAGE_PARAMETER => $this->editLang($request)->getId(),
-            ...PageFilters::fromRequest($request)->toQueryParams(),
+            ...$this->returnedFilters($request)->toQueryParams(),
         ]);
     }
 
-    private function backToEdit(int $id, Lang $lang): RedirectResponse
+    private function returnedFilters(Request $request): PageFilters
     {
-        return $this->support->redirectInLanguage('admin.cms.pages.edit', $lang->getId(), ['id' => $id]);
+        return $request->query->has(PageFilters::RETURN)
+            ? PageFilters::fromReturnParameter((string) $request->query->get(PageFilters::RETURN))
+            : PageFilters::fromRequest($request);
+    }
+
+    /**
+     * Back to the settings, keeping the list the editor came from.
+     */
+    private function backToEdit(Request $request, int $id, Lang $lang): RedirectResponse
+    {
+        return $this->support->redirectInLanguage('admin.cms.pages.edit', $lang->getId(), ['id' => $id, ...PageFilters::returnQuery($request)]);
     }
 }
