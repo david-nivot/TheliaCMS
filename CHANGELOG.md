@@ -9,6 +9,11 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Fixed
 
+- **A required field of a list row no longer reads "(optional)".** In a list
+  that may hold no row (the rows of a theme component, most native lists),
+  every field of a row was marked optional, the title a row cannot do without
+  included. The form now marks a field of a row as the schema declares it;
+  saving a row with such a field empty was, and stays, refused.
 - **An image of the media library printed without a text is published with
   its description.** A component of the theme (a banner, an image and text
   block) prints the text of its own prop, empty for an image described in the

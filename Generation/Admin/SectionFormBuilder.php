@@ -423,7 +423,10 @@ final readonly class SectionFormBuilder
                     'data-cms-picker-searchable' => $prop->searchable ? '1' : null,
                 ]),
             ]),
-            PropType::Items => $builder->add($prop->name, CollectionType::class, $common + [
+            // A field is optional under an optional parent: a list that may
+            // be empty would mark every field of its rows optional. Its
+            // bounds are its own, read by the script and the schema.
+            PropType::Items => $builder->add($prop->name, CollectionType::class, ['required' => true] + $common + [
                 'entry_type' => SectionItemType::class,
                 'entry_options' => ['props' => $prop->items, 'builder' => $this, 'label' => false],
                 'allow_add' => true,
