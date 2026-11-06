@@ -129,6 +129,13 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Fixed
 
+- **The home page is linked on `/`.** The sitemap, the results of the search
+  of the site and the privacy link of a form gave the address of the page
+  itself (`/accueil`), which answers a 301 to `/`: a sitemap entry that
+  redirects is reported by a crawler instead of indexed, and the root was not
+  listed at all. The host stays the one of the language, as the menus already
+  did.
+
 - **A help link lands on its part of the documentation the first time.** The
   screenshots of the documentation had no size: once loaded, they grew and
   pushed the part a help link had scrolled to out of sight. They now keep

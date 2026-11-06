@@ -21,6 +21,7 @@ use TheliaCMS\Page\Admin\PageDraft;
 use TheliaCMS\Sitemap\SitemapCache;
 use TheliaCMS\Sitemap\SitemapThemeHook;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
+use TheliaCMS\TheliaCMS;
 
 /**
  * What the module adds to the sitemap of the theme. The rules it has to hold —
@@ -94,6 +95,24 @@ final class SitemapThemeHookTest extends CmsIntegrationTestCase
 
         self::assertStringNotContainsString('page-sans-rendu', $xml);
         self::assertStringContainsString('page-avec-rendu', $xml);
+    }
+
+    public function testTheHomePageIsListedOnTheRootAndNotOnItsOwnAddress(): void
+    {
+        $home = $this->createPage('Accueil du site');
+        $previous = TheliaCMS::getConfigValue('home_page_id', '0');
+        TheliaCMS::setConfigValue('home_page_id', (string) $home->getId());
+        $this->emptyTheCache();
+
+        try {
+            $xml = $this->render();
+        } finally {
+            TheliaCMS::setConfigValue('home_page_id', $previous);
+        }
+
+        // Its own address answers a 301 to "/" (CmsPageViewListener).
+        self::assertStringNotContainsString('accueil-du-site', $xml);
+        self::assertMatchesRegularExpression('#<loc>https?://[^<]+/</loc>#', $xml);
     }
 
     public function testAnInactiveLanguageIsNotAnAlternate(): void

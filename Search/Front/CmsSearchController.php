@@ -23,6 +23,7 @@ use Thelia\Model\Lang;
 use Thelia\Tools\URL;
 use TheliaCMS\Front\ThemeTemplateRenderer;
 use TheliaCMS\Http\ContentSecurityPolicyListener;
+use TheliaCMS\Menu\SiteRoot;
 use TheliaCMS\Search\PageSearch;
 use TheliaCMS\Search\SearchTerms;
 use TheliaCMS\TheliaCMS;
@@ -143,9 +144,12 @@ final readonly class CmsSearchController
         }
 
         try {
-            return $urls->retrieve(TheliaCMS::PAGE_VIEW, $pageId, $locale)->toString();
+            $url = $urls->retrieve(TheliaCMS::PAGE_VIEW, $pageId, $locale)->toString();
         } catch (\Throwable) {
             return '/';
         }
+
+        // The home page answers on the root only: its own address is a 301 to it.
+        return $pageId === (int) TheliaCMS::getConfigValue('home_page_id', '0') ? SiteRoot::of($url) : $url;
     }
 }
