@@ -75,7 +75,7 @@ Liste complète et parades dans `docs/developing.md`.
 | Modèles Propel gardés tant que le hash correspond | Après `schema.xml` modifié : supprimer `var/propel/dev` et `var/propel/test` de l'hôte |
 | `DATABASE_NAME=db` de DDEV branche les tests d'intégration sur la base de dev | `env -u DATABASE_NAME`, et reconstruire `var/cache/test` / `var/propel/test` bâtis sans |
 | Twig de test non rechargé : un test passe sur l'ancien gabarit | Écarter `var/cache/test/twig` (ou `touch` + `var/cache/test`) avant les tests |
-| Assets back-office copiés une fois dans `public/assets/backOffice/default-twig/TheliaCMS/` | Recopier, et monter `assets_version` |
+| `module_asset()` du core copie un asset une fois dans `public/assets/backOffice/default-twig/TheliaCMS/`, jamais remplacé hors debug | `cms_asset()` dans les gabarits du module (recopie si la source diffère) ; `assets_version` pour le cache du navigateur |
 | URL d'une image de la médiathèque (`publicUrl()`, `PageImage::url`) : un chemin, pas une adresse | `absolute_url()` dans tout ce qu'un tiers va chercher (`og:image`, flux, courriel) |
 | `composer cs:fix` lancé dans le clone de l'hôte : la correction reste dans l'hôte | Recopier les fichiers corrigés vers ce dépôt (`cmp` fichier par fichier) avant de committer |
 | La CI garde le `upload_max_filesize` par défaut de PHP (2 Mo) : un fichier de test plus lourd est refusé par PHP avant le module | `ini-values` de `setup-php` dans `ci.yml` ; un test qui en dépend se saute, avec sa raison, sous la limite |

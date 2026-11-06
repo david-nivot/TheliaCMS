@@ -225,10 +225,10 @@
 {% block scripts_extra %}
     {{ parent() }}
     {{ safe_hook('wysiwyg.js', { location: 'cms-page-edit-js' }) }}
-    <script src="{{ module_asset('TheliaCMS', 'assets/page-address.js') }}?v={{ assets_version }}" defer></script>
+    <script src="{{ cms_asset('assets/page-address.js') }}?v={{ assets_version }}" defer></script>
     {% if not is_new %}
-        <script src="{{ module_asset('TheliaCMS', 'assets/page-documents.js') }}?v={{ assets_version }}" defer></script>
+        <script src="{{ cms_asset('assets/page-documents.js') }}?v={{ assets_version }}" defer></script>
     {% endif %}
-    <script src="{{ module_asset('TheliaCMS', 'assets/page-actions.js') }}?v={{ assets_version }}" defer></script>
+    <script src="{{ cms_asset('assets/page-actions.js') }}?v={{ assets_version }}" defer></script>
     {{ include('@TheliaCMSModule/backOffice/default-twig/media/_picker.html.twig', { media_picker_version: assets_version }) }}
 {% endblock %}
