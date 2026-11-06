@@ -28,6 +28,15 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   the site by its kind, keeps it hidden with its published version, writes it no
   address, and brings a second zone of a file in as an ordinary draft page, with a
   warning.
+- `thelia_cms:import:header-highlights` copies the banner of the HeaderHighlights
+  module into the header zone as a draft, in every language that has a text: one
+  Highlights section (blocks ordered by number, desktop texts and image, the image of
+  the mobile row of the same number as the image for a narrow screen), its images
+  copied to the media library once (matched by the SHA-1 of their content, so a second
+  run copies nothing). Nothing is published; a language whose zone holds a draft is
+  skipped unless `--replace`, which keeps the old draft as a previous draft;
+  `--dry-run` writes nothing and lists every problem; `--url` sets the shop address.
+  What the section cannot hold is reported. `/api/header-highlights` is not reproduced.
 
 ### Changed
 
