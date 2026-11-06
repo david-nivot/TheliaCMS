@@ -60,6 +60,14 @@ final class HeaderZoneTest extends CmsIntegrationTestCase
         self::assertSame((int) $first->getId(), (int) CmsPageQuery::create()->filterByModel(2)->findOne()?->getId());
     }
 
+    public function testTheZoneIsNamedInTheWordsOfEachLanguage(): void
+    {
+        $zone = $this->getService(HeaderZone::class)->ensure();
+
+        self::assertSame('Zone d’en-tête', $zone->getTranslation('fr_FR')->getTitle(), 'The content screen in French is titled in French.');
+        self::assertSame('Header zone', $zone->getTranslation('en_US')->getTitle());
+    }
+
     public function testPublishingTheZoneDropsTheSiteAndWritesNoAddress(): void
     {
         $zone = $this->getService(HeaderZone::class)->ensure();

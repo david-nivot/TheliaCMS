@@ -16,10 +16,12 @@ namespace TheliaCMS\Zone;
 
 use Propel\Runtime\ActiveQuery\Criteria as PropelCriteria;
 use Propel\Runtime\Connection\ConnectionInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Model\LangQuery;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Model\CmsPageContentQuery;
 use TheliaCMS\Model\CmsPageQuery;
+use TheliaCMS\TheliaCMS;
 
 /**
  * The header zone: one hidden page of the CMS (`cms_page.model = 2`) whose
@@ -35,6 +37,11 @@ final readonly class HeaderZone
 {
     /** The value of `cms_page.model` that marks the zone: 0 is a page, 1 the model of a type. */
     public const int MODEL = 2;
+
+    public function __construct(
+        private TranslatorInterface $translator,
+    ) {
+    }
 
     public function find(?ConnectionInterface $connection = null): ?CmsPage
     {
@@ -64,9 +71,10 @@ final readonly class HeaderZone
             ->setPageType('default')
             ->setModel(self::MODEL);
 
-        // Named in every active language, so the content screen of each one has a title.
+        // Named in every active language, in its own words, so the content screen of each one has a title.
         foreach (LangQuery::create()->filterByActive(true)->find() as $lang) {
-            $zone->setLocale((string) $lang->getLocale())->setTitle('Header zone');
+            $locale = (string) $lang->getLocale();
+            $zone->setLocale($locale)->setTitle($this->translator->trans('Header zone', [], TheliaCMS::DOMAIN_NAME, $locale));
         }
 
         $zone->save();
