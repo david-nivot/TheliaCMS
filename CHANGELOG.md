@@ -19,6 +19,12 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 - **In a row of a theme component, the framing of a picture is folded.** The
   proportions and the kept part of a picture, under it in every row, now sit
   in a fold, **Kept part of the picture**, closed by default.
+- **The list of pages says which translation is missing.** "To be translated"
+  and "To be translated again" could sit side by side on a row without saying
+  which one to deal with. They become **Settings to translate** (no title in
+  the language of the list; leads to the settings of the page) and **Content
+  to translate again** (the source changed since; leads to the content
+  screen). A page with both reasons shows both.
 
 ### Fixed
 

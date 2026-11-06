@@ -40,6 +40,7 @@ use TheliaCMS\Model\CmsPageContentQuery;
 use TheliaCMS\Model\CmsPageRevisionQuery;
 use TheliaCMS\Model\Map\CmsPageContentTableMap;
 use TheliaCMS\Page\Admin\CmsPageWriter;
+use TheliaCMS\Page\Admin\PageDraft;
 use TheliaCMS\Page\StalePages;
 use TheliaCMS\Security\CmsResources;
 use TheliaCMS\Settings\CmsSettings;
@@ -391,6 +392,30 @@ final class StaleTranslationTest extends AdminScreenTestCase
         $this->saveSource($page, [$this->intro('Nos tarifs'), $this->photo('https://example.com/a.jpg')]);
         self::assertSame(0, $this->staleCount($target), 'Put back as it was, it is up to date again.');
         self::assertSame(0, $this->dashboard()->filter(\sprintf('[data-testid="cms-dashboard-stale-%s"]', $target->getLocale()))->count());
+    }
+
+    public function testAPageWithBothReasonsShowsBothLabelsEachLeadingToItsScreen(): void
+    {
+        $page = $this->pageWithASource('Nos horaires');
+        $target = $this->otherLanguage();
+        $this->translatePage($page, $target);
+        $this->saveSource($page, [$this->intro('Nos horaires, revus'), $this->photo('https://example.com/a.jpg')]);
+        // No title in that language, whatever the translation wrote.
+        $page->setLocale($target->getLocale())->setTitle('')->save();
+
+        $settings = $this->listOf($target)->filter(\sprintf('[data-testid="cms-page-untranslated-%d"]', $page->getId()));
+        $content = $this->listOf($target)->filter(\sprintf('[data-testid="cms-page-stale-%d"]', $page->getId()));
+        self::assertSame(1, $settings->count(), 'The settings are to translate.');
+        self::assertSame(1, $content->count(), 'And the content to translate again: both are said.');
+        self::assertSame('Settings to translate', trim($settings->text()));
+        self::assertSame('Content to translate again', trim($content->text()));
+        self::assertSame(\sprintf('/admin/cms/pages/%d?edit_language_id=%d', $page->getId(), $target->getId()), (string) $settings->attr('href'), 'One leads to the settings.');
+        self::assertSame(\sprintf('/admin/cms/pages/%d/content?edit_language_id=%d', $page->getId(), $target->getId()), (string) $content->attr('href'), 'The other to the content.');
+
+        $this->getService(CmsPageWriter::class)->saveDraft($page, $target->getLocale(), new PageDraft(title: 'Our opening hours'));
+
+        self::assertSame(0, $this->listOf($target)->filter(\sprintf('[data-testid="cms-page-untranslated-%d"]', $page->getId()))->count(), 'Named, the settings are no longer to translate.');
+        self::assertSame(1, $this->listOf($target)->filter(\sprintf('[data-testid="cms-page-stale-%d"]', $page->getId()))->count(), 'The content still is: one reason does not settle the other.');
     }
 
     public function testAPageInTheBinOrAModelIsNotCounted(): void
