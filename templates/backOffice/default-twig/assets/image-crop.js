@@ -2,7 +2,9 @@
  * The part of an image a section keeps, set in a dialog of its own.
  *
  * A picture a section keeps a part of holds three numbers, `focus_x`, `focus_y`
- * and `zoom`: in the form of an Image section, in each row of the columns.
+ * and `zoom`: in the form of an Image section, in each row of the columns. A
+ * block of Mises en avant holds only the first two: its picture covers the
+ * block by CSS, without a zoom, and only its centre is set (`cmsCropCentreOnly`).
  * content-editor.js reads them as a sentence. This adds the button that sets
  * them: it opens one dialog for the screen, above the drawer of the
  * section, with the whole image, the zone kept, and what the box will show.
@@ -410,7 +412,7 @@
                 preview.style.aspectRatio = options.boxWidth + ' / ' + options.boxHeight;
                 preview.style.maxWidth = options.shown + 'px';
                 zooming.row.hidden = !options.served;
-                note.textContent = options.served ? '' : m.external;
+                note.textContent = options.served ? '' : (options.note || m.external);
                 note.hidden = options.served;
                 state.zoom = options.served ? clamp(Math.round(options.zoom / 10) * 10, 100, 400) : 100;
                 paint();
@@ -443,13 +445,15 @@
             return scope.querySelector('[name$="[' + name + ']"]');
         }
 
-        // A form with several pictures says which three fields are this one's.
+        // A form with several pictures says which three fields are this one's. A
+        // picture placed by CSS in a box of its own has a centre and no zoom.
+        var centreOnly = slot.cmsCropCentreOnly === true;
         var fields = slot.cmsCropFields || {};
         var focusX = fields.x || named('focus_x');
         var focusY = fields.y || named('focus_y');
-        var zoom = fields.zoom || named('zoom');
+        var zoom = centreOnly ? null : fields.zoom || named('zoom');
 
-        if (!focusX || !focusY || !zoom) {
+        if (!focusX || !focusY || (!zoom && !centreOnly)) {
             return;
         }
 
@@ -569,20 +573,21 @@
                 url: one.url,
                 width: one.width,
                 height: one.height,
-                served: one.source === 'library',
+                served: !centreOnly && one.source === 'library',
+                note: centreOnly ? m.centreOnly : m.external,
                 boxWidth: box.boxWidth,
                 boxHeight: box.boxHeight,
                 shown: box.shown,
                 ratio: box.ratio,
                 x: number(focusX, 50),
                 y: number(focusY, 50),
-                zoom: number(zoom, 100),
+                zoom: zoom ? number(zoom, 100) : 100,
                 opener: button,
                 apply: function (x, y, zoomed) {
                     write(focusX, x);
                     write(focusY, y);
 
-                    if (zoomed !== null) {
+                    if (zoom && zoomed !== null) {
                         write(zoom, zoomed);
                     }
                 },
