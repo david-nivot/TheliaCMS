@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace TheliaCMS\Tests\Integration\Zone;
 
 use Thelia\Core\Security\AccessManager;
+use Thelia\Model\LangQuery;
 use Thelia\Model\ModuleQuery;
 use Thelia\Test\FixtureFactory;
 use TheliaCMS\Content\Document;
@@ -65,7 +66,11 @@ final class HeaderZoneScreenTest extends AdminScreenTestCase
         $writer->saveContent($zone, $this->locale(), Document::richText('<h2>Soldes</h2><p>Un bandeau.</p>'));
         $writer->publish($zone, $this->locale());
 
-        self::assertStringContainsString('online in: '.$this->locale(), $this->screen($url)->filter('[data-testid="cms-content-notes"]')->text());
+        $notes = $this->screen($url)->filter('[data-testid="cms-content-notes"]')->text();
+        $language = (string) LangQuery::create()->findOneByLocale($this->locale())?->getTitle();
+        self::assertNotSame('', $language);
+        self::assertStringContainsString('online in: '.$language.'.', $notes, 'The languages are named as the editor reads them.');
+        self::assertStringNotContainsString($this->locale(), $notes);
     }
 
     public function testTheScreenWarnsWhileHeaderHighlightsIsActive(): void

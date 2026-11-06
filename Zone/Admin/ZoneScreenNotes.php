@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Zone\Admin;
 
+use Thelia\Model\LangQuery;
 use Thelia\Model\ModuleQuery;
 use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Model\CmsPage;
@@ -47,13 +48,32 @@ final readonly class ZoneScreenNotes
         $locales = $this->zones->publishedLocales($zone);
         $notes[] = [] === $locales
             ? $this->support->translate('The zone is online in no language: nothing is drawn.')
-            : $this->support->translate('The zone is online in: %languages%. A language without a published zone draws nothing.', ['%languages%' => implode(', ', $locales)]);
+            : $this->support->translate('The zone is online in: %languages%. A language without a published zone draws nothing.', ['%languages%' => implode(', ', $this->languageNames($locales))]);
 
         if ($this->headerHighlightsIsActive()) {
             $notes[] = $this->support->translate('The module HeaderHighlights is active and draws in the same place. Once the zone is published, empty its highlights or deactivate the module, or the header shows both.');
         }
 
         return $notes;
+    }
+
+    /**
+     * The name the shop gives each language (`lang.title`), in the order of
+     * the locales; a locale with no language left keeps its code.
+     *
+     * @param list<string> $locales
+     *
+     * @return list<string>
+     */
+    private function languageNames(array $locales): array
+    {
+        $names = [];
+
+        foreach (LangQuery::create()->filterByLocale($locales)->find() as $lang) {
+            $names[(string) $lang->getLocale()] = (string) $lang->getTitle();
+        }
+
+        return array_map(static fn (string $locale): string => '' !== ($names[$locale] ?? '') ? $names[$locale] : $locale, $locales);
     }
 
     private function headerHighlightsIsActive(): bool
