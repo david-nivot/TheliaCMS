@@ -130,6 +130,16 @@ final class MediaVideoScreenTest extends AdminScreenTestCase
         self::assertStringStartsWith(($library->counts($this->locale())['total'] - 1).' image(s)', $count);
     }
 
+    public function testTheDeleteDialogOfAVideoSpeaksOfAVideo(): void
+    {
+        $video = $this->store();
+
+        $dialog = $this->screen('/admin/cms/media/'.$video->getId().'?lang=fr_FR')->filter('[data-cms-media-delete-dialog]');
+
+        self::assertSame('Supprimer définitivement cette vidéo ?', trim($dialog->filter('#cms-media-delete-title')->text()));
+        self::assertSame('Supprimer cette vidéo', trim($dialog->filter('[data-cms-media-delete-confirm]')->text()));
+    }
+
     public function testTheDescribeQueueDoesNotOfferAVideo(): void
     {
         $video = $this->store();

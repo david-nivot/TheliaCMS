@@ -176,6 +176,7 @@ return [
     'Delete this form? The pages showing it will show nothing, and its answers stay until you delete them.' => 'Supprimer ce formulaire ? Les pages qui l’affichent n’afficheront plus rien, et ses réponses restent jusqu’à ce que vous les supprimiez.',
     'Delete this image' => 'Supprimer cette image',
     'Delete this image for good?' => 'Supprimer définitivement cette image ?',
+    'Delete this video for good?' => 'Supprimer définitivement cette vidéo ?',
     'Delete this menu and all of its entries?' => 'Supprimer ce menu et toutes ses entrées ?',
     'Delete this snippet?' => 'Supprimer ce script ?',
     'Deleting it now affects nothing.' => 'La supprimer maintenant n\'a aucune conséquence.',

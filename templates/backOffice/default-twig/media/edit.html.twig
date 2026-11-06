@@ -167,11 +167,11 @@
             <dialog class="border-0 rounded shadow p-0" data-cms-media-delete-dialog aria-labelledby="cms-media-delete-title"
                     style="width: min(480px, calc(100vw - 32px))">
                 <div class="p-4">
-                    <h2 class="h5" id="cms-media-delete-title">{{ 'Delete this image for good?'|trans({}, 'theliacms') }}</h2>
+                    <h2 class="h5" id="cms-media-delete-title">{{ (item.video ? 'Delete this video for good?' : 'Delete this image for good?')|trans({}, 'theliacms') }}</h2>
                     <p class="text-body-secondary">{{ 'Its file is removed. No page uses it, so none changes.'|trans({}, 'theliacms') }}</p>
                     <div class="d-flex justify-content-end gap-2">
                         <button type="button" class="btn btn-outline-secondary" data-cms-media-delete-cancel>{{ 'Cancel'|trans({}, 'theliacms') }}</button>
-                        <button type="button" class="btn btn-danger" data-cms-media-delete-confirm>{{ 'Delete this image'|trans({}, 'theliacms') }}</button>
+                        <button type="button" class="btn btn-danger" data-cms-media-delete-confirm>{{ (item.video ? 'Delete this video' : 'Delete this image')|trans({}, 'theliacms') }}</button>
                     </div>
                 </div>
             </dialog>

@@ -176,6 +176,7 @@ return [
     'Delete this form? The pages showing it will show nothing, and its answers stay until you delete them.' => 'Delete this form? The pages showing it will show nothing, and its answers stay until you delete them.',
     'Delete this image' => 'Delete this image',
     'Delete this image for good?' => 'Delete this image for good?',
+    'Delete this video for good?' => 'Delete this video for good?',
     'Delete this menu and all of its entries?' => 'Delete this menu and all of its entries?',
     'Delete this snippet?' => 'Delete this snippet?',
     'Deleting it now affects nothing.' => 'Deleting it now affects nothing.',
