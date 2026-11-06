@@ -13,7 +13,7 @@
 
     <div class="card-body pb-2">
         <div class="row g-2 align-items-end">
-            <div class="col-md-6">
+            <div class="col-lg-4 col-md-12">
                 <label class="form-label" for="cms-pages-search">{{ 'Find a page'|trans({}, 'theliacms') }}</label>
                 <input type="search" class="form-control" id="cms-pages-search" name="{{ filters.parameters.search }}"
                        value="{{ filters.search }}"
@@ -21,7 +21,7 @@
                        data-testid="cms-pages-search-input">
             </div>
 
-            <div class="col-md-3">
+            <div class="col-lg col-md-4">
                 <label class="form-label" for="cms-pages-visibility">{{ 'On the site'|trans({}, 'theliacms') }}</label>
                 <select class="form-select" id="cms-pages-visibility" name="{{ filters.parameters.visibility }}"
                         data-testid="cms-pages-visibility">
@@ -31,7 +31,31 @@
                 </select>
             </div>
 
-            <div class="col-md-3 d-flex gap-2">
+            {% if filters.tag_options is not empty %}
+                <div class="col-lg col-md-4">
+                    <label class="form-label" for="cms-pages-tag">{{ 'Tag'|trans({}, 'theliacms') }}</label>
+                    <select class="form-select" id="cms-pages-tag" name="{{ filters.parameters.tag }}" data-testid="cms-pages-tag">
+                        <option value="">{{ 'Any tag'|trans({}, 'theliacms') }}</option>
+                        {% for option in filters.tag_options %}
+                            <option value="{{ option.value }}" {{ option.selected ? 'selected' : '' }}>{{ option.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endif %}
+
+            {% if filters.type_options is not empty %}
+                <div class="col-lg col-md-4">
+                    <label class="form-label" for="cms-pages-type">{{ 'Page type'|trans({}, 'theliacms') }}</label>
+                    <select class="form-select" id="cms-pages-type" name="{{ filters.parameters.type }}" data-testid="cms-pages-type">
+                        <option value="">{{ 'Any type'|trans({}, 'theliacms') }}</option>
+                        {% for option in filters.type_options %}
+                            <option value="{{ option.value }}" {{ option.selected ? 'selected' : '' }}>{{ option.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endif %}
+
+            <div class="col-lg-auto col-md-12 d-flex gap-2">
                 <button type="submit" class="btn btn-primary flex-grow-1 flex-shrink-0" data-testid="cms-pages-search-submit">
                     <i class="bi bi-search me-1" aria-hidden="true"></i>{{ 'Search'|trans({}, 'theliacms') }}
                 </button>

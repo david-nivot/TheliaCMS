@@ -63,7 +63,7 @@ final readonly class CmsPageAdminRepository
     }
 
     /**
-     * The pages matching a search or a state filter, flat, ordered by title and
+     * The pages matching a search or a filter, flat, ordered by title and
      * cut to one page of results.
      *
      * Ordered by title rather than by position: position only means something
@@ -304,6 +304,16 @@ final readonly class CmsPageAdminRepository
 
         if (null !== $filters->visible) {
             $query->filterByVisible($filters->visible ? 1 : 0);
+        }
+
+        if (PageFilters::NO_TAG === $filters->tag) {
+            $query->filterByTagId(null, Criteria::ISNULL);
+        } elseif (null !== $filters->tag) {
+            $query->filterByTagId($filters->tag);
+        }
+
+        if (null !== $filters->type) {
+            $query->filterByPageType($filters->type);
         }
 
         if ([] !== $filters->statuses) {

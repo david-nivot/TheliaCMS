@@ -183,4 +183,97 @@ final class PageFiltersTest extends TestCase
         self::assertSame(1, PageFilters::fromRequest(new Request(['page' => '-4']))->page);
         self::assertSame(1, PageFilters::fromRequest(new Request(['page' => '0']))->page);
     }
+
+    #[DataProvider('tagCases')]
+    public function testATagIsAnIdOrTheWordForNone(string $given, ?int $expected): void
+    {
+        self::assertSame($expected, PageFilters::fromRequest(new Request(['tag' => $given]))->tag);
+    }
+
+    /**
+     * @return iterable<string, array{string, int|null}>
+     */
+    public static function tagCases(): iterable
+    {
+        yield 'an id' => ['12', 12];
+        yield 'none' => ['none', PageFilters::NO_TAG];
+        yield 'any' => ['', null];
+        yield 'zero' => ['0', null];
+        yield 'negative' => ['-3', null];
+        yield 'not digits' => ['12abc', null];
+        yield 'too long' => ['12345678901', null];
+    }
+
+    #[DataProvider('typeCases')]
+    public function testATypeIsACodeAndNothingElse(string $given, ?string $expected): void
+    {
+        self::assertSame($expected, PageFilters::fromRequest(new Request(['type' => $given]))->type);
+    }
+
+    /**
+     * @return iterable<string, array{string, string|null}>
+     */
+    public static function typeCases(): iterable
+    {
+        yield 'a code' => ['recipe', 'recipe'];
+        yield 'with a dash' => ['blog-post', 'blog-post'];
+        yield 'any' => ['', null];
+        yield 'upper case' => ['Recipe', null];
+        yield 'a path' => ['../recipe', null];
+    }
+
+    public function testATagOrATypeTurnsTheTreeIntoResults(): void
+    {
+        $tagged = PageFilters::fromRequest(new Request(['tag' => 'none']));
+        self::assertTrue($tagged->isFiltering());
+        self::assertSame(1, $tagged->advancedCount());
+        self::assertSame(['tag' => 'none'], $tagged->toQueryParams());
+
+        $typed = PageFilters::fromRequest(new Request(['type' => 'recipe', 'tag' => '4']));
+        self::assertTrue($typed->isFiltering());
+        self::assertSame(2, $typed->advancedCount());
+        self::assertSame(['tag' => '4', 'type' => 'recipe'], $typed->toQueryParams());
+    }
+
+    public function testRemovingTheTagOrTheTypeKeepsTheOthers(): void
+    {
+        $filters = new PageFilters(search: 'contact', page: 3, open: [4], tag: 7, type: 'recipe');
+
+        $withoutTag = $filters->withoutFilter(PageFilters::TAG);
+        self::assertNull($withoutTag->tag);
+        self::assertSame('recipe', $withoutTag->type);
+        self::assertSame('contact', $withoutTag->search);
+        self::assertSame(1, $withoutTag->page);
+
+        $withoutType = $filters->withoutFilter(PageFilters::TYPE);
+        self::assertNull($withoutType->type);
+        self::assertSame(7, $withoutType->tag);
+
+        // Every other change keeps both.
+        self::assertSame(7, $filters->withoutFilter(PageFilters::SEARCH)->tag);
+        self::assertSame('recipe', $filters->withoutStatus(PageStatus::Draft)->type);
+        self::assertSame('recipe', $filters->toggling(9)->type);
+    }
+
+    public function testATagOrATypeTheSiteDoesNotHaveIsDropped(): void
+    {
+        $tags = [7 => 'News'];
+        $types = ['default' => 'Page', 'recipe' => 'Recipe'];
+
+        $known = new PageFilters(page: 2, tag: 7, type: 'recipe');
+        self::assertSame($known, $known->knowing($tags, $types), 'known values are kept as they are');
+
+        $unknownTag = (new PageFilters(page: 2, tag: 8, type: 'recipe'))->knowing($tags, $types);
+        self::assertNull($unknownTag->tag);
+        self::assertSame('recipe', $unknownTag->type);
+        self::assertSame(2, $unknownTag->page);
+
+        $unknownType = (new PageFilters(tag: PageFilters::NO_TAG, type: 'event'))->knowing($tags, $types);
+        self::assertSame(PageFilters::NO_TAG, $unknownType->tag);
+        self::assertNull($unknownType->type);
+
+        // On a site without tags, every page is without one: the filter is no
+        // filter, and a chip saying "Without a tag" would read as a choice.
+        self::assertNull((new PageFilters(tag: PageFilters::NO_TAG))->knowing([], $types)->tag);
+    }
 }

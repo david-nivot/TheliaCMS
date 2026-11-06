@@ -1768,4 +1768,11 @@ return [
     'A color that follows the text takes the color of the text around the drawing once it is placed in a page as an icon. Shown as an image, it is drawn in black.' => 'A color that follows the text takes the color of the text around the drawing once it is placed in a page as an icon. Shown as an image, it is drawn in black.',
     'too complex' => 'too complex',
     'The drawing has too many shapes or style rules to change its colors: they stay as they are.' => 'The drawing has too many shapes or style rules to change its colors: they stay as they are.',
+    'Any tag' => 'Any tag',
+    'Pages without a tag' => 'Pages without a tag',
+    'Any type' => 'Any type',
+    'Without a tag' => 'Without a tag',
+    'Tag: %name%' => 'Tag: %name%',
+    'Type: %name%' => 'Type: %name%',
+    'Flat list, without the tree: clear the filters to see the tree again.' => 'Flat list, without the tree: clear the filters to see the tree again.',
 ];

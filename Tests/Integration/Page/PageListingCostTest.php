@@ -14,8 +14,11 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Tests\Integration\Page;
 
+use Propel\Runtime\ActiveQuery\Criteria;
 use Thelia\Model\Lang;
 use Thelia\Model\LangQuery;
+use TheliaCMS\Model\CmsPageQuery;
+use TheliaCMS\Model\CmsTag;
 use TheliaCMS\Page\Admin\CmsPageAdminRepository;
 use TheliaCMS\Page\Admin\PageFilters;
 use TheliaCMS\Page\Admin\PageListPresenter;
@@ -72,6 +75,26 @@ final class PageListingCostTest extends CmsIntegrationTestCase
 
         self::assertGreaterThan($few, $many, 'the second tree added no match, so this compares nothing');
         self::assertSame($fewCost, $manyCost, 'searching costs more when it finds more, so something is asked per row');
+    }
+
+    public function testFilteringByTagAndTypeCostsTheSameWhateverTheNumberOfMatches(): void
+    {
+        $repository = $this->getService(CmsPageAdminRepository::class);
+        $locale = $this->locale();
+        $tag = (new CmsTag())->setName('Costly tag');
+        $tag->save();
+        $filters = new PageFilters(tag: (int) $tag->getId(), type: 'default');
+
+        $this->tagAll($this->treeOf(1, 2, $locale, 'Tagged'), $tag);
+        $fewCost = $this->statementsFor(static fn () => $repository->results($locale, $filters));
+        $few = $repository->results($locale, $filters)->total;
+
+        $this->tagAll($this->treeOf(4, 2, $locale, 'Tagged'), $tag);
+        $manyCost = $this->statementsFor(static fn () => $repository->results($locale, $filters));
+        $many = $repository->results($locale, $filters)->total;
+
+        self::assertGreaterThan($few, $many, 'the second tree added no match, so this compares nothing');
+        self::assertSame($fewCost, $manyCost, 'filtering by tag and type costs more when it finds more, so something is asked per row');
     }
 
     public function testAFoldedBranchIsNotRead(): void
@@ -178,6 +201,17 @@ final class PageListingCostTest extends CmsIntegrationTestCase
         self::assertNotNull($lang, \sprintf('the shop has no language for "%s"', $locale));
 
         return $lang;
+    }
+
+    /**
+     * Tags the pages at the root and every page under them.
+     *
+     * @param list<int> $roots
+     */
+    private function tagAll(array $roots, CmsTag $tag): void
+    {
+        CmsPageQuery::create()->filterById($roots, Criteria::IN)->_or()->filterByParent($roots, Criteria::IN)
+            ->update(['TagId' => (int) $tag->getId()]);
     }
 
     /**

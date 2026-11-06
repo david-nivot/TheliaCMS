@@ -36,14 +36,19 @@ final readonly class PageFilterPresenter
     }
 
     /**
+     * @param array<int, string>    $tags  the names of the tags of the site, by id
+     * @param array<string, string> $types the names of the page types, by code
+     *
      * @return array{
-     *     parameters: array{search: string, statuses: string, visibility: string},
+     *     parameters: array{search: string, statuses: string, visibility: string, tag: string, type: string},
      *     search: string,
      *     is_filtering: bool,
      *     is_empty: bool,
      *     advanced_count: int,
      *     status_options: list<array{value: string, label: string, badge: string, checked: bool}>,
      *     visibility: string,
+     *     tag_options: list<array{value: string, label: string, selected: bool}>,
+     *     type_options: list<array{value: string, label: string, selected: bool}>,
      *     chips: list<array{label: string, remove_url: string}>,
      *     clear_url: string,
      *     fold_all_url: string|null,
@@ -52,7 +57,7 @@ final readonly class PageFilterPresenter
      *     hidden_params: array<string, string>,
      * }
      */
-    public function present(PageFilters $filters, int $languageId, int $trashCount): array
+    public function present(PageFilters $filters, int $languageId, int $trashCount, array $tags = [], array $types = []): array
     {
         return [
             // The names the form posts under, taken from the object that reads
@@ -61,6 +66,8 @@ final readonly class PageFilterPresenter
                 'search' => PageFilters::SEARCH,
                 'statuses' => PageFilters::STATUSES,
                 'visibility' => PageFilters::VISIBILITY,
+                'tag' => PageFilters::TAG,
+                'type' => PageFilters::TYPE,
             ],
             'search' => $filters->search,
             'is_filtering' => $filters->isFiltering(),
@@ -72,7 +79,11 @@ final readonly class PageFilterPresenter
                 false => PageFilters::HIDDEN_ONLY,
                 null => '',
             },
-            'chips' => $this->chips($filters, $languageId),
+            // A select with nothing to choose from is a control that does
+            // nothing: no tag on the site, or a single type, hides it.
+            'tag_options' => [] === $tags ? [] : $this->tagOptions($filters, $tags),
+            'type_options' => \count($types) < 2 ? [] : $this->typeOptions($filters, $types),
+            'chips' => $this->chips($filters, $languageId, $tags, $types),
             'clear_url' => $this->listUrl(new PageFilters(open: $filters->open, foldChosen: $filters->foldChosen), $languageId),
             // Offered only when something is unfolded, and there is no "unfold
             // everything": on a site of several hundred pages that button gives
@@ -129,9 +140,48 @@ final readonly class PageFilterPresenter
     }
 
     /**
+     * @param array<int, string> $tags
+     *
+     * @return list<array{value: string, label: string, selected: bool}>
+     */
+    private function tagOptions(PageFilters $filters, array $tags): array
+    {
+        $options = [[
+            'value' => PageFilters::UNTAGGED,
+            'label' => $this->translate('Pages without a tag'),
+            'selected' => PageFilters::NO_TAG === $filters->tag,
+        ]];
+
+        foreach ($tags as $id => $name) {
+            $options[] = ['value' => (string) $id, 'label' => $name, 'selected' => $id === $filters->tag];
+        }
+
+        return $options;
+    }
+
+    /**
+     * @param array<string, string> $types
+     *
+     * @return list<array{value: string, label: string, selected: bool}>
+     */
+    private function typeOptions(PageFilters $filters, array $types): array
+    {
+        $options = [];
+
+        foreach ($types as $code => $name) {
+            $options[] = ['value' => $code, 'label' => $name, 'selected' => $code === $filters->type];
+        }
+
+        return $options;
+    }
+
+    /**
+     * @param array<int, string>    $tags
+     * @param array<string, string> $types
+     *
      * @return list<array{label: string, remove_url: string}>
      */
-    private function chips(PageFilters $filters, int $languageId): array
+    private function chips(PageFilters $filters, int $languageId, array $tags, array $types): array
     {
         $chips = [];
 
@@ -155,6 +205,22 @@ final readonly class PageFilterPresenter
                     ? $this->translate('Shown on the site')
                     : $this->translate('Hidden from the site'),
                 'remove_url' => $this->listUrl($filters->withoutFilter(PageFilters::VISIBILITY), $languageId),
+            ];
+        }
+
+        if (null !== $filters->tag) {
+            $chips[] = [
+                'label' => PageFilters::NO_TAG === $filters->tag
+                    ? $this->translate('Without a tag')
+                    : $this->translate('Tag: %name%', ['%name%' => $tags[$filters->tag] ?? '#'.$filters->tag]),
+                'remove_url' => $this->listUrl($filters->withoutFilter(PageFilters::TAG), $languageId),
+            ];
+        }
+
+        if (null !== $filters->type) {
+            $chips[] = [
+                'label' => $this->translate('Type: %name%', ['%name%' => $types[$filters->type] ?? $filters->type]),
+                'remove_url' => $this->listUrl($filters->withoutFilter(PageFilters::TYPE), $languageId),
             ];
         }
 

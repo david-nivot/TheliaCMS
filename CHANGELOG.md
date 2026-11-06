@@ -7,6 +7,15 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **The list of pages filters by tag and by page type.** Two selects join the
+  filter bar of **CMS > Pages**: **Tag** (one tag, or **Pages without a tag**)
+  and **Page type**. Each one turns the tree into a flat list of results, like
+  the other filters, with its chip to remove it; the result line says the list
+  is flat. The selects show only when there is a choice to make: no tag on the
+  site, or a single page type, hides them.
+
 ### Changed
 
 - **The picture of a block of Mises en avant is framed on the picture.** The

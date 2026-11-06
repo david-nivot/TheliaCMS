@@ -16,8 +16,10 @@ namespace TheliaCMS\Page\Admin;
 
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Thelia\Model\Lang;
+use TheliaCMS\Model\CmsTag;
 use TheliaCMS\Page\PageTagColor;
 use TheliaCMS\Page\PageTagRepository;
+use TheliaCMS\Page\PageTypeDetails;
 use TheliaCMS\Page\PageTypeRepository;
 use TheliaCMS\Page\PublishedAccessibilityFinder;
 use TheliaCMS\Page\SampleTextPageFinder;
@@ -28,8 +30,8 @@ use TheliaCMS\TheliaCMS;
  * Everything the page listing renders, assembled in one place.
  *
  * The screen has two shapes and the choice between them is one rule: with a word
- * to look for or a state to keep, it is a list of results; with nothing asked, it
- * is the tree. Both produce the same kind of row, so the template has one table
+ * to look for, a state, a tag or a type to keep, it is a list of results; with
+ * nothing asked, it is the tree. Both produce the same kind of row, so the template has one table
  * and not two.
  */
 final readonly class PageListPresenter
@@ -55,17 +57,28 @@ final readonly class PageListPresenter
         $languageId = (int) $lang->getId();
         $liveCount = $this->pages->countLive();
         $trashCount = $this->pages->countInTrash();
+        // Read once for the whole screen: the filter bar, the chips and the
+        // rows all name tags and types.
+        $tags = $this->tags->all();
+        $types = $this->types->allDetails();
+        $tagNames = [];
 
-        $filters = $this->unfoldSmallSite($filters, $liveCount);
+        foreach ($tags as $tag) {
+            $tagNames[(int) $tag->getId()] = (string) $tag->getName();
+        }
+
+        $typeNames = array_map(static fn (PageTypeDetails $details): string => $details->title($locale), $types);
+
+        $filters = $this->unfoldSmallSite($filters->knowing($tagNames, $typeNames), $liveCount);
         $results = $filters->isFiltering() ? $this->pages->results($locale, $filters) : null;
         $rows = null === $results ? $this->pages->branch($locale, $filters) : $results->rows;
 
         return [
             'is_filtering' => $filters->isFiltering(),
-            'rows' => $this->rows($rows, $filters, $languageId, null === $results, $this->stalePages->ids($locale, array_map(static fn (PageListRow $row): int => $row->id(), $rows))),
+            'rows' => $this->rows($rows, $filters, $languageId, null === $results, $this->stalePages->ids($locale, array_map(static fn (PageListRow $row): int => $row->id(), $rows)), $tags),
             'results' => $results,
             'live_count' => $liveCount,
-            'filters' => $this->filterBar->present($filters, $languageId, $trashCount),
+            'filters' => $this->filterBar->present($filters, $languageId, $trashCount, $tagNames, $typeNames),
             'filter_query' => $filters->toQueryParams(),
             'edit_locale' => $locale,
             'edit_language_id' => $languageId,
@@ -78,7 +91,7 @@ final readonly class PageListPresenter
             // Pages online with an image nobody described or a link that says
             // nothing: published before the check, or by a path that skips it.
             'accessibility_pages' => $this->accessibilityPages->publishedPagesWithProblems($locale),
-            'page_templates' => $this->pageTemplates($locale),
+            'page_templates' => $this->pageTemplates($locale, $types),
         ];
     }
 
@@ -86,14 +99,16 @@ final readonly class PageListPresenter
      * The types a page can be started from: the ones with a model, a brief
      * or fields. A type that is only a code is picked in the form of a page.
      *
+     * @param array<string, PageTypeDetails> $types by code
+     *
      * @return list<array{code: string, title: string, has_model: bool}>
      */
-    private function pageTemplates(string $locale): array
+    private function pageTemplates(string $locale, array $types): array
     {
         $models = $this->types->modelIds();
         $templates = [];
 
-        foreach ($this->types->allDetails() as $code => $details) {
+        foreach ($types as $code => $details) {
             if (!isset($models[$code]) && !$details->isTemplate()) {
                 continue;
             }
@@ -123,19 +138,19 @@ final readonly class PageListPresenter
 
     /**
      * @param list<PageListRow> $rows
-     * @param array<int, true>  $stale the pages to translate again in this language, by id
+     * @param array<int, true>  $stale   the pages to translate again in this language, by id
+     * @param list<CmsTag>      $allTags every tag of the site, read once for the whole listing:
+     *                                   asking each page for its tag would be a query per line
      *
      * @return list<array<string, mixed>>
      */
-    private function rows(array $rows, PageFilters $filters, int $languageId, bool $isTree, array $stale): array
+    private function rows(array $rows, PageFilters $filters, int $languageId, bool $isTree, array $stale, array $allTags): array
     {
         $firstOfParent = [];
         $lastOfParent = [];
-        // One query for the whole listing: asking each page for its tag would
-        // be a query per line.
         $tags = [];
 
-        foreach ($this->tags->all() as $tag) {
+        foreach ($allTags as $tag) {
             $color = PageTagColor::fromStored($tag->getColor(), $tag->getTextColor());
             $tags[(int) $tag->getId()] = [
                 'name' => (string) $tag->getName(),

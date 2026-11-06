@@ -1768,4 +1768,11 @@ return [
     'A color that follows the text takes the color of the text around the drawing once it is placed in a page as an icon. Shown as an image, it is drawn in black.' => 'Une couleur qui suit le texte prend la couleur du texte autour du dessin une fois celui-ci placé dans une page comme icône. Affichée comme image, elle est dessinée en noir.',
     'too complex' => 'trop complexe',
     'The drawing has too many shapes or style rules to change its colors: they stay as they are.' => 'Le dessin a trop de formes ou de règles de style pour changer ses couleurs : elles restent telles quelles.',
+    'Any tag' => 'Toutes les étiquettes',
+    'Pages without a tag' => 'Pages sans étiquette',
+    'Any type' => 'Tous les types',
+    'Without a tag' => 'Sans étiquette',
+    'Tag: %name%' => 'Étiquette : %name%',
+    'Type: %name%' => 'Type : %name%',
+    'Flat list, without the tree: clear the filters to see the tree again.' => 'Liste à plat, sans l’arborescence : effacez les filtres pour la retrouver.',
 ];

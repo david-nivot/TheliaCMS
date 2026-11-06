@@ -113,6 +113,9 @@
                             {{ 'Pages %first% to %last% of %total%'|trans({ '%first%': results.firstOnPage, '%last%': results.lastOnPage, '%total%': results.total }, 'theliacms') }}
                         {% endif %}
                     </span>
+                    <span class="text-muted small" data-testid="cms-pages-flat-list">
+                        {{ 'Flat list, without the tree: clear the filters to see the tree again.'|trans({}, 'theliacms') }}
+                    </span>
                 {% else %}
                     <span>{{ 'Structure of the site'|trans({}, 'theliacms') }}</span>
                     {% if filters.fold_all_url %}

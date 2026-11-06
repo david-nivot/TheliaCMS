@@ -1,6 +1,6 @@
 # Plan: the tools of the page list (N31 to N36)
 
-Status: decided (2026-11-06), coded lot by lot; N36 first. Read on `main` at 705aa2b
+Status: decided (2026-11-06), coded lot by lot; N36 and N31 done. Read on `main` at 705aa2b
 (2.15.0 + #117). Wave 5 of the roadmap, family "editor". Goal: ship in the same release as
 N51, N52, N54 (2.16.0). Each lot updates this plan in its own commit.
 
@@ -75,12 +75,25 @@ after N35 (decided 2026-11-06 by the maintainer).
   `StaleTranslationTest::testAPageWithBothReasonsShowsBothLabelsEachLeadingToItsScreen`
   (both shown, each link, naming the page settles one reason only).
 
-### 2. N31: filter by tag and by type (S)
-- `PageFilters`: `tag` (id or `none`), `type` (code), read strictly (unknown id or code ignored),
-  in `isFiltering`, `advancedCount`, `toQueryParams`, `withoutFilter`.
-- `CmsPageAdminRepository::matching`: `filterByTagId` / `filterByPageType` (or `tag_id IS NULL`).
-- Bar: two selects with linked labels; chips; the result line says the tree is off.
-- Tests: each filter, `none`, chips, pagination keeps them, cost constant.
+### 2. N31: filter by tag and by type (S), done
+- `PageFilters`: `tag` (id, or `none` read as `NO_TAG` = 0), `type` (code checked by
+  `PageTypeCode::isValid`), in `isFiltering`, `advancedCount`, `toQueryParams`,
+  `withoutFilter`. Strict in two steps: `fromRequest` keeps only the shape, then
+  `knowing($tags, $types)` (called by `PageListPresenter::present` before anything else) drops a
+  tag or a type the site does not have; `none` is dropped on a site without tags.
+- `CmsPageAdminRepository::matching`: `filterByTagId` (or `tag_id IS NULL`, the foreign key sets
+  null on delete) and `filterByPageType`.
+- `PageListPresenter` reads the tags and the types once and passes them to the bar, the chips,
+  the rows and the page templates (it read the tags in `rows()` and the types in
+  `pageTemplates()` before).
+- Bar: "Tag" and "Page type" selects with linked labels, shown only when there is a choice (at
+  least one tag; two types); chips "Tag: …", "Without a tag", "Type: …"; a line "Flat list,
+  without the tree" next to the result count, shown for every filter. Search box `col-lg-4`,
+  the selects share the row, buttons `col-lg-auto`.
+- Pagination and row actions keep both through `toQueryParams` (`filter_query`, `route()`).
+- Tests: `PageFiltersTest` (reading, `none`, removal, `knowing`), `PageListTagTypeFilterTest`
+  (each filter, `none`, selects and chips over HTTP, unknown values ignored, row actions and
+  the parameters of the pagination keep both), `PageListingCostTest::testFilteringByTagAndTypeCostsTheSameWhateverTheNumberOfMatches`.
 
 ### 3. N34: counters per status and return to the filtered list (S + S/M)
 - One query: `SUM(CASE WHEN <sqlFor(status)> THEN 1 ELSE 0 END)` per status on the same content
