@@ -26,6 +26,7 @@ use Thelia\Domain\Ai\AiToolCall;
 use Thelia\Domain\Ai\AiTransparency;
 use Thelia\Domain\Ai\AsAiUsage;
 use Thelia\Domain\Ai\Exception\AiExceptionInterface;
+use Thelia\Domain\Ai\Guardrail\GuardrailMode;
 use Thelia\Domain\Ai\UntrustedContent;
 use Thelia\Domain\Ai\UntrustedSource;
 use TheliaCMS\Content\Document;
@@ -38,6 +39,7 @@ use TheliaCMS\Generation\Ai\GeneratorToolDefinitions;
 use TheliaCMS\Generation\Ai\ObservedStream;
 use TheliaCMS\Generation\Ai\SentBackAnswer;
 use TheliaCMS\Generation\Ai\StreamCutException;
+use TheliaCMS\Generation\Guardrail\ReferenceFileGuardrail;
 use TheliaCMS\Generation\Tool\GeneratorTools;
 use TheliaCMS\Generation\Tool\MakeComponentTool;
 use TheliaCMS\Generation\Tool\ReadUrlTool;
@@ -62,7 +64,8 @@ use TheliaCMS\Page\Field\InvalidFieldsException;
  * The tools are the ones of the site, and `read_url` when the site allowed
  * the reading of pages and the brief cites one: this server reads it, at the
  * addresses of the brief only, and the text goes to the model as untrusted
- * content of a web page.
+ * content of a web page. A file joined to the brief goes the same way from
+ * the first turn, as untrusted content of a document named after the file.
  */
 #[AsAiUsage(
     id: 'theliacms.page_generation',
@@ -71,6 +74,9 @@ use TheliaCMS\Page\Field\InvalidFieldsException;
     tier: AiTier::Advanced,
     capabilities: [AiCapability::StructuredOutput, AiCapability::Tools, AiCapability::Streaming],
     transparency: AiTransparency::Generative,
+    // A file joined to the brief that instructs rather than documents is
+    // refused before the call; the merchant may set the mode per usage.
+    guardrails: [ReferenceFileGuardrail::NAME => GuardrailMode::Block],
 )]
 // A translation keeps the sections, the components and the images of its
 // source and only writes its texts again: a usage of its own, at a lighter
@@ -169,6 +175,10 @@ final readonly class PageGenerator
             GenerationRequest::KIND_TRANSLATION === $request->kind ? self::TRANSLATION_USAGE : self::USAGE,
             [AiMessage::user($prompt)],
             implode("\n\n", array_column($this->prompts->system(), 'text')),
+            // The file joined to the brief: data of a third party from the
+            // first turn, wrapped and named by the gateway, never part of
+            // the message.
+            untrustedContents: null === $request->brief->reference ? [] : [new UntrustedContent(UntrustedSource::Document, $request->brief->reference->text, $request->brief->reference->name)],
             outputSchema: $this->outputSchema($request, $request->keptComponents(), !$fieldsAsked->isEmpty()),
             tools: $tools,
             maxOutputTokens: $this->settings->maxTokens(),
@@ -504,11 +514,15 @@ final readonly class PageGenerator
             return $conversation;
         }
 
+        // The pages read so far replace the ones of the turn before; what the
+        // request started with (the file joined to the brief) stays.
+        $kept = array_values(array_filter($conversation->untrustedContents, static fn (UntrustedContent $content): bool => UntrustedSource::WebPage !== $content->source));
+
         return new AiRequest(
             $conversation->usageId,
             $conversation->messages,
             $conversation->system,
-            [] === $pages ? $conversation->untrustedContents : $pages,
+            [] === $pages ? $conversation->untrustedContents : [...$kept, ...$pages],
             $schema ?? $conversation->outputSchema,
             $conversation->tools,
             $conversation->maxOutputTokens,

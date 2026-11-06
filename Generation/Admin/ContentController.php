@@ -16,6 +16,7 @@ namespace TheliaCMS\Generation\Admin;
 
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -34,6 +35,8 @@ use TheliaCMS\Generation\Alongside;
 use TheliaCMS\Generation\Brief;
 use TheliaCMS\Generation\GenerationRequest;
 use TheliaCMS\Generation\HeaderOutcome;
+use TheliaCMS\Generation\ReferenceFile;
+use TheliaCMS\Generation\ReferenceFileRefusedException;
 use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Security\CmsResources;
 
@@ -97,7 +100,16 @@ final readonly class ContentController
         }
 
         $data = $form->getData();
-        $brief = new Brief((string) $data['text'], self::blankToNull($data['tone'] ?? null), self::blankToNull($data['audience'] ?? null));
+        $upload = $data['reference'] ?? null;
+
+        try {
+            $reference = $upload instanceof UploadedFile ? ReferenceFile::fromUpload($upload) : null;
+        } catch (ReferenceFileRefusedException $refused) {
+            // Refused before anything is called: no row of the ledger.
+            return $this->runner->refuse($request, $this->support->translate($refused->refusal->message()), $target->screenUrl());
+        }
+
+        $brief = new Brief((string) $data['text'], self::blankToNull($data['tone'] ?? null), self::blankToNull($data['audience'] ?? null), $reference);
 
         return $this->run($request, $target, GenerationRequest::fromBrief($target->generationTarget(), $target->locale(), $brief));
     }

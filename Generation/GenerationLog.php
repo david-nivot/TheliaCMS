@@ -370,6 +370,40 @@ final readonly class GenerationLog
      */
     public function latestBrief(GenerationTarget $target, string $locale): ?Brief
     {
+        $brief = $this->latestBriefJson($target, $locale);
+
+        if (null === $brief) {
+            return null;
+        }
+
+        // Without the file it came with: the ledger holds none of its text,
+        // and a page written again from its brief is written without the
+        // file unless the editor joins it again.
+        return new Brief($brief['text'], \is_string($brief['tone'] ?? null) ? $brief['tone'] : null, \is_string($brief['audience'] ?? null) ? $brief['audience'] : null);
+    }
+
+    /**
+     * The file the latest brief of the target came with, as the ledger keeps
+     * it: its name and its length in characters. Null without one.
+     *
+     * @return array{name: string, length: int}|null
+     */
+    public function latestBriefReference(GenerationTarget $target, string $locale): ?array
+    {
+        $reference = $this->latestBriefJson($target, $locale)['reference'] ?? null;
+
+        if (!\is_array($reference) || !\is_string($reference['name'] ?? null) || '' === $reference['name'] || !\is_int($reference['length'] ?? null)) {
+            return null;
+        }
+
+        return ['name' => $reference['name'], 'length' => $reference['length']];
+    }
+
+    /**
+     * @return array<string, mixed>|null the JSON of the latest brief of the target, with a text
+     */
+    private function latestBriefJson(GenerationTarget $target, string $locale): ?array
+    {
         $row = CmsPageGenerationQuery::create()
             ->filterByTargetType($target->type)
             ->filterByTargetId($target->id)
@@ -385,7 +419,7 @@ final readonly class GenerationLog
             return null;
         }
 
-        return new Brief($brief['text'], \is_string($brief['tone'] ?? null) ? $brief['tone'] : null, \is_string($brief['audience'] ?? null) ? $brief['audience'] : null);
+        return $brief;
     }
 
     /**
@@ -468,9 +502,20 @@ final readonly class GenerationLog
             ->setTools([] === $details->tools ? null : json_encode($details->tools, \JSON_THROW_ON_ERROR));
     }
 
+    /**
+     * The brief as the ledger keeps it. Of a file joined to it: its name, its
+     * length and a fingerprint, never its text, which the core keeps with the
+     * prompt when the merchant keeps prompts, for as long as it keeps them.
+     */
     private static function briefJson(Brief $brief): string
     {
-        return json_encode(['text' => $brief->text, 'tone' => $brief->tone, 'audience' => $brief->audience], \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES | \JSON_THROW_ON_ERROR);
+        $json = ['text' => $brief->text, 'tone' => $brief->tone, 'audience' => $brief->audience];
+
+        if (null !== $brief->reference) {
+            $json['reference'] = ['name' => $brief->reference->name, 'length' => $brief->reference->length(), 'fingerprint' => $brief->reference->fingerprint()];
+        }
+
+        return json_encode($json, \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES | \JSON_THROW_ON_ERROR);
     }
 
     /**

@@ -272,9 +272,10 @@ by hand, on a page made for it.
 ## Calling the AI layer
 
 - Every call goes through `Thelia\Domain\Ai\AiGatewayInterface`, under one of
-  the four usages the generators declare with `#[AsAiUsage]`
+  the five usages the generators declare with `#[AsAiUsage]`
   (`theliacms.page_generation`, `theliacms.page_translation`, `theliacms.text`,
-  `theliacms.component`). The
+  `theliacms.component`, and `theliacms.guardrail_reference` for the judge of
+  a file joined to a brief). The
   provider, the key, the model and the budget are the core's: nothing here
   knows a provider SDK, and the options a provider reads travel in
   `providerOptions` (`effort`, read by Anthropic models, ignored by the others).

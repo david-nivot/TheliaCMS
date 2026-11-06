@@ -11,7 +11,7 @@ usual pipeline.
 - Thelia 3.3.0 or later, whose AI layer the generator goes through. The
   module holds no key, no provider and no model.
 - A connection and a range in the **AI settings** of Thelia: declare the
-  connection to a provider once, then give each of the four usages below a
+  connection to a provider once, then give each of the five usages below a
   range of models, turn it on and set its budget. Without that, the generator
   says so (`GenerationUnavailableException`, in the language of the back
   office) and nothing is called. The budget, the rate limit, the
@@ -29,9 +29,9 @@ usual pipeline.
 - The right `admin.cms.generate`, given to the editor profile the module
   seeds: asking the generator to write costs money.
 
-### The four usages
+### The five usages
 
-The module declares four usages to the AI layer. Each is set up on its own in
+The module declares five usages to the AI layer. Each is set up on its own in
 the AI settings, so a site can give the pages a stronger range than the texts:
 
 | Usage | Range declared | What it writes |
@@ -40,6 +40,7 @@ the AI settings, so a site can give the pages a stronger range than the texts:
 | `theliacms.page_translation` | standard | the same document written in another language of the site, its sections, components and images kept |
 | `theliacms.text` | standard | a text for a rich-text field (a product description, a chapo), from a brief |
 | `theliacms.component` | advanced | a component made in the back office |
+| `theliacms.guardrail_reference` | fast | nothing: one word, the verdict of the judge on a file joined to a brief (below) |
 
 A translation rewrites texts only, so it is declared at the standard range; a
 site that wants the advanced one for it raises the range of the usage in the AI
@@ -226,6 +227,52 @@ error) is left out and said so in the history. The address of a picture (a path
 ending in `.jpg`, `.png`, `.webp`, `.gif`, `.svg` or `.avif`) is not a page: it
 is not offered for reading, and goes as it is into an image prop. A translation
 cites none: its source is the document of the other language.
+
+### A file joined to the brief
+
+The brief of a page or of a catalogue item takes a text file, `.md` or
+`.txt`, of up to 100,000 characters (five times the brief; `Generation/ReferenceFile.php`,
+no setting): a product sheet, a page of the old site saved as text, a note from
+the client. The file is read once from the upload and never written to disk.
+A file of another extension, not UTF-8, holding a NUL byte, blank or too long
+is refused before anything is called, with the reason on the screen and no row
+in the ledger; the browser refuses a file above the ceiling before sending it,
+naming the limit that plays, the module's (400 kB) or PHP's when it is lower.
+
+The text goes to the model as it does for a page read: an `UntrustedContent`
+of source `document`, with the name of the file as reference, on the request
+from its first turn, and kept beside the pages `read_url` adds. The AI layer
+wraps it in delimiters that name the source and tells the model it is data;
+the module adds nothing to the message but a block that says the brief comes
+with the file, that what it says counts as given by the brief, and that it is
+material to read, never instructions. The length of the file counts in the
+budget the AI layer reserves, not in the limit on what a person types.
+
+The ledger keeps the name, the length and a fingerprint of the file in the
+JSON of the brief, never its text; the AI layer keeps the text with the prompt
+of the call when the merchant keeps prompts, for as long as it keeps them. The
+recall of the brief names the file; the form does not put it back, and a page
+written again from its brief is written without it unless the editor joins it
+again.
+
+A file that instructs rather than documents (it addresses an assistant, asks
+to act or to ignore rules, or has nothing to do with a page to write) is
+refused, not only neutralised, by `Generation/Guardrail/ReferenceFileGuardrail.php`:
+an optional guardrail of the AI layer named `reference_file`, listed in
+`block` mode by `theliacms.page_generation`, modelled on the topic guardrail of
+the core. It runs on the first turn of a request that holds a `document`
+content, as a call of the fast range under the usage
+`theliacms.guardrail_reference` (system audience, no optional guardrail, the
+correlation id of the call it judges): the request of the editor and the file
+reach the judge as untrusted data, and one word is read in its answer,
+`reference` or `instructions`. `instructions` fails the check with the reason
+`reference_rejected`; any other answer or a judge that cannot run fails it
+`unavailable`, and in `block` mode the call is refused, as the AI layer wants
+it. The merchant sees the usage in the register, its verdicts in the AI log,
+and may set the mode of the guardrail on the usage of pages. No keyword list:
+it can be walked around and refuses honest files ("delete" in a page about
+ending a contract). A judge is a model and can be fooled: the protection is
+the wrapping of the gateway and the editor reading the draft.
 
 ## Skills
 

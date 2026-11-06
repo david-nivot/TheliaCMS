@@ -52,6 +52,7 @@ use TheliaCMS\Generation\GenerationRequest;
 use TheliaCMS\Generation\GenerationTarget;
 use TheliaCMS\Generation\GenerationUnavailableException;
 use TheliaCMS\Generation\GeneratorSettings;
+use TheliaCMS\Generation\Guardrail\ReferenceFileGuardrail;
 use TheliaCMS\Generation\PageGenerator;
 use TheliaCMS\Generation\PromptBuilder;
 use TheliaCMS\Generation\ShopContext;
@@ -99,6 +100,8 @@ final class GatewayRefusalsTest extends CmsIntegrationTestCase
         yield 'inactive usage or no connection' => [new InactiveAiUsageException('theliacms.x'), GenerationUnavailableException::class, 'The generator is turned off, or no AI connection and model'];
         yield 'provider down' => [new AiProviderUnavailableException('anthropic-main', true, self::PROVIDER_TEXT, null, 9001), GenerationUnavailableException::class, 'The AI provider does not answer right now'];
         yield 'guardrail' => [new AiGuardrailBlockedException(new GuardrailVerdict('limits', GuardrailStage::Input, false, GuardrailMode::Block, self::PROVIDER_TEXT), 9002), GenerationRefusedException::class, 'A safety check of the site stopped this request'];
+        yield 'a file that instructs' => [new AiGuardrailBlockedException(new GuardrailVerdict(ReferenceFileGuardrail::NAME, GuardrailStage::Input, false, GuardrailMode::Block, ReferenceFileGuardrail::REJECTED), 9003), GenerationRefusedException::class, 'The file joined to the brief reads as instructions'];
+        yield 'a file that could not be judged' => [new AiGuardrailBlockedException(new GuardrailVerdict(ReferenceFileGuardrail::NAME, GuardrailStage::Input, false, GuardrailMode::Block, 'unavailable'), 9004), GenerationRefusedException::class, 'The file joined to the brief could not be checked'];
     }
 
     /**

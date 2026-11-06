@@ -86,6 +86,9 @@ final readonly class ContentScreen
         return $this->twig->render(self::TEMPLATE, [
             'subject' => $subject,
             'last_brief' => $lastBrief,
+            // The recall names the file the brief came with; the form does not
+            // put it back, the ledger holding none of its text.
+            'last_brief_reference' => null === $lastBrief ? null : $this->log->latestBriefReference($subject->target, $subject->locale),
             'brief_form' => $this->forms->create(BriefType::class, $lastBrief, ['action' => $subject->url('generate')])->createView(),
             'change_form' => $this->forms->create(ChangeType::class, null, ['action' => $subject->url('revise')])->createView(),
             'translate_form' => $this->translateForm($subject),
@@ -442,7 +445,14 @@ final readonly class ContentScreen
                 'message' => $this->translator->trans('The draft is written (%figures%). Read it, ask for changes, then publish it.', ['%figures%' => $figures], TheliaCMS::DOMAIN_NAME),
                 'details' => [],
             ],
-            GenerationLog::STATUS_REFUSED => [
+            // Refused by the model, which stopped with a reason, or by a check of
+            // the site before the model answered (a file joined to the brief
+            // that instructs): the sentence of the ledger says which check.
+            GenerationLog::STATUS_REFUSED => null === $row->getStopReason() ? [
+                'type' => 'warning',
+                'message' => $this->translator->trans('A check of the site stopped this request (%figures%). Nothing was changed.', ['%figures%' => $figures], TheliaCMS::DOMAIN_NAME),
+                'details' => [(string) $row->getError()],
+            ] : [
                 'type' => 'warning',
                 'message' => $this->translator->trans('The model declined to write this (%figures%). Reword the brief.', ['%figures%' => $figures], TheliaCMS::DOMAIN_NAME),
                 'details' => [],

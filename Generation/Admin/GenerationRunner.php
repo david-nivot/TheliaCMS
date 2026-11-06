@@ -49,6 +49,14 @@ final readonly class GenerationRunner
     /** What a translation did with the header of a page: read from the address like the outcome of the call, a stream leaving no flash message behind. */
     public const string HEADER = 'header';
 
+    private const array STREAM_HEADERS = [
+        'Content-Type' => 'text/event-stream; charset=UTF-8',
+        'Cache-Control' => 'no-cache, no-store, must-revalidate',
+        // The reverse proxy would otherwise hold the whole answer back
+        // until the end, which is the one thing a stream is not for.
+        'X-Accel-Buffering' => 'no',
+    ];
+
     public function __construct(
         private PageGenerator $generator,
         private TranslatorInterface $translator,
@@ -91,6 +99,27 @@ final readonly class GenerationRunner
     }
 
     /**
+     * A request refused before the generator runs (a file the brief does
+     * not take), answered as a generation is: one `error` event when the
+     * script of the screen asked for a stream, a flash and the screen
+     * otherwise. Nothing is written to the ledger.
+     */
+    public function refuse(Request $request, string $message, string $screenUrl): Response
+    {
+        if (!self::wantsAStream($request)) {
+            $this->flash($request, 'danger', $message);
+
+            return new RedirectResponse($screenUrl);
+        }
+
+        $events = new GenerationStream(fn (string $text, array $parameters): string => $this->translator->trans($text, $parameters, TheliaCMS::DOMAIN_NAME));
+
+        return new StreamedResponse(static function () use ($events, $message): void {
+            $events->error($message, null);
+        }, Response::HTTP_OK, self::STREAM_HEADERS);
+    }
+
+    /**
      * @param \Closure(Document, AiProvenance|null, Alongside): (HeaderOutcome|null) $save
      */
     private function stream(GenerationRequest $generation, \Closure $save, string $screenUrl): StreamedResponse
@@ -119,13 +148,7 @@ final readonly class GenerationRunner
             }
 
             $events->done(self::withOutcome($screenUrl, (int) $result->logId, $header instanceof HeaderOutcome ? $header : null), $this->translator->trans('The document is written.', [], TheliaCMS::DOMAIN_NAME));
-        }, Response::HTTP_OK, [
-            'Content-Type' => 'text/event-stream; charset=UTF-8',
-            'Cache-Control' => 'no-cache, no-store, must-revalidate',
-            // The reverse proxy would otherwise hold the whole answer back
-            // until the end, which is the one thing a stream is not for.
-            'X-Accel-Buffering' => 'no',
-        ]);
+        }, Response::HTTP_OK, self::STREAM_HEADERS);
 
         return $response;
     }

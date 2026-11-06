@@ -48,6 +48,23 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   profile is given on the two new rights the access it had on
   `admin.cms.form`, so nobody loses what they could do; the Editor profile has
   both.
+- **A file joined to the brief.** On the content screen of a page or of a
+  catalogue item, the brief takes a `.md` or `.txt` file of up to 100,000
+  characters (a product sheet, a page of the old site saved as text, a note).
+  The generator reads it as it reads a web page the brief cites: as untrusted
+  content of source `document` wrapped by the AI layer, named after the file,
+  present from the first turn and kept beside the pages read. The ledger keeps
+  the name, the length and a fingerprint of the file, never its text; the
+  recall of the brief names it, and the form does not put it back. A file that
+  instructs rather than documents is refused before the paid call by a guardrail
+  of the module, `reference_file`, a judge of the fast range under the usage
+  `theliacms.guardrail_reference`, listed in `block` mode on
+  `theliacms.page_generation`: the merchant sees it in the register of usages,
+  reads its verdicts in the AI log and may set its mode. The judge needs a
+  connection and a model of the fast range; without one, a brief with a file is
+  refused and says so, a brief without one is written as before. A file above
+  the ceiling is refused by the browser before it is sent, with the limit that
+  plays (the module's or PHP's). No schema change, no setting.
 
 ### Fixed
 
