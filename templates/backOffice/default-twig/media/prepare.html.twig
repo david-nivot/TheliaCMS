@@ -39,6 +39,13 @@
         .cms-svg-previews:has(#cms-svg-background-light:checked) .cms-svg-frame { background: #fff; }
         .cms-svg-previews:has(#cms-svg-background-dark:checked) .cms-svg-frame { background: #212529; }
         @media (max-width: 767.98px) { .cms-svg-frame { height: 200px; } }
+        .cms-svg-tint { display: flex; flex-direction: column; align-items: center; gap: .375rem; }
+        .cms-svg-tint img { height: 2rem; width: auto; max-width: 100%; }
+        .cms-svg-swatches { display: grid; grid-template-columns: repeat(auto-fill, 2rem); gap: .375rem; }
+        .cms-svg-swatch-choice { display: block; padding: 2px; border: 2px solid transparent; border-radius: .375rem; cursor: pointer; }
+        .cms-svg-swatch-choice .cms-svg-swatch { display: block; width: 100%; aspect-ratio: 1; border-radius: .25rem; border: 1px solid var(--bs-border-color); }
+        .btn-check:checked + .cms-svg-swatch-choice { border-color: var(--bs-primary); }
+        .btn-check:focus-visible + .cms-svg-swatch-choice { outline: 2px solid var(--bs-primary); outline-offset: 1px; }
     </style>
 
     <div class="d-flex flex-column gap-3">
@@ -106,7 +113,7 @@
                             <div class="col-sm-6">
                                 <figure class="mb-0">
                                     <div class="cms-svg-frame border rounded" data-cms-svg-frame>
-                                        <div class="cms-svg-canvas"><img src="{{ path('admin.cms.media.svg.result', { token: file.token, level: level }|filter(value => value != '')) }}" alt="" data-testid="cms-svg-result"></div>
+                                        <div class="cms-svg-canvas"><img src="{{ path('admin.cms.media.svg.result', { token: file.token, level: level }|merge(color_values)|filter(value => value != '')) }}" alt="" data-testid="cms-svg-result"></div>
                                     </div>
                                     <figcaption class="small mt-2 text-center">
                                         {{ 'Result'|trans({}, 'theliacms') }} · <strong>{{ result_weight }}</strong>
@@ -122,6 +129,22 @@
                                     </figcaption>
                                 </figure>
                             </div>
+                        </div>
+
+                        {# The result at the size of a line of text, where a color that
+                           follows the text shows what it becomes. #}
+                        <div class="row g-2 mt-2" data-testid="cms-svg-tints">
+                            {% for tint in tints %}
+                                <div class="col-4">
+                                    <figure class="cms-svg-tint mb-0 p-2 rounded border" style="background: {{ tint.value == 'dark' ? '#212529' : '#fff' }}; color: {{ tint.color }}">
+                                        <span class="d-flex align-items-center gap-2">
+                                            <img src="{{ path('admin.cms.media.svg.result', { token: file.token, level: level, tint: tint.value }|merge(color_values)|filter(value => value != '')) }}" alt="" data-testid="cms-svg-tint-{{ tint.value }}">
+                                            {% if tint.value == 'accent' %}<span class="fw-semibold">{{ 'Text'|trans({}, 'theliacms') }}</span>{% endif %}
+                                        </span>
+                                        <figcaption class="small">{{ tint.label|trans({}, 'theliacms') }}</figcaption>
+                                    </figure>
+                                </div>
+                            {% endfor %}
                         </div>
                     </div>
                 </section>
@@ -173,7 +196,7 @@
                                address and sends nothing else: the buttons of the file below
                                keep their own form. #}
                             <form method="get" action="{{ path('admin.cms.media.svg.show', { token: file.token }) }}" class="mt-3" data-testid="cms-svg-levels">
-                                {% for name, value in carried %}
+                                {% for name, value in carried|merge(color_values) %}
                                     <input type="hidden" name="{{ name }}" value="{{ value }}">
                                 {% endfor %}
                                 <fieldset class="mb-2">
@@ -198,13 +221,128 @@
                     </div>
                 </details>
 
+                {% set palette = result.palette %}
+                <details class="card" open data-testid="cms-svg-colors">
+                    <summary class="card-header fw-semibold">
+                        3. {{ 'Colors'|trans({}, 'theliacms') }}
+                        <small class="float-end fw-normal text-body-secondary">
+                            {% if not palette.readable %}
+                                {{ 'too complex'|trans({}, 'theliacms') }}
+                            {% elseif palette.empty %}
+                                {{ palette.followsText > 0 ? 'already follows the text'|trans({}, 'theliacms') : 'no color'|trans({}, 'theliacms') }}
+                            {% else %}
+                                {{ coloring.preset.label|trans({}, 'theliacms') }}
+                            {% endif %}
+                        </small>
+                    </summary>
+                    <div class="card-body">
+                        {% if not palette.readable %}
+                            <p class="small text-body-secondary mb-0" data-testid="cms-svg-too-complex">{{ 'The drawing has too many shapes or style rules to change its colors: they stay as they are.'|trans({}, 'theliacms') }}</p>
+                        {% elseif palette.empty %}
+                            <p class="small text-body-secondary mb-0" data-testid="cms-svg-no-color">
+                                {{ palette.followsText > 0 ? 'The drawing already takes the color of the text around it.'|trans({}, 'theliacms') : 'The drawing has no color to change.'|trans({}, 'theliacms') }}
+                            </p>
+                        {% else %}
+                            {# Each choice shows its preview at once; the buttons of the file
+                               below keep their own form. #}
+                            <form method="get" action="{{ path('admin.cms.media.svg.show', { token: file.token }) }}" class="d-flex flex-column gap-3" data-testid="cms-svg-presets" data-cms-svg-autosubmit>
+                                {% for name, value in carried|merge({ level: level })|filter(value => value != '') %}
+                                    <input type="hidden" name="{{ name }}" value="{{ value }}">
+                                {% endfor %}
+
+                                <fieldset>
+                                    <legend class="visually-hidden">{{ 'Preset'|trans({}, 'theliacms') }}</legend>
+                                    {% for preset in presets|filter(preset => preset.value != 'main' or palette.main is not null) %}
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="colors" id="cms-svg-colors-{{ preset.value }}" value="{{ preset.value }}" {{ coloring.preset == preset ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="cms-svg-colors-{{ preset.value }}">
+                                                {{ preset.label|trans({}, 'theliacms') }}
+                                                <span class="d-block small text-body-secondary">{{ preset.help|trans({}, 'theliacms') }}</span>
+                                            </label>
+                                        </div>
+                                    {% endfor %}
+                                </fieldset>
+
+                                {% if coloring.usesMain %}
+                                    {# The colors that may be the main one, the most used first: a
+                                       swatch each, its code and use on hovering, the chosen one
+                                       ringed. Past a few, the others fold. #}
+                                    {% set candidates = palette.candidates %}
+                                    {% set shown = constant('TheliaCMS\\Media\\Svg\\Color\\SvgPalette::SHOWN') %}
+                                    {% set folded = candidates|slice(shown) %}
+                                    <fieldset data-testid="cms-svg-main">
+                                        <legend class="fs-6 mb-1">{{ 'Main color'|trans({}, 'theliacms') }}</legend>
+                                        {% for part in [candidates|slice(0, shown), folded] %}
+                                            {% if part is not empty %}
+                                                {% if loop.index == 2 %}
+                                                    <details class="mt-2" {{ coloring.main in folded|map(color => color.key) ? 'open' : '' }} data-testid="cms-svg-main-more">
+                                                        <summary class="small text-body-secondary">{{ '%count% other color|%count% other colors'|trans({ '%count%': folded|length }, 'theliacms') }}</summary>
+                                                {% endif %}
+                                                <div class="cms-svg-swatches {{ loop.index == 2 ? 'mt-2' : '' }}">
+                                                    {% for color in part %}
+                                                        {% set usages = [] %}
+                                                        {% if color.fills > 0 %}{% set usages = usages|merge(['%count% fill|%count% fills'|trans({ '%count%': color.fills }, 'theliacms')]) %}{% endif %}
+                                                        {% if color.strokes > 0 %}{% set usages = usages|merge(['%count% stroke|%count% strokes'|trans({ '%count%': color.strokes }, 'theliacms')]) %}{% endif %}
+                                                        {% set described = color.key ~ ' · ' ~ usages|join(' · ') %}
+                                                        <input type="radio" class="btn-check" name="main" id="cms-svg-main-{{ color.key|replace({'#': ''}) }}" value="{{ color.key }}" autocomplete="off" {{ color.key == coloring.main ? 'checked' : '' }}>
+                                                        <label class="cms-svg-swatch-choice" for="cms-svg-main-{{ color.key|replace({'#': ''}) }}" title="{{ described }}">
+                                                            <span class="cms-svg-swatch" style="background: {{ color.key }}"></span>
+                                                            <span class="visually-hidden">{{ described }}</span>
+                                                        </label>
+                                                    {% endfor %}
+                                                </div>
+                                                {% if loop.index == 2 %}</details>{% endif %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        <p class="small text-body-secondary mt-2 mb-0">{{ 'The main color is the one of the most elements. Choose another one if it fits the drawing better.'|trans({}, 'theliacms') }}</p>
+                                    </fieldset>
+
+                                    <fieldset data-testid="cms-svg-others">
+                                        <legend class="fs-6 mb-1">{{ 'The other colors'|trans({}, 'theliacms') }}</legend>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <input type="radio" class="btn-check" name="others" id="cms-svg-others-keep" value="" autocomplete="off" {{ coloring.softens ? '' : 'checked' }}>
+                                            <label class="btn btn-outline-secondary" for="cms-svg-others-keep">{{ 'Stay as they are'|trans({}, 'theliacms') }}</label>
+                                            <input type="radio" class="btn-check" name="others" id="cms-svg-others-soft" value="soft" autocomplete="off" {{ coloring.softens ? 'checked' : '' }}>
+                                            <label class="btn btn-outline-secondary" for="cms-svg-others-soft">{{ 'Follow the text, lighter'|trans({}, 'theliacms') }}</label>
+                                        </div>
+                                    </fieldset>
+                                {% endif %}
+
+                                {% if coloring.asksAboutWhite and palette.hasWhite %}
+                                    <fieldset data-testid="cms-svg-white">
+                                        <legend class="fs-6 mb-1">{{ 'The white of the drawing'|trans({}, 'theliacms') }}</legend>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <input type="radio" class="btn-check" name="white" id="cms-svg-white-follow" value="" autocomplete="off" {{ coloring.keepWhite ? '' : 'checked' }}>
+                                            <label class="btn btn-outline-secondary" for="cms-svg-white-follow">{{ 'Follows the text'|trans({}, 'theliacms') }}</label>
+                                            <input type="radio" class="btn-check" name="white" id="cms-svg-white-keep" value="keep" autocomplete="off" {{ coloring.keepWhite ? 'checked' : '' }}>
+                                            <label class="btn btn-outline-secondary" for="cms-svg-white-keep">{{ 'Stays white'|trans({}, 'theliacms') }}</label>
+                                        </div>
+                                        <p class="small text-body-secondary mt-1 mb-0">{{ 'A white drawn over a shape that follows the text takes the same color, and disappears with it.'|trans({}, 'theliacms') }}</p>
+                                    </fieldset>
+                                {% endif %}
+
+                                {% if palette.gradients > 0 and coloring.asksAboutWhite %}
+                                    <p class="small alert alert-warning py-2 mb-0" data-testid="cms-svg-gradient">{{ 'The drawing has a gradient: once it follows the text, it becomes one plain color.'|trans({}, 'theliacms') }}</p>
+                                {% endif %}
+
+                                {% if not coloring.changesNothing %}
+                                    <p class="small text-body-secondary mb-0" data-testid="cms-svg-follows-note">{{ 'A color that follows the text takes the color of the text around the drawing once it is placed in a page as an icon. Shown as an image, it is drawn in black.'|trans({}, 'theliacms') }}</p>
+                                {% endif %}
+                            </form>
+                        {% endif %}
+                    </div>
+                </details>
+
                 {# Last, once the steps were read: what becomes of the file. #}
                 <form method="post" action="{{ path('admin.cms.media.svg.submit', route_parameters) }}" class="card" data-testid="cms-svg-form">
                     <input type="hidden" name="_token" value="{{ assignToken() }}">
                     <input type="hidden" name="level" value="{{ level }}">
+                    {% for name, value in color_values %}
+                        <input type="hidden" name="{{ name }}" value="{{ value }}">
+                    {% endfor %}
 
                     <div class="card-body d-flex flex-column gap-3">
-                        {% if levels is not empty and has_following %}
+                        {% if has_following %}
                             <div class="form-check mb-0">
                                 <input class="form-check-input" type="checkbox" name="apply_to_following" id="cms-svg-apply-following" value="1" data-testid="cms-svg-apply-following">
                                 <label class="form-check-label" for="cms-svg-apply-following">{{ 'Apply these settings to the following file|Apply these settings to the %count% following files'|trans({ '%count%': total - position }, 'theliacms') }}</label>
@@ -247,6 +385,9 @@
             }));
             document.querySelectorAll('input[name="cms-svg-zoom"]').forEach((input) => input.addEventListener('change', centre));
             centre();
+
+            // A setting of the colors shows its preview as soon as it is chosen.
+            document.querySelectorAll('[data-cms-svg-autosubmit]').forEach((form) => form.addEventListener('change', () => form.requestSubmit()));
 
             // One answer per file: a second click while the first is on its
             // way sends nothing.

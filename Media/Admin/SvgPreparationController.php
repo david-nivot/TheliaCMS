@@ -23,6 +23,9 @@ use Thelia\Core\Security\AccessManager;
 use Thelia\Model\Lang;
 use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Media\CmsMediaLibrary;
+use TheliaCMS\Media\Svg\Color\SvgColoring;
+use TheliaCMS\Media\Svg\Color\SvgColorPreset;
+use TheliaCMS\Media\Svg\Color\SvgPreviewTint;
 use TheliaCMS\Media\Svg\Optimization\SvgOptimizationLevels;
 use TheliaCMS\Media\Svg\PreparedSvgFile;
 use TheliaCMS\Media\Svg\PreparedSvgStore;
@@ -80,12 +83,13 @@ final readonly class SvgPreparationController
      *
      * @return array<string, mixed>
      */
-    public static function parameters(array $tokens, array $imageIds, ?int $replace, int $languageId, ?int $total = null, ?string $level = null, bool $picker = false): array
+    public static function parameters(array $tokens, array $imageIds, ?int $replace, int $languageId, ?int $total = null, ?string $level = null, bool $picker = false, ?SvgColoring $coloring = null): array
     {
         $rest = \array_slice($tokens, 1);
         $total ??= \count($tokens);
 
         return array_filter([
+            ...($coloring?->withoutMain()->values() ?? []),
             'token' => $tokens[0] ?? '',
             'queue' => implode(',', $rest),
             'images' => implode(',', $imageIds),
@@ -111,13 +115,13 @@ final readonly class SvgPreparationController
         $level = $this->levels->get($way->level ?? '')?->name();
 
         try {
-            $result = $this->preparation->prepare($file->content, $level);
+            $result = $this->preparation->prepare($file->content, $level, $way->coloring);
         } catch (UnreadableSvgException $exception) {
             return $this->refused($request, $lang, $file, $exception, $way->picker);
         }
 
         // The preview and the answer read it back instead of preparing again.
-        $this->store->remember($token, self::setting($level), $result->content);
+        $this->store->remember($token, self::setting($level, $result->coloring), $result->content);
         $locale = $lang->getLocale();
 
         return new Response($this->twig->render(self::SHOW_TEMPLATE, [
@@ -134,6 +138,10 @@ final readonly class SvgPreparationController
             'saved_weight' => PageDocumentSize::human(abs($result->savedBytes()), $locale),
             'levels' => $this->levels->all(),
             'level' => $level ?? '',
+            'presets' => SvgColorPreset::cases(),
+            'coloring' => $result->coloring,
+            'color_values' => $result->coloring->values(),
+            'tints' => SvgPreviewTint::cases(),
             'route_parameters' => $way->parameters($lang->getId()),
         ]));
     }
@@ -162,12 +170,13 @@ final readonly class SvgPreparationController
         if ('skip' === $request->request->getString('action')) {
             $this->store->forget($token);
 
-            return $this->next($request, $lang, $way, null, null);
+            return $this->next($request, $lang, $way, null, null, null);
         }
 
         $level = $this->levels->get($request->request->getString('level'))?->name();
+        $coloring = SvgColoring::fromValues($request->request->all());
         $locale = $lang->getLocale();
-        $kept = $this->store->result($token, self::setting($level));
+        $kept = $this->store->result($token, self::setting($level, $coloring));
 
         // A second answer sent before the first one ended (a double click)
         // finds the file taken and stores nothing.
@@ -176,7 +185,7 @@ final readonly class SvgPreparationController
         }
 
         try {
-            $svg = $kept ?? $this->preparation->prepare($file->content, $level)->content;
+            $svg = $kept ?? $this->preparation->prepare($file->content, $level, $coloring)->content;
 
             if (null === $way->replace) {
                 $added = (int) $this->writer->addPreparedSvg($svg, $file->name, $locale)->getId();
@@ -204,7 +213,9 @@ final readonly class SvgPreparationController
         $this->store->forget($token);
 
         // The setting is carried to the next files only when the editor says so.
-        return $this->next($request, $lang, $way, $added, '1' === $request->request->getString('apply_to_following') ? $level : null);
+        $carried = '1' === $request->request->getString('apply_to_following');
+
+        return $this->next($request, $lang, $way, $added, $carried ? $level : null, $carried ? $coloring : null);
     }
 
     #[Route('/{token}/original', name: 'original', requirements: ['token' => self::TOKEN_REQUIREMENT], methods: ['GET'])]
@@ -220,23 +231,24 @@ final readonly class SvgPreparationController
     {
         $file = $this->store->find($token) ?? throw new NotFoundHttpException();
         $level = $this->levels->get($request->query->getString('level'))?->name();
-        $kept = $this->store->result($token, self::setting($level));
-
-        if (null !== $kept) {
-            return self::image($kept);
-        }
+        $coloring = SvgColoring::fromValues($request->query->all());
+        $tint = SvgPreviewTint::tryFrom($request->query->getString(SvgPreviewTint::PARAMETER));
 
         try {
-            return self::image($this->preparation->prepare($file->content, $level)->content);
+            $svg = $this->store->result($token, self::setting($level, $coloring)) ?? $this->preparation->prepare($file->content, $level, $coloring)->content;
         } catch (UnreadableSvgException) {
             throw new NotFoundHttpException();
         }
+
+        return self::image(null === $tint ? $svg : $tint->apply($svg));
     }
 
-    /** The key a prepared result is kept under: the level, or the base optimization alone. */
-    private static function setting(?string $level): string
+    /** The key a prepared result is kept under: the level, or the base optimization alone, then the colors. */
+    private static function setting(?string $level, SvgColoring $coloring): string
     {
-        return null === $level ? 'base' : 'level-'.$level;
+        $key = null === $level ? 'base' : 'level-'.$level;
+
+        return $coloring->changesNothing() ? $key : $key.'-'.$coloring->key();
     }
 
     /**
@@ -263,7 +275,7 @@ final readonly class SvgPreparationController
      * The next file of the way that is still there, or the end of the way.
      * A file that waited too long is said, and the way goes on without it.
      */
-    private function next(Request $request, Lang $lang, SvgWay $way, ?int $added, ?string $level): Response
+    private function next(Request $request, Lang $lang, SvgWay $way, ?int $added, ?string $level, ?SvgColoring $coloring): Response
     {
         $images = null === $added ? $way->images : [...$way->images, $added];
         $queue = $way->queue;
@@ -272,7 +284,7 @@ final readonly class SvgPreparationController
             $token = array_shift($queue);
 
             if ($this->store->find($token) instanceof PreparedSvgFile) {
-                return $this->support->redirect('admin.cms.media.svg.show', self::parameters([$token, ...$queue], $images, $way->replace, $lang->getId(), $way->total, $level, $way->picker));
+                return $this->support->redirect('admin.cms.media.svg.show', self::parameters([$token, ...$queue], $images, $way->replace, $lang->getId(), $way->total, $level, $way->picker, $coloring));
             }
 
             $this->support->flash($request, 'warning', $this->support->translate('This file has expired, send it again.'));
@@ -318,7 +330,7 @@ final readonly class SvgPreparationController
 
         $this->support->flash($request, 'warning', $this->support->translate('This file has expired, send it again.'));
 
-        return $this->next($request, $lang, $way, null, $way->level);
+        return $this->next($request, $lang, $way, null, $way->level, $way->coloring);
     }
 
     /**
