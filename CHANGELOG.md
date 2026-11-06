@@ -7,6 +7,19 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Changed
+
+- **The picture of a block of Mises en avant is framed on the picture.** The
+  two numbers "Kept part" of each block give way to its centre, said in a
+  line, and to the **Crop the image…** button: the dialog shows the picture,
+  the part the block keeps and the result in the shape of that block (the
+  large one, a small one, or the lone one), and only the centre is set: the
+  picture covers the block, without a zoom. Without the script, the two
+  numbers stay.
+- **In a row of a theme component, the framing of a picture is folded.** The
+  proportions and the kept part of a picture, under it in every row, now sit
+  in a fold, **Kept part of the picture**, closed by default.
+
 ## [2.15.0] - 2026-11-06
 
 ### Added

@@ -65,7 +65,7 @@ ones next to it), drawn by the module under `cms-highlights…` classes of
 | `button_label`, `button_url` | the words and the address of the button (a path of the site, an `https`, mailto or tel address); the button is drawn only when both are set |
 | `image`, `image_alt` | the picture of a wide screen (media library or `https` address) and, for a picture kept elsewhere, its text |
 | `image_mobile` | optional: the picture drawn instead on a screen narrower than 1024px |
-| `focus_x`, `focus_y` | editor only (the generator is not offered them): the part of the picture kept when the block crops it, as an `object-position` |
+| `focus_x`, `focus_y` | editor only (the generator is not offered them): the part of the picture kept when the block crops it, as an `object-position`; in the form, set in the crop dialog on the centre alone (`bindHighlightsFraming`), in the shape of the block at 1920 px (1920 by 648 alone, 1280 by 648 the large one, 640 by 648 or 640 by 324 a small one) |
 
 Zero blocks and four are refused; every prop of a block is optional.
 
@@ -264,7 +264,8 @@ ignored and the picture served whole, `src` included) and serves the zone as it 
 
 In the form (`content-editor.js`, `bindPictureFraming`), each picture gets its proportions under
 it, then the sentence that says the kept part and the button that opens the dialog, per picture
-and per row (also for a row added without reloading). The dialog knows the shape asked for,
+and per row (also for a row added without reloading); in a row, both sit in a fold closed by
+default. The dialog knows the shape asked for,
 not the box of the component: it keeps its own CSS box, and a box of another shape is cropped
 again by the theme. For a picture kept elsewhere the button is off, with the reason. The
 generator never sees the props (`EditorValues`); a rewrite gives each picture back its framing

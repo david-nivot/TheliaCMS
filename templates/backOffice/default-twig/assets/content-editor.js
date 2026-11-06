@@ -474,11 +474,12 @@
             return isNaN(number) ? fallback : number;
         }
 
+        // A picture without a zoom only has a centre to say.
         function refresh() {
-            text.textContent = (labels.kept || "Centre %x% % / %y% %, zoom %zoom% %")
+            text.textContent = (fields.zoom ? labels.kept || "Centre %x% % / %y% %, zoom %zoom% %" : labels.keptCentre || "Centre %x% % / %y% %")
                 .replace("%x%", String(valueOf(fields.x, 50)))
                 .replace("%y%", String(valueOf(fields.y, 50)))
-                .replace("%zoom%", String(valueOf(fields.zoom, 100)));
+                .replace("%zoom%", fields.zoom ? String(valueOf(fields.zoom, 100)) : "");
         }
 
         scope.addEventListener("input", refresh);
@@ -757,6 +758,94 @@
         });
     }
 
+    // The pictures of the blocks of Mises en avant: each fills its block with
+    // `object-fit: cover`, placed by its two numbers, without a zoom. The two
+    // numbers the template folds give way to a sentence and the button that
+    // sets them on the picture. The block a picture fills is the one
+    // `blocks.css` draws at 1920 px: the lone block 1920 by 648, the large one
+    // 1280 by 648, the small one beside it 640 by 648, each of two 640 by 324.
+    function bindHighlightsFraming(root) {
+        var SHOWN = 1440;
+
+        function boxAt(position, count) {
+            if (count < 2) {
+                return { boxWidth: 1920, boxHeight: 648, shown: SHOWN, ratio: null };
+            }
+
+            if (position === 0) {
+                return { boxWidth: 1280, boxHeight: 648, shown: Math.round(SHOWN * 2 / 3), ratio: null };
+            }
+
+            return { boxWidth: 640, boxHeight: count === 2 ? 648 : 324, shown: Math.round(SHOWN / 3), ratio: null };
+        }
+
+        root.querySelectorAll('form[name="cms_section_highlights"]').forEach(function (form) {
+            var items = form.querySelector("[data-cms-items]");
+            var rows = items ? items.querySelector("[data-cms-items-list]") : null;
+
+            if (form.hasAttribute("data-cms-highlights-framing") || !rows) {
+                return;
+            }
+
+            form.setAttribute("data-cms-highlights-framing", "");
+
+            function blocks() {
+                return Array.prototype.slice.call(rows.querySelectorAll(":scope > [data-cms-item]"));
+            }
+
+            function holderOf(name, row) {
+                var picker = row.querySelector('input[data-cms-image-picker][name$="[' + name + ']"]');
+
+                return picker ? picker.closest(".cms-content__field") || picker.closest(".mb-3") || picker.parentElement : null;
+            }
+
+            function prepare(row) {
+                var fx = row.querySelector('[name$="[focus_x]"]');
+                var fy = row.querySelector('[name$="[focus_y]"]');
+                var holder = holderOf("image", row);
+
+                if (row.hasAttribute("data-cms-framing-row") || !fx || !fy || !holder) {
+                    return;
+                }
+
+                row.setAttribute("data-cms-framing-row", "");
+                // The fold that holds the two numbers without the script.
+                (fx.closest("details") || fx.closest(".cms-content__field") || fx.parentElement).hidden = true;
+
+                // Under the picture, and under the other ways of giving one.
+                var anchor = holder;
+
+                if (anchor.nextElementSibling && anchor.nextElementSibling.matches("details")) {
+                    anchor = anchor.nextElementSibling;
+                }
+
+                var summary = keptSummary(row, anchor, { x: fx, y: fy, zoom: null }, function () {
+                    var all = blocks();
+
+                    return boxAt(all.indexOf(row), all.length);
+                });
+                summary.classList.add("cms-content__kept--row");
+
+                var slot = summary.querySelector("[data-cms-kept-slot]");
+                slot.cmsCropCentreOnly = true;
+                slot.cmsCropFields = { x: fx, y: fy, zoom: null };
+                // The picture for a wide screen, or the one for a narrow screen when it is the only one.
+                slot.cmsCropField = function () {
+                    var wide = holder.querySelector("[data-cms-image-field]");
+                    var narrow = holderOf("image_mobile", row);
+                    var other = narrow ? narrow.querySelector("[data-cms-image-field]") : null;
+
+                    return wide && wide.getAttribute("data-cms-image-source") === "none" && other && other.getAttribute("data-cms-image-source") !== "none" ? other : wide;
+                };
+            }
+
+            blocks().forEach(prepare);
+            rows.addEventListener("cms-item-added", function (event) {
+                prepare(event.target);
+            });
+        });
+    }
+
     // The pictures of a component the module does not draw (one of the theme,
     // one made from a brief): each picture `photo` has its proportions and its
     // kept part in fields named `photo__proportions`, `photo__focus_x`,
@@ -817,6 +906,24 @@
                 return box;
             });
             summary.classList.add("cms-content__kept--picture");
+
+            // In a row, where each picture repeats them, the proportions and the
+            // kept part are set rarely: folded under one line.
+            if (scope.hasAttribute("data-cms-item")) {
+                var fold = document.createElement("details");
+                fold.className = "cms-content__more";
+                fold.setAttribute("data-cms-framing-fold", "");
+                var title = document.createElement("summary");
+                title.textContent = labels.framing || "Kept part of the picture";
+                fold.appendChild(title);
+                (shape || summary).before(fold);
+
+                if (shape) {
+                    fold.appendChild(shape);
+                }
+
+                fold.appendChild(summary);
+            }
 
             var slot = summary.querySelector("[data-cms-kept-slot]");
             slot.cmsCropField = function () { return holder.querySelector("[data-cms-image-field]"); };
@@ -2049,6 +2156,7 @@
         bindImageDimensions(root);
         bindPreciseRoom(root);
         bindColumnsFraming(root);
+        bindHighlightsFraming(root);
         bindPictureFraming(root);
 
         // An image field is drawn by media-picker.js, which a new section
