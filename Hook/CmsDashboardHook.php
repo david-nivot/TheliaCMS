@@ -25,7 +25,6 @@ use Thelia\Core\Template\Parser\ParserResolver;
 use Thelia\Model\Lang;
 use Thelia\Model\LangQuery;
 use TheliaCMS\Dashboard\ShowcaseStats;
-use TheliaCMS\Page\PublishedAccessibilityFinder;
 use TheliaCMS\Page\SampleTextPageFinder;
 use TheliaCMS\Security\CmsResources;
 use TheliaCMS\Settings\CmsSettings;
@@ -48,7 +47,6 @@ class CmsDashboardHook extends BaseHook
         private readonly CmsSettings $settings,
         private readonly ShowcaseStats $stats,
         private readonly SampleTextPageFinder $sampleTextPages,
-        private readonly PublishedAccessibilityFinder $accessibilityPages,
         // Read on every rendering: BaseHook keeps the first request it is given.
         private readonly RequestStack $requests,
         ?EventDispatcherInterface $dispatcher = null,
@@ -92,7 +90,6 @@ class CmsDashboardHook extends BaseHook
             // still saying "replace this text". Publishing them is refused now,
             // but a site set up before that is still showing them.
             'sample_text_pages' => $this->sampleTextPages->publishedPagesStillHoldingSampleText($locale),
-            'accessibility_pages' => $this->accessibilityPages->publishedPagesWithProblems($locale),
             'title' => $this->trans('The site', [], TheliaCMS::DOMAIN_NAME),
             'pages_url' => $this->urls->generate('admin.cms.pages.list'),
             'forms_url' => $this->urls->generate('admin.cms.forms.list'),
