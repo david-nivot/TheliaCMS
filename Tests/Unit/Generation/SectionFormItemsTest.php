@@ -78,6 +78,17 @@ final class SectionFormItemsTest extends TestCase
         self::assertSame('Read more', $form->get('items')->get('0')->get('button_label')->getData(), 'A row stored before it was read as fields keeps its values in the form.');
     }
 
+    public function testARequiredFieldOfARowIsRequiredInAListThatMayBeEmpty(): void
+    {
+        $videos = Prop::items('videos', 'videos', [Prop::text('title', 'title', required: true), Prop::text('caption', 'caption')], 0, 50);
+        $view = $this->builder()->build($this->definition($videos), new Section('videos', 'Organisms:Videos:Base', ['videos' => [['title' => 'Spring']]]), '/save')->createView();
+
+        self::assertTrue($view['videos'][0]['title']->vars['required'], 'A list of no row at least says nothing of the fields of its rows.');
+        self::assertFalse($view['videos'][0]['caption']->vars['required']);
+        self::assertTrue($view['videos']->vars['prototype']['title']->vars['required'], 'A row added by the script is drawn from the prototype.');
+        self::assertFalse($view['videos']->vars['prototype']['caption']->vars['required']);
+    }
+
     public function testTheFormShowsTheHelpWrittenForTheEditor(): void
     {
         $asked = Prop::text('caption', 'Caption', help: 'Instruction to the model.')->forEditor(help: 'Words for the editor.');

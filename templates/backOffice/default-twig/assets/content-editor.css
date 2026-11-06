@@ -398,7 +398,7 @@ body:has(.cms-content) {
 }
 
 .cms-content__edit form[data-cms-section-form] > :is(.mb-3:has(textarea), .mb-3:has([data-cms-long]), .mb-3:has([data-cms-image-field]), fieldset, details, .cms-content__edit-actions),
-.cms-content__item-fields > :is(.mb-3:has(textarea), fieldset, details),
+.cms-content__item-fields > :is(.mb-3:has(textarea), .mb-3:has([data-cms-wide]), fieldset, details),
 .cms-content__appearance-fields > :is(.cms-content__colors, fieldset[data-cms-choice-buttons], .cms-content__spacing) {
     grid-column: 1 / -1;
 }
@@ -529,17 +529,6 @@ body:has(.cms-content) {
 
 .cms-content__item-fields > details.cms-content__more > summary {
     font-weight: 400;
-}
-
-/* Rows of short fields read as a table: their labels show on the first row,
-   and stay for a screen reader on the others. */
-.cms-content__item-row + .cms-content__item-row > .cms-content__item-fields > .cms-content__field > .cms-content__field-head {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
 }
 
 /* A field is three parts: its label with the "?" of its help, the control,
@@ -948,20 +937,20 @@ body:has(.cms-content) {
     counter-reset: cms-item;
 }
 
-/* Each row carries its number, so "the second column" is easy to find. */
-.cms-content__item-row::before {
+/* Each row carries its number, in front of its first words. */
+.cms-content__item-row {
     counter-increment: cms-item;
-    content: counter(cms-item);
-    flex: 0 0 auto;
-    min-width: 1.5rem;
-    padding: 0 0.4rem;
-    border-radius: 1rem;
-    background: var(--bs-tertiary-bg, #f8f9fa);
-    color: #495057;
+}
+
+.cms-content__item-summary::before {
+    content: counter(cms-item) ". ";
     font-weight: 600;
-    font-size: 0.75rem;
-    line-height: 1.5rem;
-    text-align: center;
+}
+
+.cms-content__items-count {
+    margin-left: 0.25rem;
+    color: #495057;
+    font-weight: 400;
 }
 
 .cms-content__item-row {
@@ -982,8 +971,10 @@ body:has(.cms-content) {
     margin-bottom: 0 !important;
 }
 
-.cms-content__item-remove {
+.cms-content__item-tools {
+    display: flex;
     flex: none;
+    gap: 0.25rem;
 }
 
 /* A folded row: its first words, then its fields once opened. */
