@@ -35,6 +35,7 @@ use TheliaCMS\Page\Field\FieldDefinitions;
 use TheliaCMS\Page\Field\PageFields;
 use TheliaCMS\Settings\CmsSettings;
 use TheliaCMS\TheliaCMS;
+use TheliaCMS\Zone\HeaderZone;
 use TheliaLibrary\Model\LibraryImageQuery;
 
 /**
@@ -116,6 +117,8 @@ final readonly class SiteExporter
             'visible' => 1 === $page->getVisible(),
             'page_type' => (string) $page->getPageType(),
             'model' => 1 === $page->getModel(),
+            // The header zone: hidden, matched on its kind and not on an address it has not.
+            'zone' => HeaderZone::MODEL === $page->getModel(),
             'fields' => PageFields::decode($page->getFields()),
             'tag' => $page->getCmsTag()?->getName(),
             'tag_color' => $page->getCmsTag()?->getColor(),

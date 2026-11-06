@@ -11,6 +11,9 @@
             <a class="btn btn-sm btn-outline-secondary" href="{{ path('admin.cms.settings.page_types.list') }}" data-testid="cms-settings-page-types">
                 <i class="bi bi-diagram-3 me-1" aria-hidden="true"></i>{{ 'Page templates'|trans({}, 'theliacms') }}
             </a>
+            <a class="btn btn-sm btn-outline-secondary" href="{{ path('admin.cms.zones.header', { edit_language_id: edit_language_id }) }}" data-testid="cms-settings-header-zone">
+                <i class="bi bi-layout-text-window-reverse me-1" aria-hidden="true"></i>{{ 'Header zone'|trans({}, 'theliacms') }}
+            </a>
             <a class="btn btn-sm btn-outline-secondary" href="{{ path('admin.cms.pages.list', { edit_language_id: edit_language_id }) }}">
                 <i class="bi bi-arrow-left" aria-hidden="true"></i> {{ 'Back to pages'|trans({}, 'theliacms') }}
             </a>

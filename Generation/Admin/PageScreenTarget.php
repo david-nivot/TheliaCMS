@@ -45,6 +45,8 @@ use TheliaCMS\Page\Admin\PlaceholderPageContentException;
 use TheliaCMS\Page\PageTypeCode;
 use TheliaCMS\Page\PageTypeRepository;
 use TheliaCMS\Preview\PreviewLink;
+use TheliaCMS\Zone\Admin\ZoneScreenNotes;
+use TheliaCMS\Zone\HeaderZone;
 
 /**
  * A page on the content screen: its fields and the search engine proposal
@@ -87,6 +89,7 @@ final readonly class PageScreenTarget implements ContentScreenTarget
         private PageTypeRepository $pageTypes,
         private SiteComponentPermission $componentPermission,
         private PageOnlineMessage $onlineMessage,
+        private ZoneScreenNotes $zoneNotes,
     ) {
     }
 
@@ -112,6 +115,12 @@ final readonly class PageScreenTarget implements ContentScreenTarget
         $status = $this->pages->statusOf($this->page, $locale);
         $parameters = $this->parameters();
         $routes = ['screen' => $this->screenUrl()];
+        $isZone = HeaderZone::MODEL === $this->page->getModel();
+
+        if ($isZone) {
+            // A page is taken offline from its settings, which the zone has not.
+            $routes['unpublish'] = $this->urls->generate('admin.cms.pages.unpublish', $this->parameters());
+        }
 
         foreach (self::ROUTES as $action => $name) {
             $routes[$action] = $this->urls->generate($name, $parameters);
@@ -123,20 +132,24 @@ final readonly class PageScreenTarget implements ContentScreenTarget
             languageId: (int) $this->lang->getId(),
             statusLabel: $status->label(),
             statusBadgeClass: $status->badgeClass(),
-            backUrl: $this->urls->generate('admin.cms.pages.edit', $parameters),
-            backLabel: $this->support->translate('Back to settings'),
+            backUrl: $isZone ? $this->urls->generate('admin.cms.pages.list', [EditLanguage::PARAMETER => $this->lang->getId()]) : $this->urls->generate('admin.cms.pages.edit', $parameters),
+            // The zone has no settings tab: its settings are those of a page.
+            backLabel: $this->support->translate($isZone ? 'Back to pages' : 'Back to settings'),
             draftPreviewUrl: $this->previewLinks->contentUrlFor((int) $this->page->getId(), $locale),
-            previewUrl: $this->page->getUrl($locale) ?: null,
+            previewUrl: $isZone ? null : ($this->page->getUrl($locale) ?: null),
             document: $this->draftDocument(),
-            publishHint: $this->support->translate('Publishing puts the draft online at the address of the page.'),
+            publishHint: $this->support->translate($isZone ? 'Publishing puts the draft online in the header of every page of the site, in this language.' : 'Publishing puts the draft online at the address of the page.'),
             routes: $routes,
             testId: 'cms-page-content',
             translationSources: $this->translationSources(),
             publishable: 1 !== $this->page->getModel(),
-            draftPagePreviewUrl: $this->previewLinks->urlFor((int) $this->page->getId(), $locale),
+            // The zone is no page: its draft is read alone, the page it would be
+            // shown on is every page of the site.
+            draftPagePreviewUrl: $isZone ? null : $this->previewLinks->urlFor((int) $this->page->getId(), $locale),
             template: $this->template($locale),
             previousDrafts: $this->writer->previousDrafts($this->contentTarget()),
             translationLink: $this->translationLink(),
+            notes: $isZone ? $this->zoneNotes->for($this->page) : [],
         );
     }
 
@@ -229,6 +242,10 @@ final readonly class PageScreenTarget implements ContentScreenTarget
 
     public function online(): string
     {
+        if (HeaderZone::MODEL === $this->page->getModel()) {
+            return $this->support->translate('The header zone is online in this language: it is drawn in the header of every page of the site.');
+        }
+
         return $this->onlineMessage->say($this->page, $this->locale());
     }
 

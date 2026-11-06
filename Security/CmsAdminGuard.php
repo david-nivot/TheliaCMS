@@ -66,6 +66,7 @@ final readonly class CmsAdminGuard
         'catalogue' => CmsResources::PAGE,
         // Tags label pages: whoever may edit a page may manage its labels.
         'tags' => CmsResources::PAGE,
+        'zones' => CmsResources::PAGE,
         'menus' => CmsResources::MENU,
         'forms' => CmsResources::FORM,
         'media' => CmsResources::MEDIA,

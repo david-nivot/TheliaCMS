@@ -32,6 +32,7 @@ final readonly class ContentSubject
      * @param array{label: string, url: string}|null                             $template            the template of pages the page belongs to, when it is not the default one
      * @param list<array{id: int, date: \DateTimeInterface|null, sections: int}> $previousDrafts      the drafts a generation replaced, the latest first, which the restore route puts back
      * @param TranslationLink|null                                               $translationLink     the language this content was written from and what changed in it since; null when it follows nothing
+     * @param list<string>                                                       $notes               what the screen says of the target above its stage, already translated: the header zone says where it is drawn and in which languages
      */
     public function __construct(
         public GenerationTarget $target,
@@ -53,6 +54,7 @@ final readonly class ContentSubject
         public ?array $template = null,
         public array $previousDrafts = [],
         public ?TranslationLink $translationLink = null,
+        public array $notes = [],
     ) {
     }
 

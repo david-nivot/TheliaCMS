@@ -38,8 +38,14 @@ final class ExportFormat
      * code alone and, asked to replace, would have written the menu of a
      * language over the shared one. A version 2 file still imports: its
      * menus are the shared ones.
+     *
+     * 4 since the header zone: a page may carry `zone: true`, the header zone,
+     * which has no address and is matched on its kind. A reader of version 3
+     * would import it as an ordinary page, visible, with its published
+     * version, and put it at an address. A version 3 file still imports: it
+     * holds no zone.
      */
-    public const int VERSION = 3;
+    public const int VERSION = 4;
 
     /** The first version whose contents this module can read. */
     public const int FIRST_VERSION_WITH_DOCUMENTS = 2;
