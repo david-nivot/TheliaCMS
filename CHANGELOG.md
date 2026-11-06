@@ -32,6 +32,13 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Fixed
 
+- **The structured data of the home page names `/`.** With SEOne, the home
+  page described itself as a `WebPage` at its own address (`/accueil`), which
+  answers a 301 to `/`, and drew a breadcrumb of one entry to that address,
+  after the root SEOne and the themes already put first. The `WebPage` now
+  names the root of the site, the home page has no breadcrumb of its own, and
+  a page below it no longer repeats it in its trail.
+
 - **After an update, the back office serves the scripts and stylesheets of
   the installed module.** The core copies an asset of a module into
   `public/assets/` the first time a page asks for it and, outside debug mode,
@@ -40,6 +47,7 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   content editor) until the copy was deleted by hand. The module now replaces
   its copy whenever it no longer matches the file it ships, at the first page
   that asks for it.
+
 - **An image of the media library printed without a text is published with
   its description.** A component of the theme (a banner, an image and text
   block) prints the text of its own prop, empty for an image described in the
