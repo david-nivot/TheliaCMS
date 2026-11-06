@@ -82,7 +82,17 @@ from two places:
   image|null}>` (`array<{…}>` reads the same). Each field is typed like a
   prop of its own (text, 500 characters at most, `html`, `int`, `bool`, quoted
   alternatives, `image`, `video`), is required unless its type says `|null`, and gets a
-  field of the form; a list may hold fifty rows. The component receives a list
+  field of the form. A list holds up to fifty rows unless it says otherwise
+  after its type, each bound optional: `list<{title: string, video: video}>
+  min:1 max:6 The videos`, `string[] max:20 The steps`. The editor offers no
+  "Add a row" past the maximum and no removal under the minimum, and a save
+  outside the bounds is refused; a list that needs a row is required. Bounds
+  that make no sense (a maximum of 0, a minimum above the maximum) are left
+  out. A field of a row gets a help of its own in a comment named after the
+  list and the field, its type being the one the list gives it:
+  `{# @prop videos.title The title read under the video #}`. Like the
+  description of a prop, the help goes through the translator (`theliacms`
+  domain). The component receives a list
   of rows, `item.name`, `item.image` (the address of the picture, as for an
   `image` prop; `item.video`, the address of the file, for a `video` field:
   `list<{title: string, video: video, image: image|null}>`), under the names the template spells: `imageAlt` is stored as

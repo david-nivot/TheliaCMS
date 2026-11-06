@@ -109,13 +109,14 @@ final readonly class ComponentPropsReader
     public function readSource(string $source): array
     {
         $documented = self::documentedProps($source);
+        $fieldHelps = self::fieldHelps($source);
         $declared = self::declaredProps($source);
         $props = [];
         $idLists = [];
 
         foreach ($declared as $name => $declaration) {
-            $doc = $documented[$name] ?? ['type' => 'string', 'description' => ''];
-            $props[] = $this->prop($name, $doc['type'], $doc['description'], $declaration['default'], $declaration['hasDefault']);
+            $doc = $documented[$name] ?? ['type' => 'string', 'description' => '', 'min' => null, 'max' => null];
+            $props[] = $this->prop($name, $doc, $declaration['default'], $declaration['hasDefault'], $fieldHelps[$name] ?? []);
         }
 
         // Documented and not declared: a parameter the class of the component
@@ -124,7 +125,7 @@ final readonly class ComponentPropsReader
         // as nullable, since the component has nothing to show without it.
         foreach ($documented as $name => $doc) {
             if (!isset($declared[$name])) {
-                $props[] = $this->prop($name, $doc['type'], $doc['description'], null, !self::namesOneRecord($doc['type']));
+                $props[] = $this->prop($name, $doc, null, !self::namesOneRecord($doc['type']), $fieldHelps[$name] ?? []);
             }
         }
 
@@ -143,7 +144,12 @@ final readonly class ComponentPropsReader
     }
 
     /**
-     * @return array<string, array{type: string, description: string}>
+     * The bounds of a list come after its type, each optional: `list<{…}>
+     * min:1 max:6 The videos`. A bound that makes no sense (a maximum of
+     * none, a minimum above the maximum) is left out, and the list keeps the
+     * bounds of any list.
+     *
+     * @return array<string, array{type: string, description: string, min: ?int, max: ?int}>
      */
     private static function documentedProps(string $source): array
     {
@@ -152,10 +158,40 @@ final readonly class ComponentPropsReader
 
         foreach ($matches as $match) {
             [$type, $description] = self::splitType($match[2]);
-            $documented[self::propName($match[1])] = ['type' => $type, 'description' => trim(preg_replace('/\s+/', ' ', $description) ?? '')];
+            $bounds = ['min' => null, 'max' => null];
+
+            while (1 === preg_match('/^(min|max):(\d+)(?:\s+|$)/', $description, $bound)) {
+                $bounds[$bound[1]] = (int) $bound[2];
+                $description = substr($description, \strlen($bound[0]));
+            }
+
+            if (0 === $bounds['max'] || (null !== $bounds['min'] && null !== $bounds['max'] && $bounds['min'] > $bounds['max'])) {
+                $bounds = ['min' => null, 'max' => null];
+            }
+
+            $documented[self::propName($match[1])] = ['type' => $type, 'description' => trim(preg_replace('/\s+/', ' ', $description) ?? '')] + $bounds;
         }
 
         return $documented;
+    }
+
+    /**
+     * The help of a field of a row, in a comment of its own named after the
+     * list and the field: `{# @prop videos.title The title read under the
+     * video #}`. The type of the field is the one the list gives it.
+     *
+     * @return array<string, array<string, string>> the helps of each list, by field
+     */
+    private static function fieldHelps(string $source): array
+    {
+        preg_match_all('/\{#\s*@prop\s+([a-zA-Z_][a-zA-Z0-9_]*)\.([a-zA-Z_][a-zA-Z0-9_]*)\s+(\S.*?)\s*#\}/s', $source, $matches, \PREG_SET_ORDER);
+        $helps = [];
+
+        foreach ($matches as $match) {
+            $helps[self::propName($match[1])][self::propName($match[2])] = trim(preg_replace('/\s+/', ' ', $match[3]) ?? '');
+        }
+
+        return $helps;
     }
 
     /**
@@ -318,8 +354,13 @@ final readonly class ComponentPropsReader
         return null;
     }
 
-    private function prop(string $name, string $type, string $description, mixed $default, bool $hasDefault): Prop
+    /**
+     * @param array{type: string, description: string, min: ?int, max: ?int} $doc
+     * @param array<string, string>                                          $fieldHelps the help of each field of a row
+     */
+    private function prop(string $name, array $doc, mixed $default, bool $hasDefault, array $fieldHelps): Prop
     {
+        ['type' => $type, 'description' => $description] = $doc;
         $nullable = str_contains($type, 'null') || null === $default && $hasDefault;
         $required = !$hasDefault && !$nullable;
         $kinds = self::kinds($type);
@@ -328,10 +369,10 @@ final readonly class ComponentPropsReader
         if (self::isIdList($type)) {
             $record = self::recordOf($type);
 
-            return Prop::items($name, $name, [$this->reference('id', $record, true, null)], 0, self::MAX_IDS, $description);
+            return Prop::items($name, $name, [$this->reference('id', $record, true, null)], $doc['min'] ?? 0, $doc['max'] ?? max(self::MAX_IDS, $doc['min'] ?? 0), $description);
         }
 
-        $rows = $this->rows($name, $kinds, $description);
+        $rows = $this->rows($name, $kinds, $description, $doc['min'] ?? 0, $doc['max'] ?? max(self::MAX_ITEMS, $doc['min'] ?? 0), $fieldHelps);
 
         if (null !== $rows) {
             return $rows;
@@ -387,16 +428,17 @@ final readonly class ComponentPropsReader
      * anything else, and for a list whose rows the form cannot hold, which
      * stays a JSON prop.
      *
-     * @param list<string> $kinds
+     * @param list<string>          $kinds
+     * @param array<string, string> $fieldHelps the help of each field of a row
      */
-    private function rows(string $name, array $kinds, string $description): ?Prop
+    private function rows(string $name, array $kinds, string $description, int $min, int $max, array $fieldHelps): ?Prop
     {
         foreach ($kinds as $kind) {
             if (1 === preg_match('/^(?:(string|html)\[\]|(?:list|array)<\s*(string|html)\s*>)$/', $kind, $match)) {
                 $scalar = '' !== $match[1] ? $match[1] : $match[2];
                 $value = 'html' === $scalar ? Prop::html('value', 'value', '', true) : Prop::text('value', 'value', '', true, 500);
 
-                return Prop::items($name, $name, [$value], 0, self::MAX_ITEMS, $description, true);
+                return Prop::items($name, $name, [$value], $min, $max, $description, true);
             }
 
             if (1 !== preg_match('/^(?:list|array)<\s*\{(.*)\}\s*>$/s', $kind, $match)) {
@@ -410,7 +452,8 @@ final readonly class ComponentPropsReader
                     return null;
                 }
 
-                $item = self::field(self::propName($parts[1]), $parts[2]);
+                $fieldName = self::propName($parts[1]);
+                $item = self::field($fieldName, $parts[2], $fieldHelps[$fieldName] ?? null);
 
                 if (null === $item) {
                     return null;
@@ -419,7 +462,7 @@ final readonly class ComponentPropsReader
                 $fields[] = $item;
             }
 
-            return [] === $fields ? null : Prop::items($name, $name, $fields, 0, self::MAX_ITEMS, $description);
+            return [] === $fields ? null : Prop::items($name, $name, $fields, $min, $max, $description);
         }
 
         return null;
@@ -429,7 +472,7 @@ final readonly class ComponentPropsReader
      * One field of a row, typed as a prop of its own: null when a row cannot
      * hold it (a list, a record of the site).
      */
-    private static function field(string $name, string $type): ?Prop
+    private static function field(string $name, string $type, ?string $help): ?Prop
     {
         $kinds = self::kinds($type);
         $required = !\in_array('null', $kinds, true);
@@ -446,30 +489,30 @@ final readonly class ComponentPropsReader
         }
 
         if (\in_array('image', $kinds, true)) {
-            return Prop::image($name, $name, $required);
+            return Prop::image($name, $name, $required, $help);
         }
 
         if (\in_array('video', $kinds, true)) {
-            return Prop::video($name, $name, $required);
+            return Prop::video($name, $name, $required, $help);
         }
 
         if ([] !== $choices) {
-            return Prop::choice($name, $name, $choices, (string) array_key_first($choices));
+            return Prop::choice($name, $name, $choices, (string) array_key_first($choices), $help);
         }
 
         if (array_intersect($kinds, ['bool', 'boolean'])) {
-            return Prop::boolean($name, $name);
+            return Prop::boolean($name, $name, help: $help);
         }
 
         if (array_intersect($kinds, ['int', 'integer'])) {
-            return Prop::integer($name, $name, 0, \PHP_INT_MIN, \PHP_INT_MAX);
+            return Prop::integer($name, $name, 0, \PHP_INT_MIN, \PHP_INT_MAX, $help);
         }
 
         if (\in_array('html', $kinds, true)) {
-            return Prop::html($name, $name, '', $required);
+            return Prop::html($name, $name, '', $required, $help);
         }
 
-        return Prop::text($name, $name, '', $required, 500);
+        return Prop::text($name, $name, '', $required, 500, $help);
     }
 
     /**

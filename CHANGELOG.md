@@ -9,6 +9,13 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Added
 
+- **A list of a theme component says how many rows it holds, and each field
+  of its rows can have a help.** After the type of a list, `min:1 max:6` (each
+  optional) bounds its rows, in the editor and at the save, instead of 0 to 50
+  for every list; a list that needs a row is required. A comment named after
+  the list and the field, `{# @prop videos.title The title read under the
+  video #}`, gives that field its help in the form. See
+  `docs/creating-a-component.md`.
 - **Color presets for an SVG.** The **Prepare the SVG** screen offers a preset
   that makes colors of the drawing follow the color of the text
   (`currentColor`): *Keep the colors* (the default), *Monochrome*, or *Main
