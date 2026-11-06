@@ -579,6 +579,7 @@ final readonly class CmsPageWriter
                 ->setPosition($page->getPosition() + 1)
                 ->setVisible($visible ? 1 : 0)
                 ->setPageType($page->getPageType())
+                ->setTitleBand($page->getTitleBand())
                 ->setFields($page->getFields())
                 ->setTagId($page->getTagId())
                 ->setImageId($page->getImageId())

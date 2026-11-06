@@ -47,6 +47,14 @@
         -->
         <column defaultValue="0" name="model" required="true" type="TINYINT" size="4"/>
         <!--
+            Whether the template opens the page on the heading band of the
+            theme: title, summary, breadcrumb. 0 for a page that opens on its
+            own sections, a home page: the title stays its level 1 heading,
+            hidden on screen and read by screen readers and search engines
+            (ADR 0010).
+        -->
+        <column defaultValue="1" name="title_band" required="true" type="TINYINT" size="4"/>
+        <!--
             The values of the fields the type defines that are the same in
             every language, as a JSON object by field code; the translated
             ones are in `cms_page_i18n.translated_fields`. Checked against the definition

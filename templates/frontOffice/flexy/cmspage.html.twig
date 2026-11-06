@@ -6,7 +6,8 @@
     fields of the page type, then the sections of the page.
 
     The title of the page is its level 1 heading, drawn here: the sections of a
-    page start at level 2 (docs/adr/0010). A theme taking the page over with its
+    page start at level 2 (docs/adr/0010). A page without the band keeps it,
+    hidden on screen. A theme taking the page over with its
     own `cmspage.html.twig` or `cmspage-{type}.html.twig` keeps that promise,
     and emits the same `cmspage.*` hooks.
 #}
@@ -40,15 +41,22 @@
 {% block body %}
     {{ theme_hook('cmspage.top', {page: cms_page}) }}
 
-    <twig:Layouts:Subheader:Item
-        title="{{ cms_page.title }}"
-        description="{{ cms_page.chapo }}"
-        :breadcrumb="breadcrumb|default([])"
-    />
+    {# A page set to open on its own sections (Settings > Title band) has no
+       band: its title stays the level 1 heading, hidden on screen, and the
+       sections start at the top. #}
+    {% if cms_page.titleBand %}
+        <twig:Layouts:Subheader:Item
+            title="{{ cms_page.title }}"
+            description="{{ cms_page.chapo }}"
+            :breadcrumb="breadcrumb|default([])"
+        />
+    {% else %}
+        <h1 class="cms-page__title cms-page__title--hidden">{{ cms_page.title }}</h1>
+    {% endif %}
 
     {% set fields = cms_page_fields(cms_page) %}
 
-    <div class="pt-6 lg:pt-14 pb-20 lg:pb-30">
+    <div class="{{ cms_page.titleBand ? 'pt-6 lg:pt-14 ' : '' }}pb-20 lg:pb-30">
         {% if fields is not empty %}
             {# Styled by the stylesheet of the blocks of the module: the theme
                compiles only the utilities of its own files. #}

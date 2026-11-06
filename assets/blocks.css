@@ -754,6 +754,21 @@
     text-wrap: balance;
   }
 
+  /* The title of a page that opens on its own sections: still its level 1
+     heading for screen readers and search engines, off the screen. Important,
+     because this layer gives way to any rule of the theme on `h1`. */
+  .cms-page__title--hidden {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    margin: -1px !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    clip-path: inset(50%) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+  }
+
   .cms-page__summary {
     margin-top: 1rem;
     color: var(--cms-color-text-muted);

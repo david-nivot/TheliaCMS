@@ -119,6 +119,7 @@ final readonly class SiteExporter
             'model' => 1 === $page->getModel(),
             // The header zone: hidden, matched on its kind and not on an address it has not.
             'zone' => HeaderZone::MODEL === $page->getModel(),
+            'title_band' => 0 !== $page->getTitleBand(),
             'fields' => PageFields::decode($page->getFields()),
             'tag' => $page->getCmsTag()?->getName(),
             'tag_color' => $page->getCmsTag()?->getColor(),

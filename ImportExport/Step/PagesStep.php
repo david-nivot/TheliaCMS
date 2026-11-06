@@ -107,6 +107,8 @@ final readonly class PagesStep
                 ->setVisible(!$isModel && !$isZone && !$demotedZone && ($page['visible'] ?? true) ? 1 : 0)
                 ->setPageType($this->taxonomy->pageTypeOf($page, $report, $connection, $knownTypes))
                 ->setModel($isModel ? 1 : ($isZone ? HeaderZone::MODEL : 0))
+                // A file written before the setting existed keeps what the page has, or the band.
+                ->setTitleBand(\array_key_exists('title_band', $page) ? (($page['title_band'] ?? true) ? 1 : 0) : ($existing?->getTitleBand() ?? 1))
                 ->setFields(self::fieldsJson($page['fields'] ?? null))
                 ->setTagId($this->taxonomy->tagIdOf($page, $report, $connection))
                 ->setImageId($this->mappedImage($page['image_id'] ?? null, $mediaMap))

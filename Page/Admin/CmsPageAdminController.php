@@ -545,6 +545,7 @@ final readonly class CmsPageAdminController
             // A model is never online, whatever an older version of the module
             // or an import left in the row.
             'visible' => $page->isNew() ? 1 : (0 !== $page->getModel() ? 0 : $page->getVisible()),
+            'titleBand' => $page->isNew() ? 1 : $page->getTitleBand(),
             'publishAt' => $page->getPublishAt(),
             'unpublishAt' => $page->getUnpublishAt(),
             'metaTitle' => $page->isNew() ? null : $page->getMetaTitle(),
@@ -587,6 +588,7 @@ final readonly class CmsPageAdminController
             ->setTagId(null === $data['tag'] ? null : (int) $data['tag'])
             ->setImageId($this->chosenImage($data, $locale))
             ->setVisible(0 !== $page->getModel() ? 0 : (int) $data['visible'])
+            ->setTitleBand(0 === (int) ($data['titleBand'] ?? 1) ? 0 : 1)
             ->setPublishAt($data['publishAt'])
             ->setUnpublishAt($data['unpublishAt']);
 

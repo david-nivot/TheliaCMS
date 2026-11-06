@@ -123,6 +123,12 @@ final class CmsPageType extends AbstractType
                 'disabled' => $options['is_model'],
                 'help' => $options['is_model'] ? 'The model of a template is never online.' : null,
             ])
+            ->add('titleBand', ChoiceType::class, [
+                'label' => 'Title band',
+                'choices' => ['Show the title band' => 1, 'Open on the sections' => 0],
+                'expanded' => true,
+                'help' => 'Without the band (a home page), the title, the summary and the breadcrumb are not shown: the title is still read by screen readers and search engines.',
+            ])
             ->add('publishAt', DateTimeType::class, [
                 'label' => 'Publish on',
                 'required' => false,
