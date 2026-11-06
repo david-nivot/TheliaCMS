@@ -156,6 +156,7 @@ final readonly class ContentWriter
         $stored = $row->publishedHtml();
         $html = $this->images->rewrite(
             $this->sanitizer->html($this->normalizer->html($this->renderer->render($this->validator->validate($document), $target->key()->locale)), $this->mayPublishCustomCode()),
+            $target->key()->locale,
         );
 
         if ($html === $stored) {
@@ -288,6 +289,7 @@ final readonly class ContentWriter
         // let through.
         $html = $this->images->rewrite(
             $this->sanitizer->html($this->normalizer->html($this->renderer->render($this->validator->validate($document), $target->key()->locale)), $withCustomCode),
+            $target->key()->locale,
         );
 
         // Refused rather than stored: the column would be null, the front would

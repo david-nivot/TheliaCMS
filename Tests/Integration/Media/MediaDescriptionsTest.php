@@ -77,6 +77,56 @@ final class MediaDescriptionsTest extends CmsIntegrationTestCase
         self::assertCount(12, $this->states($many, 'en_US'));
     }
 
+    public function testTheTextOfAnImageIsItsDescriptionInTheLanguageOfThePageAndNoOther(): void
+    {
+        $url = $this->url($this->image('en_US', '  A chair  '));
+
+        self::assertSame([$url => 'A chair'], $this->texts([$url], 'en_US'));
+        self::assertSame([], $this->texts([$url], 'fr_FR'), 'No other language stands in.');
+    }
+
+    public function testADecorativeImageIsDrawnWithAnEmptyTextWhateverItHolds(): void
+    {
+        $url = $this->url($this->image('en_US', 'A frieze', decorative: true));
+
+        self::assertSame([$url => ''], $this->texts([$url], 'en_US'));
+        self::assertSame([$url => ''], $this->texts([$url], 'fr_FR'));
+    }
+
+    public function testAnImageWithABlankTextOrADeletedOneOrAnAddressOutsideTheLibraryHasNone(): void
+    {
+        $blank = $this->url($this->image('en_US', '   '));
+        $gone = $this->image('en_US', 'Gone');
+        $goneUrl = $this->url($gone);
+        $gone->delete();
+
+        self::assertSame([], $this->texts([$blank, $goneUrl, 'https://example.com/a.jpg', '/image-library/999999999/full/max/0/default.jpg'], 'en_US'));
+    }
+
+    public function testTheTextsOfAPageCostOneStatementWhateverTheirNumber(): void
+    {
+        $few = array_map(fn (): string => $this->url($this->image('en_US', 'x')), range(1, 2));
+        $many = array_map(fn (): string => $this->url($this->image('en_US', 'x')), range(1, 12));
+
+        $costOfFew = $this->statementsFor(fn () => $this->texts($few, 'en_US'));
+        $costOfMany = $this->statementsFor(fn () => $this->texts($many, 'en_US'));
+
+        self::assertSame(1, $costOfFew);
+        self::assertSame($costOfFew, $costOfMany);
+        self::assertCount(12, $this->texts($many, 'en_US'));
+        self::assertSame(0, $this->statementsFor(fn () => $this->texts(['https://example.com/a.jpg'], 'en_US')), 'Nothing of the library, nothing asked.');
+    }
+
+    /**
+     * @param list<string> $urls
+     *
+     * @return array<string, string>
+     */
+    private function texts(array $urls, string $locale): array
+    {
+        return $this->getService(MediaDescriptions::class)->alternativeTextsOf($urls, $locale);
+    }
+
     /**
      * @param list<string> $urls
      *

@@ -28,4 +28,15 @@ interface MediaDescriptions
      * @return array<string, ImageState> by address; an address the library does not own, or whose image has been deleted, is absent
      */
     public function statesOf(array $urls, string $locale): array;
+
+    /**
+     * The text every library image the addresses point at is drawn with, read
+     * at once: its description in the language, or an empty text when it is
+     * decorative. No other language stands in for this one.
+     *
+     * @param list<string> $urls addresses found in a rendering
+     *
+     * @return array<string, string> by address; an image not described in the language, a video, an address the library does not own, or whose image has been deleted, is absent
+     */
+    public function alternativeTextsOf(array $urls, string $locale): array;
 }

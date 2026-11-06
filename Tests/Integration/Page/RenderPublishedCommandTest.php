@@ -23,11 +23,14 @@ use TheliaCMS\Content\Editing\ContentWriter;
 use TheliaCMS\Content\Editing\PublishedRendering;
 use TheliaCMS\Http\CachePurgerInterface;
 use TheliaCMS\Http\CacheTags;
+use TheliaCMS\Media\CmsMediaLibrary;
 use TheliaCMS\Model\CmsPageContent;
 use TheliaCMS\Model\CmsPageContentQuery;
 use TheliaCMS\Model\CmsPageRevisionQuery;
+use TheliaCMS\Page\Admin\CmsPageWriter;
 use TheliaCMS\Page\RenderPublishedCommand;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
+use TheliaLibrary\Model\LibraryImage;
 
 /**
  * What is online, published before a change of the module, is rendered again
@@ -122,6 +125,34 @@ final class RenderPublishedCommandTest extends CmsIntegrationTestCase
         $this->render(['--all' => true]);
 
         self::assertSame($rendered, $this->publishedHtmlOf($id));
+    }
+
+    /**
+     * An image described in the library after its page went online: the page
+     * kept the empty text the component printed, which the library no longer
+     * calls forgotten. Rendering it again gives it the description.
+     */
+    public function testAnImageDescribedSinceThePublicationIsGivenItsDescription(): void
+    {
+        $image = (new LibraryImage())->setFileName(bin2hex(random_bytes(6)).'.jpg')->setWidth(800)->setHeight(600)->setDecorative(0);
+        $image->setLocale($this->locale())->setTitle('Image');
+        $image->save();
+        $this->getService(CmsMediaLibrary::class)->tag($image);
+
+        $page = $this->createPage('Described later', published: false);
+        $pageId = (int) $page->getId();
+        $pages = $this->getService(CmsPageWriter::class);
+        $pages->saveContent($page, $this->locale(), Document::richText(\sprintf('<p>Texte</p><img src="/image-library/%d/full/800,600/0/default.jpg" alt="">', $image->getId())));
+        $pages->publish($page, $this->locale());
+        self::assertStringNotContainsString('Un fauteuil', (string) $this->contentOf($pageId)->getPublishedHtml());
+
+        $image->setLocale($this->locale())->setAlt('Un fauteuil en rotin')->save();
+
+        self::assertStringContainsString('1 online version(s) would change, 0 unchanged.', $this->render(['--page' => [(string) $pageId], '--dry-run' => true]));
+
+        $this->render(['--page' => [(string) $pageId]]);
+
+        self::assertStringContainsString('alt="Un fauteuil en rotin"', (string) $this->contentOf($pageId)->getPublishedHtml());
     }
 
     public function testAsksForAPageOrForAllOfThem(): void

@@ -387,6 +387,15 @@ should read:
 - The component keeps its layout in its stylesheet; the width declared must follow
   it. A wrong value only makes the browser pick a file too small or too large.
 
+## The text of the images of a component
+
+A picture of the media library that the component prints with no `alt`, or an
+empty one, is published with the description the library holds for it in the
+language of the page (`Content/Pipeline/ImageRewriter.php`), or with an empty
+text when the library marks it decorative. A component may thus leave the text
+of an image to the library; a text it prints (`alt="{{ item.name }}"`) is kept
+as it is, even where the library says otherwise.
+
 ## What the generator does with it
 
 Every component is written into the system prompt as a sheet

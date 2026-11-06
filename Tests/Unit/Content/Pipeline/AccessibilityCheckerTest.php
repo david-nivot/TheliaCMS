@@ -47,6 +47,11 @@ final class AccessibilityCheckerTest extends TestCase
 
                 return array_filter($states);
             }
+
+            public function alternativeTextsOf(array $urls, string $locale): array
+            {
+                return [];
+            }
         };
 
         $this->checker = new AccessibilityChecker($library, new class implements TranslatorInterface {

@@ -16,6 +16,7 @@ namespace TheliaCMS\Content\Pipeline;
 
 use TheliaCMS\Content\ImageFrame;
 use TheliaCMS\Content\ImageSlot;
+use TheliaCMS\Media\MediaDescriptions;
 use TheliaCMS\Media\MediaFile;
 use TheliaCMS\Media\MediaResolver;
 
@@ -25,8 +26,9 @@ use TheliaCMS\Media\MediaResolver;
  * The editor knows one URL per image; a published page needs rather more than
  * that — a modern format for browsers that take it, a set of widths so phones
  * do not download a desktop image, intrinsic dimensions so the layout does not
- * jump while loading, and lazy loading everywhere except the image the visitor
- * sees first.
+ * jump while loading, lazy loading everywhere except the image the visitor
+ * sees first, and the description the library holds for an image printed
+ * without a text.
  *
  * Doing it at publish time keeps it off the request path entirely.
  */
@@ -47,10 +49,14 @@ final readonly class ImageRewriter
 
     public function __construct(
         private MediaResolver $library,
+        private MediaDescriptions $descriptions,
     ) {
     }
 
-    public function rewrite(?string $html): ?string
+    /**
+     * @param string $locale the language of the rendering, the one the description of an image is read in
+     */
+    public function rewrite(?string $html, string $locale): ?string
     {
         if (null === $html || '' === trim($html)) {
             return $html;
@@ -74,6 +80,9 @@ final readonly class ImageRewriter
 
         $images = iterator_to_array($document->getElementsByTagName('img'));
 
+        // Before the sources are rewritten: the library is asked by the address the rendering printed.
+        $this->describe($images, $locale);
+
         foreach ($images as $position => $image) {
             $this->rewriteImage($document, $image, 0 === $position);
         }
@@ -92,6 +101,42 @@ final readonly class ImageRewriter
         }
 
         return $this->innerHtml($document, $root);
+    }
+
+    /**
+     * Gives an image of the library printed with no text, or a blank one, the
+     * text the library holds for it in the language: its description, or an
+     * empty text when it is decorative. A component of the theme prints the
+     * text of its own prop, which is empty for an image described in the
+     * library only; the accessibility check, which asks the library, would
+     * otherwise pass a page whose visitors hear nothing. A text the rendering
+     * holds is never replaced, and an image not described in the language is
+     * left as it is, for the check to report.
+     *
+     * One question to the library for the whole page.
+     *
+     * @param list<\DOMElement> $images
+     */
+    private function describe(array $images, string $locale): void
+    {
+        $textless = array_values(array_filter($images, static fn (\DOMElement $image): bool => '' === trim($image->getAttribute('alt'))));
+
+        if ([] === $textless) {
+            return;
+        }
+
+        $texts = $this->descriptions->alternativeTextsOf(
+            array_values(array_unique(array_map(static fn (\DOMElement $image): string => $image->getAttribute('src'), $textless))),
+            $locale,
+        );
+
+        foreach ($textless as $image) {
+            $text = $texts[$image->getAttribute('src')] ?? null;
+
+            if (null !== $text) {
+                $image->setAttribute('alt', $text);
+            }
+        }
     }
 
     private function rewriteImage(\DOMDocument $document, \DOMElement $image, bool $isFirst): void

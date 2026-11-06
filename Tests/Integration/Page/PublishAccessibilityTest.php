@@ -190,6 +190,42 @@ final class PublishAccessibilityTest extends CmsIntegrationTestCase
         });
     }
 
+    /**
+     * A component of the theme prints the text of its own prop, empty here:
+     * what goes online is what the check read, the description of the library.
+     */
+    public function testAnImageDescribedInTheLibraryGoesOnlineWithItsDescription(): void
+    {
+        $page = $this->pageHolding($this->image(alt: 'Un fauteuil en rotin'));
+
+        $this->withMode('block', function () use ($page): void {
+            self::assertSame([], $this->pages()->publish($page, $this->locale()));
+        });
+
+        self::assertStringContainsString('alt="Un fauteuil en rotin"', (string) $this->pageContent($page)->getPublishedHtml());
+    }
+
+    public function testAnImageDescribedInAnotherLanguageOnlyGoesOnlineWithoutATextAndIsReported(): void
+    {
+        $image = $this->image();
+        $image->setLocale(str_starts_with($this->locale(), 'fr') ? 'en_US' : 'fr_FR')->setAlt('Described elsewhere')->save();
+        $page = $this->pageHolding($image);
+
+        $this->withMode('warn', function () use ($page): void {
+            self::assertCount(1, $this->pages()->publish($page, $this->locale()));
+        });
+
+        $html = (string) $this->pageContent($page)->getPublishedHtml();
+        $document = new \DOMDocument();
+        @$document->loadHTML('<?xml encoding="utf-8" ?>'.$html);
+        $published = $document->getElementsByTagName('img')->item(0);
+
+        self::assertInstanceOf(\DOMElement::class, $published);
+        self::assertTrue($published->hasAttribute('alt'));
+        self::assertSame('', $published->getAttribute('alt'));
+        self::assertStringNotContainsString('Described elsewhere', $html);
+    }
+
     private function pageHolding(LibraryImage $image): CmsPage
     {
         $page = $this->createPage('Image '.$image->getId(), published: false);

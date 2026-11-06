@@ -141,6 +141,9 @@ final class MediaVideoIgnoredTest extends AdminScreenTestCase
         $states = $library->statesOf([$imageUrl, $videoUrl, $videoAsImage], $this->locale());
 
         self::assertSame([$imageUrl], array_keys($states), 'A video is never "without alternative text".');
+
+        $video->setLocale($this->locale())->setAlt('Un clip')->save();
+        self::assertSame([], $library->alternativeTextsOf([$videoUrl, $videoAsImage], $this->locale()), 'Nor given one to print on an image.');
     }
 
     public function testAnImageSentWhereAPictureIsWantedIsNeverAVideo(): void

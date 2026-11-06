@@ -17,6 +17,7 @@ namespace TheliaCMS\Tests\Unit\Content\Pipeline;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use TheliaCMS\Content\Pipeline\ImageRewriter;
+use TheliaCMS\Media\MediaDescriptions;
 use TheliaCMS\Media\MediaFile;
 use TheliaCMS\Media\MediaResolver;
 
@@ -286,7 +287,7 @@ final class ImageRewriterTest extends TestCase
 
     public function testTheAttributesOfAnSvgAreItsSizeOnly(): void
     {
-        $rewriter = new ImageRewriter($this->resolver(null));
+        $rewriter = new ImageRewriter($this->resolver(null), $this->descriptions());
 
         self::assertSame(['width' => '1600', 'height' => '900'], $rewriter->attributes(new MediaFile(id: 9, format: 'svg', width: 1600, height: 900), '50vw', '4rem', ['x' => 0, 'y' => 0, 'w' => 800, 'h' => 450]));
         self::assertSame([], $rewriter->attributes(new MediaFile(id: 9, format: 'SVG')));
@@ -386,8 +387,9 @@ final class ImageRewriterTest extends TestCase
             }
         };
 
-        return (string) (new ImageRewriter($resolver))->rewrite(
-            '<picture>'.$sources.'<img src="/image-library/7/full/max/0/default.jpg" alt="" '.$imageAttributes.'></picture>'
+        return (string) (new ImageRewriter($resolver, $this->descriptions()))->rewrite(
+            '<picture>'.$sources.'<img src="/image-library/7/full/max/0/default.jpg" alt="" '.$imageAttributes.'></picture>',
+            'en_US',
         );
     }
 
@@ -421,17 +423,115 @@ final class ImageRewriterTest extends TestCase
         self::assertStringContainsString('alt="Forêt"', $html);
     }
 
+    /**
+     * A component of the theme prints the text of its own prop, often empty:
+     * the description the library holds, in the language of the page, takes
+     * its place.
+     */
+    public function testAnImageOfTheLibraryWithAnEmptyTextIsGivenItsDescriptionInTheLanguageOfThePage(): void
+    {
+        $library = $this->descriptions(['fr_FR' => [7 => 'Un fauteuil en rotin'], 'en_US' => [7 => 'A rattan armchair']]);
+        $rewriter = new ImageRewriter($this->resolver(new MediaFile(id: 7, format: 'jpg', width: 1600, height: 900)), $library);
+        $html = '<div class="banner"><img src="/image-library/7/full/max/0/default.jpg" alt=""></div>';
+
+        self::assertStringContainsString('alt="Un fauteuil en rotin"', (string) $rewriter->rewrite($html, 'fr_FR'));
+        self::assertStringContainsString('alt="A rattan armchair"', (string) $rewriter->rewrite($html, 'en_US'));
+        self::assertStringContainsString('alt=""', (string) $rewriter->rewrite($html, 'de_DE'), 'No description in the language: none is borrowed from another.');
+    }
+
+    public function testAnImageOfTheLibraryWithoutAnyTextOrABlankOneIsGivenItsDescriptionToo(): void
+    {
+        $rewriter = new ImageRewriter($this->resolver(new MediaFile(id: 7, format: 'jpg', width: 1600, height: 900)), $this->descriptions(['fr_FR' => [7 => 'Un fauteuil']]));
+
+        foreach (['<img src="/image-library/7/full/max/0/default.jpg">', '<img src="/image-library/7/full/max/0/default.jpg" alt="   ">'] as $html) {
+            self::assertStringContainsString('alt="Un fauteuil"', (string) $rewriter->rewrite($html, 'fr_FR'), $html);
+        }
+    }
+
+    public function testADecorativeImageKeepsAnEmptyTextAndOneWithoutAnyIsGivenAnEmptyOne(): void
+    {
+        $rewriter = new ImageRewriter($this->resolver(new MediaFile(id: 7, format: 'jpg', width: 1600, height: 900)), $this->descriptions(['fr_FR' => [7 => '']]));
+
+        self::assertStringContainsString('alt=""', (string) $rewriter->rewrite('<img src="/image-library/7/full/max/0/default.jpg" alt="">', 'fr_FR'));
+        self::assertStringContainsString('alt=""', (string) $rewriter->rewrite('<img src="/image-library/7/full/max/0/default.jpg">', 'fr_FR'));
+    }
+
+    public function testATextTheAuthorWroteIsNeverReplaced(): void
+    {
+        $rewriter = new ImageRewriter($this->resolver(new MediaFile(id: 7, format: 'jpg', width: 1600, height: 900)), $this->descriptions(['fr_FR' => [7 => 'Un fauteuil']]));
+
+        $html = (string) $rewriter->rewrite('<img src="/image-library/7/full/max/0/default.jpg" alt="Le fauteuil du salon">', 'fr_FR');
+
+        self::assertStringContainsString('alt="Le fauteuil du salon"', $html);
+        self::assertStringNotContainsString('Un fauteuil"', $html);
+    }
+
+    public function testAnImageNobodyDescribedIsLeftAsItIs(): void
+    {
+        $rewriter = new ImageRewriter($this->resolver(new MediaFile(id: 7, format: 'jpg', width: 1600, height: 900)), $this->descriptions());
+
+        self::assertStringContainsString('alt=""', (string) $rewriter->rewrite('<img src="/image-library/7/full/max/0/default.jpg" alt="">', 'fr_FR'));
+        self::assertStringNotContainsString('alt=', (string) $rewriter->rewrite('<img src="/image-library/7/full/max/0/default.jpg">', 'fr_FR'), 'Still missing, for the accessibility check to say so.');
+    }
+
+    public function testTheDescriptionIsWrittenAsTextNotAsMarkup(): void
+    {
+        foreach (['Le "grand" <b>fauteuil</b> & sa housse', 'L\'"autre" fauteuil'] as $description) {
+            $rewriter = new ImageRewriter($this->resolver(new MediaFile(id: 7, format: 'jpg', width: 1600, height: 900)), $this->descriptions(['fr_FR' => [7 => $description]]));
+
+            $html = (string) $rewriter->rewrite('<img src="/image-library/7/full/max/0/default.jpg" alt="">', 'fr_FR');
+            $document = new \DOMDocument();
+            @$document->loadHTML('<?xml encoding="utf-8" ?>'.$html);
+            $image = $document->getElementsByTagName('img')->item(0);
+
+            self::assertInstanceOf(\DOMElement::class, $image);
+            self::assertSame($description, $image->getAttribute('alt'));
+            self::assertSame(0, $document->getElementsByTagName('b')->length, 'The description is no markup.');
+        }
+    }
+
+    public function testTheLibraryIsAskedOnceForEveryImageOfThePageThatHasNoText(): void
+    {
+        $library = $this->descriptions(['fr_FR' => [7 => 'Un fauteuil', 8 => 'Une table']]);
+        $rewriter = new ImageRewriter($this->resolver(new MediaFile(id: 7, format: 'jpg', width: 1600, height: 900)), $library);
+
+        $html = (string) $rewriter->rewrite(
+            '<img src="/image-library/7/full/max/0/default.jpg" alt="">'
+            .'<img src="/image-library/8/full/max/0/default.jpg">'
+            .'<img src="/image-library/9/full/max/0/default.jpg" alt="Déjà dit">'
+            .'<img src="https://cdn.test/photo.jpg" alt="">',
+            'fr_FR',
+        );
+
+        self::assertCount(1, $library->asked);
+        self::assertSame('fr_FR', $library->asked[0]['locale']);
+        self::assertSame(['/image-library/7/full/max/0/default.jpg', '/image-library/8/full/max/0/default.jpg', 'https://cdn.test/photo.jpg'], $library->asked[0]['urls'], 'Only the images with no text, each address once.');
+        self::assertStringContainsString('alt="Un fauteuil"', $html);
+        self::assertStringContainsString('alt="Une table"', $html);
+        self::assertStringContainsString('src="https://cdn.test/photo.jpg" alt=""', $html);
+    }
+
+    public function testAPageWhoseImagesAllHaveATextDoesNotAskTheLibrary(): void
+    {
+        $library = $this->descriptions();
+        $rewriter = new ImageRewriter($this->resolver(new MediaFile(id: 7, format: 'jpg', width: 1600, height: 900)), $library);
+
+        $rewriter->rewrite('<p>Texte</p><img src="/image-library/7/full/max/0/default.jpg" alt="Un fauteuil">', 'fr_FR');
+
+        self::assertSame([], $library->asked);
+    }
+
     public function testLeavesEmptyContentAlone(): void
     {
-        $rewriter = new ImageRewriter($this->resolver(null));
+        $rewriter = new ImageRewriter($this->resolver(null), $this->descriptions());
 
-        self::assertNull($rewriter->rewrite(null));
-        self::assertSame('', $rewriter->rewrite(''));
+        self::assertNull($rewriter->rewrite(null, 'en_US'));
+        self::assertSame('', $rewriter->rewrite('', 'en_US'));
     }
 
     private function rewrite(string $html, ?MediaFile $media = new MediaFile(id: 7, format: 'jpg', width: 1600, height: 900)): string
     {
-        return (string) (new ImageRewriter($this->resolver($media)))->rewrite($html);
+        return (string) (new ImageRewriter($this->resolver($media), $this->descriptions()))->rewrite($html, 'en_US');
     }
 
     /**
@@ -750,6 +850,50 @@ final class ImageRewriterTest extends TestCase
         preg_match_all('#<img\b[^>]*>#', $html, $matches);
 
         return $matches[0];
+    }
+
+    /**
+     * A library that knows the text of each image by language: a description,
+     * or `''` for a decorative image. It records what it was asked.
+     *
+     * @param array<string, array<int, string>> $textsByLocale
+     *
+     * @return MediaDescriptions&object{asked: list<array{urls: list<string>, locale: string}>}
+     */
+    private function descriptions(array $textsByLocale = []): MediaDescriptions
+    {
+        return new class($textsByLocale) implements MediaDescriptions {
+            /** @var list<array{urls: list<string>, locale: string}> */
+            public array $asked = [];
+
+            /**
+             * @param array<string, array<int, string>> $textsByLocale
+             */
+            public function __construct(private readonly array $textsByLocale)
+            {
+            }
+
+            public function statesOf(array $urls, string $locale): array
+            {
+                return [];
+            }
+
+            public function alternativeTextsOf(array $urls, string $locale): array
+            {
+                $this->asked[] = ['urls' => $urls, 'locale' => $locale];
+                $texts = [];
+
+                foreach ($urls as $url) {
+                    $id = 1 === preg_match('#^/image-library/(\d+)/#', $url, $matches) ? (int) $matches[1] : 0;
+
+                    if (isset($this->textsByLocale[$locale][$id])) {
+                        $texts[$url] = $this->textsByLocale[$locale][$id];
+                    }
+                }
+
+                return $texts;
+            }
+        };
     }
 
     private function resolver(?MediaFile $media): MediaResolver

@@ -19,6 +19,7 @@ use TheliaCMS\Content\ColumnsSection;
 use TheliaCMS\Content\ImageSection;
 use TheliaCMS\Content\Pipeline\ImageRewriter;
 use TheliaCMS\Content\Pipeline\PublishedContentSanitizer;
+use TheliaCMS\Media\MediaDescriptions;
 use TheliaCMS\Media\MediaFile;
 use TheliaCMS\Media\MediaResolver;
 
@@ -80,6 +81,18 @@ final class ImageSlotPipelineTest extends TestCase
             }
         };
 
-        return (string) (new ImageRewriter($resolver))->rewrite((new PublishedContentSanitizer())->html($html));
+        $descriptions = new class implements MediaDescriptions {
+            public function statesOf(array $urls, string $locale): array
+            {
+                return [];
+            }
+
+            public function alternativeTextsOf(array $urls, string $locale): array
+            {
+                return [];
+            }
+        };
+
+        return (string) (new ImageRewriter($resolver, $descriptions))->rewrite((new PublishedContentSanitizer())->html($html), 'fr_FR');
     }
 }
