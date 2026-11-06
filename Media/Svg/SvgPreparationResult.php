@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Media\Svg;
 
+use TheliaCMS\Media\Svg\Color\SvgColoring;
+use TheliaCMS\Media\Svg\Color\SvgPalette;
 use TheliaLibrary\Service\Svg\SvgChange;
 
 /**
@@ -31,6 +33,10 @@ final readonly class SvgPreparationResult
         public int $resultBytes,
         public float $width,
         public float $height,
+        // The colors of the drawing before the preset, and the setting
+        // applied, its main color told.
+        public SvgPalette $palette = new SvgPalette(),
+        public SvgColoring $coloring = new SvgColoring(),
     ) {
     }
 
