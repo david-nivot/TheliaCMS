@@ -182,6 +182,60 @@ final readonly class CmsMediaLibrary implements MediaResolver, MediaDescriptions
     }
 
     /**
+     * The text of every library image the addresses point at, in one
+     * statement, as `statesOf()` reads their state: a decorative image is
+     * drawn with an empty text whatever it holds, a described one with its
+     * text in the language.
+     */
+    public function alternativeTextsOf(array $urls, string $locale): array
+    {
+        $idsByUrl = [];
+
+        foreach ($urls as $url) {
+            if (1 === preg_match('#^/image-library/(\d+)/#', $url, $matches)) {
+                $idsByUrl[$url] = (int) $matches[1];
+            }
+        }
+
+        if ([] === $idsByUrl) {
+            return [];
+        }
+
+        $statement = Propel::getConnection('TheliaMain')->prepare(\sprintf(
+            "SELECT li.id, li.decorative, TRIM(COALESCE(i.alt, '')) AS alt
+             FROM library_image li
+             LEFT JOIN library_image_i18n i ON i.id = li.id AND i.locale = :locale
+             WHERE li.id IN (%s) AND li.file_name IS NOT NULL AND %s",
+            implode(',', array_unique($idsByUrl)),
+            MediaKind::Image->condition(),
+        ));
+        $statement->execute(['locale' => $locale]);
+
+        $textById = [];
+
+        foreach ($statement->fetchAll(\PDO::FETCH_ASSOC) as $row) {
+            // Trimmed as `statesOf()` trims it: what it calls described is what is written.
+            $text = (string) $row['alt'];
+
+            if ((bool) $row['decorative']) {
+                $textById[(int) $row['id']] = '';
+            } elseif ('' !== $text) {
+                $textById[(int) $row['id']] = $text;
+            }
+        }
+
+        $texts = [];
+
+        foreach ($idsByUrl as $url => $id) {
+            if (isset($textById[$id])) {
+                $texts[$url] = $textById[$id];
+            }
+        }
+
+        return $texts;
+    }
+
+    /**
      * Reads the size of an image the library has not measured, and records it.
      *
      * Uploads have carried their dimensions since TheliaLibrary 1.4.0; images

@@ -7,6 +7,20 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Fixed
+
+- **An image of the media library printed without a text is published with
+  its description.** A component of the theme (a banner, an image and text
+  block) prints the text of its own prop, empty for an image described in the
+  library only: the page went online with `alt=""`, while the accessibility
+  check, which asks the library, no longer counted the image. The publication
+  and `thelia_cms:render-published` now give such an image the description the
+  library holds in the language of the page, or an empty text when it is
+  decorative; a text the component or the author wrote never changes, and an
+  image described in another language only is left as it is, for the check to
+  report. A page published before is fixed by
+  `php Thelia thelia_cms:render-published --all` (`--dry-run` counts them).
+
 ## [2.14.0] - 2026-11-06
 
 ### Added

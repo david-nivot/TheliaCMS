@@ -148,6 +148,11 @@ shows how to test an update, outside a transaction.
   a second is rounded by the first and cut by the second, so a test comparing
   it to the second passes on the host and fails half the time in the CI. Build
   such a date without its fraction (`date('Y-m-d H:i:s', …)`).
+- The published HTML prints an empty alternative text as a bare `alt`, not
+  `alt=""` (the filter hands the rewriter an attribute without a value, and
+  `DOMDocument` writes it back so). A test that looks for `alt=""` in a
+  published page fails on a correct page: read the attribute through the DOM
+  (`PublishAccessibilityTest::testAnImageDescribedInAnotherLanguageOnlyGoesOnlineWithoutATextAndIsReported`).
 - A test is seen red once, by breaking the code it covers, before it is kept.
   For a template, that means `touch` and `var/cache/test` removed before and
   after the sabotage (see above).
