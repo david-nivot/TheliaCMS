@@ -16,6 +16,11 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   form or the preview holds unsaved text. A form closed untouched, or saved,
   asks nothing.
 
+### Fixed
+
+- The "Free text" section is translated in French: its field, its help, its
+  description and the text of a new section were shown in English.
+
 ## [2.16.0] - 2026-11-06
 
 ### Added
