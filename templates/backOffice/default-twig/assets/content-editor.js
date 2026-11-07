@@ -28,6 +28,9 @@
     // Set when the screen is drawn again: where the preview stood, so the
     // preview drawn next shows the same place rather than the top of the page.
     var keptPosition = null;
+    // Set while a text of the preview is edited where it stands: tells
+    // whether what is typed there differs from the text it started from.
+    var inlineChanged = null;
 
     // The colour of the back office, for what the screen writes into the
     // preview: the theme of the site has its own.
@@ -151,6 +154,7 @@
         applyPreviewChoices(next);
         current.replaceWith(next);
         running = false;
+        inlineChanged = null;
         enhance(next);
 
         next.querySelectorAll("details").forEach(function (panel) {
@@ -303,6 +307,62 @@
         }).then(swap).catch(function () {
             window.location.assign(url);
         });
+    }
+
+    /* ---- Unsent input ---------------------------------------------- */
+
+    // What the forms of a dialog hold, read the same way each time: every
+    // entry in order, a file by its name and size. The rich-text editor
+    // writes its text back to its textarea as it changes, so it is read too.
+    function formState(dialog) {
+        var parts = [];
+
+        dialog.querySelectorAll("form:not([method=dialog])").forEach(function (form) {
+            new FormData(form).forEach(function (value, name) {
+                parts.push([name, typeof value === "string" ? value : value.name + ":" + value.size]);
+            });
+        });
+
+        return JSON.stringify(parts);
+    }
+
+    // Read when the dialog opens, once its editor is mounted: what it held
+    // before the editor typed anything.
+    function remember(dialog) {
+        if (dialog.cmsBaseline === undefined) {
+            dialog.cmsBaseline = formState(dialog);
+        }
+    }
+
+    // A form being sent is no longer unsent.
+    function changed(dialog) {
+        return dialog.cmsBaseline !== undefined && !dialog.cmsSent && formState(dialog) !== dialog.cmsBaseline;
+    }
+
+    function unsent() {
+        if (inlineChanged && inlineChanged()) {
+            return true;
+        }
+
+        return Array.prototype.some.call(document.querySelectorAll("[data-cms-content] dialog.cms-content__edit"), changed);
+    }
+
+    // A dialog whose form was changed is closed only when the editor says
+    // so; the screen is then drawn again from the draft, so the form shows
+    // what is saved, not what was typed and dropped.
+    function closeGuarded(dialog) {
+        if (!changed(dialog)) {
+            dialog.close();
+
+            return;
+        }
+
+        if (!window.confirm(labels.discard)) {
+            return;
+        }
+
+        dialog.close();
+        refresh(window.location.href);
     }
 
     /**
@@ -1221,8 +1281,18 @@
             section.classList.add("cms-section--editing");
 
             var plain = null;
+            // The text as the editor found it, read once the editor is in place.
+            var start = null;
+
+            function edited() {
+                return null !== start && box.isConnected && value() !== start;
+            }
 
             function leave() {
+                if (inlineChanged === edited) {
+                    inlineChanged = null;
+                }
+
                 box.remove();
                 var tools = text.querySelector(".cms-content-tools");
                 kept.forEach(function (node) { text.insertBefore(node, tools); });
@@ -1260,9 +1330,20 @@
                 });
             }
 
+            // Leaving drops what was typed: asked first when there is some.
+            function giveUp() {
+                if (edited() && !window.confirm(labels.discard)) {
+                    return;
+                }
+
+                leave();
+            }
+
+            inlineChanged = edited;
+
             cancel.addEventListener("click", function (event) {
                 event.preventDefault();
-                leave();
+                giveUp();
             });
             save.addEventListener("click", function (event) {
                 event.preventDefault();
@@ -1272,7 +1353,7 @@
                 if (event.key === "Escape") {
                     event.preventDefault();
                     event.stopPropagation();
-                    leave();
+                    giveUp();
                 } else if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
                     event.preventDefault();
                     send();
@@ -1287,6 +1368,7 @@
                 if (editor) {
                     // The editor keeps the textarea up to date as the text changes.
                     editor.mount(field);
+                    start = value();
                     var prose = box.querySelector(".ProseMirror");
 
                     if (prose) {
@@ -1299,6 +1381,7 @@
                     plain.innerHTML = html;
                     box.insertBefore(plain, bar);
                     field.hidden = true;
+                    start = value();
                     plain.focus();
                 }
             });
@@ -1805,7 +1888,13 @@
                     return;
                 }
 
+                var dialog = form.closest("dialog");
+
                 if (!window.fetch || running) {
+                    if (dialog) {
+                        dialog.cmsSent = true;
+                    }
+
                     return;
                 }
 
@@ -1816,6 +1905,11 @@
                 }
 
                 event.preventDefault();
+
+                if (dialog) {
+                    dialog.cmsSent = true;
+                }
+
                 var button = form.querySelector("button[type=submit]");
 
                 if (form.hasAttribute("data-cms-add")) {
@@ -1876,6 +1970,7 @@
 
                 if (dialog && !dialog.open) {
                     dialog.showModal();
+                    remember(dialog);
                     focusFirstField(dialog, 0);
                 }
             });
@@ -1899,6 +1994,7 @@
                 }
             }
 
+            remember(dialog);
             focusFirstField(dialog, 10);
             adoptOverlays(dialog);
         }
@@ -1914,8 +2010,21 @@
 
                 event.preventDefault();
                 event.stopPropagation();
-                dialog.close();
+                closeGuarded(dialog);
             }, true);
+
+            // Any other way the browser asks to close it.
+            dialog.addEventListener("cancel", function (event) {
+                event.preventDefault();
+                closeGuarded(dialog);
+            });
+
+            dialog.querySelectorAll("form[method=dialog]").forEach(function (form) {
+                form.addEventListener("submit", function (event) {
+                    event.preventDefault();
+                    closeGuarded(dialog);
+                });
+            });
         });
 
         // The editor opens its special characters and its preview in windows
@@ -2273,6 +2382,9 @@
         if (running) {
             event.preventDefault();
             event.returnValue = labels.leaving;
+        } else if (unsent()) {
+            event.preventDefault();
+            event.returnValue = labels.unsent;
         }
     });
 })();

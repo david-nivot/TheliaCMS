@@ -1242,6 +1242,8 @@ return [
     '%count% section(s)' => '%count% section(s)',
     'Put it back' => 'Rétablir',
     'Put this draft back? The current draft is kept in its place.' => 'Rétablir ce brouillon ? Le brouillon actuel est gardé à sa place.',
+    'Leave without saving? What you typed is lost.' => 'Quitter sans enregistrer ? Ce que vous avez saisi sera perdu.',
+    'Changes typed in a form are not saved.' => 'Des modifications saisies dans un formulaire ne sont pas enregistrées.',
     'The previous draft is back. The one it replaces is kept in its place.' => 'Le brouillon précédent est rétabli. Celui qu’il remplace est gardé à sa place.',
     'This draft is no longer available.' => 'Ce brouillon n’est plus disponible.',
     'Double-click to edit this text where it stands' => 'Double-cliquez pour modifier ce texte sur place',

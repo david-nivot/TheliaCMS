@@ -1242,6 +1242,8 @@ return [
     '%count% section(s)' => '%count% section(s)',
     'Put it back' => 'Put it back',
     'Put this draft back? The current draft is kept in its place.' => 'Put this draft back? The current draft is kept in its place.',
+    'Leave without saving? What you typed is lost.' => 'Leave without saving? What you typed is lost.',
+    'Changes typed in a form are not saved.' => 'Changes typed in a form are not saved.',
     'The previous draft is back. The one it replaces is kept in its place.' => 'The previous draft is back. The one it replaces is kept in its place.',
     'This draft is no longer available.' => 'This draft is no longer available.',
     'Double-click to edit this text where it stands' => 'Double-click to edit this text where it stands',

@@ -7,6 +7,15 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **A section form is no longer closed with its typing lost.** Closing a
+  changed form (close button or Escape) asks first; keeping on editing leaves
+  it as it was, leaving resets it to the saved values. The text edited in the
+  preview asks the same on Cancel or Escape. Leaving the screen warns while a
+  form or the preview holds unsaved text. A form closed untouched, or saved,
+  asks nothing.
+
 ## [2.16.0] - 2026-11-06
 
 ### Added
