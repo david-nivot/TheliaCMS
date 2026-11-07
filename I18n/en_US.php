@@ -837,6 +837,7 @@ return [
     'Add a row' => 'Add a row',
     'A row without a title' => 'A row without a title',
     'Remove this row' => 'Remove this row',
+    'Drag to move this row' => 'Drag to move this row',
     'Move this row up' => 'Move this row up',
     'Move this row down' => 'Move this row down',
     'Row moved to position %position% of %total%' => 'Row moved to position %position% of %total%',

@@ -986,6 +986,11 @@ body:has(.cms-content) {
     margin-bottom: 0 !important;
 }
 
+/* The handle of a row, on the line of its first words. */
+.cms-content__item-row-grip {
+    line-height: 1.5rem;
+}
+
 .cms-content__item-tools {
     display: flex;
     flex: none;

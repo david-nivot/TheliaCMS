@@ -2188,8 +2188,114 @@
                     if (remove) {
                         remove.hidden = total <= min;
                     }
+
+                    var grip = row.querySelector(":scope > [data-cms-item-grip]");
+
+                    if (grip) {
+                        grip.hidden = total < 2;
+                    }
                 });
             }
+
+            function moved(row) {
+                if (status && list.getAttribute("data-cms-items-moved")) {
+                    status.textContent = list.getAttribute("data-cms-items-moved")
+                        .replace("%position%", String(Array.prototype.indexOf.call(rows.children, row) + 1))
+                        .replace("%total%", String(rows.children.length));
+                }
+            }
+
+            // A row is dragged by its handle only, inside its own list: the whole row draggable would steal
+            // the selection of the text of its fields. It moves while it is dragged; let go outside the
+            // list, it goes back where it was.
+            var dragged = null;
+            var draggedFrom = null;
+            var dropped = false;
+
+            rows.addEventListener("pointerdown", function (event) {
+                var grip = event.target.closest("[data-cms-item-grip]");
+
+                if (grip && grip.parentNode.parentNode === rows) {
+                    grip.parentNode.draggable = true;
+                }
+            });
+
+            rows.addEventListener("pointerup", function (event) {
+                var grip = event.target.closest("[data-cms-item-grip]");
+
+                if (grip) {
+                    grip.parentNode.draggable = false;
+                }
+            });
+
+            rows.addEventListener("dragstart", function (event) {
+                var row = event.target;
+
+                if (!row.hasAttribute || !row.hasAttribute("data-cms-item") || row.parentNode !== rows || !row.draggable) {
+                    return;
+                }
+
+                // The list of sections around the dialog would take it for a section dragged without its handle.
+                event.stopPropagation();
+                dragged = row;
+                draggedFrom = row.nextElementSibling;
+                dropped = false;
+                event.dataTransfer.effectAllowed = "move";
+                event.dataTransfer.setData("text/plain", "");
+                row.classList.add("cms-content__item--dragged");
+            });
+
+            rows.addEventListener("dragover", function (event) {
+                if (!dragged) {
+                    return;
+                }
+
+                event.preventDefault();
+                event.stopPropagation();
+                var over = event.target.closest && event.target.closest("[data-cms-item]");
+
+                while (over && over.parentNode !== rows) {
+                    over = over.parentNode.closest("[data-cms-item]");
+                }
+
+                if (!over || over === dragged) {
+                    return;
+                }
+
+                var box = over.getBoundingClientRect();
+                rows.insertBefore(dragged, event.clientY < box.top + box.height / 2 ? over : over.nextElementSibling);
+            });
+
+            rows.addEventListener("drop", function (event) {
+                if (dragged) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    dropped = true;
+                }
+            });
+
+            rows.addEventListener("dragend", function (event) {
+                if (!dragged || event.target !== dragged) {
+                    return;
+                }
+
+                var row = dragged;
+                dragged = null;
+                row.draggable = false;
+                row.classList.remove("cms-content__item--dragged");
+
+                if (!dropped) {
+                    rows.insertBefore(row, draggedFrom);
+                }
+
+                if (row.nextElementSibling === draggedFrom) {
+                    return;
+                }
+
+                renumber();
+                refresh();
+                moved(row);
+            });
 
             add.addEventListener("click", function () {
                 var holder = document.createElement("template");
@@ -2243,12 +2349,7 @@
                 // off, and the one of the other direction takes it.
                 var kept = move.disabled ? row.querySelector(":scope > .cms-content__item-tools > " + (up ? "[data-cms-item-down]" : "[data-cms-item-up]")) : move;
                 kept.focus();
-
-                if (status && list.getAttribute("data-cms-items-moved")) {
-                    status.textContent = list.getAttribute("data-cms-items-moved")
-                        .replace("%position%", String(Array.prototype.indexOf.call(rows.children, row) + 1))
-                        .replace("%total%", String(rows.children.length));
-                }
+                moved(row);
             });
 
             rows.addEventListener("input", function (event) {

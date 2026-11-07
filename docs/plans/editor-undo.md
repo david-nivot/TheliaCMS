@@ -172,6 +172,14 @@ Contingency of the lot: +0.5 d (Tiptap field sync, see below).
 - Undoing a generation puts back the document and its mark only: the header the generator filled
   where the page had none (search title and description) stays.
 
+## Changed while coding N53
+
+- The handle of a row is `data-cms-item-grip`, not the `data-cms-grip` of a section: the section
+  list binds every `data-cms-grip` it holds, its dialogs included, and would drag the whole section.
+  The row stops its `dragstart` and `dragover` for the same reason.
+- A row let go outside its list goes back where it was (sections post the place they are in).
+- The handle is hidden when the list has one row, like the arrows.
+
 ## Checked since
 
 - The Tiptap fields of a section form write their value to the form at each keystroke

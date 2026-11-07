@@ -837,6 +837,7 @@ return [
     'Add a row' => 'Ajouter une ligne',
     'A row without a title' => 'Ligne sans titre',
     'Remove this row' => 'Retirer cette ligne',
+    'Drag to move this row' => 'Glisser pour déplacer cette ligne',
     'Move this row up' => 'Monter cette ligne',
     'Move this row down' => 'Descendre cette ligne',
     'Row moved to position %position% of %total%' => 'Ligne déplacée en position %position% sur %total%',
