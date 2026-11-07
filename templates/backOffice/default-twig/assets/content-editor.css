@@ -79,6 +79,19 @@ body:has(.cms-content) {
     cursor: not-allowed;
 }
 
+/* The top of the side panel: Undo and Redo on the left, the help on the right. */
+.cms-content__panel-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cms-content__steps {
+    display: inline-flex;
+    gap: 0.25rem;
+}
+
 .cms-content__notes {
     flex: 0 0 auto;
     padding: 0.5rem 1rem 0;

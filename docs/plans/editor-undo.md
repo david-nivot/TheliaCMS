@@ -162,6 +162,16 @@ Contingency of the lot: +0.5 d (Tiptap field sync, see below).
 - Guard: browser script (no JS unit test in the repo), closing a changed form asks, a pristine one
   does not.
 
+## Changed while coding N28b
+
+- The buttons sit at the top of the side panel, next to "Help on this screen", not in the actions
+  bar: two more buttons wrapped the bar onto a second line at 1440 px (46 to 83 px high).
+- The draft is compared as stored (the JSON string), not through a hash column: the same check, one
+  column less. After a move, the step keeps the draft as the writer stored it, so the opposite move
+  compares with what is really there.
+- Undoing a generation puts back the document and its mark only: the header the generator filled
+  where the page had none (search title and description) stays.
+
 ## Checked since
 
 - The Tiptap fields of a section form write their value to the form at each keystroke

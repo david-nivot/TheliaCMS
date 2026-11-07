@@ -263,8 +263,18 @@ revision labelled `draft`, the last five apart from the twenty publications
 (`cms_page_revision` and `cms_item_revision`, column `label`). **Previous
 drafts** on the content screen lists them; **Put it back** makes one the
 draft again and keeps the current one in turn, so a restore is undone the
-same way. Sections edited by hand are not snapshotted: a word changed by hand
-is cheap to change back.
+same way.
+
+**Undo** and **Redo**, in the bar of the content screen (or Ctrl+Z, and
+Ctrl+Shift+Z or Ctrl+Y, outside a field), go back over the changes made on
+that screen and play them again: a section edited, added, removed, moved or
+duplicated, an answer of the generator, a draft put back. Each change keeps the
+draft before and after it, with its provenance mark (`cms_content_step`, the
+last thirty per content and language). The stack is shared by everyone who
+edits the content; a step is played back only on the draft it left, so a draft
+changed since by another tab, another editor, an import or a command refuses it
+and nothing is written. A new change drops what Redo could still play. Imports
+and commands keep no step.
 
 Each section is also **edited by hand**, on the same screen, in a form read
 from the schema of its component: a field per prop, rows added and removed for

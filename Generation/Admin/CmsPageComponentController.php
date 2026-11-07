@@ -25,7 +25,9 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Model\Lang;
+use TheliaCMS\Catalogue\Admin\ContentTargets;
 use TheliaCMS\Content\Document;
+use TheliaCMS\Content\Editing\ContentSteps;
 use TheliaCMS\Content\InvalidDocumentException;
 use TheliaCMS\Content\Section;
 use TheliaCMS\Content\SectionCatalog;
@@ -79,6 +81,8 @@ final readonly class CmsPageComponentController
         private CmsPageWriter $writer,
         private GenerationLog $log,
         private GenerationTargets $targets,
+        private ContentTargets $contentTargets,
+        private ContentSteps $steps,
     ) {
     }
 
@@ -163,7 +167,7 @@ final readonly class CmsPageComponentController
         try {
             $section = new Section($current->freeSectionId($component->name()), $component->name(), $definition->normalizeProps($definition->sample()));
             $document = $current->withSectionAppended($section);
-            $this->writer->saveContent($page, $locale, $document);
+            $this->steps->record($this->contentTargets->forPage($page, $locale), 'component', $section->id, fn () => $this->writer->saveContent($page, $locale, $document));
         } catch (InvalidDocumentException $exception) {
             foreach ($exception->translated($this->translator) as $problem) {
                 $this->support->flash($request, 'danger', $problem);

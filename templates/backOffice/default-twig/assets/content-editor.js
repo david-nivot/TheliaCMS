@@ -1874,7 +1874,7 @@
         // A section saved by hand comes back with the screen the server
         // redirects to, drawn in place like the end of a generation. When
         // the answer cannot be read, the form is sent the plain way.
-        root.querySelectorAll("form[data-cms-section-form], form[data-cms-remove], form[data-cms-restore], form[data-cms-move], form[data-cms-duplicate], form[data-cms-add], form[data-cms-keep]").forEach(function (form) {
+        root.querySelectorAll("form[data-cms-section-form], form[data-cms-remove], form[data-cms-restore], form[data-cms-move], form[data-cms-duplicate], form[data-cms-add], form[data-cms-keep], form[data-cms-step]").forEach(function (form) {
             form.addEventListener("submit", function (event) {
                 if (form.hasAttribute("data-cms-remove") && !window.confirm(labels.remove)) {
                     event.preventDefault();
@@ -1936,10 +1936,10 @@
                 }).then(function (html) {
                     // The section the form is about, when it is one of the
                     // list: its edit dialog, its buttons to move, duplicate
-                    // or remove it.
+                    // or remove it. Undo and Redo name the section of their step.
                     var item = form.closest("[data-cms-section-item]");
 
-                    swap(html, item ? item.getAttribute("data-section") : null);
+                    swap(html, item ? item.getAttribute("data-section") : form.getAttribute("data-cms-step-section"));
                 }).catch(function () {
                     form.submit();
                 });
@@ -2377,6 +2377,34 @@
     }
 
     enhance(first);
+
+    // Ctrl+Z (Cmd+Z) undoes the latest change of the draft, Ctrl+Shift+Z or
+    // Ctrl+Y plays it again: outside a field, which keeps its own, and never
+    // while a dialog is open or an answer is awaited.
+    document.addEventListener("keydown", function (event) {
+        if (!(event.ctrlKey || event.metaKey) || event.altKey || event.defaultPrevented || running) {
+            return;
+        }
+
+        var key = event.key.toLowerCase();
+        var move = key === "z" ? (event.shiftKey ? "redo" : "undo") : (key === "y" && !event.shiftKey ? "redo" : null);
+        var target = event.target;
+
+        if (!move || document.querySelector("[data-cms-content] dialog[open]")
+            || (target instanceof Element && target.closest("input, textarea, select, [contenteditable]:not([contenteditable=false])"))) {
+            return;
+        }
+
+        var form = document.querySelector("[data-cms-content] form[data-cms-step=" + move + "]");
+        var button = form ? form.querySelector("button[type=submit]") : null;
+
+        if (!button || button.disabled) {
+            return;
+        }
+
+        event.preventDefault();
+        form.requestSubmit(button);
+    });
 
     window.addEventListener("beforeunload", function (event) {
         if (running) {

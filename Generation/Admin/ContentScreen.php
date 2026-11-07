@@ -21,6 +21,9 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\SecurityContext;
 use TheliaCMS\Content\Document;
+use TheliaCMS\Content\Editing\ContentKey;
+use TheliaCMS\Content\Editing\ContentSteps;
+use TheliaCMS\Content\Editing\StepView;
 use TheliaCMS\Content\Editing\TranslationLink;
 use TheliaCMS\Content\Section;
 use TheliaCMS\Content\SectionCatalog;
@@ -67,6 +70,7 @@ final readonly class ContentScreen
         private SiteComponentPermission $componentPermission,
         private SitePropRows $propRows,
         private DocumentationLink $documentation,
+        private ContentSteps $steps,
     ) {
     }
 
@@ -104,8 +108,48 @@ final readonly class ContentScreen
             // has the routes for it (a catalogue item has none).
             'may_prototype' => $mayGenerate && isset($subject->routes['component_generate']) && $this->componentPermission->mayMake(),
             'prototype' => $this->prototype($request, $subject),
+            'steps' => $mayChange && isset($subject->routes['undo']) ? $this->steps($subject) : null,
             'assets_version' => self::assetsVersion(),
         ]);
+    }
+
+    /**
+     * Undo and Redo as their buttons say them: what each would play, null when
+     * there is nothing to play.
+     *
+     * @return array{undo: string|null, redo: string|null, undo_section: string|null, redo_section: string|null}
+     */
+    private function steps(ContentSubject $subject): array
+    {
+        ['undo' => $undo, 'redo' => $redo] = $this->steps->state(new ContentKey($subject->target->type, $subject->target->id, $subject->locale));
+
+        return [
+            'undo' => null === $undo ? null : $this->translator->trans('Undo: %step%', ['%step%' => $this->stepLabel($undo)], TheliaCMS::DOMAIN_NAME),
+            'redo' => null === $redo ? null : $this->translator->trans('Redo: %step%', ['%step%' => $this->stepLabel($redo)], TheliaCMS::DOMAIN_NAME),
+            'undo_section' => $undo?->section,
+            'redo_section' => $redo?->section,
+        ];
+    }
+
+    private function stepLabel(StepView $step): string
+    {
+        $parameters = ['%section%' => (string) $step->section];
+        $label = match ($step->action) {
+            'apply' => $this->translator->trans('section "%section%" edited by hand', $parameters, TheliaCMS::DOMAIN_NAME),
+            'remove' => $this->translator->trans('section "%section%" removed', $parameters, TheliaCMS::DOMAIN_NAME),
+            'move' => $this->translator->trans('section "%section%" moved', $parameters, TheliaCMS::DOMAIN_NAME),
+            'duplicate' => $this->translator->trans('section "%section%" duplicated', $parameters, TheliaCMS::DOMAIN_NAME),
+            'add' => $this->translator->trans('section added', [], TheliaCMS::DOMAIN_NAME),
+            'component' => $this->translator->trans('section "%section%" added from a prototype', $parameters, TheliaCMS::DOMAIN_NAME),
+            GenerationRequest::KIND_BRIEF => $this->translator->trans('content written by the generator', [], TheliaCMS::DOMAIN_NAME),
+            GenerationRequest::KIND_REVISION => $this->translator->trans('content changed by the generator', [], TheliaCMS::DOMAIN_NAME),
+            GenerationRequest::KIND_SECTION => $this->translator->trans('section "%section%" rewritten by the generator', $parameters, TheliaCMS::DOMAIN_NAME),
+            GenerationRequest::KIND_TRANSLATION => $this->translator->trans('content translated by the generator', [], TheliaCMS::DOMAIN_NAME),
+            'restore' => $this->translator->trans('previous draft put back', [], TheliaCMS::DOMAIN_NAME),
+            default => $this->translator->trans('change of the draft', [], TheliaCMS::DOMAIN_NAME),
+        };
+
+        return null === $step->author ? $label : $this->translator->trans('%step%, by %author%', ['%step%' => $label, '%author%' => $step->author], TheliaCMS::DOMAIN_NAME);
     }
 
     /**
