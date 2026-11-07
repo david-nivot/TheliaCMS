@@ -7,6 +7,14 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **The address of a page online opens it in a new tab from the list of
+  pages.** The address column links to the page as visitors reach it, on the
+  domain of the language when each language has its own. A page that is not
+  online (draft, scheduled, hidden, taken offline) keeps its address as plain
+  text: it would answer nothing.
+
 ## [2.16.0] - 2026-11-06
 
 ### Added
