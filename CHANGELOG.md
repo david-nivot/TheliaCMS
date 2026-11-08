@@ -34,6 +34,14 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   online (draft, scheduled, hidden, taken offline) keeps its address as plain
   text: it would answer nothing.
 
+### Changed
+
+- On the screen of a page, **Duplicate**, **Set as home page** and **Remove
+  the AI mark** move to the header, next to Edit content and Preview: under the
+  tabs, they read as part of the Documents tab.
+- The **summary** of a page is half the height of its detailed description
+  (160 px for 320 px), as befits a few lines.
+
 ### Fixed
 
 - The "Free text" section is translated in French: its field, its help, its
