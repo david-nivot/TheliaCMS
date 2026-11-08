@@ -1870,4 +1870,7 @@ return [
     '%count% page(s) will be refused' => '%count% page(s) seront refusées',
     'Move %count% page(s) to the bin' => 'Mettre %count% page(s) à la corbeille',
     'Publish %count% page(s)' => 'Publier %count% page(s)',
+    'Grid' => 'Grille',
+    'Display' => 'Affichage',
+    'Uses' => 'Utilisations',
 ];

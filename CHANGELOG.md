@@ -7,6 +7,15 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **The media library can be listed as compact rows.** Grid and List, next to
+  the filters, switch between the cards and a table with one row per file: a
+  48 px thumbnail, the title, the format, the dimensions, the weight, the state
+  of the alternative text, the tags, the uses and a link to the sheet. The view
+  is kept in the address (`view=list`), so the filters, the pages, an image
+  opened and the way back keep it; the bulk actions work the same in both.
+
 ### Changed
 
 - **A page written by hand, without a brief, opens as a page being edited.**

@@ -130,6 +130,50 @@ final class MediaListScreenTest extends AdminScreenTestCase
         self::assertStringContainsString('order=title', $location);
     }
 
+    public function testTheListDrawsARowPerFileWithWhatTheCardsShowOnHover(): void
+    {
+        $described = $this->image('Rangée décrite', alt: 'Un fauteuil bleu', fileSize: 2048);
+        $missing = $this->image('Rangée sans texte');
+        $decorative = $this->image('Rangée décorative', decorative: true);
+
+        $screen = $this->screen(self::LIST.'?view=list');
+
+        self::assertCount(0, $this->cards($screen), 'The list draws no card.');
+        $row = $screen->filter(\sprintf('[data-testid="cms-media-row-%d"]', $described->getId()));
+        self::assertSame(1, $row->count(), 'Each file has its row.');
+        self::assertStringContainsString('800 × 600', $row->text(), 'The dimensions are in a column.');
+        self::assertStringContainsString('2 kB', $row->text(), 'The weight is in a column.');
+        self::assertSame(1, $row->filter('input[data-cms-media-select][form="cms-media-bulk"]')->count(), 'The row is selected for the bulk actions, as a card.');
+        self::assertSame('Described', trim($this->altOf($screen, $described)));
+        self::assertStringContainsString('No alternative text', $this->altOf($screen, $missing));
+        self::assertSame('Decorative', trim($this->altOf($screen, $decorative)));
+    }
+
+    public function testEveryLinkOfTheListKeepsTheView(): void
+    {
+        for ($n = 1; $n <= 50; ++$n) {
+            $this->image(\sprintf('Vue %02d', $n));
+        }
+
+        $screen = $this->screen(self::LIST.'?view=list&order=title');
+
+        self::assertSame('true', $screen->filter('[data-testid="cms-media-view-list"]')->attr('aria-current'));
+        self::assertStringNotContainsString('view=', (string) $screen->filter('[data-testid="cms-media-view-grid"]')->attr('href'), 'The grid is the plain address.');
+        self::assertStringContainsString('order=title', (string) $screen->filter('[data-testid="cms-media-view-grid"]')->attr('href'), 'Switching the view keeps the order.');
+        self::assertSame('list', $screen->filter('[data-testid="cms-media-filters"] input[name="view"]')->attr('value'), 'Filtering keeps the view.');
+        self::assertStringContainsString('view=list', (string) $screen->filter('[data-testid="cms-media-pages"] a')->last()->attr('href'), 'The next page keeps the view.');
+        self::assertStringContainsString('view=list', (string) $screen->filter('form#cms-media-bulk')->attr('action'), 'The bulk actions lead back to the view.');
+
+        $sheet = (string) $screen->filter('[data-testid^="cms-media-row-"] a')->first()->attr('href');
+        self::assertStringContainsString('view=list', $sheet);
+        self::assertStringContainsString('view=list', (string) $this->screen($sheet)->filter('[data-testid="cms-media-back"]')->attr('href'), 'An image opened from the list leads back to the list.');
+    }
+
+    private function altOf(Crawler $screen, LibraryImage $image): string
+    {
+        return $screen->filter(\sprintf('[data-testid="cms-media-row-alt-%d"]', $image->getId()))->text();
+    }
+
     /**
      * @return list<int>
      */

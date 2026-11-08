@@ -1870,4 +1870,7 @@ return [
     '%count% page(s) will be refused' => '%count% page(s) will be refused',
     'Move %count% page(s) to the bin' => 'Move %count% page(s) to the bin',
     'Publish %count% page(s)' => 'Publish %count% page(s)',
+    'Grid' => 'Grid',
+    'Display' => 'Display',
+    'Uses' => 'Uses',
 ];

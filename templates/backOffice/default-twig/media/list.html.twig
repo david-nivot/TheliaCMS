@@ -53,6 +53,12 @@
         <div class="d-flex gap-2 mt-2 d-none" data-cms-media-upload-done></div>
     </form>
 
+    {# The view is kept by every link of the screen, those that drop the
+       filters included: clearing a search does not turn the rows back into
+       cards. #}
+    {% set in_list = query.view.value == 'list' %}
+    {% set bare_list = { edit_language_id: edit_language_id }|merge(in_list ? { view: 'list' } : {}) %}
+
     {% if has_library %}
         {% set filter_labels = {
             'to-describe': 'To describe'|trans({}, 'theliacms'),
@@ -70,6 +76,7 @@
         <form method="get" class="row g-2 align-items-end mb-3" action="{{ path('admin.cms.media.list') }}"
               data-testid="cms-media-filters">
             <input type="hidden" name="edit_language_id" value="{{ edit_language_id }}">
+            {% if in_list %}<input type="hidden" name="view" value="list">{% endif %}
             <div class="col-12 col-md">
                 <label class="form-label small mb-1" for="cms-media-search">{{ 'Search'|trans({}, 'theliacms') }}</label>
                 <input class="form-control" type="search" id="cms-media-search" name="search" value="{{ query.search }}"
@@ -106,8 +113,22 @@
             <div class="col-6 col-md-auto d-flex gap-2">
                 <button class="btn btn-outline-secondary text-nowrap" type="submit">{{ 'Apply'|trans({}, 'theliacms') }}</button>
                 {% if query.isNarrowed %}
-                    <a class="btn btn-link text-nowrap" href="{{ path('admin.cms.media.list', { edit_language_id: edit_language_id }) }}">{{ 'Clear'|trans({}, 'theliacms') }}</a>
+                    <a class="btn btn-link text-nowrap" href="{{ path('admin.cms.media.list', bare_list) }}">{{ 'Clear'|trans({}, 'theliacms') }}</a>
                 {% endif %}
+            </div>
+            {# Two links, not a setting: the view is part of the address, so a
+               list bookmarked or opened again comes back drawn the same way. #}
+            <div class="col-12 col-md-auto ms-md-auto">
+                <div class="btn-group" role="group" aria-label="{{ 'Display'|trans({}, 'theliacms') }}" data-testid="cms-media-views">
+                    {% for view in views %}
+                        {% set current = view == query.view %}
+                        <a class="btn {{ current ? 'btn-secondary' : 'btn-outline-secondary' }} text-nowrap"
+                           href="{{ path('admin.cms.media.list', query.viewParameters(view)|merge({ edit_language_id: edit_language_id })) }}"
+                           {{ current ? 'aria-current="true"' }} data-testid="cms-media-view-{{ view.value }}">
+                            <i class="bi {{ view.value == 'list' ? 'bi-list-ul' : 'bi-grid-3x3-gap' }} me-1" aria-hidden="true"></i>{{ (view.value == 'list' ? 'List' : 'Grid')|trans({}, 'theliacms') }}
+                        </a>
+                    {% endfor %}
+                </div>
             </div>
         </form>
 
@@ -121,7 +142,7 @@
                 · {{ '%count% video(s)'|trans({ '%count%': tally.videos }, 'theliacms') }}
             {%- endif -%}
             {%- if tally.undescribed > 0 %}
-                · <a class="link-warning" href="{{ path('admin.cms.media.list', { edit_language_id: edit_language_id, filter: 'to-describe' }) }}">{{ '%count% still to describe'|trans({ '%count%': tally.undescribed }, 'theliacms') }}</a>
+                · <a class="link-warning" href="{{ path('admin.cms.media.list', bare_list|merge({ filter: 'to-describe' })) }}">{{ '%count% still to describe'|trans({ '%count%': tally.undescribed }, 'theliacms') }}</a>
             {%- endif -%}
             {%- if query.isNarrowed %}
                 · {{ '%count% matching'|trans({ '%count%': grid.total }, 'theliacms') }}
@@ -144,7 +165,7 @@
             <div class="card-body text-center py-5">
                 {% if query.isNarrowed %}
                     <p class="text-muted mb-3">{{ 'No image matches.'|trans({}, 'theliacms') }}</p>
-                    <a class="btn btn-outline-secondary" href="{{ path('admin.cms.media.list', { edit_language_id: edit_language_id }) }}">{{ 'Show every image'|trans({}, 'theliacms') }}</a>
+                    <a class="btn btn-outline-secondary" href="{{ path('admin.cms.media.list', bare_list) }}">{{ 'Show every image'|trans({}, 'theliacms') }}</a>
                 {% else %}
                     <p class="text-muted mb-0">{{ 'No image yet. Images added here can be placed in any page, and are described once for every page that uses them.'|trans({}, 'theliacms') }}</p>
                 {% endif %}
@@ -192,6 +213,9 @@
             </div>
         </dialog>
 
+        {% if in_list %}
+            {% include '@TheliaCMSModule/backOffice/default-twig/media/_table.html.twig' %}
+        {% else %}
         <div class="row row-cols-2 row-cols-sm-3 row-cols-lg-4 row-cols-xl-6 g-3">
             {% for item in grid.items %}
                 <div class="col">
@@ -253,6 +277,7 @@
                 </div>
             {% endfor %}
         </div>
+        {% endif %}
 
         {% if grid.pageCount > 1 %}
             {% set from = max(1, grid.page - 2) %}

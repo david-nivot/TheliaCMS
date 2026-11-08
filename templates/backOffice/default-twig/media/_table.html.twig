@@ -1,0 +1,87 @@
+{#
+    The library as one compact row per file, for a library of hundreds: what
+    the cards show on hover (format, dimensions, weight) is read in columns.
+    The boxes belong to the bulk form by their `form` attribute, as on the
+    cards; the links carry the address of the list, the view with it.
+#}
+<div class="card" data-testid="cms-media-table">
+    <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+            <caption class="visually-hidden">{{ 'Media'|trans({}, 'theliacms') }}</caption>
+            <thead>
+                <tr>
+                    <th scope="col" style="width: 2.5rem"><span class="visually-hidden">{{ 'Select the page'|trans({}, 'theliacms') }}</span></th>
+                    <th scope="col" style="width: 4rem"><span class="visually-hidden">{{ 'Preview'|trans({}, 'theliacms') }}</span></th>
+                    <th scope="col">{{ 'Title'|trans({}, 'theliacms') }}</th>
+                    <th scope="col">{{ 'Format'|trans({}, 'theliacms') }}</th>
+                    <th scope="col" class="text-nowrap">{{ 'Dimensions'|trans({}, 'theliacms') }}</th>
+                    <th scope="col" class="text-end">{{ 'Weight'|trans({}, 'theliacms') }}</th>
+                    <th scope="col">{{ 'Alternative text'|trans({}, 'theliacms') }}</th>
+                    <th scope="col" class="d-none d-xl-table-cell">{{ 'Tags'|trans({}, 'theliacms') }}</th>
+                    <th scope="col" class="text-end">{{ 'Uses'|trans({}, 'theliacms') }}</th>
+                    <th scope="col" class="text-end">{{ 'Actions'|trans({}, 'theliacms') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in grid.items %}
+                    {% set sheet = path('admin.cms.media.edit', query.addressParameters|merge({ id: item.id, edit_language_id: edit_language_id })) %}
+                    <tr data-testid="cms-media-row-{{ item.id }}">
+                        <td>
+                            <input class="form-check-input" type="checkbox" form="cms-media-bulk" name="images[]" value="{{ item.id }}"
+                                   data-cms-media-select aria-label="{{ 'Select %title%'|trans({ '%title%': item.title }, 'theliacms') }}">
+                        </td>
+                        <td>
+                            {# Decorative here: the title next to it names the file. #}
+                            <a href="{{ sheet }}" class="d-block bg-body-secondary rounded overflow-hidden" style="width: 48px; height: 48px" tabindex="-1" aria-hidden="true">
+                                {% if item.video %}
+                                    <video src="{{ item.url }}" preload="metadata" muted playsinline width="48" height="48"
+                                           style="object-fit: scale-down"></video>
+                                {% else %}
+                                    <img src="{{ item.thumbnailUrl }}" alt="" width="48" height="48" loading="lazy" decoding="async"
+                                         style="object-fit: scale-down">
+                                {% endif %}
+                            </a>
+                        </td>
+                        <td class="text-break" style="min-width: 12rem">
+                            <a class="fw-medium" href="{{ sheet }}">{{ item.title }}</a>
+                        </td>
+                        <td class="text-nowrap">{{ item.format ? item.format|upper }}</td>
+                        <td class="text-nowrap">{{ item.dimensions }}</td>
+                        <td class="text-nowrap text-end">{{ item.weight }}</td>
+                        <td class="text-nowrap" data-testid="cms-media-row-alt-{{ item.id }}">
+                            {% if item.video %}
+                                <span class="badge text-bg-light"><i class="bi bi-camera-video me-1" aria-hidden="true"></i>{{ 'Video'|trans({}, 'theliacms') }}</span>
+                            {% elseif not item.isDescribed %}
+                                <span class="badge text-bg-warning">
+                                    <i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>{{ 'No alternative text'|trans({}, 'theliacms') }}
+                                </span>
+                            {% elseif item.decorative %}
+                                <span class="badge text-bg-light">{{ 'Decorative'|trans({}, 'theliacms') }}</span>
+                            {% else %}
+                                <span class="badge text-bg-success-subtle text-success-emphasis">{{ 'Described'|trans({}, 'theliacms') }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="d-none d-xl-table-cell">
+                            {% for tag in item.tags %}
+                                <span class="badge text-bg-light">{{ tag }}</span>
+                            {% endfor %}
+                        </td>
+                        <td class="text-nowrap text-end">
+                            {% if item.usageCount > 0 %}
+                                <span title="{{ 'Used by %count% page(s) or item(s)'|trans({ '%count%': item.usageCount }, 'theliacms') }}">{{ item.usageCount }}</span>
+                            {% else %}
+                                <span class="text-body-secondary">{{ 'Not used yet'|trans({}, 'theliacms') }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a class="btn btn-sm btn-outline-secondary" href="{{ sheet }}"
+                               aria-label="{{ 'Open %title%'|trans({ '%title%': item.title }, 'theliacms') }}">
+                                <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                            </a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
