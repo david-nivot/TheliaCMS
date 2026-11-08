@@ -15,8 +15,8 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   preview asks the same on Cancel or Escape. Leaving the screen warns while a
   form or the preview holds unsaved text. A form closed untouched, or saved,
   asks nothing.
-- **Undo and Redo on the content screen.** Two buttons at the top of its side
-  panel, and Ctrl+Z, Ctrl+Shift+Z or Ctrl+Y outside a field, go back over the
+- **Undo and Redo on the content screen.** Two icons in its bar, right before
+  Publish, and Ctrl+Z, Ctrl+Shift+Z or Ctrl+Y outside a field, go back over the
   changes made on the screen and play them again: sections edited, added, removed, moved or
   duplicated, answers of the generator (played again without a new call), a
   draft put back. The button names the change and who made it. A draft

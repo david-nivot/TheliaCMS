@@ -74,6 +74,10 @@ final class ContentUndoTest extends AdminScreenTestCase
         self::assertNull($this->button($screen, 'undo')->attr('disabled'));
         self::assertStringContainsString('intro', (string) $this->button($screen, 'undo')->attr('title'), 'The button names the section of the step.');
         self::assertSame('intro', $screen->filter('[data-testid="cms-content-undo"]')->attr('data-cms-step-section'), 'The screen keeps that section in view.');
+        self::assertSame($this->button($screen, 'undo')->attr('title'), $this->button($screen, 'undo')->attr('aria-label'), 'An icon alone: its name says the step.');
+        $actions = $screen->filter('.cms-content__bar .cms-content__actions > *');
+        self::assertSame('cms-content-steps', $actions->eq(0)->attr('data-testid'), 'Undo and Redo sit in the bar, first of its actions.');
+        self::assertSame('cms-content-publish', $actions->eq(1)->attr('data-testid'), 'Publish comes right after them.');
 
         self::assertSame(302, $this->play($screen, 'undo'));
         self::assertStringContainsString('Avant', $this->draft($page));

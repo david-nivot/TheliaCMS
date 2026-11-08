@@ -164,8 +164,12 @@ Contingency of the lot: +0.5 d (Tiptap field sync, see below).
 
 ## Changed while coding N28b
 
-- The buttons sit at the top of the side panel, next to "Help on this screen", not in the actions
-  bar: two more buttons wrapped the bar onto a second line at 1440 px (46 to 83 px high).
+- The buttons first sat at the top of the side panel: with their words, two more buttons wrapped the
+  actions bar onto a second line at 1440 px (46 to 83 px high). At the acceptance test of 2026-11-08 the
+  maintainer moved them to the bar, right before Publish, as icons alone (name and step in the title
+  and the `aria-label`). The select of the preview width is sized to the width picked
+  (`field-sizing: content`) to make room; with a long status ("Changed since publication") and a long
+  width picked ("Large screen (1680px)"), the bar still wraps, as a group.
 - The draft is compared as stored (the JSON string), not through a hash column: the same check, one
   column less. After a move, the step keeps the draft as the writer stored it, so the opposite move
   compares with what is really there.
