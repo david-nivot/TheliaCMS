@@ -25,7 +25,9 @@ use Thelia\Core\Security\AccessManager;
 use Thelia\Domain\Ai\AiProvenance;
 use TheliaCMS\Catalogue\CatalogueItemType;
 use TheliaCMS\Content\Document;
+use TheliaCMS\Content\Editing\ContentSteps;
 use TheliaCMS\Content\Editing\ContentWriter;
+use TheliaCMS\Content\Editing\StepOutcome;
 use TheliaCMS\Content\Editing\TranslationSource;
 use TheliaCMS\Content\InvalidDocumentException;
 use TheliaCMS\Generation\Alongside;
@@ -47,6 +49,9 @@ use TheliaCMS\Security\CmsResources;
  * costs money. Every change by hand, the restore of a kept draft, the
  * publication and the withdrawal of an item take the right to change pages,
  * as everywhere else; no right of the core on the item itself is checked.
+ *
+ * Every change of the draft made here is a step Undo puts back and Redo plays
+ * again (`ContentSteps`), under the right to change pages.
  */
 final readonly class ContentController
 {
@@ -64,6 +69,7 @@ final readonly class ContentController
         private GenerationRunner $runner,
         private SectionUpdate $sectionUpdate,
         private TranslatorInterface $translator,
+        private ContentSteps $steps,
     ) {
     }
 
@@ -197,7 +203,7 @@ final readonly class ContentController
         $target = $this->resolver->resolve($request, $id, $type);
         $this->denyUnlessMayChange();
 
-        $problems = $this->sectionUpdate->add($request, $target->subject(), $target->draftDocument(), $this->saver($target));
+        $problems = $this->steps->record($target->contentTarget(), 'add', null, fn (): array => $this->sectionUpdate->add($request, $target->subject(), $target->draftDocument(), $this->saver($target)));
 
         return $this->afterHand($request, $target, $problems, 'The section is added at the end of the draft, with example text: edit it by hand.');
     }
@@ -214,7 +220,7 @@ final readonly class ContentController
         $this->denyUnlessMayChange();
 
         try {
-            $this->writer->restoreDraft($target->contentTarget(), $request->request->getInt('revision'));
+            $this->steps->record($target->contentTarget(), 'restore', null, fn () => $this->writer->restoreDraft($target->contentTarget(), $request->request->getInt('revision')));
             $this->support->flash($request, 'success', $this->support->translate('The previous draft is back. The one it replaces is kept in its place.'));
         } catch (\InvalidArgumentException|InvalidDocumentException) {
             $this->support->flash($request, 'danger', $this->support->translate('This draft is no longer available.'));
@@ -282,6 +288,26 @@ final readonly class ContentController
         $this->support->flash($request, 'success', $this->support->translate('This language is marked up to date with the one it was written from.'));
 
         return $this->back($target);
+    }
+
+    /**
+     * The draft as it was before the latest change made on this screen.
+     */
+    #[Route(self::PAGE.'/undo', name: 'admin.cms.pages.content.undo', methods: ['POST'], requirements: self::PAGE_REQUIREMENTS)]
+    #[Route(self::ITEM.'/undo', name: 'admin.cms.catalogue.content.undo', methods: ['POST'], requirements: self::ITEM_REQUIREMENTS)]
+    public function undo(Request $request, int $id, ?string $type = null): Response
+    {
+        return $this->playStep($request, $id, $type, false);
+    }
+
+    /**
+     * The change undone last, played again.
+     */
+    #[Route(self::PAGE.'/redo', name: 'admin.cms.pages.content.redo', methods: ['POST'], requirements: self::PAGE_REQUIREMENTS)]
+    #[Route(self::ITEM.'/redo', name: 'admin.cms.catalogue.content.redo', methods: ['POST'], requirements: self::ITEM_REQUIREMENTS)]
+    public function redo(Request $request, int $id, ?string $type = null): Response
+    {
+        return $this->playStep($request, $id, $type, true);
     }
 
     #[Route(self::PAGE.'/publish', name: 'admin.cms.pages.content.publish', methods: ['POST'], requirements: self::PAGE_REQUIREMENTS)]
@@ -357,15 +383,43 @@ final readonly class ContentController
         $save = $this->saver($target);
         $subject = $target->subject();
 
-        $problems = match ($change) {
+        $section = 'apply' === $change ? SectionUpdate::postedSection($request) : (string) $request->request->get('section', '');
+
+        $problems = $this->steps->record($target->contentTarget(), $change, $section, fn (): array => match ($change) {
             'apply' => $this->sectionUpdate->apply($request, $subject, $current, $save),
             'remove' => $this->sectionUpdate->remove($request, $subject, $current, $save),
             'move' => $this->sectionUpdate->move($request, $subject, $current, $save),
             'duplicate' => $this->sectionUpdate->duplicate($request, $subject, $current, $save),
             default => throw new \LogicException(\sprintf('"%s" is not a change by hand.', $change)),
-        };
+        });
 
         return $this->afterHand($request, $target, $problems, $done);
+    }
+
+    private function playStep(Request $request, int $id, ?string $type, bool $redo): RedirectResponse
+    {
+        $target = $this->resolver->resolve($request, $id, $type);
+        $this->denyUnlessMayChange();
+
+        try {
+            $outcome = $redo ? $this->steps->redo($target->contentTarget()) : $this->steps->undo($target->contentTarget());
+        } catch (InvalidDocumentException $exception) {
+            foreach ($exception->translated($this->translator) as $problem) {
+                $this->support->flash($request, 'danger', $problem);
+            }
+
+            $this->support->flash($request, 'danger', $this->support->translate('This change no longer fits the sections the site offers: nothing was changed.'));
+
+            return $this->back($target);
+        }
+
+        match ($outcome) {
+            StepOutcome::Done => $this->support->flash($request, 'success', $this->support->translate($redo ? 'The change is made again.' : 'The change is undone.')),
+            StepOutcome::Nothing => $this->support->flash($request, 'warning', $this->support->translate($redo ? 'Nothing to redo.' : 'Nothing to undo.')),
+            StepOutcome::DraftChanged => $this->support->flash($request, 'danger', $this->support->translate('The draft was changed elsewhere since (another tab, another editor, an import): nothing was changed. Reload the screen.')),
+        };
+
+        return $this->back($target);
     }
 
     /**
@@ -392,7 +446,7 @@ final readonly class ContentController
             function (Document $document, ?AiProvenance $provenance, Alongside $alongside) use ($target, $generation, $source): ?HeaderOutcome {
                 // The draft the answer replaces is kept first: it can be put back.
                 $this->writer->keepDraft($target->contentTarget());
-                $this->writer->saveContent($target->contentTarget(), $document, $provenance);
+                $this->steps->record($target->contentTarget(), $generation->kind, $generation->sectionId, fn () => $this->writer->saveContent($target->contentTarget(), $document, $provenance));
                 $header = $target->saveAlongside($alongside);
 
                 if (null !== $source && null !== $generation->sourceLocale) {

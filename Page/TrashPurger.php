@@ -17,6 +17,8 @@ namespace TheliaCMS\Page;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Propel\Runtime\Propel;
 use Thelia\Model\RewritingUrlQuery;
+use TheliaCMS\Content\Editing\ContentKey;
+use TheliaCMS\Model\CmsContentStepQuery;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Model\CmsPageQuery;
 use TheliaCMS\Page\Document\PageDocumentWriter;
@@ -77,6 +79,12 @@ final readonly class TrashPurger
                 // are removed once the deletion is committed, so a rollback
                 // keeps a page whose documents still open.
                 array_push($files, ...$this->documents->filesOf((int) $page->getId(), $connection));
+
+                // The steps of Undo name the page without a foreign key.
+                CmsContentStepQuery::create()
+                    ->filterByContentKind(ContentKey::PAGE)
+                    ->filterByContentId((int) $page->getId())
+                    ->delete($connection);
 
                 // Contents, revisions, search payload, documents and
                 // translations go with the page: the foreign keys cascade.

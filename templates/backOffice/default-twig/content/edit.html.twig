@@ -42,6 +42,8 @@
              edit: 'Edit'|trans({}, 'theliacms'),
              delete: 'Delete'|trans({}, 'theliacms'),
              restore: 'Put this draft back? The current draft is kept in its place.'|trans({}, 'theliacms'),
+             discard: 'Leave without saving? What you typed is lost.'|trans({}, 'theliacms'),
+             unsent: 'Changes typed in a form are not saved.'|trans({}, 'theliacms'),
              save: 'Save'|trans({}, 'theliacms'),
              cancel: 'Cancel'|trans({}, 'theliacms'),
              inline: 'Double-click to edit this text where it stands'|trans({}, 'theliacms'),
@@ -69,7 +71,29 @@
             {{ component('BoLanguageSwitcher', { currentLanguageId: subject.languageId }) }}
 
             <div class="cms-content__actions">
-                {# First of the actions: it is the one that matters, and a group that wraps keeps it with the others. A model of a page type is never published: its pages are. #}
+                {# Undo and Redo of the changes made on this screen, by whoever
+                   edits the content; Ctrl+Z and Ctrl+Shift+Z (or Ctrl+Y) outside
+                   a field. Icons only, so the bar keeps to one line at 1440 px:
+                   the title and the name read by a screen reader say the step
+                   each would play. #}
+                {% if steps %}
+                    <div class="cms-content__undo-redo" role="group" aria-label="{{ 'Undo and redo'|trans({}, 'theliacms') }}" data-testid="cms-content-steps">
+                        {% for move in ['undo', 'redo'] %}
+                            {% set step = attribute(steps, move) %}
+                            {% set name = move == 'undo' ? 'Undo'|trans({}, 'theliacms') : 'Redo'|trans({}, 'theliacms') %}
+                            {% set nothing = move == 'undo' ? 'Nothing to undo.'|trans({}, 'theliacms') : 'Nothing to redo.'|trans({}, 'theliacms') %}
+                            <form method="post" action="{{ subject.url(move) }}" class="d-inline" data-cms-step="{{ move }}"
+                                  {%- if attribute(steps, move ~ '_section') %} data-cms-step-section="{{ attribute(steps, move ~ '_section') }}"{% endif %}
+                                  data-testid="cms-content-{{ move }}">
+                                <input type="hidden" name="_token" value="{{ assignToken() }}">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary" title="{{ step ?: nothing }}" aria-label="{{ step ?: name }}"{% if not step %} disabled{% endif %}>
+                                    <i class="bi {{ move == 'undo' ? 'bi-arrow-counterclockwise' : 'bi-arrow-clockwise' }}" aria-hidden="true"></i>
+                                </button>
+                            </form>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                {# Right after Undo and Redo, before the rest: it is the action that matters, and a group that wraps keeps it with the others. A model of a page type is never published: its pages are. #}
                 {% if may_publish and subject.publishable %}
                     <form method="post" action="{{ subject.url('publish') }}" class="d-inline" data-testid="cms-content-publish" data-cms-publish>
                         <input type="hidden" name="_token" value="{{ assignToken() }}">
@@ -148,13 +172,15 @@
                 {# The link every other screen gets above its content, which this
                    screen replaces; in a new tab, so the draft stays on show
                    while the help is read. #}
-                {% if help_url %}
-                    <p class="text-end small mb-2">
-                        <a href="{{ help_url }}" class="link-secondary" target="_blank" rel="noopener" data-testid="cms-documentation-link">
-                            <i class="bi bi-question-circle me-1" aria-hidden="true"></i>{{ 'Help on this screen'|trans({}, 'theliacms') }}
-                        </a>
-                    </p>
-                {% endif %}
+                <div class="cms-content__panel-top mb-2">
+                    {% if help_url %}
+                        <p class="small mb-0 ms-auto">
+                            <a href="{{ help_url }}" class="link-secondary" target="_blank" rel="noopener" data-testid="cms-documentation-link">
+                                <i class="bi bi-question-circle me-1" aria-hidden="true"></i>{{ 'Help on this screen'|trans({}, 'theliacms') }}
+                            </a>
+                        </p>
+                    {% endif %}
+                </div>
                 {% if not may_generate %}
                     <div class="alert alert-secondary small" role="status" data-testid="cms-content-no-right">
                         {{ 'Your profile may read this screen and publish, not ask the generator to write.'|trans({}, 'theliacms') }}

@@ -61,6 +61,8 @@ final readonly class ItemScreenTarget implements ContentScreenTarget
         'translate' => 'admin.cms.catalogue.content.translate',
         'translation' => 'admin.cms.catalogue.content.translation',
         'publish' => 'admin.cms.catalogue.content.publish',
+        'undo' => 'admin.cms.catalogue.content.undo',
+        'redo' => 'admin.cms.catalogue.content.redo',
     ];
 
     public function __construct(

@@ -60,7 +60,7 @@ body:has(.cms-content) {
 }
 
 .cms-content__actions {
-    /* The actions wrap as a group, Publish first: when the bar is too narrow
+    /* The actions wrap as a group, Undo, Redo and Publish first: when the bar is too narrow
        for them next to the title, they go to the next line together and
        Publish is never left alone on a line. */
     display: flex;
@@ -77,6 +77,20 @@ body:has(.cms-content) {
 .cms-content__actions .btn[aria-disabled="true"] {
     opacity: 0.65;
     cursor: not-allowed;
+}
+
+/* The top of the side panel: the help, on the right. */
+.cms-content__panel-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Undo and Redo, icons only, in the bar before Publish. */
+.cms-content__undo-redo {
+    display: inline-flex;
+    gap: 0.25rem;
 }
 
 .cms-content__notes {
@@ -754,8 +768,12 @@ body:has(.cms-content) {
     background: #fff;
 }
 
+/* As wide as the width picked, not as the longest of the list: the bar
+   keeps Undo, Redo and Publish on its line at 1440 px. A browser without
+   field-sizing keeps the width of the longest. */
 .cms-content__width {
     width: auto;
+    field-sizing: content;
 }
 
 /* At the width of a breakpoint, as in the toolkit of the theme: the frame
@@ -971,6 +989,11 @@ body:has(.cms-content) {
 
 .cms-content__item-fields .mb-3:last-child {
     margin-bottom: 0 !important;
+}
+
+/* The handle of a row, on the line of its first words. */
+.cms-content__item-row-grip {
+    line-height: 1.5rem;
 }
 
 .cms-content__item-tools {
