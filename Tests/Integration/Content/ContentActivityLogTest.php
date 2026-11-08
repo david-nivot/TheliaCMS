@@ -84,13 +84,13 @@ final class ContentActivityLogTest extends AdminScreenTestCase
         $this->post($pageBase.'/publish', $pageBase);
         $this->post($itemBase.'/publish', $itemBase);
 
-        self::assertSame(\sprintf('CMS page #%d published in %s', $pageId, $this->locale()), $this->entries($pageId)[0][3]);
+        self::assertSame(\sprintf('CMS page #%d published in %s', $pageId, $this->locale()), $this->entries($pageId, 'CMS page #')[0][3]);
         self::assertSame(
             [
                 ['UPDATE', 'admin.cms.page', $contentId, \sprintf('CMS content of the content #%d edited in %s', $contentId, $this->locale())],
                 ['PUBLISH', 'admin.cms.page', $contentId, \sprintf('CMS content of the content #%d published in %s', $contentId, $this->locale())],
             ],
-            $this->entries($contentId),
+            $this->entries($contentId, 'CMS content of the content #'),
         );
     }
 
@@ -127,11 +127,17 @@ final class ContentActivityLogTest extends AdminScreenTestCase
     /**
      * @return list<array{string, string, int, string}> action, resource, resource id, message
      */
-    private function entries(int $resourceId): array
+    private function entries(int $resourceId, string $about = ''): array
     {
         $entries = [];
 
+        // A page and a catalogue item share the resource of the log: when they
+        // get the same id, only the start of the message tells them apart.
         foreach (AdminLogQuery::create()->filterByResource(CmsResources::PAGE)->filterByResourceId($resourceId)->orderById()->find() as $entry) {
+            if (!str_starts_with((string) $entry->getMessage(), $about)) {
+                continue;
+            }
+
             $entries[] = [(string) $entry->getAction(), (string) $entry->getResource(), (int) $entry->getResourceId(), (string) $entry->getMessage()];
         }
 
