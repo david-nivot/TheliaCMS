@@ -7,6 +7,13 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Changed
+
+- **A page written by hand, without a brief, opens as a page being edited.**
+  The content screen no longer shows it the form of a first brief: a button
+  "Write it again from a brief" opens that form in its dialog, with the warning
+  that the draft is replaced. A page with no content still starts on the form.
+
 ## [2.17.0] - 2026-11-08
 
 ### Added

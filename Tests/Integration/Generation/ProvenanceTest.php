@@ -234,7 +234,7 @@ final class ProvenanceTest extends AdminScreenTestCase
             provenance: $withMark ? FakeAiGateway::provenance() : null,
         ));
         $url = \sprintf('/admin/cms/pages/%d/content?edit_language_id=%d', $pageId, Lang::getDefaultLanguage()->getId());
-        $form = $this->screen($url)->filter('[data-testid="cms-content-brief"] form')->form();
+        $form = $this->screen($url)->filter('[data-testid="cms-content-brief"] form[data-cms-generate]')->form();
         $form['cms_brief[text]'] = 'Une page de présentation.';
         self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()));
     }

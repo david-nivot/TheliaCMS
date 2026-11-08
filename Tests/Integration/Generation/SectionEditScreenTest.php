@@ -441,6 +441,20 @@ final class SectionEditScreenTest extends AdminScreenTestCase
         self::assertSame(0, $blank->filter('form[data-cms-confirm]')->count());
     }
 
+    public function testADraftWrittenByHandWithoutABriefKeepsTheBriefBehindAButton(): void
+    {
+        $screen = $this->screen($this->url($this->pageWith([new Section('intro', 'cms:richtext', ['html' => '<h2>À la main</h2>'])])));
+
+        self::assertSame('cms-content-brief-dialog', $screen->filter('[data-testid="cms-content-brief-open"]')->attr('commandfor'), 'Writing it from a brief is a button away.');
+        self::assertSame(1, $screen->filter('dialog#cms-content-brief-dialog form[data-cms-generate]')->count(), 'The form of the brief is in its dialog, not shown first.');
+        self::assertSame(1, $screen->filter('dialog#cms-content-brief-dialog [data-testid="cms-content-brief-replaces"]')->count(), 'The dialog says the draft is replaced.');
+        self::assertSame(0, $screen->filter('[data-testid="cms-content-brief-recall"]')->count(), 'No brief to recall.');
+
+        $blank = $this->screen($this->url($this->pageWith([])));
+        self::assertSame(0, $blank->filter('[data-testid="cms-content-brief-open"]')->count(), 'A blank page shows the form itself.');
+        self::assertSame(1, $blank->filter('[data-testid="cms-content-brief"] > form[data-cms-generate]')->count());
+    }
+
     public function testThePreviewOfAPageShowsTheWholePageOrItsSectionsAlone(): void
     {
         $page = $this->pageWith([new Section('intro', 'cms:richtext', ['html' => '<h2>Les sections seules</h2>'])]);

@@ -155,7 +155,7 @@ final class ItemContentScreenTest extends AdminScreenTestCase
             ['id' => 'faq', 'component' => 'cms:richtext', 'props' => ['html' => '<h2>Questions</h2><p>Sur devis.</p>']],
         ]], \JSON_THROW_ON_ERROR)));
 
-        $form = $this->screen($this->url($content))->filter('[data-testid="cms-content-brief"] form')->form();
+        $form = $this->screen($this->url($content))->filter('[data-testid="cms-content-brief"] form[data-cms-generate]')->form();
         $form['cms_brief[text]'] = 'Les questions fréquentes sur ce contenu.';
 
         self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()));
@@ -181,7 +181,7 @@ final class ItemContentScreenTest extends AdminScreenTestCase
         $this->api->answer(FakeAiGateway::response(json_encode(['version' => 1, 'sections' => [
             ['id' => 'intro', 'component' => 'cms:richtext', 'props' => ['html' => '<h2>Après</h2><p>Écrit par le générateur.</p>']],
         ]], \JSON_THROW_ON_ERROR)));
-        $form = $this->screen($this->url($content))->filter('[data-testid="cms-content-brief"] form')->form();
+        $form = $this->screen($this->url($content))->filter('[data-testid="cms-content-brief"] form[data-cms-generate]')->form();
         $form['cms_brief[text]'] = 'Les questions fréquentes.';
         self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()));
 
