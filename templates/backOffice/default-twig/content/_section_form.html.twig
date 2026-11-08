@@ -234,6 +234,10 @@
     {% set words = named ? (named.vars.value ?? '')|replace({'<': ' <'})|striptags|trim : '' %}
     {% set empty = 'A row without a title'|trans({}, 'theliacms') %}
     <li class="cms-content__item-row" data-cms-item>
+        {# Dragged by this handle only, like a section; the arrows stay the way
+           to do it from the keyboard. #}
+        <span class="cms-content__item-grip cms-content__item-row-grip" data-cms-item-grip hidden
+              title="{{ 'Drag to move this row'|trans({}, 'theliacms') }}" aria-hidden="true"><i class="bi bi-grip-vertical"></i></span>
         <details class="cms-content__item-fold" {{ item.vars.value is empty or not item.vars.valid ? 'open' }}>
             <summary class="cms-content__item-summary"><span class="cms-content__item-title" data-cms-item-title data-cms-item-empty="{{ empty|e('html_attr') }}" {% if named %}data-cms-item-source="{{ named.vars.id }}"{% endif %}>{{ words is not empty ? words|slice(0, 80) : empty }}</span></summary>
             <div class="cms-content__item-fields">

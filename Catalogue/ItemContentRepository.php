@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace TheliaCMS\Catalogue;
 
 use TheliaCMS\Content\Document;
+use TheliaCMS\Model\CmsContentStepQuery;
 use TheliaCMS\Model\CmsItemContent;
 use TheliaCMS\Model\CmsItemContentQuery;
 use TheliaCMS\Model\CmsItemRevisionQuery;
@@ -71,5 +72,6 @@ final readonly class ItemContentRepository
     {
         CmsItemContentQuery::create()->filterByItemType($type->value)->filterByItemId($id)->delete();
         CmsItemRevisionQuery::create()->filterByItemType($type->value)->filterByItemId($id)->delete();
+        CmsContentStepQuery::create()->filterByContentKind($type->value)->filterByContentId($id)->delete();
     }
 }

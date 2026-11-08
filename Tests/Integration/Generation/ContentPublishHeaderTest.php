@@ -29,7 +29,7 @@ use TheliaCMS\TheliaCMS;
 
 /**
  * The Publish button of the header of the content screen, of a page and of a
- * catalogue item: first of the actions, reachable by keyboard when there is
+ * catalogue item: first of the actions after Undo and Redo, reachable by keyboard when there is
  * nothing to publish and saying why, and a message after publishing that is
  * true of the page.
  */
@@ -37,20 +37,20 @@ final class ContentPublishHeaderTest extends AdminScreenTestCase
 {
     use BuildsItemTargets;
 
-    public function testPublishIsTheFirstOfTheActionsOfAPage(): void
+    public function testPublishIsTheFirstOfTheActionsOfAPageAfterUndoAndRedo(): void
     {
         $page = $this->createPage('Première action', published: false);
 
-        $actions = $this->screen($this->pageUrl($page->getId()))->filter('.cms-content__actions > *');
+        $actions = $this->screen($this->pageUrl($page->getId()))->filter('.cms-content__actions > :not([data-testid="cms-content-steps"])');
 
         self::assertSame('cms-content-publish', $actions->first()->attr('data-testid'));
     }
 
-    public function testPublishIsTheFirstOfTheActionsOfAnItem(): void
+    public function testPublishIsTheFirstOfTheActionsOfAnItemAfterUndoAndRedo(): void
     {
         $content = $this->itemWithADraft();
 
-        $actions = $this->screen($this->itemUrl($content))->filter('.cms-content__actions > *');
+        $actions = $this->screen($this->itemUrl($content))->filter('.cms-content__actions > :not([data-testid="cms-content-steps"])');
 
         self::assertSame('cms-content-publish', $actions->first()->attr('data-testid'));
     }

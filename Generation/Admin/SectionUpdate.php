@@ -235,7 +235,7 @@ final readonly class SectionUpdate
         return [];
     }
 
-    private static function postedSection(Request $request): ?string
+    public static function postedSection(Request $request): ?string
     {
         foreach ($request->request->all() as $name => $fields) {
             if (\is_string($name) && str_starts_with($name, SectionFormBuilder::PREFIX) && \is_array($fields) && \is_string($fields['section'] ?? null)) {
