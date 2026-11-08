@@ -716,6 +716,18 @@ final class SectionEditScreenTest extends AdminScreenTestCase
         self::assertSame(0, $form->filter('summary button')->count(), 'No button inside a summary.');
     }
 
+    public function testARowOfAListIsDraggedByAHandleOfItsOwn(): void
+    {
+        $form = $this->screen($this->url($this->pageWithHighlights()))->filter('[data-testid="cms-section-edit-hl"] form[data-cms-section-form]');
+        $translator = $this->getService(TranslatorInterface::class);
+
+        $grips = $form->filter('li[data-cms-item] > [data-cms-item-grip]');
+        self::assertSame(3, $grips->count(), 'Every row has its handle, beside its fold.');
+        self::assertSame($translator->trans('Drag to move this row', [], TheliaCMS::DOMAIN_NAME), $grips->first()->attr('title'));
+        self::assertSame('true', $grips->first()->attr('aria-hidden'), 'The arrows are the way to move a row from the keyboard.');
+        self::assertSame(0, $form->filter('[data-cms-grip]')->count(), 'The handle of a section would drag the whole section.');
+    }
+
     public function testEveryRowOfAListIsFoldedUnderItsFirstWordsAndTheListIsCounted(): void
     {
         $form = $this->screen($this->url($this->pageWithHighlights()))->filter('[data-testid="cms-section-edit-hl"] form[data-cms-section-form]');

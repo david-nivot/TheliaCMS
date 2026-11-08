@@ -28,6 +28,9 @@
     // Set when the screen is drawn again: where the preview stood, so the
     // preview drawn next shows the same place rather than the top of the page.
     var keptPosition = null;
+    // Set while a text of the preview is edited where it stands: tells
+    // whether what is typed there differs from the text it started from.
+    var inlineChanged = null;
 
     // The colour of the back office, for what the screen writes into the
     // preview: the theme of the site has its own.
@@ -151,6 +154,7 @@
         applyPreviewChoices(next);
         current.replaceWith(next);
         running = false;
+        inlineChanged = null;
         enhance(next);
 
         next.querySelectorAll("details").forEach(function (panel) {
@@ -303,6 +307,62 @@
         }).then(swap).catch(function () {
             window.location.assign(url);
         });
+    }
+
+    /* ---- Unsent input ---------------------------------------------- */
+
+    // What the forms of a dialog hold, read the same way each time: every
+    // entry in order, a file by its name and size. The rich-text editor
+    // writes its text back to its textarea as it changes, so it is read too.
+    function formState(dialog) {
+        var parts = [];
+
+        dialog.querySelectorAll("form:not([method=dialog])").forEach(function (form) {
+            new FormData(form).forEach(function (value, name) {
+                parts.push([name, typeof value === "string" ? value : value.name + ":" + value.size]);
+            });
+        });
+
+        return JSON.stringify(parts);
+    }
+
+    // Read when the dialog opens, once its editor is mounted: what it held
+    // before the editor typed anything.
+    function remember(dialog) {
+        if (dialog.cmsBaseline === undefined) {
+            dialog.cmsBaseline = formState(dialog);
+        }
+    }
+
+    // A form being sent is no longer unsent.
+    function changed(dialog) {
+        return dialog.cmsBaseline !== undefined && !dialog.cmsSent && formState(dialog) !== dialog.cmsBaseline;
+    }
+
+    function unsent() {
+        if (inlineChanged && inlineChanged()) {
+            return true;
+        }
+
+        return Array.prototype.some.call(document.querySelectorAll("[data-cms-content] dialog.cms-content__edit"), changed);
+    }
+
+    // A dialog whose form was changed is closed only when the editor says
+    // so; the screen is then drawn again from the draft, so the form shows
+    // what is saved, not what was typed and dropped.
+    function closeGuarded(dialog) {
+        if (!changed(dialog)) {
+            dialog.close();
+
+            return;
+        }
+
+        if (!window.confirm(labels.discard)) {
+            return;
+        }
+
+        dialog.close();
+        refresh(window.location.href);
     }
 
     /**
@@ -1221,8 +1281,18 @@
             section.classList.add("cms-section--editing");
 
             var plain = null;
+            // The text as the editor found it, read once the editor is in place.
+            var start = null;
+
+            function edited() {
+                return null !== start && box.isConnected && value() !== start;
+            }
 
             function leave() {
+                if (inlineChanged === edited) {
+                    inlineChanged = null;
+                }
+
                 box.remove();
                 var tools = text.querySelector(".cms-content-tools");
                 kept.forEach(function (node) { text.insertBefore(node, tools); });
@@ -1260,9 +1330,20 @@
                 });
             }
 
+            // Leaving drops what was typed: asked first when there is some.
+            function giveUp() {
+                if (edited() && !window.confirm(labels.discard)) {
+                    return;
+                }
+
+                leave();
+            }
+
+            inlineChanged = edited;
+
             cancel.addEventListener("click", function (event) {
                 event.preventDefault();
-                leave();
+                giveUp();
             });
             save.addEventListener("click", function (event) {
                 event.preventDefault();
@@ -1272,7 +1353,7 @@
                 if (event.key === "Escape") {
                     event.preventDefault();
                     event.stopPropagation();
-                    leave();
+                    giveUp();
                 } else if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
                     event.preventDefault();
                     send();
@@ -1287,6 +1368,7 @@
                 if (editor) {
                     // The editor keeps the textarea up to date as the text changes.
                     editor.mount(field);
+                    start = value();
                     var prose = box.querySelector(".ProseMirror");
 
                     if (prose) {
@@ -1299,6 +1381,7 @@
                     plain.innerHTML = html;
                     box.insertBefore(plain, bar);
                     field.hidden = true;
+                    start = value();
                     plain.focus();
                 }
             });
@@ -1791,7 +1874,7 @@
         // A section saved by hand comes back with the screen the server
         // redirects to, drawn in place like the end of a generation. When
         // the answer cannot be read, the form is sent the plain way.
-        root.querySelectorAll("form[data-cms-section-form], form[data-cms-remove], form[data-cms-restore], form[data-cms-move], form[data-cms-duplicate], form[data-cms-add], form[data-cms-keep]").forEach(function (form) {
+        root.querySelectorAll("form[data-cms-section-form], form[data-cms-remove], form[data-cms-restore], form[data-cms-move], form[data-cms-duplicate], form[data-cms-add], form[data-cms-keep], form[data-cms-step]").forEach(function (form) {
             form.addEventListener("submit", function (event) {
                 if (form.hasAttribute("data-cms-remove") && !window.confirm(labels.remove)) {
                     event.preventDefault();
@@ -1805,7 +1888,13 @@
                     return;
                 }
 
+                var dialog = form.closest("dialog");
+
                 if (!window.fetch || running) {
+                    if (dialog) {
+                        dialog.cmsSent = true;
+                    }
+
                     return;
                 }
 
@@ -1816,6 +1905,11 @@
                 }
 
                 event.preventDefault();
+
+                if (dialog) {
+                    dialog.cmsSent = true;
+                }
+
                 var button = form.querySelector("button[type=submit]");
 
                 if (form.hasAttribute("data-cms-add")) {
@@ -1842,10 +1936,10 @@
                 }).then(function (html) {
                     // The section the form is about, when it is one of the
                     // list: its edit dialog, its buttons to move, duplicate
-                    // or remove it.
+                    // or remove it. Undo and Redo name the section of their step.
                     var item = form.closest("[data-cms-section-item]");
 
-                    swap(html, item ? item.getAttribute("data-section") : null);
+                    swap(html, item ? item.getAttribute("data-section") : form.getAttribute("data-cms-step-section"));
                 }).catch(function () {
                     form.submit();
                 });
@@ -1876,6 +1970,7 @@
 
                 if (dialog && !dialog.open) {
                     dialog.showModal();
+                    remember(dialog);
                     focusFirstField(dialog, 0);
                 }
             });
@@ -1899,6 +1994,7 @@
                 }
             }
 
+            remember(dialog);
             focusFirstField(dialog, 10);
             adoptOverlays(dialog);
         }
@@ -1914,8 +2010,21 @@
 
                 event.preventDefault();
                 event.stopPropagation();
-                dialog.close();
+                closeGuarded(dialog);
             }, true);
+
+            // Any other way the browser asks to close it.
+            dialog.addEventListener("cancel", function (event) {
+                event.preventDefault();
+                closeGuarded(dialog);
+            });
+
+            dialog.querySelectorAll("form[method=dialog]").forEach(function (form) {
+                form.addEventListener("submit", function (event) {
+                    event.preventDefault();
+                    closeGuarded(dialog);
+                });
+            });
         });
 
         // The editor opens its special characters and its preview in windows
@@ -2079,8 +2188,114 @@
                     if (remove) {
                         remove.hidden = total <= min;
                     }
+
+                    var grip = row.querySelector(":scope > [data-cms-item-grip]");
+
+                    if (grip) {
+                        grip.hidden = total < 2;
+                    }
                 });
             }
+
+            function moved(row) {
+                if (status && list.getAttribute("data-cms-items-moved")) {
+                    status.textContent = list.getAttribute("data-cms-items-moved")
+                        .replace("%position%", String(Array.prototype.indexOf.call(rows.children, row) + 1))
+                        .replace("%total%", String(rows.children.length));
+                }
+            }
+
+            // A row is dragged by its handle only, inside its own list: the whole row draggable would steal
+            // the selection of the text of its fields. It moves while it is dragged; let go outside the
+            // list, it goes back where it was.
+            var dragged = null;
+            var draggedFrom = null;
+            var dropped = false;
+
+            rows.addEventListener("pointerdown", function (event) {
+                var grip = event.target.closest("[data-cms-item-grip]");
+
+                if (grip && grip.parentNode.parentNode === rows) {
+                    grip.parentNode.draggable = true;
+                }
+            });
+
+            rows.addEventListener("pointerup", function (event) {
+                var grip = event.target.closest("[data-cms-item-grip]");
+
+                if (grip) {
+                    grip.parentNode.draggable = false;
+                }
+            });
+
+            rows.addEventListener("dragstart", function (event) {
+                var row = event.target;
+
+                if (!row.hasAttribute || !row.hasAttribute("data-cms-item") || row.parentNode !== rows || !row.draggable) {
+                    return;
+                }
+
+                // The list of sections around the dialog would take it for a section dragged without its handle.
+                event.stopPropagation();
+                dragged = row;
+                draggedFrom = row.nextElementSibling;
+                dropped = false;
+                event.dataTransfer.effectAllowed = "move";
+                event.dataTransfer.setData("text/plain", "");
+                row.classList.add("cms-content__item--dragged");
+            });
+
+            rows.addEventListener("dragover", function (event) {
+                if (!dragged) {
+                    return;
+                }
+
+                event.preventDefault();
+                event.stopPropagation();
+                var over = event.target.closest && event.target.closest("[data-cms-item]");
+
+                while (over && over.parentNode !== rows) {
+                    over = over.parentNode.closest("[data-cms-item]");
+                }
+
+                if (!over || over === dragged) {
+                    return;
+                }
+
+                var box = over.getBoundingClientRect();
+                rows.insertBefore(dragged, event.clientY < box.top + box.height / 2 ? over : over.nextElementSibling);
+            });
+
+            rows.addEventListener("drop", function (event) {
+                if (dragged) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    dropped = true;
+                }
+            });
+
+            rows.addEventListener("dragend", function (event) {
+                if (!dragged || event.target !== dragged) {
+                    return;
+                }
+
+                var row = dragged;
+                dragged = null;
+                row.draggable = false;
+                row.classList.remove("cms-content__item--dragged");
+
+                if (!dropped) {
+                    rows.insertBefore(row, draggedFrom);
+                }
+
+                if (row.nextElementSibling === draggedFrom) {
+                    return;
+                }
+
+                renumber();
+                refresh();
+                moved(row);
+            });
 
             add.addEventListener("click", function () {
                 var holder = document.createElement("template");
@@ -2134,12 +2349,7 @@
                 // off, and the one of the other direction takes it.
                 var kept = move.disabled ? row.querySelector(":scope > .cms-content__item-tools > " + (up ? "[data-cms-item-down]" : "[data-cms-item-up]")) : move;
                 kept.focus();
-
-                if (status && list.getAttribute("data-cms-items-moved")) {
-                    status.textContent = list.getAttribute("data-cms-items-moved")
-                        .replace("%position%", String(Array.prototype.indexOf.call(rows.children, row) + 1))
-                        .replace("%total%", String(rows.children.length));
-                }
+                moved(row);
             });
 
             rows.addEventListener("input", function (event) {
@@ -2269,10 +2479,41 @@
 
     enhance(first);
 
+    // Ctrl+Z (Cmd+Z) undoes the latest change of the draft, Ctrl+Shift+Z or
+    // Ctrl+Y plays it again: outside a field, which keeps its own, and never
+    // while a dialog is open or an answer is awaited.
+    document.addEventListener("keydown", function (event) {
+        if (!(event.ctrlKey || event.metaKey) || event.altKey || event.defaultPrevented || running) {
+            return;
+        }
+
+        var key = event.key.toLowerCase();
+        var move = key === "z" ? (event.shiftKey ? "redo" : "undo") : (key === "y" && !event.shiftKey ? "redo" : null);
+        var target = event.target;
+
+        if (!move || document.querySelector("[data-cms-content] dialog[open]")
+            || (target instanceof Element && target.closest("input, textarea, select, [contenteditable]:not([contenteditable=false])"))) {
+            return;
+        }
+
+        var form = document.querySelector("[data-cms-content] form[data-cms-step=" + move + "]");
+        var button = form ? form.querySelector("button[type=submit]") : null;
+
+        if (!button || button.disabled) {
+            return;
+        }
+
+        event.preventDefault();
+        form.requestSubmit(button);
+    });
+
     window.addEventListener("beforeunload", function (event) {
         if (running) {
             event.preventDefault();
             event.returnValue = labels.leaving;
+        } else if (unsent()) {
+            event.preventDefault();
+            event.returnValue = labels.unsent;
         }
     });
 })();

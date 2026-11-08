@@ -263,8 +263,18 @@ revision labelled `draft`, the last five apart from the twenty publications
 (`cms_page_revision` and `cms_item_revision`, column `label`). **Previous
 drafts** on the content screen lists them; **Put it back** makes one the
 draft again and keeps the current one in turn, so a restore is undone the
-same way. Sections edited by hand are not snapshotted: a word changed by hand
-is cheap to change back.
+same way.
+
+**Undo** and **Redo**, in the bar of the content screen (or Ctrl+Z, and
+Ctrl+Shift+Z or Ctrl+Y, outside a field), go back over the changes made on
+that screen and play them again: a section edited, added, removed, moved or
+duplicated, an answer of the generator, a draft put back. Each change keeps the
+draft before and after it, with its provenance mark (`cms_content_step`, the
+last thirty per content and language). The stack is shared by everyone who
+edits the content; a step is played back only on the draft it left, so a draft
+changed since by another tab, another editor, an import or a command refuses it
+and nothing is written. A new change drops what Redo could still play. Imports
+and commands keep no step.
 
 Each section is also **edited by hand**, on the same screen, in a form read
 from the schema of its component: a field per prop, rows added and removed for
@@ -283,7 +293,9 @@ the generate right. The same right reorders the sections, dragged by their
 handle or moved one place up or down with the arrows (the way from the
 keyboard), duplicates them (the copy right after the original, with the same
 props and appearance), and removes them; what is online changes when the
-draft is published. **Add a section**, in the preview right after the last section
+draft is published. In a section form, the rows of a list move the same way,
+dragged by their handle inside their list or moved with the arrows, and the
+order is saved with the form. **Add a section**, in the preview right after the last section
 (or on the screen of a page holding nothing yet), lists the components the site
 offers: the one picked is added at the end of the draft with the example
 props of its component, and its text is then edited by hand. A page holding

@@ -7,6 +7,28 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **A section form is no longer closed with its typing lost.** Closing a
+  changed form (close button or Escape) asks first; keeping on editing leaves
+  it as it was, leaving resets it to the saved values. The text edited in the
+  preview asks the same on Cancel or Escape. Leaving the screen warns while a
+  form or the preview holds unsaved text. A form closed untouched, or saved,
+  asks nothing.
+- **Undo and Redo on the content screen.** Two icons in its bar, right before
+  Publish, and Ctrl+Z, Ctrl+Shift+Z or Ctrl+Y outside a field, go back over the
+  changes made on the screen and play them again: sections edited, added, removed, moved or
+  duplicated, answers of the generator (played again without a new call), a
+  draft put back. The button names the change and who made it. A draft
+  changed elsewhere since (another tab, another editor, an import) refuses the
+  step and nothing is written. The last thirty changes are kept per content
+  and language, for pages and catalogue items alike, in a new table
+  (`Config/update/2.17.0.sql`).
+- **The rows of a list are dragged into place** in a section form, by a handle
+  in front of each row, within their own list. The arrows stay the way from the
+  keyboard; the new place is announced, and a row let go outside its list goes
+  back where it was.
+
 ### Changed
 
 - On the screen of a page, **Duplicate**, **Set as home page** and **Remove
@@ -14,6 +36,11 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   tabs, they read as part of the Documents tab.
 - The **summary** of a page is half the height of its detailed description
   (160 px for 320 px), as befits a few lines.
+
+### Fixed
+
+- The "Free text" section is translated in French: its field, its help, its
+  description and the text of a new section were shown in English.
 
 ## [2.16.0] - 2026-11-06
 

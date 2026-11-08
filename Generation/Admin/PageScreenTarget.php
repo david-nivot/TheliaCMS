@@ -69,6 +69,8 @@ final readonly class PageScreenTarget implements ContentScreenTarget
         'translate' => 'admin.cms.pages.content.translate',
         'translation' => 'admin.cms.pages.content.translation',
         'publish' => 'admin.cms.pages.content.publish',
+        'undo' => 'admin.cms.pages.content.undo',
+        'redo' => 'admin.cms.pages.content.redo',
         'component_generate' => 'admin.cms.pages.content.component.generate',
         'component_keep' => 'admin.cms.pages.content.component.keep',
     ];
