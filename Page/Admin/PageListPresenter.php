@@ -16,6 +16,7 @@ namespace TheliaCMS\Page\Admin;
 
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Thelia\Model\Lang;
+use TheliaCMS\Locale\AlternateUrls;
 use TheliaCMS\Model\CmsTag;
 use TheliaCMS\Page\PageTagColor;
 use TheliaCMS\Page\PageTagRepository;
@@ -45,6 +46,7 @@ final readonly class PageListPresenter
         private PageTagRepository $tags,
         private PageTypeRepository $types,
         private StalePages $stalePages,
+        private AlternateUrls $alternates,
     ) {
     }
 
@@ -77,7 +79,7 @@ final readonly class PageListPresenter
 
         return [
             'is_filtering' => $filters->isFiltering(),
-            'rows' => $this->rows($rows, $filters, $languageId, null === $results, $this->stalePages->ids($locale, array_map(static fn (PageListRow $row): int => $row->id(), $rows)), $tags, $typeNames),
+            'rows' => $this->rows($rows, $filters, $languageId, $locale, null === $results, $this->stalePages->ids($locale, array_map(static fn (PageListRow $row): int => $row->id(), $rows)), $tags, $typeNames),
             'results' => $results,
             'live_count' => $liveCount,
             'filters' => $this->filterBar->present($filters, $languageId, $trashCount, $tagNames, $typeNames, $this->pages->statusCounts($locale), $authors),
@@ -157,7 +159,7 @@ final readonly class PageListPresenter
      *
      * @return list<array<string, mixed>>
      */
-    private function rows(array $rows, PageFilters $filters, int $languageId, bool $isTree, array $stale, array $allTags, array $typeNames): array
+    private function rows(array $rows, PageFilters $filters, int $languageId, string $locale, bool $isTree, array $stale, array $allTags, array $typeNames): array
     {
         $firstOfParent = [];
         $lastOfParent = [];
@@ -203,6 +205,9 @@ final readonly class PageListPresenter
                 // Written from another language whose draft changed since.
                 'is_stale_translation' => isset($stale[$id]),
                 'address' => $row->address,
+                // Opened from the list only when visitors can read it: the
+                // address of a page that is not online answers nothing.
+                'public_url' => $row->status->isOnline() && '' !== $row->address ? $this->alternates->onSiteOf($row->address, $locale) : null,
                 'depth' => $row->depth,
                 'level' => $row->depth + 1,
                 'child_count' => $row->childCount,

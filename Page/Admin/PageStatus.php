@@ -61,6 +61,15 @@ enum PageStatus: string
         return self::Published;
     }
 
+    /**
+     * What visitors read in this language: published, or published and
+     * changed since, the version online being the published one.
+     */
+    public function isOnline(): bool
+    {
+        return self::Published === $this || self::ModifiedSincePublish === $this;
+    }
+
     public function label(): string
     {
         return match ($this) {

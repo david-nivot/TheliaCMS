@@ -297,7 +297,16 @@
                                     <td class="text-muted small d-none d-xl-table-cell" data-testid="cms-page-type-{{ row.id }}">{{ row.type }}</td>
                                     <td class="text-muted small cms-page-address"
                                         {% if row.address %}title="{{ row.address }}"{% endif %}>
-                                        {{ row.address ?: 'No address in this language yet'|trans({}, 'theliacms') }}
+                                        {% if row.public_url %}
+                                            {# The mark first: a long address is cut at the end, and the
+                                               sign that the link leaves the back office must stay. #}
+                                            <a href="{{ row.public_url }}" target="_blank" rel="noopener" class="link-secondary"
+                                               data-testid="cms-page-address-link-{{ row.id }}">
+                                                <i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>{{ row.address }}<span class="visually-hidden"> ({{ 'Opens in a new tab'|trans({}, 'theliacms') }})</span>
+                                            </a>
+                                        {% else %}
+                                            {{ row.address ?: 'No address in this language yet'|trans({}, 'theliacms') }}
+                                        {% endif %}
                                     </td>
                                     <td class="text-end datatable-sticky-actions">
                                         <div class="d-inline-flex gap-1">

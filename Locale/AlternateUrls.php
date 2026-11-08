@@ -108,6 +108,17 @@ final readonly class AlternateUrls
         return $this->sameUrlAnotherLanguage($request, $locale);
     }
 
+    /**
+     * A path of the site as visitors reach it in a language: on the domain of
+     * that language when each language has its own, on the shop otherwise.
+     */
+    public function onSiteOf(string $path, string $locale): ?string
+    {
+        $request = $this->requestStack->getMainRequest();
+
+        return null === $request ? null : $this->absolute($path, $locale, $request);
+    }
+
     private function cmsPage(Request $request, string $locale): ?string
     {
         $pageId = $request->query->getInt(TheliaCMS::PAGE_VIEW.'_id');
