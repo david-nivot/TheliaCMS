@@ -13,6 +13,13 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   The content screen no longer shows it the form of a first brief: a button
   "Write it again from a brief" opens that form in its dialog, with the warning
   that the draft is replaced. A page with no content still starts on the form.
+- **The filters of the list of pages hold on one line.** Search, Status, tag,
+  type, Date, author, and the sort at the end of the line: the table starts
+  above the fold at 1440 × 900 (the filters took about 330 px, now about 60).
+  Status (the states of publication and "On the site") and Date (the date, from,
+  to) are menus that open without JavaScript; their button counts the filters
+  on in them, and the chips under the line still name each one. The address of
+  the list does not change.
 
 ## [2.17.0] - 2026-11-08
 
