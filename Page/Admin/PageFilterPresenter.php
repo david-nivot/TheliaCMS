@@ -47,6 +47,9 @@ final readonly class PageFilterPresenter
      *     is_filtering: bool,
      *     is_empty: bool,
      *     advanced_count: int,
+     *     status_menu_count: int,
+     *     period_menu_count: int,
+     *     script_version: string,
      *     status_options: list<array{value: string, label: string, badge: string, checked: bool, count: int}>,
      *     visibility: string,
      *     tag_options: list<array{value: string, label: string, selected: bool}>,
@@ -88,6 +91,12 @@ final readonly class PageFilterPresenter
             'is_filtering' => $filters->isFiltering(),
             'is_empty' => $filters->isEmpty(),
             'advanced_count' => $filters->advancedCount(),
+            // What the closed menus of the bar say is on inside them: a filter
+            // folded in a menu is still read on its button.
+            'status_menu_count' => \count($filters->statuses) + (null === $filters->visible ? 0 : 1),
+            'period_menu_count' => null === $filters->date ? 0 : 1,
+            // A changed script is fetched again, not read from the cache of the browser.
+            'script_version' => substr(hash('xxh3', (string) @filemtime(__DIR__.'/../../templates/backOffice/default-twig/assets/page-filters.js')), 0, 12),
             'status_options' => $this->statusOptions($filters, $counts),
             'visibility' => match ($filters->visible) {
                 true => PageFilters::VISIBLE_ONLY,
