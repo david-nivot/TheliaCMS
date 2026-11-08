@@ -18,6 +18,7 @@ use Symfony\Component\HttpFoundation\Request;
 use TheliaCMS\Media\MediaFilter;
 use TheliaCMS\Media\MediaKind;
 use TheliaCMS\Media\MediaOrder;
+use TheliaCMS\Media\MediaView;
 
 /**
  * What the list of the media asks for, read from its address so a filtered
@@ -33,6 +34,7 @@ final readonly class MediaQuery
     /**
      * @param list<int>  $images only these images, as a sending of files names them: read by the describe queue, not by the list
      * @param ?MediaKind $kind   only the images or only the videos; both when null, and never read from the address here
+     * @param MediaView  $view   cards or rows: kept in the address like a filter, so the pages, an image opened and the way back keep it
      */
     public function __construct(
         public ?string $search = null,
@@ -42,6 +44,7 @@ final readonly class MediaQuery
         public int $page = 1,
         public array $images = [],
         public ?MediaKind $kind = null,
+        public MediaView $view = MediaView::Grid,
     ) {
     }
 
@@ -51,7 +54,7 @@ final readonly class MediaQuery
      */
     public function ofKind(MediaKind $kind): self
     {
-        return new self($this->search, $this->filter, $this->tag, $this->order, $this->page, $this->images, $kind);
+        return new self($this->search, $this->filter, $this->tag, $this->order, $this->page, $this->images, $kind, $this->view);
     }
 
     /**
@@ -70,6 +73,7 @@ final readonly class MediaQuery
             order: MediaOrder::tryFrom($request->query->getString('order')) ?? MediaOrder::Newest,
             page: max(1, $request->query->getInt('page', 1)),
             images: self::imageIds($request->query->getString('images')),
+            view: MediaView::tryFrom($request->query->getString('view')) ?? MediaView::Grid,
         );
     }
 
@@ -89,6 +93,17 @@ final readonly class MediaQuery
     }
 
     /**
+     * The address of this list drawn in another view, the page kept: the
+     * same images, only drawn otherwise.
+     *
+     * @return array<string, string|int>
+     */
+    public function viewParameters(MediaView $view): array
+    {
+        return (new self($this->search, $this->filter, $this->tag, $this->order, $this->page, view: $view))->addressParameters();
+    }
+
+    /**
      * The parameters of the address of this list, the page aside, as links
      * to another page of it keep them.
      *
@@ -101,6 +116,7 @@ final readonly class MediaQuery
             'filter' => $this->filter?->value,
             'tag' => $this->tag,
             'order' => MediaOrder::Newest === $this->order ? null : $this->order->value,
+            'view' => MediaView::Grid === $this->view ? null : $this->view->value,
         ], static fn (?string $value): bool => null !== $value);
     }
 

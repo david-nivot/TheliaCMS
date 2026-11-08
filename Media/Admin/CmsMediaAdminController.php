@@ -32,6 +32,7 @@ use TheliaCMS\Media\CmsMediaLibrary;
 use TheliaCMS\Media\MediaFilter;
 use TheliaCMS\Media\MediaKind;
 use TheliaCMS\Media\MediaOrder;
+use TheliaCMS\Media\MediaView;
 use TheliaCMS\Media\Svg\SvgUpload;
 use TheliaCMS\Page\Admin\EditLanguage;
 use TheliaCMS\Security\CmsResources;
@@ -79,6 +80,7 @@ final readonly class CmsMediaAdminController
             'query' => $query,
             'filters' => MediaFilter::cases(),
             'orders' => MediaOrder::cases(),
+            'views' => MediaView::cases(),
             'tags' => $this->library->tagCounts(),
             'has_library' => $tally->total > 0,
             'accepted_mime_types' => implode(',', CmsMediaType::acceptedUploadMimeTypes()),
