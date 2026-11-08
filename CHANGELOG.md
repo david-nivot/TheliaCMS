@@ -7,6 +7,14 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Changed
+
+- On the screen of a page, **Duplicate**, **Set as home page** and **Remove
+  the AI mark** move to the header, next to Edit content and Preview: under the
+  tabs, they read as part of the Documents tab.
+- The **summary** of a page is half the height of its detailed description
+  (160 px for 320 px), as befits a few lines.
+
 ## [2.16.0] - 2026-11-06
 
 ### Added
