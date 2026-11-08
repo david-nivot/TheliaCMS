@@ -309,20 +309,29 @@
 
                 {# Once the page has a brief, the screen recalls it in a few lines
                    and the form opens in a dialog: the room goes to the sections.
-                   Without one, the form is the first thing to fill. #}
+                   A page written by hand, with no brief, is edited the same way:
+                   writing it from a brief is a button away, never the first
+                   thing shown. Without content nor brief, the form is the first
+                   thing to fill. #}
                 <section class="cms-content__section" data-testid="cms-content-brief">
-                    {% if last_brief %}
-                        <h2 class="cms-content__heading">{{ 'The brief'|trans({}, 'theliacms') }}</h2>
-                        <p class="cms-content__brief-recall" data-testid="cms-content-brief-recall">{{ last_brief.text }}</p>
-                        {% if last_brief.tone or last_brief.audience %}
-                            <p class="cms-content__brief-meta">
-                                {% if last_brief.tone %}<span>{{ 'Tone: %tone%'|trans({ '%tone%': last_brief.tone }, 'theliacms') }}</span>{% endif %}
-                                {% if last_brief.audience %}<span>{{ 'Audience: %audience%'|trans({ '%audience%': last_brief.audience }, 'theliacms') }}</span>{% endif %}
-                            </p>
+                    {% if last_brief or subject.hasContent %}
+                        {% if last_brief %}
+                            <h2 class="cms-content__heading">{{ 'The brief'|trans({}, 'theliacms') }}</h2>
+                            <p class="cms-content__brief-recall" data-testid="cms-content-brief-recall">{{ last_brief.text }}</p>
+                            {% if last_brief.tone or last_brief.audience %}
+                                <p class="cms-content__brief-meta">
+                                    {% if last_brief.tone %}<span>{{ 'Tone: %tone%'|trans({ '%tone%': last_brief.tone }, 'theliacms') }}</span>{% endif %}
+                                    {% if last_brief.audience %}<span>{{ 'Audience: %audience%'|trans({ '%audience%': last_brief.audience }, 'theliacms') }}</span>{% endif %}
+                                </p>
+                            {% endif %}
+                            <button type="button" class="btn btn-sm btn-outline-primary" command="show-modal" commandfor="cms-content-brief-dialog" data-cms-dialog-open data-testid="cms-content-brief-open">
+                                <i class="bi bi-pencil" aria-hidden="true"></i> {{ 'Change the brief'|trans({}, 'theliacms') }}
+                            </button>
+                        {% else %}
+                            <button type="button" class="btn btn-sm btn-outline-primary" command="show-modal" commandfor="cms-content-brief-dialog" data-cms-dialog-open data-testid="cms-content-brief-open">
+                                <i class="bi bi-stars" aria-hidden="true"></i> {{ brief_heading }}
+                            </button>
                         {% endif %}
-                        <button type="button" class="btn btn-sm btn-outline-primary" command="show-modal" commandfor="cms-content-brief-dialog" data-cms-dialog-open data-testid="cms-content-brief-open">
-                            <i class="bi bi-pencil" aria-hidden="true"></i> {{ 'Change the brief'|trans({}, 'theliacms') }}
-                        </button>
                         <dialog class="cms-content__edit" id="cms-content-brief-dialog" aria-labelledby="cms-content-brief-title" data-testid="cms-content-brief-dialog">
                             <div class="cms-content__add-head">
                                 <h2 class="cms-content__heading mb-0" id="cms-content-brief-title">{{ brief_heading }}</h2>

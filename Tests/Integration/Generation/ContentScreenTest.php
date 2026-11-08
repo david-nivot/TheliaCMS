@@ -100,7 +100,7 @@ final class ContentScreenTest extends AdminScreenTestCase
         self::assertSame(1, $screen->filter('[data-testid="cms-content-empty"]')->count(), 'A page without content shows the empty state instead of a preview.');
         self::assertSame(0, $screen->filter('[data-testid="cms-content-frame"]')->count());
         self::assertSame(0, $screen->filter('[data-testid="cms-content-sections"]')->count());
-        self::assertSame(1, $screen->filter('[data-testid="cms-content-brief"] form input[name="_token"]')->count(), 'The brief form carries the token.');
+        self::assertSame(1, $screen->filter('[data-testid="cms-content-brief"] form[data-cms-generate] input[name="_token"]')->count(), 'The brief form carries the token.');
         self::assertSame(0, $screen->filter('[data-testid="cms-content-brief-dialog"]')->count(), 'Without a brief, the form is in the screen, the first thing to fill.');
         self::assertSame('true', $screen->filter('[data-testid="cms-content-publish"] button')->attr('aria-disabled'), 'Nothing to publish yet.');
         self::assertNull($screen->filter('[data-testid="cms-content-publish"] button')->attr('disabled'), 'The button stays in the tab order.');
@@ -118,7 +118,7 @@ final class ContentScreenTest extends AdminScreenTestCase
         $this->api->answer(FakeAiGateway::response(self::document([
             ['id' => 'intro', 'component' => 'cms:richtext', 'props' => ['html' => '<h2>Après</h2><p>Écrit par le générateur.</p>']],
         ])));
-        $form = $this->screen($url)->filter('[data-testid="cms-content-brief"] form')->form();
+        $form = $this->screen($url)->filter('[data-testid="cms-content-brief"] form[data-cms-generate]')->form();
         $form['cms_brief[text]'] = 'Une page qui présente nos services.';
         self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()));
 
@@ -153,7 +153,7 @@ final class ContentScreenTest extends AdminScreenTestCase
             ['id' => 'faq', 'component' => 'cms:richtext', 'props' => ['html' => '<h2>Questions</h2><p>Sur devis.</p>']],
         ])));
 
-        $form = $this->screen($url)->filter('[data-testid="cms-content-brief"] form')->form();
+        $form = $this->screen($url)->filter('[data-testid="cms-content-brief"] form[data-cms-generate]')->form();
         $form['cms_brief[text]'] = 'Une page qui présente nos services de conseil.';
         $form['cms_brief[tone]'] = 'direct';
 
@@ -203,7 +203,7 @@ final class ContentScreenTest extends AdminScreenTestCase
             ? new MockResponse('', ['http_code' => 404])
             : new MockResponse('Fondée en 1987 à Lyon.', ['response_headers' => ['Content-Type' => 'text/plain']]))));
 
-        $form = $this->screen($url)->filter('[data-testid="cms-content-brief"] form')->form();
+        $form = $this->screen($url)->filter('[data-testid="cms-content-brief"] form[data-cms-generate]')->form();
         $form['cms_brief[text]'] = 'Résume https://example.com/a-propos et https://example.com/prive.';
 
         self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()));
@@ -319,7 +319,7 @@ final class ContentScreenTest extends AdminScreenTestCase
         $other = $this->createPage('Other', published: false);
         $this->api->answer(FakeAiGateway::response(self::document([['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h2>Other</h2>']]])));
 
-        $form = $this->screen($this->url($other->getId()))->filter('[data-testid="cms-content-brief"] form')->form();
+        $form = $this->screen($this->url($other->getId()))->filter('[data-testid="cms-content-brief"] form[data-cms-generate]')->form();
         $form['cms_brief[text]'] = 'Something.';
         $this->send('POST', $form->getUri(), $form->getPhpValues());
         $row = CmsPageGenerationQuery::create()->filterByTargetId($other->getId())->findOne();
@@ -340,7 +340,7 @@ final class ContentScreenTest extends AdminScreenTestCase
 
         foreach ([$page, $other] as $target) {
             $this->api->answer(FakeAiGateway::response($answer()));
-            $form = $this->screen($this->url($target->getId()))->filter('[data-testid="cms-content-brief"] form')->form();
+            $form = $this->screen($this->url($target->getId()))->filter('[data-testid="cms-content-brief"] form[data-cms-generate]')->form();
             $form['cms_brief[text]'] = 'Une page de services.';
             self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()));
         }
@@ -360,7 +360,7 @@ final class ContentScreenTest extends AdminScreenTestCase
             ->answer(FakeAiGateway::response(toolCalls: [new AiToolCall('toolu_1', 'search_pages', ['query' => ''])]))
             ->answer(FakeAiGateway::response(self::document([['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h2>Streamed</h2><p>Done.</p>']]])));
 
-        $form = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-content-brief"] form')->form();
+        $form = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-content-brief"] form[data-cms-generate]')->form();
         $form['cms_brief[text]'] = 'A streamed page.';
 
         $this->client->request('POST', $form->getUri(), $form->getPhpValues(), [], [...self::XHR, 'HTTP_ACCEPT' => 'text/event-stream']);
@@ -385,7 +385,7 @@ final class ContentScreenTest extends AdminScreenTestCase
         $page = $this->createPage('Refused', published: false);
         $this->api->answer(FakeAiGateway::response(finishReason: AiFinishReason::ContentFilter));
 
-        $form = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-content-brief"] form')->form();
+        $form = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-content-brief"] form[data-cms-generate]')->form();
         $form['cms_brief[text]'] = 'Something the model declines.';
 
         $this->client->request('POST', $form->getUri(), $form->getPhpValues(), [], [...self::XHR, 'HTTP_ACCEPT' => 'text/event-stream']);
@@ -409,7 +409,7 @@ final class ContentScreenTest extends AdminScreenTestCase
             ->answer(FakeAiGateway::response($unknown))
             ->answer(FakeAiGateway::response(self::document([['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h2>Details</h2>']]])));
 
-        $form = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-content-brief"] form')->form();
+        $form = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-content-brief"] form[data-cms-generate]')->form();
         $form['cms_brief[text]'] = 'A page with details.';
         $this->send('POST', $form->getUri(), $form->getPhpValues());
 
@@ -441,7 +441,7 @@ final class ContentScreenTest extends AdminScreenTestCase
             ->cutAfter(['{"version"'], new AiProviderUnavailableException('anthropic-main', true, 'overloaded_error'))
             ->answer(FakeAiGateway::response(self::document([['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h2>Cut</h2><p>Done.</p>']]])));
 
-        $form = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-content-brief"] form')->form();
+        $form = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-content-brief"] form[data-cms-generate]')->form();
         $form['cms_brief[text]'] = 'A page cut once.';
 
         $this->client->request('POST', $form->getUri(), $form->getPhpValues(), [], [...self::XHR, 'HTTP_ACCEPT' => 'text/event-stream']);
@@ -499,7 +499,7 @@ final class ContentScreenTest extends AdminScreenTestCase
             'left_out' => [$missing, ' ', '<b>Aucun moule</b> du catalogue.', 42],
         ], \JSON_THROW_ON_ERROR | \JSON_UNESCAPED_UNICODE)));
 
-        $form = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-content-brief"] form')->form();
+        $form = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-content-brief"] form[data-cms-generate]')->form();
         $form['cms_brief[text]'] = 'La recette de la tarte aux pommes avec une photo de la tarte sortant du four.';
 
         self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()));
@@ -581,7 +581,7 @@ final class ContentScreenTest extends AdminScreenTestCase
     {
         $page = $this->createPage('Empty brief', published: false);
 
-        $form = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-content-brief"] form')->form();
+        $form = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-content-brief"] form[data-cms-generate]')->form();
         $form['cms_brief[text]'] = '   ';
 
         self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()));

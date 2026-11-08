@@ -100,7 +100,7 @@ final class ContentUndoTest extends AdminScreenTestCase
         $this->api->answer(FakeAiGateway::response(json_encode(['version' => 1, 'sections' => [
             ['id' => 'intro', 'component' => 'cms:richtext', 'props' => ['html' => '<h2>Après</h2><p>Écrit par le générateur.</p>']],
         ]], \JSON_THROW_ON_ERROR), provenance: FakeAiGateway::provenance()));
-        $form = $this->screen($url)->filter('[data-testid="cms-content-brief"] form')->form();
+        $form = $this->screen($url)->filter('[data-testid="cms-content-brief"] form[data-cms-generate]')->form();
         $form['cms_brief[text]'] = 'Une page qui présente nos services.';
         self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()));
         self::assertNotNull($this->content($page)?->getDraftProvenance(), 'The answer marks the draft as the model’s work.');

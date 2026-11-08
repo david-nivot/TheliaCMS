@@ -198,7 +198,7 @@ final class PageTemplateScreenTest extends AdminScreenTestCase
         ], \JSON_THROW_ON_ERROR)));
 
         $url = \sprintf('/admin/cms/pages/%d/content', $page->getId());
-        $form = $this->screen($url)->filter('[data-testid="cms-content-brief"] form')->form();
+        $form = $this->screen($url)->filter('[data-testid="cms-content-brief"] form[data-cms-generate]')->form();
         $form['cms_brief[text]'] = 'La tarte aux pommes de grand-mère.';
 
         self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()));
