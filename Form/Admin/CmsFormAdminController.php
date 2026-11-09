@@ -72,6 +72,7 @@ final readonly class CmsFormAdminController
             'edit_locale' => $lang->getLocale(),
             'edit_language_id' => $lang->getId(),
             'may_write' => $this->mayWrite(AccessManager::CREATE),
+            'may_read_answers' => $this->mayReadAnswers(),
         ]));
     }
 
@@ -101,6 +102,7 @@ final readonly class CmsFormAdminController
             'edit_locale' => $lang->getLocale(),
             'edit_language_id' => $lang->getId(),
             'may_write' => true,
+            'may_read_answers' => false,
             'submission_count' => 0,
         ]));
     }
@@ -200,6 +202,7 @@ final readonly class CmsFormAdminController
             'edit_locale' => $locale,
             'edit_language_id' => $lang->getId(),
             'may_write' => $this->mayWrite(AccessManager::UPDATE),
+            'may_read_answers' => $this->mayReadAnswers(),
             'submission_count' => $this->repository->submissionCount($record),
         ]));
     }
@@ -334,6 +337,11 @@ final readonly class CmsFormAdminController
     private function mayWrite(string $access): bool
     {
         return $this->support->isGranted(CmsResources::FORM, $access);
+    }
+
+    private function mayReadAnswers(): bool
+    {
+        return $this->support->isGranted(CmsResources::FORM_ANSWERS, AccessManager::VIEW);
     }
 
     private function denyUnless(string $access): void

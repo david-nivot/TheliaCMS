@@ -7,6 +7,46 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **An answer to a form is new, handled or archived.** It arrives as new; the
+  list of answers shows the new and handled ones, with a tab per status and one
+  for all, each counting for the address searched. A status is changed on one
+  answer or on a selection, and a selection can also be deleted at once; the
+  export takes the status shown, and the JSON export carries it. The mail to
+  the recipients links to the answer in the back office. Updating the module
+  plays `Config/update/2.19.0.sql`, which adds the column (every answer kept
+  starts as new). An archived answer is still deleted at the end of the
+  retention period of its form.
+- **The answers of a form are filtered by the day they arrived and by the value
+  given to a question with choices** (a list, a choice among several, a
+  country), on one line above the status tabs, which count for those filters.
+  The pages, the gestures on a selection and the export keep the filters. A
+  choice renamed since keeps its older answers under the old wording, offered
+  in the filter as "no longer offered".
+- **A summary of the answers of a form** counts them rather than listing them:
+  how many arrived each day, week or month (chosen from the length of the
+  period), how many are new, handled and archived, and how each question with
+  choices was answered, each value leading to its answers. It follows the
+  filters and the tabs of the list, and is reached from it.
+
+### Changed
+
+- **The CSV export of the answers opens in Excel as columns.** When the back
+  office is in French, its cells are separated by a semicolon, the list
+  separator Excel expects there; in another language, by a comma, as before.
+  The export follows the filters of the list, and is written as it is read, a
+  batch of answers at a time, so a form with years of answers no longer has
+  them all in memory at once.
+- **The answers of a form have rights of their own.** Reading and deleting
+  them take `admin.cms.form.answers`, exporting them takes
+  `admin.cms.form.answers.export`; `admin.cms.form` now covers building the
+  forms only. Without the right, the list of forms and the form screen show no
+  link to the answers, and the export buttons are gone. On the update, each
+  profile is given on the two new rights the access it had on
+  `admin.cms.form`, so nobody loses what they could do; the Editor profile has
+  both.
+
 ## [2.18.0] - 2026-11-08
 
 ### Added

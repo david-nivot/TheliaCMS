@@ -27,6 +27,7 @@ use Thelia\Model\ConfigQuery;
 use Thelia\Model\LangQuery;
 use Thelia\Model\ProfileQuery;
 use Thelia\Model\ProfileResource;
+use Thelia\Model\ProfileResourceQuery;
 use Thelia\Model\Resource;
 use Thelia\Model\ResourceQuery;
 use Thelia\Model\RewritingUrlQuery;
@@ -289,15 +290,38 @@ class TheliaCMS extends BaseModule
             $resource->save();
 
             // Existing profiles start with no access at all: an administrator
-            // opens them deliberately from the profile screen.
+            // opens them deliberately from the profile screen. A right split
+            // off an older one is the exception: each profile keeps what it
+            // could do, with the access it had on the older right.
+            $origin = CmsResources::splitFrom()[$code] ?? null;
+
             foreach (ProfileQuery::create()->find() as $profile) {
                 (new ProfileResource())
                     ->setProfileId($profile->getId())
                     ->setResourceId($resource->getId())
-                    ->setAccess(0)
+                    ->setAccess(null === $origin ? 0 : $this->accessOf($profile->getId(), $origin))
                     ->save();
             }
         }
+    }
+
+    /**
+     * The access a profile has on a resource of the module, 0 when it has none.
+     */
+    private function accessOf(int $profileId, string $code): int
+    {
+        $resource = ResourceQuery::create()->findOneByCode($code);
+
+        if (null === $resource) {
+            return 0;
+        }
+
+        $granted = ProfileResourceQuery::create()
+            ->filterByProfileId($profileId)
+            ->filterByResourceId($resource->getId())
+            ->findOne();
+
+        return null === $granted ? 0 : (int) $granted->getAccess();
     }
 
     private function resourceTitle(string $code, string $locale): string
@@ -306,6 +330,8 @@ class TheliaCMS extends BaseModule
             CmsResources::PAGE => ['en_US' => 'CMS: pages', 'fr_FR' => 'CMS : pages'],
             CmsResources::MENU => ['en_US' => 'CMS: menus', 'fr_FR' => 'CMS : menus'],
             CmsResources::FORM => ['en_US' => 'CMS: forms', 'fr_FR' => 'CMS : formulaires'],
+            CmsResources::FORM_ANSWERS => ['en_US' => 'CMS: answers to the forms', 'fr_FR' => 'CMS : réponses aux formulaires'],
+            CmsResources::FORM_ANSWERS_EXPORT => ['en_US' => 'CMS: export of the answers', 'fr_FR' => 'CMS : export des réponses'],
             CmsResources::MEDIA => ['en_US' => 'CMS: media', 'fr_FR' => 'CMS : médias'],
             CmsResources::SETTINGS => ['en_US' => 'CMS: settings', 'fr_FR' => 'CMS : réglages'],
             CmsResources::CUSTOM_CODE => ['en_US' => 'CMS: custom code', 'fr_FR' => 'CMS : code libre'],

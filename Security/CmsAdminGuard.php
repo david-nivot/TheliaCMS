@@ -171,7 +171,14 @@ final readonly class CmsAdminGuard
 
     private function resourceFor(string $path): string
     {
-        $section = explode('/', trim(substr($path, \strlen(self::PREFIX)), '/'))[0] ?? '';
+        $segments = explode('/', trim(substr($path, \strlen(self::PREFIX)), '/'));
+        $section = $segments[0];
+
+        // The answers of a form (`forms/{id}/submissions…`) are personal data:
+        // building the forms does not open them.
+        if ('forms' === $section && 'submissions' === ($segments[2] ?? null)) {
+            return CmsResources::FORM_ANSWERS;
+        }
 
         return self::SECTION_RESOURCES[$section] ?? CmsResources::PAGE;
     }

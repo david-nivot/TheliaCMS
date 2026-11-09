@@ -123,6 +123,51 @@ final class SubmissionExportTest extends TestCase
         self::assertTrue($decoded[0]['answers'][0]['value']);
     }
 
+    public function testTheSeparatorIsTheOneExcelExpectsInTheLanguageOfTheScreen(): void
+    {
+        self::assertSame(';', SubmissionExport::separatorFor('fr_FR'));
+        self::assertSame(';', SubmissionExport::separatorFor('fr_CA'));
+        self::assertSame(',', SubmissionExport::separatorFor('en_US'));
+        self::assertSame(',', SubmissionExport::separatorFor('es_ES'));
+
+        $lines = $this->lines(SubmissionExport::toCsv([$this->submission(7, [
+            ['name' => 'message', 'label' => 'Votre message', 'value' => 'Oui; et 1,5 kg'],
+        ])], self::HEADINGS, 'Oui', 'Non', ';'));
+
+        self::assertSame('Reference;"Received on";"Email address";Language;"Votre message"', $lines[0]);
+        self::assertSame('7;"2026-08-07 10:00:00";camille@example.org;fr_FR;"Oui; et 1,5 kg"', $lines[1], 'A cell holding the separator is quoted, a comma left alone.');
+    }
+
+    public function testTheSubmissionsAreReadTwiceAndNeverHeldTogether(): void
+    {
+        $readings = 0;
+        $read = function () use (&$readings): \Generator {
+            ++$readings;
+
+            yield $this->submission(1, [['name' => 'name', 'label' => 'Your name', 'value' => 'Camille']]);
+            yield $this->submission(2, [['name' => 'phone', 'label' => 'Phone', 'value' => '0600']]);
+        };
+
+        $lines = $this->lines(SubmissionExport::toCsv($read, self::HEADINGS, 'Yes', 'No'));
+
+        self::assertSame(2, $readings, 'Once for the columns, once for the rows.');
+        self::assertSame('Reference,"Received on","Email address",Language,"Your name",Phone', $lines[0], 'A question met on a later row still has its column.');
+        self::assertSame('2,"2026-08-07 10:00:00",camille@example.org,fr_FR,,0600', $lines[2]);
+    }
+
+    public function testJsonWrittenOneSubmissionAtATimeIsTheWholeArrayPrettyPrinted(): void
+    {
+        $submissions = [
+            $this->submission(1, [['name' => 'message', 'label' => 'Message', 'value' => "Line one\nline two / déjà"]]),
+            $this->submission(2, [['name' => 'consent', 'label' => 'I agree', 'value' => true]]),
+        ];
+        $flags = \JSON_PRETTY_PRINT | \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES | \JSON_THROW_ON_ERROR;
+
+        self::assertSame(json_encode($submissions, $flags), SubmissionExport::toJson((static fn (): \Generator => yield from $submissions)()));
+        self::assertSame(json_encode([$submissions[0]], $flags), SubmissionExport::toJson([$submissions[0]]));
+        self::assertSame('[]', SubmissionExport::toJson([]));
+    }
+
     /**
      * @param list<array<string, mixed>> $answers
      *

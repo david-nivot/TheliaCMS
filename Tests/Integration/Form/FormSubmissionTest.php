@@ -145,6 +145,23 @@ final class FormSubmissionTest extends CmsIntegrationTestCase
         self::assertStringContainsString('I would like a quote', (string) $mails[0]->getTextBody());
     }
 
+    public function testTheMailLinksToTheAnswerItWasKeptAs(): void
+    {
+        $this->createForm(recipients: 'sales@example.com');
+
+        $this->post($this->answers(), '203.0.113.15');
+
+        $kept = CmsFormSubmissionQuery::create()->filterByFormId($this->form()->getId())->findOne();
+        self::assertNotNull($kept);
+        self::assertSame('new', $kept->getStatus(), 'An answer arrives as new.');
+
+        $link = \sprintf('/admin/cms/forms/%d/submissions#cms-submission-%d', $this->form()->getId(), $kept->getId());
+        $mails = $this->mails();
+        self::assertStringContainsString($link, (string) $mails[0]->getTextBody());
+        self::assertStringContainsString($link, (string) $mails[0]->getHtmlBody());
+        self::assertMatchesRegularExpression('#https?://[^/\s]+/admin/cms/forms/#', (string) $mails[0]->getTextBody(), 'The link is absolute: it is read in a mail client.');
+    }
+
     public function testTheSeventhMessageFromOneAddressWithinTheHourIsRefused(): void
     {
         $this->createForm();

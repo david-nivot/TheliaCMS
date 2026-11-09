@@ -856,7 +856,35 @@ address. From there an answer is exported as CSV or as JSON, or deleted. That is
 what answering a request to see or to erase personal data comes down to, and it
 takes a couple of minutes rather than an afternoon of SQL. The CSV keeps a
 column for a question that has since been removed from the form, and defuses any
-cell a spreadsheet would run as a formula.
+cell a spreadsheet would run as a formula. Its cells are separated by a
+semicolon when the back office is in French, the list separator Excel expects
+there, by a comma otherwise. The export is written a batch of answers at a time,
+whatever their number.
+
+Each answer is **new**, **handled** or **archived**. It arrives as new; the list
+shows the new and handled ones by default, with a tab per status and one for all
+of them, each counting for the address searched, so an archived answer from the
+person asking for their data is never out of sight. A status is changed on one
+answer, or on a selection, along with deleting it; the export takes the list as
+it is shown. The mail to the recipients links to the answer in the back office,
+and carries no more personal data for it. A status never holds an answer back
+from the purge: an archived answer ages like the others. Every gesture writes
+one line to the admin log, with the count, never an address.
+
+The list narrows to the days the answers arrived (both included) and to the
+value given to a question with choices (a list, a choice among several, a
+country), on one line above the tabs; the tabs count for those filters, and the
+pages, the gestures and the export keep them. A value is the wording the visitor
+picked: once a choice is renamed, its older answers keep the old wording, which
+the filter offers marked "no longer offered". The values are read from the
+answers themselves, in PHP, since a database cannot search inside the JSON the
+same way everywhere.
+
+**Answer summary**, from the list, counts what the list holds instead of
+showing it: the answers by day, by week from two months, by month from half a
+year, the empty periods included; the count of each status; and, for each
+question with choices, how often each value was given, each one leading to its
+answers. It follows the same filters and tabs, and draws its bars in plain HTML.
 
 Each form states how long its answers are kept, 365 days by default. They are
 deleted on their own by `thelia_cms:forms:purge`, and by `maintenance:purge`
@@ -1229,7 +1257,7 @@ that an editor sees belongs there too.
 
 ## Permissions
 
-Seven resources, seeded on activation with no access granted. Open them per
+Nine resources, seeded on activation with no access granted. Open them per
 profile under **Configuration > Administrators**.
 
 | Resource | Covers |
@@ -1240,7 +1268,13 @@ profile under **Configuration > Administrators**.
 | `admin.cms.media` | the media library |
 | `admin.cms.custom-code` | `<iframe>` in published content, beyond the standard allow list |
 | `admin.cms.settings` | the settings screen: showcase mode, maintenance, the 404 page, the generator card, the skills, the components offered to the generator |
-| `admin.cms.form` | the forms and their answers |
+| `admin.cms.form` | building the forms: fields, settings, recipients |
+| `admin.cms.form.answers` | the answers a form received: reading them (view), changing their status (update) and deleting them (delete). Personal data, so apart from building the forms |
+| `admin.cms.form.answers.export` | exporting the answers (view), which hands over every one of them at once |
+
+A right split off an older one (the two rights on the answers came out of
+`admin.cms.form`) is given, when the update creates it, the access each profile
+had on the older right: an update never takes away what a profile could do.
 
 Every route under `/admin/cms` is guarded by the resource of its section, so a
 route added later cannot ship unprotected by omission.

@@ -14,8 +14,11 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Tests\Integration\Module;
 
+use Thelia\Core\Security\AccessManager;
+use Thelia\Model\Profile;
 use Thelia\Model\ProfileResourceQuery;
 use Thelia\Model\ResourceQuery;
+use Thelia\Test\FixtureFactory;
 use TheliaCMS\Security\CmsResources;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
 use TheliaCMS\TheliaCMS;
@@ -58,5 +61,47 @@ final class AdminResourcesUpdateTest extends CmsIntegrationTestCase
         foreach (CmsResources::all() as $code) {
             self::assertSame(1, ResourceQuery::create()->filterByCode($code)->count(), \sprintf('"%s" is seeded once, whatever the number of updates.', $code));
         }
+    }
+
+    public function testARightSplitOffAnOlderOneKeepsWhatEachProfileCouldDo(): void
+    {
+        $fixtures = new FixtureFactory($this->getPropelConnection());
+        $builder = $fixtures->profile();
+        $fixtures->profileResource($builder, CmsResources::FORM, [AccessManager::VIEW, AccessManager::DELETE]);
+        $stranger = $fixtures->profile();
+
+        foreach (array_keys(CmsResources::splitFrom()) as $code) {
+            $resource = ResourceQuery::create()->findOneByCode($code);
+
+            if (null !== $resource) {
+                ProfileResourceQuery::create()->filterByResourceId($resource->getId())->delete();
+                $resource->delete();
+            }
+        }
+
+        $migrations = TheliaCMS::everyMigration();
+        $version = basename((string) end($migrations), '.sql');
+        (new TheliaCMS())->update($version, $version, $this->getPropelConnection());
+
+        $before = $this->accessOf($builder, CmsResources::FORM);
+        self::assertGreaterThan(0, $before);
+
+        foreach (array_keys(CmsResources::splitFrom()) as $code) {
+            self::assertSame($before, $this->accessOf($builder, $code), \sprintf('A profile that could open the forms keeps "%s".', $code));
+            self::assertSame(0, $this->accessOf($stranger, $code), \sprintf('A profile that could not gets no "%s".', $code));
+        }
+    }
+
+    private function accessOf(Profile $profile, string $code): int
+    {
+        $resource = ResourceQuery::create()->findOneByCode($code);
+        self::assertNotNull($resource, \sprintf('"%s" is seeded.', $code));
+
+        $granted = ProfileResourceQuery::create()
+            ->filterByProfileId($profile->getId())
+            ->filterByResourceId($resource->getId())
+            ->findOne();
+
+        return null === $granted ? 0 : (int) $granted->getAccess();
     }
 }

@@ -66,6 +66,9 @@ final readonly class EditorProfileSeeder
         CmsResources::MENU,
         CmsResources::MEDIA,
         CmsResources::FORM,
+        // The answers too: the editor is the one who calls back.
+        CmsResources::FORM_ANSWERS,
+        CmsResources::FORM_ANSWERS_EXPORT,
         CmsResources::GENERATE,
         // News are core contents and folders (decision D11).
         'admin.content',
