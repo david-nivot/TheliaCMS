@@ -73,6 +73,8 @@ final class PageListSectionTest extends AdminScreenTestCase
         $count = $tree->filter(\sprintf('[data-testid="cms-page-children-%d"]', $recipes->getId()));
 
         self::assertSame(1, $count->count(), 'The number of its pages is a link.');
+        self::assertStringContainsString('1 page', $count->text(), 'It says what it opens.');
+        self::assertStringNotContainsString('1 pages', $count->text());
         self::assertSame((string) $recipes->getId(), $this->queryOf((string) $count->attr('href'))['inside'] ?? null);
         self::assertSame(0, $tree->filter(\sprintf('[data-testid="cms-page-children-%d"]', $this->createPage('Entry alone')->getId()))->count());
 

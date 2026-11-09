@@ -14,7 +14,7 @@ declare(strict_types=1);
 
 /*
  * A sample editorial site for the browser checks of the page list: a cycling
- * magazine about five years old. About 120 pages on four levels (sections,
+ * magazine about five years old. About 150 pages on four levels (sections,
  * subsections, articles), 6 tags, 20 images of the media library, dates spread
  * from January 2021 to November 2026, drafts, hidden, scheduled pages and pages
  * changed since their publication, part of them translated into English. Written
@@ -327,6 +327,20 @@ foreach ($events as $year => $titles) {
     $yearPage = $rubric((string) $year, $news, 2027 - $year, new DateTimeImmutable($year.'-01-05 09:00:00'));
     $articles($yearPage, $titles, 'Événement', new DateTimeImmutable($year.'-01-06'), min($end, new DateTimeImmutable($year.'-12-20')));
 }
+
+// A section larger than a branch of the tree shows: the tree leads to the list of all of them.
+$articles($rubric('Brèves', $news, 7, $t2021), [
+    'Un nouveau tronçon de voie verte ouvre en Bretagne', 'La prime au vélo cargo reconduite', 'Le salon du vélo ancien revient en mars',
+    'Une piste cyclable suspendue à l’étude', 'Le prix des pneus en hausse cette année', 'Ouverture d’un atelier solidaire en centre-ville',
+    'Le tour cyclotouriste des lacs complet en deux jours', 'Un record de passages au compteur du pont', 'La fête du vélo change de date',
+    'Les vélos en libre-service passent à l’électrique', 'Un parking vélo sécurisé à la gare', 'Le marquage obligatoire des vélos d’occasion',
+    'Une course de nuit à travers la ville', 'Le gravel entre au programme des fédérations', 'La rentrée à vélo pour les collégiens',
+    'Des stations de gonflage en libre accès', 'Un col fermé aux voitures le dimanche', 'Les ventes de vélos électriques ralentissent',
+    'Une application pour signaler les nids-de-poule', 'Le casque recommandé pour les moins de douze ans', 'Une boucle de 300 km balisée dans le Jura',
+    'Le vélo-école ouvre ses inscriptions', 'Le prix des antivols connectés baisse', 'Les trains acceptent plus de vélos cet été',
+    'Un nouveau record de l’heure amateur', 'La bourse aux vélos de printemps', 'Les rues scolaires se multiplient',
+    'Le réseau express vélo s’étend', 'Une exposition sur l’histoire du cycle', 'Le baromètre des villes cyclables publié',
+], 'Événement', $t2021, $end);
 
 $guides = $rubric('Guides', null, 12, new DateTimeImmutable('2022-01-10 09:00:00'));
 $articles($rubric('Bien débuter', $guides, 1, new DateTimeImmutable('2022-01-10 09:00:00')), ['Choisir la taille de son cadre', 'Les réglages de base avant de partir', 'Le vocabulaire du cycliste', 'Le vélotaf, mode d’emploi'], 'Dossier', new DateTimeImmutable('2022-01-10'), $end);

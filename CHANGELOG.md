@@ -9,9 +9,9 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Added
 
-- **The pages of one page, on a list of their own.** The number of pages a page
-  holds, on its row of the page list, opens the list of the pages directly
-  under it (`?inside=<id>`): flat, in the order of the site, paginated by 50,
+- **The pages of one page, on a list of their own.** A button next to the
+  title of a page that holds others (**12 pages**) opens the list of the pages
+  directly under it (`?inside=<id>`): flat, in the order of the site, paginated by 50,
   with the search, the filters, the sorts and the bulk actions of the list. Its
   head shows where the page sits, each page above a link to its own list and
   **All pages** back to the tree as it was left, and offers **Create a page
@@ -34,6 +34,9 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 - **A large branch shows its first 20 pages.** The others are on the list of
   the pages of the branch, which a line under the twentieth leads to (**See the
   N other pages inside …**).
+- **A long title of the tree wraps under itself.** It went back under the
+  indentation, which hid the level of the page; the title column keeps room
+  for four levels, so opening a branch does not widen it and move the table.
 
 ## [2.22.0] - 2026-11-09
 

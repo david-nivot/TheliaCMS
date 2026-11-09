@@ -264,7 +264,7 @@ by default (over forty pages), branches four levels deep, subsections of eight
 pages and more, tags, images, dates over several years, drafts, hidden and
 scheduled pages. `Tests/Browser/sample-site/` makes one on the development
 database of a DDEV host: a cycling magazine started in 2021, written in French,
-about 120 pages, 6 tags and 20 images of the media library, part of it in
+about 150 pages, 6 tags and 20 images, a subsection of 30 pages of the media library, part of it in
 English. It is the same on every run (fixed seed). From the root of the host:
 
 ```bash
@@ -302,7 +302,9 @@ saves and publishes nothing.
 with the same variables, that a branch opens and closes without loading the
 screen again (a mark left on `window` survives), the row clicked staying at its
 place within 2 px and keeping the focus, that the address names the branches
-open (a reload shows them), that **Close every branch** works in place too, and
+open (a reload shows them), that the button of a page names its pages, that a
+branch of 30 pages shows 20 and leads to the list of all of them, that
+**Close every branch** works in place too, and
 that without JavaScript the link lands on the row by its anchor. Window
 1440x620, so that the tree scrolls. It reads only.
 

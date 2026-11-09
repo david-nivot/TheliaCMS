@@ -74,6 +74,8 @@ final class PageTreeBranchTest extends AdminScreenTestCase
 
         self::assertSame(array_map(static fn (CmsPage $page): int => (int) $page->getId(), $kept), array_values(array_intersect($shown, array_map(static fn (CmsPage $page): int => (int) $page->getId(), $children))), 'The first pages, by position.');
 
+        self::assertStringContainsString((PageFilters::BRANCH_ROWS + 3).' pages', $screen->filter(\sprintf('[data-testid="cms-page-children-%d"]', $parent->getId()))->text(), 'The button names all of them, not the ones shown.');
+
         $more = $screen->filter(\sprintf('[data-testid="cms-page-more-%d"]', $parent->getId()));
         self::assertSame(1, $more->count());
         self::assertStringContainsString('3', $more->text(), 'It says how many are left out.');

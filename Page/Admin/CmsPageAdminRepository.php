@@ -682,7 +682,7 @@ final readonly class CmsPageAdminRepository
      * in two statements.
      *
      * @param list<array{page: CmsPage, depth: int, more?: int}> $ordered
-     * @param array<int, int>                        $childCounts
+     * @param array<int, int>                                    $childCounts
      *
      * @return list<PageListRow>
      */

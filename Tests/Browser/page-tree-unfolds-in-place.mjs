@@ -125,13 +125,37 @@ try {
     await page.reload();
     check(await rowOf(page, '2026').count() === 1 && await page.locator('tbody tr[data-row-id]').filter({ hasText: 'Les gagnants du concours photo 2025' }).count() === 1, 'a reload shows the branches opened in place');
 
-    // 4. "Close every branch" in place
+    // 4. The button of a page that holds others; a large branch shows its first pages and leads to all of them
+    const button = rowOf(page, 'Actualités').locator('[data-testid^="cms-page-children-"]');
+    check((await button.innerText()).includes('7 pages') && await button.isVisible(), 'the button of a page says how many pages it holds: ' + (await button.innerText()).trim());
+
+    const large = rowOf(page, 'Brèves');
+    const largeId = await large.getAttribute('data-row-id');
+    await large.locator('[data-cms-tree-toggle]').click();
+    const more = page.getByTestId('cms-page-more-' + largeId);
+    await more.waitFor();
+    const shownInBranch = await large.evaluate((row) => {
+        let count = 0;
+
+        for (let next = row.nextElementSibling; next && !next.matches('[data-testid^="cms-page-more-"]'); next = next.nextElementSibling) {
+            count += next.matches('tr[data-row-id]') ? 1 : 0;
+        }
+
+        return count;
+    });
+    check(shownInBranch === 20, 'a branch of 30 pages shows its first 20 (' + shownInBranch + ')');
+    check((await more.innerText()).includes('10'), 'the line under them says how many are left: ' + (await more.innerText()).trim());
+    await Promise.all([page.waitForNavigation(), more.locator('a').click()]);
+    check(await page.getByTestId('cms-pages-section').count() === 1 && await page.locator('tbody tr[data-row-id]').count() === 30, 'it leads to the list of all 30');
+    await page.goBack();
+
+    // 5. "Close every branch" in place
     await page.evaluate(() => { window.cmsSameDocument = true; });
     await page.getByTestId('cms-pages-fold-all').click();
     await rowOf(page, '2026').waitFor({ state: 'detached' });
     check(await page.evaluate(() => window.cmsSameDocument === true), 'closing every branch does not load the screen again');
 
-    // 5. Without JavaScript, the link lands on the row
+    // 6. Without JavaScript, the link lands on the row
     const plain = await session({ javaScriptEnabled: false });
     await rowOf(plain.page, 'Actualités').scrollIntoViewIfNeeded();
     await Promise.all([plain.page.waitForNavigation(), rowOf(plain.page, 'Actualités').locator('[data-cms-tree-toggle]').click()]);
@@ -141,7 +165,7 @@ try {
     const landed = await rowOf(plain.page, 'Actualités').boundingBox();
     check(plain.page.url().endsWith('#cms-page-' + id) && landed.y >= 0 && landed.y + landed.height <= 620, 'without JavaScript, the screen loaded again lands on the row opened');
 
-    // 6. Errors
+    // 7. Errors
     check(problems.length === 0, 'no console error and no pageerror' + (problems.length ? ': ' + problems.join(' | ') : ''));
 } finally {
     await browser.close();
