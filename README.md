@@ -856,7 +856,10 @@ address. From there an answer is exported as CSV or as JSON, or deleted. That is
 what answering a request to see or to erase personal data comes down to, and it
 takes a couple of minutes rather than an afternoon of SQL. The CSV keeps a
 column for a question that has since been removed from the form, and defuses any
-cell a spreadsheet would run as a formula.
+cell a spreadsheet would run as a formula. Its cells are separated by a
+semicolon when the back office is in French, the list separator Excel expects
+there, by a comma otherwise. The export is written a batch of answers at a time,
+whatever their number.
 
 Each answer is **new**, **handled** or **archived**. It arrives as new; the list
 shows the new and handled ones by default, with a tab per status and one for all

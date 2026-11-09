@@ -51,6 +51,12 @@ final readonly class AdminControllerSupport
         return $this->translator->trans($message, $parameters, TheliaCMS::DOMAIN_NAME);
     }
 
+    /** The language the back office is shown in, for whoever reads the screen. */
+    public function screenLocale(): string
+    {
+        return $this->translator->getLocale();
+    }
+
     /**
      * A request without a session (a test client, the console) loses the
      * message instead of failing the action that produced it.

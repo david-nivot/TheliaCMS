@@ -176,7 +176,7 @@ final class SubmissionStatusTest extends AdminScreenTestCase
     private function exportedIds(CmsForm $form, string $query): array
     {
         self::assertSame(200, $this->send('GET', $this->answers($form).'/export.json?x=1'.$query));
-        $rows = json_decode((string) $this->client->getResponse()->getContent(), true, flags: \JSON_THROW_ON_ERROR);
+        $rows = json_decode((string) $this->client->getInternalResponse()->getContent(), true, flags: \JSON_THROW_ON_ERROR);
 
         return array_map(static fn (array $row): int => (int) $row['id'], $rows);
     }

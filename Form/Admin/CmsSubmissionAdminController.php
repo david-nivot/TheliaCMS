@@ -17,6 +17,7 @@ namespace TheliaCMS\Form\Admin;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
@@ -93,20 +94,37 @@ final readonly class CmsSubmissionAdminController
         $this->support->denyUnless(CmsResources::FORM_ANSWERS_EXPORT, AccessManager::VIEW, 'You are not allowed to export the answers.');
 
         $record = $this->formOrFail($id);
-        $rows = $this->submissions->all($this->submissions->search($record, SubmissionFilters::fromRequest($request)));
+        $search = $this->submissions->search($record, SubmissionFilters::fromRequest($request));
+        $count = $this->submissions->count($search);
 
         $this->activityLog->record(
             'EXPORT',
             (int) $record->getId(),
-            \sprintf('CMS form "%s": %d submission(s) exported as %s', $record->getCode(), \count($rows), $format),
+            \sprintf('CMS form "%s": %d submission(s) exported as %s', $record->getCode(), $count, $format),
             CmsResources::FORM_ANSWERS,
         );
 
-        $body = 'json' === $format
-            ? SubmissionExport::toJson($rows)
-            : SubmissionExport::toCsv($rows, $this->csvHeadings(), $this->support->translate('Yes'), $this->support->translate('No'));
+        // Written as it is read, a batch at a time: a form with years of
+        // answers is exported without holding them all in memory.
+        $rows = fn (): \Generator => $this->submissions->each($search);
+        $headings = $this->csvHeadings();
+        $yes = $this->support->translate('Yes');
+        $no = $this->support->translate('No');
+        $separator = SubmissionExport::separatorFor($this->support->screenLocale());
 
-        $response = new Response($body);
+        $response = new StreamedResponse(static function () use ($format, $rows, $headings, $yes, $no, $separator): void {
+            $output = fopen('php://output', 'w');
+
+            if (false === $output) {
+                return;
+            }
+
+            'json' === $format
+                ? SubmissionExport::writeJson($output, $rows())
+                : SubmissionExport::writeCsv($output, $rows, $headings, $yes, $no, $separator);
+
+            fclose($output);
+        });
         $response->headers->set('Content-Type', 'json' === $format ? 'application/json; charset=utf-8' : 'text/csv; charset=utf-8');
         $response->headers->set('Content-Disposition', \sprintf(
             'attachment; filename="%s-submissions.%s"',

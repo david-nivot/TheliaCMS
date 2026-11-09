@@ -1,6 +1,6 @@
 # Plan: the answers of a form (N41 to N45)
 
-Status: decided (2026-11-09, by the maintainer), coded lot by lot on `feat/form-answers`; done: N45, N41, N42. Read on `main` at 9009ac8 (2.18.0). Wave 5 of the
+Status: decided (2026-11-09, by the maintainer), coded lot by lot on `feat/form-answers`; done: N45, N41, N42, N43. Read on `main` at 9009ac8 (2.18.0). Wave 5 of the
 roadmap, family "formulaires". Requested by the maintainer; the five lots were first read on
 a896919 and checked again on 9009ac8 (line numbers below are the current ones). Each lot updates
 this plan in its own commit.
@@ -177,10 +177,21 @@ submission): 5,000 submissions, filter 38 ms and values 30 ms; 20,000, 201 ms an
 each red (one stayed green first, the test data enriched). Checked in the browser at 1440 px in
 French: menus, chips, tabs, a selection marked as handled back on the filtered list.
 
-### 4. N43: export for Excel, filtered (S)
+### 4. N43: export for Excel, filtered (S), done
 
 Tests: separator by language, BOM kept, filters applied, batches (memory bounded on a few thousand
 rows), formulas still defused.
+
+Done: `SubmissionExport::separatorFor()` (`;` for a French screen, the locale of the translator read
+by `AdminControllerSupport::screenLocale()`, `,` otherwise); `writeCsv()` and `writeJson()` write to
+a stream, the CSV reading the submissions twice (columns, then rows) from a function rather than
+holding them; `toCsv()` and `toJson()` kept on top of them. `SubmissionRepository::all()` replaced
+by `each()`: the ids of the list first (an answer arriving meanwhile shifts nothing), then the rows
+500 at a time, Propel's pool cleared after each batch. The controller answers a `StreamedResponse`,
+logged with the count of the search, still `no-store`; the tests read it through
+`getInternalResponse()`. Tests: `SubmissionExportTest` (+3), `SubmissionExportFileTest` (2: Excel
+in both languages with filters, BOM, formula; 1,201 rows in 1 + 3 statements, newest first, none
+twice); eight sabotages, each red.
 
 ### 5. N44: summary of the answers (M)
 

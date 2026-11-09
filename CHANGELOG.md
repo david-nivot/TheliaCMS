@@ -27,6 +27,12 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Changed
 
+- **The CSV export of the answers opens in Excel as columns.** When the back
+  office is in French, its cells are separated by a semicolon, the list
+  separator Excel expects there; in another language, by a comma, as before.
+  The export follows the filters of the list, and is written as it is read, a
+  batch of answers at a time, so a form with years of answers no longer has
+  them all in memory at once.
 - **The answers of a form have rights of their own.** Reading and deleting
   them take `admin.cms.form.answers`, exporting them takes
   `admin.cms.form.answers.export`; `admin.cms.form` now covers building the

@@ -21,6 +21,7 @@ use TheliaCMS\Form\SubmissionStatus;
 use TheliaCMS\Model\CmsForm;
 use TheliaCMS\Model\CmsFormSubmission;
 use TheliaCMS\Model\CmsFormSubmissionQuery;
+use TheliaCMS\Model\Map\CmsFormSubmissionTableMap;
 
 /**
  * Reads the submissions of a form, narrowed by the filters of the list, and
@@ -94,17 +95,36 @@ final readonly class SubmissionRepository
     /**
      * Every submission matching the search, for the export — not one page of
      * them: the point of the export is to hand over everything about a person
-     * in one go.
+     * in one go. Read a batch at a time, in the order of the list: the ids
+     * first, so an answer arriving meanwhile neither shifts nor doubles a row,
+     * then the rows by batch, forgotten by Propel once handed over.
      *
-     * @return list<array{id: int, locale: string, email: ?string, status: SubmissionStatus, created_at: string, answers: list<array<string, mixed>>}>
+     * @return \Generator<int, array{id: int, locale: string, email: ?string, status: SubmissionStatus, created_at: string, answers: list<array<string, mixed>>}>
      */
-    public function all(SubmissionSearch $search): array
+    public function each(SubmissionSearch $search): \Generator
     {
-        $query = $this->query($search, $search->filters->statuses())
+        $ids = array_map(intval(...), $this->query($search, $search->filters->statuses())
             ->orderByCreatedAt(Criteria::DESC)
-            ->orderById(Criteria::DESC);
+            ->orderById(Criteria::DESC)
+            ->select(['Id'])
+            ->find()
+            ->getData());
 
-        return array_map($this->asArray(...), iterator_to_array($query->find(), false));
+        foreach (array_chunk($ids, self::SCAN_BATCH) as $batch) {
+            $rows = [];
+
+            foreach (CmsFormSubmissionQuery::create()->filterById($batch, Criteria::IN)->find() as $submission) {
+                $rows[(int) $submission->getId()] = $this->asArray($submission);
+            }
+
+            CmsFormSubmissionTableMap::clearInstancePool();
+
+            foreach ($batch as $id) {
+                if (isset($rows[$id])) {
+                    yield $rows[$id];
+                }
+            }
+        }
     }
 
     /**
