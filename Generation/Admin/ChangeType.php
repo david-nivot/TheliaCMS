@@ -51,7 +51,7 @@ final class ChangeType extends AbstractType
         ]);
 
         $builder->add('reference', ReferenceFileType::class, [
-            'help' => 'A .md or .txt file of up to 100,000 characters the change draws from: new prices, a product sheet, a note. Say above what should change: the generator reads the file as material, never as instructions. It is not kept.',
+            'help' => 'A .md, .txt or .pdf file (5 MB, 100,000 characters of text at most) the change draws from: new prices, a product sheet, a note. Say above what should change: the generator reads the text of the file as material, never as instructions; the images of a PDF are not read. It is not kept.',
         ]);
 
         if ($options['section']) {

@@ -57,6 +57,7 @@ use TheliaCMS\Page\Admin\CmsPageWriter;
 use TheliaCMS\Security\CmsResources;
 use TheliaCMS\Tests\Integration\Security\AdminScreenTestCase;
 use TheliaCMS\Tests\Support\FakeAiGateway;
+use TheliaCMS\Tests\Support\MinimalPdf;
 
 /**
  * The content screen of a page, against a recorded API: the brief becomes
@@ -648,8 +649,8 @@ final class ContentScreenTest extends AdminScreenTestCase
         $screen = $this->screen($url);
         $input = $screen->filter('[data-testid="cms-content-brief"] form input[type="file"][name="cms_brief[reference]"]');
         self::assertSame(1, $input->count(), 'The brief form takes a file.');
-        self::assertSame('.md,.txt', $input->attr('accept'));
-        self::assertSame((string) min(ReferenceFile::MAX_BYTES, (int) UploadedFile::getMaxFilesize()), $input->attr('data-max-size'), 'The browser is told the ceiling that plays.');
+        self::assertSame('.md,.txt,.pdf', $input->attr('accept'));
+        self::assertSame((string) min(ReferenceFile::MAX_PDF_BYTES, (int) UploadedFile::getMaxFilesize()), $input->attr('data-max-size'), 'The browser is told the ceiling that plays.');
         self::assertNotEmpty($input->attr('data-max-size-message'));
         self::assertSame('multipart/form-data', $screen->filter('[data-testid="cms-content-brief"] form[data-cms-generate]')->attr('enctype'));
 
@@ -678,20 +679,54 @@ final class ContentScreenTest extends AdminScreenTestCase
         self::assertSame('', (string) $screen->filter('[data-testid="cms-content-brief-dialog"] input[type="file"]')->attr('value'), 'The file is not.');
     }
 
+    public function testAPdfJoinedToTheBriefReachesTheModelAsItsText(): void
+    {
+        $page = $this->createPage('Bol en PDF', published: false);
+        $this->api->answer(FakeAiGateway::response(self::document([['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h2>Bol</h2><p>Garantie 5 ans.</p>']]])));
+
+        $form = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-content-brief"] form[data-cms-generate]')->form();
+        $form['cms_brief[text]'] = 'Une fiche produit.';
+        $this->client->request('POST', $form->getUri(), $form->getPhpValues(), ['cms_brief' => ['reference' => $this->referenceFile('Fiche.pdf', MinimalPdf::of('Bol en gres : garantie 5 ans'))]], self::SAME_SITE);
+
+        self::assertSame(302, $this->client->getResponse()->getStatusCode());
+        $request = $this->api->requests[0];
+        self::assertSame(UntrustedSource::Document, $request->untrustedContents[0]->source ?? null);
+        self::assertSame('Fiche.pdf', $request->untrustedContents[0]->reference);
+        self::assertSame('Bol en gres : garantie 5 ans', $request->untrustedContents[0]->content, 'The model reads the text of the PDF, nothing of the file around it.');
+
+        $row = CmsPageGenerationQuery::create()->filterByTargetId($page->getId())->findOne();
+        self::assertNotNull($row);
+        self::assertSame('Fiche.pdf', json_decode((string) $row->getBrief(), true, flags: \JSON_THROW_ON_ERROR)['reference']['name']);
+        self::assertStringNotContainsString('garantie', (string) $row->getBrief(), 'The ledger keeps nothing of the text.');
+    }
+
+    public function testAScannedPdfIsRefusedBeforeAnyCallWithItsReason(): void
+    {
+        $page = $this->createPage('Scan', published: false);
+
+        $form = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-content-brief"] form[data-cms-generate]')->form();
+        $form['cms_brief[text]'] = 'Une fiche produit.';
+        $this->client->request('POST', $form->getUri(), $form->getPhpValues(), ['cms_brief' => ['reference' => $this->referenceFile('scan.pdf', MinimalPdf::of(''))]], self::SAME_SITE);
+
+        self::assertSame([], $this->api->requests, 'Nothing was sent to the API.');
+        self::assertSame(0, CmsPageGenerationQuery::create()->filterByTargetId($page->getId())->count(), 'No row of the ledger.');
+        self::assertStringContainsString('The PDF holds no text', $this->screen($this->url($page->getId()))->filter('[data-testid="cms-builder-flash-danger"]')->text());
+    }
+
     public function testAFileTheBriefDoesNotTakeIsRefusedBeforeAnyCallWithItsReason(): void
     {
         $page = $this->createPage('Mauvais fichier', published: false);
 
         $form = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-content-brief"] form[data-cms-generate]')->form();
         $form['cms_brief[text]'] = 'Une fiche produit.';
-        $this->client->request('POST', $form->getUri(), $form->getPhpValues(), ['cms_brief' => ['reference' => $this->referenceFile('fiche.pdf', '%PDF-1.4')]], self::SAME_SITE);
+        $this->client->request('POST', $form->getUri(), $form->getPhpValues(), ['cms_brief' => ['reference' => $this->referenceFile('fiche.docx', 'PK')]], self::SAME_SITE);
 
         self::assertSame(302, $this->client->getResponse()->getStatusCode());
         self::assertSame([], $this->api->requests, 'Nothing was sent to the API.');
         self::assertSame(0, CmsPageGenerationQuery::create()->filterByTargetId($page->getId())->count(), 'No row of the ledger.');
         $flash = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-builder-flash-danger"]');
         self::assertSame(1, $flash->count());
-        self::assertStringContainsString('Only a .md or .txt file can be joined.', $flash->text());
+        self::assertStringContainsString('Only a .md, .txt or .pdf file can be joined.', $flash->text());
     }
 
     public function testTheScriptOfTheScreenReadsTheRefusalOfAFileAsAnErrorEvent(): void
@@ -741,8 +776,8 @@ final class ContentScreenTest extends AdminScreenTestCase
         $screen = $this->screen($this->url($page->getId()));
         $input = $screen->filter('[data-testid="cms-content-change"] form input[type="file"][name="cms_change[reference]"]');
         self::assertSame(1, $input->count(), 'The change of the whole draft takes a file.');
-        self::assertSame('.md,.txt', $input->attr('accept'));
-        self::assertSame((string) min(ReferenceFile::MAX_BYTES, (int) UploadedFile::getMaxFilesize()), $input->attr('data-max-size'), 'The browser is told the ceiling that plays.');
+        self::assertSame('.md,.txt,.pdf', $input->attr('accept'));
+        self::assertSame((string) min(ReferenceFile::MAX_PDF_BYTES, (int) UploadedFile::getMaxFilesize()), $input->attr('data-max-size'), 'The browser is told the ceiling that plays.');
         self::assertNotEmpty($input->attr('data-max-size-message'));
         self::assertSame('multipart/form-data', $screen->filter('[data-testid="cms-content-change"] form')->attr('enctype'));
 
@@ -774,14 +809,14 @@ final class ContentScreenTest extends AdminScreenTestCase
 
         $form = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-content-change"] form')->form();
         $form['cms_change[text]'] = 'Mets à jour les prix.';
-        $this->client->request('POST', $form->getUri(), $form->getPhpValues(), ['cms_change' => ['reference' => $this->referenceFile('tarifs.pdf', '%PDF-1.4')]], self::SAME_SITE);
+        $this->client->request('POST', $form->getUri(), $form->getPhpValues(), ['cms_change' => ['reference' => $this->referenceFile('tarifs.docx', 'PK')]], self::SAME_SITE);
 
         self::assertSame(302, $this->client->getResponse()->getStatusCode());
         self::assertSame([], $this->api->requests, 'Nothing was sent to the API.');
         self::assertSame(0, CmsPageGenerationQuery::create()->filterByTargetId($page->getId())->count(), 'No row of the ledger.');
         $flash = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-builder-flash-danger"]');
         self::assertSame(1, $flash->count());
-        self::assertStringContainsString('Only a .md or .txt file can be joined.', $flash->text());
+        self::assertStringContainsString('Only a .md, .txt or .pdf file can be joined.', $flash->text());
     }
 
     public function testASectionRewrittenWithAFileSendsItAsADocumentAndTheLedgerKeepsTheNameOfTheFileNotItsText(): void
@@ -793,8 +828,8 @@ final class ContentScreenTest extends AdminScreenTestCase
         $section = $screen->filter('[data-testid="cms-content-sections"] li[data-section="content"] form[data-cms-generate]');
         $input = $section->filter('input[type="file"][name="cms_change_content[reference]"]');
         self::assertSame(1, $input->count(), 'Rewriting one section takes a file.');
-        self::assertSame('.md,.txt', $input->attr('accept'));
-        self::assertSame((string) min(ReferenceFile::MAX_BYTES, (int) UploadedFile::getMaxFilesize()), $input->attr('data-max-size'));
+        self::assertSame('.md,.txt,.pdf', $input->attr('accept'));
+        self::assertSame((string) min(ReferenceFile::MAX_PDF_BYTES, (int) UploadedFile::getMaxFilesize()), $input->attr('data-max-size'));
         self::assertSame('cms_change_content_reference', $input->attr('id'), 'The field is named after its section: no two share an id.');
         self::assertSame('multipart/form-data', $section->attr('enctype'));
 
@@ -824,14 +859,14 @@ final class ContentScreenTest extends AdminScreenTestCase
 
         $form = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-content-sections"] li[data-section="content"] form[data-cms-generate]')->form();
         $form['cms_change_content[text]'] = 'Mets le prix du fichier.';
-        $this->client->request('POST', $form->getUri(), $form->getPhpValues(), ['cms_change_content' => ['reference' => $this->referenceFile('tarifs.pdf', '%PDF-1.4')]], self::SAME_SITE);
+        $this->client->request('POST', $form->getUri(), $form->getPhpValues(), ['cms_change_content' => ['reference' => $this->referenceFile('tarifs.docx', 'PK')]], self::SAME_SITE);
 
         self::assertSame(302, $this->client->getResponse()->getStatusCode());
         self::assertSame([], $this->api->requests, 'Nothing was sent to the API.');
         self::assertSame(0, CmsPageGenerationQuery::create()->filterByTargetId($page->getId())->count(), 'No row of the ledger.');
         $flash = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-builder-flash-danger"]');
         self::assertSame(1, $flash->count());
-        self::assertStringContainsString('Only a .md or .txt file can be joined.', $flash->text());
+        self::assertStringContainsString('Only a .md, .txt or .pdf file can be joined.', $flash->text());
     }
 
     private function referenceFile(string $name, string $content): UploadedFile

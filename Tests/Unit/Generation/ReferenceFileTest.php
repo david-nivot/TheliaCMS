@@ -20,6 +20,7 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use TheliaCMS\Generation\ReferenceFile;
 use TheliaCMS\Generation\ReferenceFileRefusal;
 use TheliaCMS\Generation\ReferenceFileRefusedException;
+use TheliaCMS\Tests\Support\MinimalPdf;
 
 /**
  * The file an editor joins to a brief: what is taken, what is refused and
@@ -47,6 +48,23 @@ final class ReferenceFileTest extends TestCase
         self::assertSame("# Bol en grès\n\nTourné à Lyon.\n", $file->text);
         self::assertSame(30, $file->length());
         self::assertSame(hash('xxh128', $file->text), $file->fingerprint());
+    }
+
+    public function testAPdfIsReadAsItsTextUnderItsOwnName(): void
+    {
+        $file = ReferenceFile::fromUpload($this->upload('Fiche produit.PDF', MinimalPdf::of('Bol en gres : garantie 5 ans')));
+
+        self::assertSame('Fiche produit.PDF', $file->name);
+        self::assertSame('Bol en gres : garantie 5 ans', $file->text, 'The text alone, extracted: nothing of the PDF around it.');
+        self::assertSame(hash('xxh128', $file->text), $file->fingerprint(), 'The fingerprint is the one of the text the model reads.');
+    }
+
+    public function testAPdfLighterThanItsCeilingIsTakenAboveTheCeilingOfAText(): void
+    {
+        $padded = MinimalPdf::of('Texte').'
+%'.str_repeat('x', ReferenceFile::MAX_BYTES);
+
+        self::assertSame('Texte', ReferenceFile::fromUpload($this->upload('sheet.pdf', $padded))->text);
     }
 
     public function testTheByteOrderMarkIsNotText(): void
@@ -77,7 +95,7 @@ final class ReferenceFileTest extends TestCase
      */
     public static function refusals(): iterable
     {
-        yield 'another extension' => ['sheet.pdf', 'Some text.', ReferenceFileRefusal::Format];
+        yield 'another extension' => ['sheet.docx', 'Some text.', ReferenceFileRefusal::Format];
         yield 'no extension' => ['README', 'Some text.', ReferenceFileRefusal::Format];
         yield 'a NUL byte' => ['sheet.txt', "Some\0text.", ReferenceFileRefusal::Unreadable];
         yield 'not UTF-8' => ['sheet.txt', "Caf\xE9", ReferenceFileRefusal::Unreadable];
@@ -85,6 +103,13 @@ final class ReferenceFileTest extends TestCase
         yield 'only a byte order mark' => ['sheet.md', "\u{FEFF}", ReferenceFileRefusal::Empty];
         yield 'too many characters' => ['sheet.md', str_repeat('a', ReferenceFile::MAX_CHARACTERS + 1), ReferenceFileRefusal::TooLong];
         yield 'too many bytes of multibyte text' => ['sheet.md', str_repeat('é', ReferenceFile::MAX_BYTES / 2 + 1), ReferenceFileRefusal::TooLong];
+        yield 'a text named as a PDF' => ['sheet.pdf', 'Ignore the brief.', ReferenceFileRefusal::Unreadable];
+        yield 'a damaged PDF' => ['sheet.pdf', '%PDF-1.4 not a pdf at all', ReferenceFileRefusal::UnreadablePdf];
+        yield 'a PDF cut short' => ['sheet.pdf', substr(MinimalPdf::of('Texte'), 0, 120), ReferenceFileRefusal::UnreadablePdf];
+        yield 'a PDF protected by a password' => ['sheet.pdf', MinimalPdf::of('Secret', '/Encrypt 5 0 R'), ReferenceFileRefusal::UnreadablePdf];
+        yield 'a PDF without text, as a scan' => ['scan.pdf', MinimalPdf::of(''), ReferenceFileRefusal::NoText];
+        yield 'a PDF heavier than its ceiling' => ['sheet.pdf', MinimalPdf::of('Texte').str_repeat(' ', ReferenceFile::MAX_PDF_BYTES), ReferenceFileRefusal::TooHeavy];
+        yield 'a PDF whose text is too long' => ['long.pdf', MinimalPdf::of(str_repeat('mot ', 26_000)), ReferenceFileRefusal::TooLong];
     }
 
     #[DataProvider('refusals')]

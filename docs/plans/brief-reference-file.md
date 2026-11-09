@@ -1,9 +1,9 @@
 # Plan: a reference file joined to the brief of a page
 
 Status: decided on 2026-11-05, implemented on 2026-11-06 on `feat/brief-reference-file`;
-"Ask for a change" and "Rewrite this section" added on 2026-11-09. Roadmap
-item N5, first step only: a text file (`.md`, `.txt`) on the form "What
-should this page say?" of the content screen, on "Ask for a change" and on
+"Ask for a change", "Rewrite this section" and PDF files added on 2026-11-09. Roadmap
+item N5, first step only: a file (`.md`, `.txt`, `.pdf` read as its text) on
+the form "What should this page say?" of the content screen, on "Ask for a change" and on
 "Rewrite this section". Images, the brief of a rich-text field and the
 components (N6) are not part of it.
 
@@ -126,7 +126,7 @@ gives, never as instructions.
 
 1. Scope: the brief of a page or of a catalogue item on the content screen,
    and "Ask for a change" on its whole draft or on one section (2026-11-09),
-   `.md` and `.txt` only. The field is one form type,
+   `.md`, `.txt` and `.pdf` (its text extracted, 5 MB). The field is one form type,
    `Generation/Admin/ReferenceFileType.php`, on the brief and on `ChangeType`.
    Not the brief of a rich-text field, not the components, no image.
 2. Ceiling: 100 000 characters, five times the brief. Fixed in the module,
@@ -150,7 +150,8 @@ gives, never as instructions.
 
 ## Open points
 
-- Images need the core: a message carries text only (`AiMessage::user(string)`,
+- Images need the core (decided on 2026-11-09: an image is read by the model as
+  material, so the core work below comes first): a message carries text only (`AiMessage::user(string)`,
   `UntrustedContent::$content` string). The core already knows
   `AiCapability::Vision` and whether a model reads images
   (`Provider/AiTarget.php:59`), and the library has `Content\Image`. What is

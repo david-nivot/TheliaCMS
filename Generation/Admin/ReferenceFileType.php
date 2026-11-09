@@ -40,9 +40,11 @@ final class ReferenceFileType extends AbstractType
     {
         // The browser refuses a file above the ceiling before sending it,
         // and names the limit that stops it: the module's, or PHP's when
-        // it is lower, as the media library does.
+        // it is lower, as the media library does. The ceiling is the one of
+        // a PDF, the heaviest file taken: a text file under it but above its
+        // own is refused by the server, with its reason.
         $phpLimit = (int) UploadedFile::getMaxFilesize();
-        $moduleLimitPlays = ReferenceFile::MAX_BYTES <= $phpLimit;
+        $moduleLimitPlays = ReferenceFile::MAX_PDF_BYTES <= $phpLimit;
 
         $resolver->setDefaults([
             'label' => 'A file to write from',
@@ -50,8 +52,8 @@ final class ReferenceFileType extends AbstractType
             'translation_domain' => 'theliacms',
             'attr' => [
                 'accept' => implode(',', array_map(static fn (string $extension): string => '.'.$extension, ReferenceFile::EXTENSIONS)),
-                'data-max-size' => min(ReferenceFile::MAX_BYTES, $phpLimit),
-                'data-max-size-message' => $this->translator->trans(($moduleLimitPlays ? ReferenceFileRefusal::TooLong : ReferenceFileRefusal::TooLarge)->message(), [], TheliaCMS::DOMAIN_NAME),
+                'data-max-size' => min(ReferenceFile::MAX_PDF_BYTES, $phpLimit),
+                'data-max-size-message' => $this->translator->trans(($moduleLimitPlays ? ReferenceFileRefusal::TooHeavy : ReferenceFileRefusal::TooLarge)->message(), [], TheliaCMS::DOMAIN_NAME),
             ],
         ]);
     }

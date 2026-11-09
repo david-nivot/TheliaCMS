@@ -15,7 +15,7 @@ declare(strict_types=1);
 namespace TheliaCMS\Generation;
 
 /**
- * Why a file joined to a brief was not taken.
+ * Why a file joined to a brief or to a change was not taken.
  */
 enum ReferenceFileRefusal: string
 {
@@ -25,17 +25,23 @@ enum ReferenceFileRefusal: string
     case Unreadable = 'unreadable';
     case Empty = 'empty';
     case Failed = 'failed';
+    case TooHeavy = 'too-heavy';
+    case UnreadablePdf = 'unreadable-pdf';
+    case NoText = 'no-text';
 
     /** What the editor is told, a key of the translations of the module. */
     public function message(): string
     {
         return match ($this) {
-            self::Format => 'Only a .md or .txt file can be joined.',
+            self::Format => 'Only a .md, .txt or .pdf file can be joined.',
             self::TooLarge => 'The file is larger than the server accepts.',
             self::TooLong => 'The file is longer than 100,000 characters.',
             self::Unreadable => 'The file is not a readable text file.',
             self::Empty => 'The file says nothing.',
             self::Failed => 'The file did not arrive whole. Send it again.',
+            self::TooHeavy => 'The file is larger than 5 MB.',
+            self::UnreadablePdf => 'The PDF cannot be read: it is damaged or protected by a password.',
+            self::NoText => 'The PDF holds no text: a scanned document is not read. Join its text as a .txt file.',
         };
     }
 }

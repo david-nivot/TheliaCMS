@@ -230,14 +230,27 @@ cites none: its source is the document of the other language.
 
 ### A file joined to the brief or to a change
 
-The brief of a page or of a catalogue item takes a text file, `.md` or
-`.txt`, of up to 100,000 characters (five times the brief; `Generation/ReferenceFile.php`,
-no setting): a product sheet, a page of the old site saved as text, a note from
-the client. The file is read once from the upload and never written to disk.
-A file of another extension, not UTF-8, holding a NUL byte, blank or too long
-is refused before anything is called, with the reason on the screen and no row
-in the ledger; the browser refuses a file above the ceiling before sending it,
-naming the limit that plays, the module's (400 kB) or PHP's when it is lower.
+The brief of a page or of a catalogue item takes a file, `.md`, `.txt` or
+`.pdf`, of up to 100,000 characters of text (five times the brief;
+`Generation/ReferenceFile.php`, no setting): a product sheet, a page of the old
+site, a note from the client. The file is read once from the upload and never
+written to disk. A file of another extension, not UTF-8, holding a NUL byte,
+blank or too long is refused before anything is called, with the reason on the
+screen and no row in the ledger; the browser refuses a file above the ceiling
+before sending it, naming the limit that plays, the module's (5 MB, the one of
+a PDF) or PHP's when it is lower. A text file is held to 400 kB on the server.
+
+A PDF is told by its content, not its name: a file that does not start with
+`%PDF-` is refused as unreadable. Its text is extracted by
+`Generation/ReadableText.php` (smalot/pdfparser, as for a PDF the brief cites by
+its address), its images left out: the gateway of the core carries text only.
+A PDF the parser cannot read (damaged, protected by a password) and a PDF
+without text (a scan) are refused with their reason; the 100,000 characters
+hold for the extracted text. From there it goes the way of a text file. Measured
+on the host (2026-11-09): the densest PDF under the ceiling, 4.5 MB and 4,000
+pages of uncompressed text (3.7 million characters), is parsed in 1.8 s for
+49 MB of memory, then refused as too long; a PDF of 3.4 MB that is mostly an
+image is parsed in 0.01 s.
 
 The text goes to the model as it does for a page read: an `UntrustedContent`
 of source `document`, with the name of the file as reference, on the request

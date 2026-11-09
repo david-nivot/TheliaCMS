@@ -17,14 +17,14 @@ namespace TheliaCMS\Generation;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 /**
- * A text file the editor joins to the brief of a page: a product sheet, a
- * page of the old site saved as text, a note from the client. The generator
- * reads it as material the brief gives, as it reads a web page the brief
- * cites: data of a third party, never instructions.
+ * A file the editor joins to a brief or to a change: a product sheet, a page
+ * of the old site saved as text or as PDF, a note from the client. The
+ * generator reads it as material the request gives, as it reads a web page
+ * the brief cites: data of a third party, never instructions.
  *
  * Built from an upload, read once and never written to disk. Only its name
  * (the base name, control characters stripped, 120 characters at most) and
- * its text are kept.
+ * its text are kept: the text of a PDF is extracted, its images left out.
  */
 final readonly class ReferenceFile
 {
@@ -37,8 +37,18 @@ final readonly class ReferenceFile
      */
     public const int MAX_BYTES = self::MAX_CHARACTERS * 4;
 
+    /**
+     * The ceiling in bytes of a PDF, checked before it is parsed: its text is
+     * held to MAX_CHARACTERS once extracted.
+     */
+    public const int MAX_PDF_BYTES = 5 * 1024 * 1024;
+
     /** @var list<string> */
-    public const array EXTENSIONS = ['md', 'txt'];
+    public const array EXTENSIONS = ['md', 'txt', 'pdf'];
+
+    private const string PDF_EXTENSION = 'pdf';
+
+    private const string PDF_SIGNATURE = '%PDF-';
 
     private const int NAME_LENGTH = 120;
 
@@ -68,21 +78,27 @@ final readonly class ReferenceFile
 
         $name = self::cleanName($file->getClientOriginalName());
 
-        if (!\in_array(strtolower(pathinfo($name, \PATHINFO_EXTENSION)), self::EXTENSIONS, true)) {
+        $extension = strtolower(pathinfo($name, \PATHINFO_EXTENSION));
+
+        if (!\in_array($extension, self::EXTENSIONS, true)) {
             throw new ReferenceFileRefusedException(ReferenceFileRefusal::Format);
         }
 
+        $isPdf = self::PDF_EXTENSION === $extension;
+
         // Measured before it is read: a file far above the ceiling is not
         // loaded to be refused.
-        if ($file->getSize() > self::MAX_BYTES) {
-            throw new ReferenceFileRefusedException(ReferenceFileRefusal::TooLong);
+        if ($file->getSize() > ($isPdf ? self::MAX_PDF_BYTES : self::MAX_BYTES)) {
+            throw new ReferenceFileRefusedException($isPdf ? ReferenceFileRefusal::TooHeavy : ReferenceFileRefusal::TooLong);
         }
 
-        $text = @file_get_contents($file->getPathname());
+        $body = @file_get_contents($file->getPathname());
 
-        if (!\is_string($text)) {
+        if (!\is_string($body)) {
             throw new ReferenceFileRefusedException(ReferenceFileRefusal::Failed);
         }
+
+        $text = $isPdf ? self::textOfPdf($body) : $body;
 
         if (str_contains($text, "\0") || !mb_check_encoding($text, 'UTF-8')) {
             throw new ReferenceFileRefusedException(ReferenceFileRefusal::Unreadable);
@@ -104,6 +120,31 @@ final readonly class ReferenceFile
         }
 
         return new self($name, $text);
+    }
+
+    /**
+     * The text of a PDF, told by its content rather than its name: a file
+     * that does not start as a PDF is not handed to the parser.
+     *
+     * @throws ReferenceFileRefusedException when it is not a PDF, cannot be read or holds no text
+     */
+    private static function textOfPdf(string $body): string
+    {
+        if (!str_starts_with(ltrim(substr($body, 0, 1024)), self::PDF_SIGNATURE)) {
+            throw new ReferenceFileRefusedException(ReferenceFileRefusal::Unreadable);
+        }
+
+        $text = ReadableText::ofPdf($body);
+
+        if (null === $text) {
+            throw new ReferenceFileRefusedException(ReferenceFileRefusal::UnreadablePdf);
+        }
+
+        if ('' === trim($text)) {
+            throw new ReferenceFileRefusedException(ReferenceFileRefusal::NoText);
+        }
+
+        return $text;
     }
 
     /**

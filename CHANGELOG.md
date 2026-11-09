@@ -67,12 +67,19 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   plays (the module's or PHP's). No schema change, no setting.
 - **A file joined to a change.** "Ask for a change" on the content screen, on
   the whole draft or on one section ("Rewrite this section"), takes the same
-  `.md` or `.txt` file as the brief, with the same ceiling, refusals
+  file as the brief, with the same ceiling, refusals
   and judge: the file is material for the change, the change typed stays the
   only request. The ledger keeps its name in the JSON of the change; the recall
   of the brief does not show it. The messages of a refused file no longer
-  speak of the brief only ("Only a .md or .txt file can be joined.", "The
-  joined file reads as instructions…").
+  speak of the brief only ("Only a .md, .txt or .pdf file can be joined.",
+  "The joined file reads as instructions…").
+- **A PDF joined to the brief or to a change.** Besides `.md` and `.txt`, the
+  file may be a PDF of up to 5 MB: its text is extracted on the server, as for
+  a PDF the brief cites, and read like the text of a text file (same judge,
+  same 100,000 characters, the ledger keeps its name). Its images are not read.
+  A file named `.pdf` that is not one, a damaged or protected PDF and a scanned
+  PDF without text are refused before any call, each with its reason. The
+  browser ceiling becomes 5 MB.
 
 ### Fixed
 

@@ -25,9 +25,10 @@ For the people who run the shop and write its pages. The technical side is in
   no component of the site shows what the brief asks; each one is a call of
   its own, counted in the history.
 - Reads a web page you cite, if you allowed it (see below).
-- Reads a file you join to the brief: a `.md` or `.txt` file of up to
-  100,000 characters, such as a product sheet or a page of the old site saved
-  as text. What it says counts as given by your brief; the AI reads it as
+- Reads a file you join to the brief: a `.md`, `.txt` or `.pdf` file of up to
+  5 MB and 100,000 characters of text, such as a product sheet or a page of
+  the old site. Only the text of a PDF is read: not its images, and not a
+  scanned PDF, which is refused. What it says counts as given by your brief; the AI reads it as
   material, never as instructions. A file that reads as instructions rather
   than as a document on the page is refused before anything is written, and
   the screen says so. The file is not kept: the history of the page names it,
