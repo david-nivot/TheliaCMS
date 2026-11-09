@@ -7,6 +7,17 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **An "Edit this page" button on the site for an administrator who may change
+  pages.** At the bottom right of a CMS page (the home page and the page shown
+  on a missing address included), it opens the content screen of that page in
+  the language being read; on the page of a catalogue item whose published
+  document is printed, it opens the content screen of that document. Drawn by
+  the theme hook `layout.body.bottom`; a page that shows it is answered
+  `private, no-store`. A visitor and the previews of the content screen never
+  show it.
+
 ## [2.19.0] - 2026-11-09
 
 ### Added

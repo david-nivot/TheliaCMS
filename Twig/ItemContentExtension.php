@@ -19,6 +19,7 @@ use Thelia\Domain\Localization\Service\LangService;
 use Thelia\Model\Lang;
 use TheliaCMS\Catalogue\CatalogueItemType;
 use TheliaCMS\Catalogue\ItemContentRepository;
+use TheliaCMS\Catalogue\PrintedDocuments;
 use TheliaCMS\Partial\PartialRenderer;
 use TheliaCMS\Preview\ItemDraftRequest;
 use Twig\Extension\AbstractExtension;
@@ -40,6 +41,7 @@ final class ItemContentExtension extends AbstractExtension
         private readonly LangService $langService,
         private readonly ItemDraftRequest $draftRequest,
         private readonly AiTransparencyExtension $transparency,
+        private readonly PrintedDocuments $printed,
     ) {
     }
 
@@ -76,6 +78,10 @@ final class ItemContentExtension extends AbstractExtension
 
         if (null === $html) {
             return '';
+        }
+
+        if (!$draft) {
+            $this->printed->record($itemType, $itemId);
         }
 
         $html = (string) $this->partials->substitute($html, $locale);

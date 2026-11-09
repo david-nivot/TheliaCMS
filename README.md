@@ -1375,6 +1375,24 @@ php Thelia thelia_cms:import:header-highlights --url https://www.example.com/
   empty), 1 when a language could not be written (a text longer than the section
   accepts, for instance).
 
+### Edit button
+
+An administrator signed in to the back office who may change pages
+(`admin.cms.page`, update) sees, on the site, a button at the bottom right that
+opens the content screen of what they are reading, in the language being read:
+the CMS page served (the home page and the page shown on a missing address
+included), or the document of the product, category, content, folder or dealer
+the page is about, when its published document is printed on it. It is drawn by
+the theme hook `layout.body.bottom` (Flexy fires it on every page; a theme that
+does not fire it draws no button), with its own inline styles. A visitor sees
+nothing, and neither preview of the content screen shows it.
+
+A page that shows the button is answered `private, no-store`. The front office
+reads the administrator from the session it shares with the back office: behind
+a proxy told to drop the session cookie on the pages, as the shared cache asks,
+the administrator is not recognised and gets the cached page, without the
+button.
+
 ### Page types
 
 A page has one type, picked in the "General" tab, which chooses the template it

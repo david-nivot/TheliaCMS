@@ -598,6 +598,8 @@ return [
     'These choices dress every CMS page and every preview in the editor. What is left empty keeps the style of the theme.' => 'Ces choix habillent chaque page du CMS et chaque aperçu dans l’éditeur. Ce qui reste vide garde le style du thème.',
     'These entries are hidden from your site until they are fixed.' => 'Ces entrées restent masquées sur votre site jusqu’à ce qu’elles soient corrigées.',
     'The site' => 'Le site',
+    'Edit this page' => 'Modifier cette page',
+    'Edit the content of this page' => 'Modifier le contenu de cette page',
     'The site is closed for maintenance' => 'Le site est fermé pour maintenance',
     'The snippet' => 'Le script',
     'The snippet has been removed.' => 'Le script a été supprimé.',

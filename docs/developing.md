@@ -269,6 +269,20 @@ by hand, on a page made for it.
   a CMS page to visitors marks its request, and gets a case in
   `ContentSecurityPolicyListenerTest`; a page of the shop is never marked.
 
+## Drawing for an administrator on the site
+
+- Both previews of the content screen render through the layout of the theme,
+  with the session of the administrator: the draft of a page
+  (`cms.page.preview`, `base.html.twig` and its hooks) and the draft of an item,
+  printed on the real page of the product or the category (`ItemDraftRequest`,
+  `_view` is `product`). Whatever a layout hook draws for an administrator
+  (`Front/EditButtonThemeHook.php`) decides on what was served, never on
+  `_view` alone: `TheliaCMS::SERVED_PAGE_ATTRIBUTE` for a page,
+  `Catalogue/PrintedDocuments` for the published document of an item.
+- Something drawn for the one person reading the page sets
+  `PageCacheListener::PERSONAL_ATTRIBUTE`: the page is answered
+  `private, no-store`, which also keeps the shared cache of the core away.
+
 ## Calling the AI layer
 
 - Every call goes through `Thelia\Domain\Ai\AiGatewayInterface`, under one of

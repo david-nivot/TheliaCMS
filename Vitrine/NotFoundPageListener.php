@@ -139,6 +139,7 @@ final readonly class NotFoundPageListener
         $request->attributes->set('_view', TheliaCMS::PAGE_VIEW);
         $request->attributes->set(self::PAGE_ID_PARAMETER, $pageId);
         $request->attributes->set(TheliaCMS::STAND_IN_PAGE_ATTRIBUTE, $pageId);
+        $request->attributes->set(TheliaCMS::SERVED_PAGE_ATTRIBUTE, $pageId);
         $request->query->set(self::PAGE_ID_PARAMETER, (string) $pageId);
     }
 
@@ -164,6 +165,7 @@ final readonly class NotFoundPageListener
         }
 
         $request->attributes->remove(TheliaCMS::STAND_IN_PAGE_ATTRIBUTE);
+        $request->attributes->remove(TheliaCMS::SERVED_PAGE_ATTRIBUTE);
 
         null === $previous['queryId']
             ? $request->query->remove(self::PAGE_ID_PARAMETER)

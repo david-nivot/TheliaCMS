@@ -19,6 +19,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
+use Symfony\Component\HttpKernel\EventListener\AbstractSessionListener;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Thelia\Core\SharedCache\SharedCacheMode;
 use Thelia\Model\ConfigQuery;
@@ -100,6 +101,24 @@ final class PageCacheHeadersTest extends CmsIntegrationTestCase
      * A proxy keeps a page until its `s-maxage` runs out, whatever happens to
      * the page meanwhile: a page leaving in two minutes is kept two minutes.
      */
+    public function testAPageDrawnForTheOnePersonReadingItIsNeverShared(): void
+    {
+        $page = $this->createPage('Page vue par un administrateur');
+        $tags = CacheTags::forPage((int) $page->getId());
+        $ttl = TheliaCMS::getConfigValue(PageCachePolicy::TTL_SETTING, '0');
+        TheliaCMS::setConfigValue(PageCachePolicy::TTL_SETTING, '600');
+
+        try {
+            self::assertNotNull($this->respond($tags)->headers->getCacheControlDirective('s-maxage'), 'The page alone is shared: the test proves nothing otherwise.');
+            $response = $this->respond($tags, personal: true);
+        } finally {
+            TheliaCMS::setConfigValue(PageCachePolicy::TTL_SETTING, (string) $ttl);
+        }
+
+        self::assertSame('no-store, private', $response->headers->get('Cache-Control'));
+        self::assertFalse($response->headers->has(AbstractSessionListener::NO_AUTO_CACHE_CONTROL_HEADER));
+    }
+
     public function testAPageIsSharedNoLongerThanUntilItGoesOffline(): void
     {
         $page = $this->createPage('Page qui part bientôt');
@@ -220,7 +239,7 @@ final class PageCacheHeadersTest extends CmsIntegrationTestCase
      * @param list<string>|null $tags
      * @param list<string>      $shown
      */
-    private function respond(?array $tags, array $shown = []): Response
+    private function respond(?array $tags, array $shown = [], bool $personal = false): Response
     {
         $request = Request::create('/a-page');
         if (null !== $tags) {
@@ -228,6 +247,9 @@ final class PageCacheHeadersTest extends CmsIntegrationTestCase
         }
         if ([] !== $shown) {
             $request->attributes->set(PageCacheListener::SHOWN_TAGS_ATTRIBUTE, $shown);
+        }
+        if ($personal) {
+            $request->attributes->set(PageCacheListener::PERSONAL_ATTRIBUTE, true);
         }
         $response = new Response('<html></html>');
 

@@ -43,6 +43,12 @@ final readonly class PageCacheListener
      */
     public const string SHOWN_TAGS_ATTRIBUTE = '_cms_cache_shown_tags';
 
+    /**
+     * Set by whatever drew something meant for the person reading the page
+     * alone (the edit button of an administrator): the page is nobody else's.
+     */
+    public const string PERSONAL_ATTRIBUTE = '_cms_personal';
+
     public function __construct(
         private PageCachePolicy $policy,
         private CmsSettings $settings,
@@ -95,6 +101,13 @@ final readonly class PageCacheListener
         // what keeps the shared cache of the core, which runs after this, from
         // sharing it.
         if (\in_array(CacheTags::partial(FormPartial::NAME), [...$tags, ...$shown], true)) {
+            $this->keepPrivate($event->getResponse());
+        }
+
+        // Already refused to a shared cache by the session it comes with; said
+        // again so that a link to the back office never hangs on how a session
+        // is told apart.
+        if (true === $request->attributes->get(self::PERSONAL_ATTRIBUTE)) {
             $this->keepPrivate($event->getResponse());
         }
     }

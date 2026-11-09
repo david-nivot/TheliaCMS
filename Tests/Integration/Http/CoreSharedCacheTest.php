@@ -102,6 +102,18 @@ final class CoreSharedCacheTest extends CmsIntegrationTestCase
         self::assertSame([CacheTags::SITE, CacheTags::MENUS], $this->collector()->keys());
     }
 
+    public function testTheCoreSharesNoPageDrawnForTheOnePersonReadingIt(): void
+    {
+        ConfigQuery::write(SharedCacheMode::CONFIG_KEY, SharedCacheMode::ENABLED->value);
+
+        self::assertTrue($this->respondThroughTheKernel(CacheTags::forPage(12))->headers->hasCacheControlDirective('public'), 'The page alone is shared: the test proves nothing otherwise.');
+
+        $response = $this->respondThroughTheKernel(CacheTags::forPage(12), personal: true);
+
+        self::assertFalse($response->headers->hasCacheControlDirective('public'));
+        self::assertTrue($response->headers->hasCacheControlDirective('no-store'));
+    }
+
     public function testTheModuleKeepsItsOwnHeadersWhileTheShopDoesNotShare(): void
     {
         ConfigQuery::write(SharedCacheMode::CONFIG_KEY, SharedCacheMode::DISABLED->value);
@@ -208,11 +220,14 @@ final class CoreSharedCacheTest extends CmsIntegrationTestCase
      *
      * @param list<string> $tags
      */
-    private function respondThroughTheKernel(array $tags): Response
+    private function respondThroughTheKernel(array $tags, bool $personal = false): Response
     {
         $request = Request::create('/');
         $request->attributes->set('_view', TheliaCMS::PAGE_VIEW);
         $request->attributes->set(PageCacheListener::TAGS_ATTRIBUTE, $tags);
+        if ($personal) {
+            $request->attributes->set(PageCacheListener::PERSONAL_ATTRIBUTE, true);
+        }
         $response = new Response('<html></html>');
 
         $this->getService(EventDispatcherInterface::class)->dispatch(
