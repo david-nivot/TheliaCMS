@@ -87,6 +87,8 @@ final readonly class CmsPageViewListener
             $request->attributes->set(TheliaCMS::PAGE_CANONICAL_ATTRIBUTE, $page->canonical);
         }
 
+        $request->attributes->set(TheliaCMS::SERVED_PAGE_ATTRIBUTE, $pageId);
+
         $response = new Response($this->renderer->render($page));
 
         if ($page->noindex) {

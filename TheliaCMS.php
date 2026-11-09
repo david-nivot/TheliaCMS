@@ -73,6 +73,13 @@ class TheliaCMS extends BaseModule
     public const string STAND_IN_PAGE_ATTRIBUTE = '_cms_stand_in_page_id';
 
     /**
+     * Request attribute holding the id of the CMS page a response renders, set
+     * before it is rendered, on its own address or in place of a missing one.
+     * Never set by a preview: what reads it is told a visitor sees this page.
+     */
+    public const string SERVED_PAGE_ATTRIBUTE = '_cms_served_page_id';
+
+    /**
      * The canonical address the editor typed for the page a response renders,
      * set before it is rendered: the head of the theme asks SEOne for it
      * halfway through the rendering, and PageCanonicalListener answers.

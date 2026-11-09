@@ -1,0 +1,36 @@
+{#
+    The way from the site to the content screen, drawn for a signed-in
+    administrator who may change pages (Front/EditButtonThemeHook). Styled here
+    rather than in the theme: it is drawn on any page of the shop, whatever the
+    theme compiles, and the CSP of the module sets no style-src.
+#}
+<style>
+    .cms-edit-button {
+        position: fixed;
+        right: 1.25rem;
+        bottom: 1.25rem;
+        z-index: 2147483000;
+        display: inline-block;
+        padding: 0.75rem 1.125rem;
+        border-radius: 0.5rem;
+        background: #17202b;
+        color: #ffffff;
+        font: 600 0.9375rem/1.2 system-ui, -apple-system, "Segoe UI", sans-serif;
+        text-decoration: none;
+        box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.25);
+    }
+    .cms-edit-button:hover {
+        background: #0b6a70;
+        color: #ffffff;
+    }
+    .cms-edit-button:focus-visible {
+        outline: 3px solid #f2c94c;
+        outline-offset: 2px;
+    }
+    @media print {
+        .cms-edit-button {
+            display: none;
+        }
+    }
+</style>
+<a class="cms-edit-button" href="{{ url }}">{{ label }}</a>
