@@ -29,6 +29,7 @@ enum ReferenceFileRefusal: string
     case UnreadablePdf = 'unreadable-pdf';
     case NoText = 'no-text';
     case JudgeLeftOut = 'judge-left-out';
+    case JudgeLeftOutOfComponents = 'judge-left-out-of-components';
     case HeavyPdf = 'heavy-pdf';
 
     /** What the editor is told, a key of the translations of the module. */
@@ -46,6 +47,7 @@ enum ReferenceFileRefusal: string
             self::NoText => 'The PDF holds no text: a scanned document is not read. Join its text as a .txt file.',
             self::HeavyPdf => 'The PDF is too heavy to read: once decompressed, its pages hold far more than the generator reads. Join its text as a .txt file.',
             self::JudgeLeftOut => 'A joined file is checked by the guardrail reference_file, which the AI settings of the usage theliacms.page_generation leave out. Add it there, or join no file.',
+            self::JudgeLeftOutOfComponents => 'A joined file is checked by the guardrail reference_file, which the AI settings of the usage theliacms.component leave out. Add it there, or join no file.',
         };
     }
 }

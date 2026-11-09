@@ -15,10 +15,12 @@ declare(strict_types=1);
 namespace TheliaCMS\Generation\Component;
 
 use TheliaCMS\Content\Site\SiteComponent;
+use TheliaCMS\Generation\ReferenceFile;
 
 /**
  * What an editor asks of the generator of components: a new one, or a change
- * of the one they are looking at, kept already or still a candidate.
+ * of the one they are looking at, kept already or still a candidate. A file
+ * may come with it, read as material the request gives, never instructions.
  */
 final readonly class ComponentRequest
 {
@@ -29,12 +31,14 @@ final readonly class ComponentRequest
     /**
      * @param SiteComponent|null $current     the component to change, kept or still a candidate; null for a new one
      * @param int|null           $componentId the row of the component to change, when it is kept
+     * @param ReferenceFile|null $reference   the file joined to the request
      */
     public function __construct(
         public string $text,
         public string $locale,
         public ?SiteComponent $current = null,
         public ?int $componentId = null,
+        public ?ReferenceFile $reference = null,
     ) {
         if ('' === trim($text)) {
             throw new \InvalidArgumentException('A request says something.');
