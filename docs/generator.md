@@ -255,15 +255,18 @@ recall of the brief names the file; the form does not put it back, and a page
 written again from its brief is written without it unless the editor joins it
 again.
 
-"Ask for a change" takes a file the same way, with the same ceiling, the same
+"Ask for a change", on the whole draft or on one section ("Rewrite this
+section"), takes a file the same way, with the same ceiling, the same
 refusals and the same judge: a change of the whole draft (a revision) may come
 with new prices, a product sheet, a note, read as material for the change; the
 change typed in the form stays the only request, and the block of the message
 says so. The ledger keeps the name of that file in the JSON of the change; the
-recall of the brief never shows it, since it reads the latest brief only. A
+recall of the brief never shows it, since it reads the latest brief only. The
+file field of a section is named after it (`cms_change_<section>[reference]`),
+as its text is. A
 file joined to a change says what to draw from, not what to do: a file that
 gives the change itself ("replace the prices by…") reads as instructions and is
-refused. Rewriting one section takes no file yet.
+refused.
 
 A file that instructs rather than documents (it addresses an assistant, asks
 to act or to ignore rules, or has nothing to do with a page to write) is

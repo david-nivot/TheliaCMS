@@ -65,13 +65,14 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   refused and says so, a brief without one is written as before. A file above
   the ceiling is refused by the browser before it is sent, with the limit that
   plays (the module's or PHP's). No schema change, no setting.
-- **A file joined to a change.** "Ask for a change" on the content screen takes
-  the same `.md` or `.txt` file as the brief, with the same ceiling, refusals
+- **A file joined to a change.** "Ask for a change" on the content screen, on
+  the whole draft or on one section ("Rewrite this section"), takes the same
+  `.md` or `.txt` file as the brief, with the same ceiling, refusals
   and judge: the file is material for the change, the change typed stays the
   only request. The ledger keeps its name in the JSON of the change; the recall
-  of the brief does not show it. Rewriting one section takes no file. The
-  messages of a refused file no longer speak of the brief only ("Only a .md or
-  .txt file can be joined.", "The joined file reads as instructions…").
+  of the brief does not show it. The messages of a refused file no longer
+  speak of the brief only ("Only a .md or .txt file can be joined.", "The
+  joined file reads as instructions…").
 
 ### Fixed
 

@@ -745,7 +745,6 @@ final class ContentScreenTest extends AdminScreenTestCase
         self::assertSame((string) min(ReferenceFile::MAX_BYTES, (int) UploadedFile::getMaxFilesize()), $input->attr('data-max-size'), 'The browser is told the ceiling that plays.');
         self::assertNotEmpty($input->attr('data-max-size-message'));
         self::assertSame('multipart/form-data', $screen->filter('[data-testid="cms-content-change"] form')->attr('enctype'));
-        self::assertSame(0, $screen->filter('[data-testid="cms-content-sections"] input[type="file"][name$="[reference]"]')->count(), 'Rewriting one section takes no file yet.');
 
         $form = $screen->filter('[data-testid="cms-content-change"] form')->form();
         $form['cms_change[text]'] = 'Mets à jour les prix depuis le fichier.';
@@ -776,6 +775,56 @@ final class ContentScreenTest extends AdminScreenTestCase
         $form = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-content-change"] form')->form();
         $form['cms_change[text]'] = 'Mets à jour les prix.';
         $this->client->request('POST', $form->getUri(), $form->getPhpValues(), ['cms_change' => ['reference' => $this->referenceFile('tarifs.pdf', '%PDF-1.4')]], self::SAME_SITE);
+
+        self::assertSame(302, $this->client->getResponse()->getStatusCode());
+        self::assertSame([], $this->api->requests, 'Nothing was sent to the API.');
+        self::assertSame(0, CmsPageGenerationQuery::create()->filterByTargetId($page->getId())->count(), 'No row of the ledger.');
+        $flash = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-builder-flash-danger"]');
+        self::assertSame(1, $flash->count());
+        self::assertStringContainsString('Only a .md or .txt file can be joined.', $flash->text());
+    }
+
+    public function testASectionRewrittenWithAFileSendsItAsADocumentAndTheLedgerKeepsTheNameOfTheFileNotItsText(): void
+    {
+        $page = $this->createPage('Tarifs par section', published: false);
+        $this->api->answer(FakeAiGateway::response(json_encode(['id' => 'content', 'component' => 'cms:richtext', 'props' => ['html' => '<h2>Tarifs</h2><p>Bol : 24 €.</p>']], \JSON_THROW_ON_ERROR)));
+
+        $screen = $this->screen($this->url($page->getId()));
+        $section = $screen->filter('[data-testid="cms-content-sections"] li[data-section="content"] form[data-cms-generate]');
+        $input = $section->filter('input[type="file"][name="cms_change_content[reference]"]');
+        self::assertSame(1, $input->count(), 'Rewriting one section takes a file.');
+        self::assertSame('.md,.txt', $input->attr('accept'));
+        self::assertSame((string) min(ReferenceFile::MAX_BYTES, (int) UploadedFile::getMaxFilesize()), $input->attr('data-max-size'));
+        self::assertSame('cms_change_content_reference', $input->attr('id'), 'The field is named after its section: no two share an id.');
+        self::assertSame('multipart/form-data', $section->attr('enctype'));
+
+        $form = $section->form();
+        $form['cms_change_content[text]'] = 'Mets le prix du fichier.';
+        $this->client->request('POST', $form->getUri(), $form->getPhpValues(), ['cms_change_content' => ['reference' => $this->referenceFile('Tarifs 2027.md', "# Tarifs 2027\n\nBol en grès : 24 €.")]], self::SAME_SITE);
+
+        self::assertSame(302, $this->client->getResponse()->getStatusCode());
+        $request = $this->api->requests[0];
+        self::assertSame(UntrustedSource::Document, $request->untrustedContents[0]->source ?? null, 'The file reached the model as a document.');
+        self::assertSame('Tarifs 2027.md', $request->untrustedContents[0]->reference);
+        self::assertStringContainsString('Write the section `content` again', $request->messages[0]->content);
+        self::assertStringContainsString('# The file joined to the change asked', $request->messages[0]->content);
+        self::assertStringNotContainsString('Bol en grès : 24 €.', $request->messages[0]->content, 'Nothing of the file is in the message: the gateway wraps it.');
+
+        $row = CmsPageGenerationQuery::create()->filterByTargetId($page->getId())->findOne();
+        self::assertNotNull($row);
+        self::assertSame('section', $row->getKind());
+        $brief = json_decode((string) $row->getBrief(), true, flags: \JSON_THROW_ON_ERROR);
+        self::assertSame('Tarifs 2027.md', $brief['reference']['name']);
+        self::assertStringNotContainsString('24 €', (string) $row->getBrief(), 'The ledger keeps nothing of the text.');
+    }
+
+    public function testAFileTheSectionDoesNotTakeIsRefusedBeforeAnyCallWithItsReason(): void
+    {
+        $page = $this->createPage('Mauvais fichier de section', published: false);
+
+        $form = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-content-sections"] li[data-section="content"] form[data-cms-generate]')->form();
+        $form['cms_change_content[text]'] = 'Mets le prix du fichier.';
+        $this->client->request('POST', $form->getUri(), $form->getPhpValues(), ['cms_change_content' => ['reference' => $this->referenceFile('tarifs.pdf', '%PDF-1.4')]], self::SAME_SITE);
 
         self::assertSame(302, $this->client->getResponse()->getStatusCode());
         self::assertSame([], $this->api->requests, 'Nothing was sent to the API.');

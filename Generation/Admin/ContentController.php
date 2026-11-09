@@ -168,7 +168,13 @@ final readonly class ContentController
         $data = $form->getData();
 
         try {
-            $generation = GenerationRequest::section($target->generationTarget(), $target->locale(), $current, (string) $data['section'], new Brief((string) $data['text']));
+            $reference = self::referenceOf($data);
+        } catch (ReferenceFileRefusedException $refused) {
+            return $this->refuseFile($request, $refused, $target);
+        }
+
+        try {
+            $generation = GenerationRequest::section($target->generationTarget(), $target->locale(), $current, (string) $data['section'], new Brief((string) $data['text'], reference: $reference));
         } catch (\InvalidArgumentException) {
             $this->support->flash($request, 'danger', $this->support->translate('This section is no longer in the page: reload the screen.'));
 

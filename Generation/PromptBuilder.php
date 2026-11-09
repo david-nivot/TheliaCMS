@@ -172,8 +172,9 @@ final readonly class PromptBuilder
         }
 
         if (null !== $request->brief->reference) {
-            // A change asked comes with a file the same way a brief does.
-            $asked = GenerationRequest::KIND_REVISION === $request->kind ? 'change asked' : 'brief';
+            // A change asked, of the whole document or of one section, comes
+            // with a file the same way a brief does.
+            $asked = \in_array($request->kind, [GenerationRequest::KIND_REVISION, GenerationRequest::KIND_SECTION], true) ? 'change asked' : 'brief';
             $lines[] = '';
             $lines[] = \sprintf('# The file joined to the %s', $asked);
             $lines[] = '';

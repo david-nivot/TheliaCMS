@@ -472,6 +472,7 @@
                                                 <input type="hidden" name="_token" value="{{ assignToken() }}">
                                                 {{ form_widget(section.form.section) }}
                                                 {{ form_row(section.form.text, { label: false }) }}
+                                                {{ form_row(section.form.reference, { attr: { 'data-testid': 'cms-section-rewrite-reference-' ~ section.id } }) }}
                                                 <button type="submit" class="btn btn-sm btn-outline-primary">
                                                     {{ 'Rewrite'|trans({}, 'theliacms') }}
                                                 </button>
