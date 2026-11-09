@@ -96,7 +96,8 @@ final readonly class CmsPageAdminController
 
     /**
      * A blank page; `?page_type=recipe` starts it with that type, and the
-     * fields of the type.
+     * fields of the type, `?parent=12` under that page (the list of the pages
+     * of a page offers it).
      */
     #[Route('/new', name: 'create', methods: ['GET', 'POST'])]
     public function create(Request $request): Response
@@ -108,6 +109,13 @@ final readonly class CmsPageAdminController
 
         if ($this->pageTypes->exists($type)) {
             $page->setPageType($type);
+        }
+
+        // Only a live page that is no model can hold one; anything else starts at the root.
+        $parent = $this->pages->findLive($request->query->getInt('parent'));
+
+        if (null !== $parent && 0 === $parent->getModel()) {
+            $page->setParent((int) $parent->getId());
         }
 
         return $this->handleForm($request, $page);

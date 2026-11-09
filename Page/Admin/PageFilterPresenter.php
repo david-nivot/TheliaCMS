@@ -40,6 +40,7 @@ final readonly class PageFilterPresenter
      * @param array<string, string>   $types   the names of the page types, by code
      * @param array<string, int>      $counts  the live pages in each state, by state, the whole site
      * @param array<int, string|null> $authors the administrators who changed a page last, by id, null for a deleted account
+     * @param string|null             $section the title of the page whose pages are listed
      *
      * @return array{
      *     parameters: array{search: string, statuses: string, visibility: string, tag: string, type: string, sort: string, date: string, from: string, to: string, author: string},
@@ -70,7 +71,7 @@ final readonly class PageFilterPresenter
      *     hidden_params: array<string, string>,
      * }
      */
-    public function present(PageFilters $filters, int $languageId, int $trashCount, array $tags = [], array $types = [], array $counts = [], array $authors = []): array
+    public function present(PageFilters $filters, int $languageId, int $trashCount, array $tags = [], array $types = [], array $counts = [], array $authors = [], ?string $section = null): array
     {
         return [
             // The names the form posts under, taken from the object that reads
@@ -119,7 +120,7 @@ final readonly class PageFilterPresenter
             'reverse_url' => null === $filters->sort
                 ? null
                 : $this->listUrl($filters->sortedBy($filters->sort), $languageId),
-            'chips' => $this->chips($filters, $languageId, $tags, $types, $authors),
+            'chips' => $this->chips($filters, $languageId, $tags, $types, $authors, $section),
             'sort_chip' => $this->sortChip($filters, $languageId),
             'clear_url' => $this->listUrl(new PageFilters(open: $filters->open, foldChosen: $filters->foldChosen), $languageId),
             // Offered only when something is unfolded, and there is no "unfold
@@ -134,9 +135,10 @@ final readonly class PageFilterPresenter
             ], static fn (mixed $value): bool => null !== $value)),
             'trash_count' => $trashCount,
             // Carried through the filter form so submitting it does not fold the
-            // tree or switch the language back.
+            // tree, switch the language back or leave the page whose pages are listed.
             'hidden_params' => array_filter([
                 EditLanguage::PARAMETER => (string) $languageId,
+                PageFilters::INSIDE => null === $filters->inside ? null : (string) $filters->inside,
                 PageFilters::OPEN => $filters->foldChosen || [] !== $filters->open
                     ? implode(',', $filters->open)
                     : null,
@@ -298,9 +300,17 @@ final readonly class PageFilterPresenter
      *
      * @return list<array{label: string, remove_url: string}>
      */
-    private function chips(PageFilters $filters, int $languageId, array $tags, array $types, array $authors): array
+    private function chips(PageFilters $filters, int $languageId, array $tags, array $types, array $authors, ?string $section = null): array
     {
         $chips = [];
+
+        // Removed, the same search looks through the whole site.
+        if (null !== $filters->inside && null !== $section) {
+            $chips[] = [
+                'label' => $this->translate('Inside "%title%"', ['%title%' => $section]),
+                'remove_url' => $this->listUrl($filters->withoutFilter(PageFilters::INSIDE), $languageId),
+            ];
+        }
 
         if ('' !== $filters->search) {
             $chips[] = [

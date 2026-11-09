@@ -48,6 +48,7 @@ final readonly class PageFilters
     public const string FROM = 'from';
     public const string TO = 'to';
     public const string AUTHOR = 'author';
+    public const string INSIDE = 'inside';
 
     /** How a day is written in the address: the value of an `<input type="date">`. */
     public const string DAY_FORMAT = 'Y-m-d';
@@ -62,7 +63,7 @@ final readonly class PageFilters
     public const string RETURN = 'return';
 
     /** The parameters a return may hold, and nothing else. */
-    private const array RETURNABLE = [self::SEARCH, self::STATUSES, self::VISIBILITY, self::PAGE, self::OPEN, self::TAG, self::TYPE, self::SORT, self::DIRECTION, self::DATE, self::FROM, self::TO, self::AUTHOR];
+    private const array RETURNABLE = [self::SEARCH, self::STATUSES, self::VISIBILITY, self::PAGE, self::OPEN, self::TAG, self::TYPE, self::SORT, self::DIRECTION, self::DATE, self::FROM, self::TO, self::AUTHOR, self::INSIDE];
 
     /** A state of the listing never needs more; anything longer is refused. */
     private const int RETURN_MAX_LENGTH = 1000;
@@ -99,6 +100,8 @@ final readonly class PageFilters
      * @param \DateTimeImmutable|null $to         the last day kept, at midnight
      * @param int|null                $author     the administrator who changed the
      *                                            pages last
+     * @param int|null                $inside     the page whose pages are listed, the
+     *                                            ones directly under it
      * @param bool                    $foldChosen whether the editor said anything about
      *                                            folding at all, which is not the same
      *                                            as having nothing open: a small site
@@ -122,6 +125,7 @@ final readonly class PageFilters
         public ?\DateTimeImmutable $from = null,
         public ?\DateTimeImmutable $to = null,
         public ?int $author = null,
+        public ?int $inside = null,
     ) {
     }
 
@@ -169,6 +173,7 @@ final readonly class PageFilters
             from: $from,
             to: $to,
             author: self::readId(trim((string) $query->get(self::AUTHOR, ''))),
+            inside: self::readId(trim((string) $query->get(self::INSIDE, ''))),
         );
     }
 
@@ -269,7 +274,35 @@ final readonly class PageFilters
             || null !== $this->type
             || null !== $this->sort
             || null !== $this->date
-            || null !== $this->author;
+            || null !== $this->author
+            || null !== $this->inside;
+    }
+
+    /**
+     * Whether the list is the pages of one page and nothing else: in the order
+     * of the site, which a move changes, rather than in an order of results.
+     */
+    public function isInsideOnly(): bool
+    {
+        return null !== $this->inside
+            && '' === $this->search
+            && [] === $this->statuses
+            && null === $this->visible
+            && null === $this->tag
+            && null === $this->type
+            && null === $this->sort
+            && null === $this->date
+            && null === $this->author;
+    }
+
+    /**
+     * Every page directly under this one, nothing else asked: what a click on
+     * a page that holds others opens. The branches of the tree stay as they
+     * are, for the way back to it.
+     */
+    public function inside(int $pageId): self
+    {
+        return new self(open: $this->open, foldChosen: $this->foldChosen, inside: $pageId);
     }
 
     /**
@@ -371,6 +404,10 @@ final readonly class PageFilters
             $params[self::AUTHOR] = (string) $this->author;
         }
 
+        if (null !== $this->inside) {
+            $params[self::INSIDE] = (string) $this->inside;
+        }
+
         if ($this->page > 1) {
             $params[self::PAGE] = (string) $this->page;
         }
@@ -394,6 +431,7 @@ final readonly class PageFilters
             self::SORT => $this->with(unsetSort: true),
             self::DATE => $this->with(unsetDate: true),
             self::AUTHOR => $this->with(unsetAuthor: true),
+            self::INSIDE => $this->with(unsetInside: true),
             default => $this,
         };
     }
@@ -460,6 +498,7 @@ final readonly class PageFilters
         bool $unsetSort = false,
         bool $unsetDate = false,
         bool $unsetAuthor = false,
+        bool $unsetInside = false,
     ): self {
         return new self(
             search: $search ?? $this->search,
@@ -479,6 +518,7 @@ final readonly class PageFilters
             from: $unsetDate ? null : $this->from,
             to: $unsetDate ? null : $this->to,
             author: $unsetAuthor ? null : $this->author,
+            inside: $unsetInside ? null : $this->inside,
         );
     }
 

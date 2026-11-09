@@ -7,6 +7,21 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **The pages of one page, on a list of their own.** The number of pages a page
+  holds, on its row of the page list, opens the list of the pages directly
+  under it (`?inside=<id>`): flat, in the order of the site, paginated by 50,
+  with the search, the filters, the sorts and the bulk actions of the list. Its
+  head shows where the page sits, each page above a link to its own list and
+  **All pages** back to the tree as it was left, and offers **Create a page
+  here**, which starts the new page under it, and the settings of the page.
+  The pages move up and down there as on the tree, across the pages of results;
+  a search or a sort among them turns the moves off. A search typed there stays
+  inside the page until its chip is removed. On a list of results, each page
+  above a result (**Under** …) opens its list too. A page in the bin, a model or
+  an id that names no page is ignored, and the tree comes back.
+
 ## [2.22.0] - 2026-11-09
 
 ### Added

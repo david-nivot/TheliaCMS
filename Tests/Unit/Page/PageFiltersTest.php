@@ -46,6 +46,59 @@ final class PageFiltersTest extends TestCase
         self::assertSame(['q' => 'contact'], $filters->toQueryParams());
     }
 
+    public function testAPageToLookInsideListsItsPagesFlat(): void
+    {
+        $filters = PageFilters::fromRequest(new Request(['inside' => '12', 'open' => '4']));
+
+        self::assertSame(12, $filters->inside);
+        self::assertTrue($filters->isFiltering(), 'The pages of one page are a list, paginated and sortable like results.');
+        self::assertTrue($filters->isInsideOnly());
+        self::assertSame(0, $filters->advancedCount(), 'Named by the breadcrumb, not counted as a filter of the bar.');
+        self::assertSame(['inside' => '12', 'open' => '4'], $filters->toQueryParams());
+        self::assertSame($filters->toQueryParams(), PageFilters::fromReturnParameter((string) $filters->toReturnParameter())->toQueryParams(), 'A screen opened from it comes back to it.');
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function notAPage(): iterable
+    {
+        yield 'zero' => ['0'];
+        yield 'negative' => ['-3'];
+        yield 'a word' => ['recipes'];
+        yield 'empty' => [''];
+    }
+
+    #[DataProvider('notAPage')]
+    public function testAnythingButAnIdentifierIsNoPageToLookInside(string $given): void
+    {
+        self::assertNull(PageFilters::fromRequest(new Request(['inside' => $given]))->inside);
+    }
+
+    public function testGoingInsideAPageStartsAfreshAndKeepsTheTree(): void
+    {
+        $filters = new PageFilters(search: 'soup', page: 3, open: [4], foldChosen: true, sort: PageSort::Title);
+
+        $inside = $filters->inside(12);
+
+        self::assertSame(['inside' => '12', 'open' => '4'], $inside->toQueryParams(), 'Every page of it, back to the tree as it was left.');
+    }
+
+    public function testAnythingElseAskedInsideAPageIsNoLongerOnlyInside(): void
+    {
+        self::assertFalse((new PageFilters(search: 'soup', inside: 12))->isInsideOnly());
+        self::assertFalse((new PageFilters(sort: PageSort::Title, inside: 12))->isInsideOnly());
+        self::assertFalse((new PageFilters())->isInsideOnly());
+    }
+
+    public function testLeavingThePageKeepsWhatElseWasAsked(): void
+    {
+        $filters = new PageFilters(search: 'soup', page: 2, inside: 12);
+
+        self::assertSame(['q' => 'soup'], $filters->withoutFilter(PageFilters::INSIDE)->toQueryParams());
+        self::assertSame(12, $filters->withoutFilter(PageFilters::SEARCH)->inside, 'Removing another filter stays inside.');
+    }
+
     public function testAnUnfoldedBranchIsNotAFilter(): void
     {
         // Unfolding is a way of reading the tree, not a way of narrowing it: the

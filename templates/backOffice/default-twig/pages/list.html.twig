@@ -106,6 +106,39 @@
         {% include '@TheliaCMSModule/backOffice/default-twig/pages/_filters.html.twig' %}
 
         <div class="card">
+            {% if section %}
+                {# The pages of one page: the way down to it, each step the list of
+                   its own pages, and a page started here goes under it. #}
+                <div class="card-header" data-testid="cms-pages-section">
+                    <nav aria-label="{{ 'Where these pages sit'|trans({}, 'theliacms') }}">
+                        <ol class="breadcrumb small mb-1">
+                            <li class="breadcrumb-item"><a href="{{ section.all_url }}" data-testid="cms-pages-section-all">{{ 'All pages'|trans({}, 'theliacms') }}</a></li>
+                            {% for step in section.trail %}
+                                <li class="breadcrumb-item"><a href="{{ step.url }}">{{ step.title }}</a></li>
+                            {% endfor %}
+                            <li class="breadcrumb-item active" aria-current="page">{{ section.title }}</li>
+                        </ol>
+                    </nav>
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <h2 class="h6 mb-0">
+                            {{ 'Pages inside “%title%”'|trans({ '%title%': section.title }, 'theliacms') }}
+                            <span class="text-muted fw-normal small ms-1" data-testid="cms-pages-result-count">
+                                {% if results.total > results.perPage %}
+                                    {{ 'Pages %first% to %last% of %total%'|trans({ '%first%': results.firstOnPage, '%last%': results.lastOnPage, '%total%': results.total }, 'theliacms') }}
+                                {% else %}
+                                    {{ '%count% page(s)'|trans({ '%count%': results.total }, 'theliacms') }}
+                                {% endif %}
+                            </span>
+                        </h2>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a class="btn btn-sm btn-outline-secondary" href="{{ section.edit_url }}">{{ 'Settings of this page'|trans({}, 'theliacms') }}</a>
+                            <a class="btn btn-sm btn-primary" href="{{ section.create_url }}" data-testid="cms-pages-section-create">
+                                <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>{{ 'Create a page here'|trans({}, 'theliacms') }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
             <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
                 {% if is_filtering %}
                     <span data-testid="cms-pages-result-count">
@@ -127,11 +160,16 @@
                     {% endif %}
                 {% endif %}
             </div>
+            {% endif %}
 
             {% if rows is empty %}
                 <div class="card-body text-center py-5">
-                    <p class="text-muted mb-2">{{ 'No page matches what you asked for.'|trans({}, 'theliacms') }}</p>
-                    <a class="btn btn-sm btn-outline-secondary" href="{{ filters.clear_url }}">{{ 'Show every page again'|trans({}, 'theliacms') }}</a>
+                    {% if section and reorderable %}
+                        <p class="text-muted mb-2">{{ 'No page inside this one yet.'|trans({}, 'theliacms') }}</p>
+                    {% else %}
+                        <p class="text-muted mb-2">{{ 'No page matches what you asked for.'|trans({}, 'theliacms') }}</p>
+                        <a class="btn btn-sm btn-outline-secondary" href="{{ filters.clear_url }}">{{ 'Show every page again'|trans({}, 'theliacms') }}</a>
+                    {% endif %}
                 </div>
             {% else %}
                 {% if bulk %}
@@ -276,18 +314,25 @@
                                                unpublished, and repeating it costs the row its readability. #}
                                             <span class="badge text-bg-light border ms-2">{{ 'Hidden from the site'|trans({}, 'theliacms') }}</span>
                                         {% endif %}
-                                        {% if row.child_count > 0 and not is_filtering %}
-                                            <span class="badge text-bg-light border ms-2">
+                                        {% if row.children_url %}
+                                            {# Opens the list of the pages of this one, whatever the
+                                               size of the branch. #}
+                                            <a class="badge text-bg-light border ms-2 text-decoration-none" href="{{ row.children_url }}"
+                                               title="{{ 'See the pages inside %title%'|trans({ '%title%': row.title }, 'theliacms') }}"
+                                               data-testid="cms-page-children-{{ row.id }}">
                                                 {{ row.child_count }}
                                                 <span class="visually-hidden">{{ 'pages inside this one'|trans({}, 'theliacms') }}</span>
-                                            </span>
+                                            </a>
                                         {% endif %}
 
-                                        {% if is_filtering and row.ancestor_path %}
+                                        {% if is_filtering and not section and row.ancestors is not empty %}
                                             {# On a list of results there is nothing to indent from, so the
-                                               pages above are named. #}
-                                            <div class="small text-muted">
-                                                {{ 'Inside %path%'|trans({ '%path%': row.ancestor_path }, 'theliacms') }}
+                                               pages above are named, each a list of its own pages. #}
+                                            <div class="small text-muted" data-testid="cms-page-ancestors-{{ row.id }}">
+                                                {{ 'Under'|trans({}, 'theliacms') }}
+                                                {% for ancestor in row.ancestors %}
+                                                    <a href="{{ ancestor.url }}" class="link-secondary">{{ ancestor.title }}</a>{% if not loop.last %} /{% endif %}
+                                                {% endfor %}
                                             </div>
                                         {% endif %}
                                     </td>
@@ -311,7 +356,7 @@
                                     </td>
                                     <td class="text-end datatable-sticky-actions">
                                         <div class="d-inline-flex gap-1">
-                                            {% if not is_filtering %}
+                                            {% if reorderable %}
                                                 <form method="post" action="{{ row.move_up_url }}">
                                                     <input type="hidden" name="_token" value="{{ assignToken() }}">
                                                     <button class="btn btn-sm btn-outline-secondary" type="submit"

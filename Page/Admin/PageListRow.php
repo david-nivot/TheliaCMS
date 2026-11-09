@@ -32,6 +32,7 @@ final readonly class PageListRow
      * @param int                     $childCount             pages directly underneath, bin excluded
      * @param bool                    $isOpen                 whether the branch is unfolded
      * @param list<string>            $ancestorTitles         the pages above it, closest last
+     * @param list<int>               $ancestorIds            the same pages, by id, in the same order
      * @param string|null             $titleInAnotherLanguage a title to show when this language has none
      * @param \DateTimeImmutable|null $modifiedAt             the last change of the page or of its content in this language
      */
@@ -43,6 +44,7 @@ final readonly class PageListRow
         public int $childCount,
         public bool $isOpen = false,
         public array $ancestorTitles = [],
+        public array $ancestorIds = [],
         public ?string $titleInAnotherLanguage = null,
         public ?\DateTimeImmutable $modifiedAt = null,
     ) {

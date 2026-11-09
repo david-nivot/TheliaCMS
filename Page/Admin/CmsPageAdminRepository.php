@@ -210,6 +210,33 @@ final readonly class CmsPageAdminRepository
         ));
     }
 
+    /**
+     * A page of the list whose pages are asked for, with the pages above it:
+     * live, and neither a model nor the header zone, which hold no page.
+     */
+    public function section(int $id, string $locale): ?PageSection
+    {
+        $page = CmsPageQuery::create()
+            ->filterById($id)
+            ->filterByDeletedAt(null, Criteria::ISNULL)
+            ->filterByModel(0)
+            ->joinWithI18n($locale, Criteria::LEFT_JOIN)
+            ->findOne();
+
+        if (null === $page) {
+            return null;
+        }
+
+        return new PageSection(
+            id: $id,
+            title: $this->label($page, $locale),
+            trail: array_reverse(array_map(
+                fn (CmsPage $ancestor): array => ['id' => (int) $ancestor->getId(), 'title' => $this->label($ancestor, $locale)],
+                $this->ancestorsOf($page, $locale),
+            )),
+        );
+    }
+
     public function findLive(int $id): ?CmsPage
     {
         return CmsPageQuery::create()
@@ -402,7 +429,8 @@ final readonly class CmsPageAdminRepository
     }
 
     /**
-     * Orders the results by the sort asked, by title when none is.
+     * Orders the results by the sort asked, by title when none is, by position
+     * among the pages of one page.
      *
      * The pages with nothing to sort on come last in both directions: a page
      * with no title in this language sorted first would push the pages that
@@ -411,6 +439,12 @@ final readonly class CmsPageAdminRepository
      */
     private function ordered(CmsPageQuery $query, PageFilters $filters): CmsPageQuery
     {
+        // The pages of one page, unsorted, come in the order of the site: the
+        // one of its menus, and the one a move changes.
+        if (null !== $filters->inside && null === $filters->sort) {
+            return $query->orderByPosition()->orderById();
+        }
+
         $direction = $filters->isDescending() ? Criteria::DESC : Criteria::ASC;
         $page = '`'.CmsPageTableMap::TABLE_NAME.'`';
 
@@ -468,6 +502,10 @@ final readonly class CmsPageAdminRepository
 
         if (null !== $filters->author) {
             $query->filterByUpdatedBy($filters->author);
+        }
+
+        if (null !== $filters->inside) {
+            $query->filterByParent($filters->inside);
         }
 
         // One join of the content row serves the states, the date of the last
@@ -709,6 +747,7 @@ final readonly class CmsPageAdminRepository
                 childCount: $row->childCount,
                 isOpen: $row->isOpen,
                 ancestorTitles: $row->ancestorTitles,
+                ancestorIds: $row->ancestorIds,
                 titleInAnotherLanguage: $found[$row->id()] ?? null,
                 modifiedAt: $row->modifiedAt,
             ),
@@ -813,10 +852,12 @@ final readonly class CmsPageAdminRepository
 
         foreach ($rows as $row) {
             $chain = [];
+            $chainIds = [];
             $parentId = (int) $row->page->getParent();
 
             while ($parentId > 0 && isset($known[$parentId])) {
                 array_unshift($chain, $known[$parentId]['title']);
+                array_unshift($chainIds, $parentId);
                 $parentId = $known[$parentId]['parent'];
             }
 
@@ -828,6 +869,7 @@ final readonly class CmsPageAdminRepository
                 childCount: $row->childCount,
                 isOpen: $row->isOpen,
                 ancestorTitles: $chain,
+                ancestorIds: $chainIds,
                 titleInAnotherLanguage: $row->titleInAnotherLanguage,
                 modifiedAt: $row->modifiedAt,
             );
