@@ -1894,4 +1894,10 @@ return [
     'Delete the selected answers for good? This is what answering a request to be forgotten does.' => 'Supprimer définitivement les réponses sélectionnées ? C’est ce que fait une demande d’effacement.',
     'Select the answer of %date%' => 'Sélectionner la réponse du %date%',
     'Open this answer in the back office' => 'Ouvrir cette réponse dans le back-office',
+    'Received' => 'Reçue',
+    'Answer' => 'Réponse',
+    'Any answer' => 'Toute réponse',
+    '%value% (no longer offered)' => '%value% (plus proposé)',
+    'An answer keeps the wording the visitor picked: a choice renamed since then does not find its older answers.' => 'Une réponse garde le libellé choisi par le visiteur : un choix renommé depuis ne retrouve pas ses réponses plus anciennes.',
+    'No answer matches these filters.' => 'Aucune réponse ne correspond à ces filtres.',
 ];

@@ -52,6 +52,7 @@ final readonly class CmsSubmissionAdminController
         private SubmissionRepository $submissions,
         private CmsActivityLog $activityLog,
         private EditLanguage $languages,
+        private SubmissionChoices $choices,
     ) {
     }
 
@@ -61,16 +62,18 @@ final readonly class CmsSubmissionAdminController
         $record = $this->formOrFail($id);
         $lang = $this->languages->resolve($request);
         $filters = SubmissionFilters::fromRequest($request);
+        $search = $this->submissions->search($record, $filters);
         $page = max(1, $request->query->getInt('page', 1));
 
-        $total = $this->submissions->count($record, $filters);
+        $total = $this->submissions->count($search);
 
         return new Response($this->twig->render(self::TEMPLATE, [
             'cms_form' => $record->setLocale($lang->getLocale()),
-            'submissions' => $this->submissions->page($record, $filters, $page),
+            'submissions' => $this->submissions->page($search, $page),
             'filters' => $filters,
             'email' => $filters->email,
-            'status_counts' => $this->submissions->countsByStatus($record, $filters->email),
+            'questions' => $this->choices->questions($record, $lang->getLocale(), $filters),
+            'status_counts' => $this->submissions->countsByStatus($search),
             'statuses' => SubmissionStatus::cases(),
             'page' => $page,
             'pages' => max(1, (int) ceil($total / SubmissionRepository::PER_PAGE)),
@@ -90,7 +93,7 @@ final readonly class CmsSubmissionAdminController
         $this->support->denyUnless(CmsResources::FORM_ANSWERS_EXPORT, AccessManager::VIEW, 'You are not allowed to export the answers.');
 
         $record = $this->formOrFail($id);
-        $rows = $this->submissions->all($record, SubmissionFilters::fromRequest($request));
+        $rows = $this->submissions->all($this->submissions->search($record, SubmissionFilters::fromRequest($request)));
 
         $this->activityLog->record(
             'EXPORT',

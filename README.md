@@ -868,6 +868,15 @@ and carries no more personal data for it. A status never holds an answer back
 from the purge: an archived answer ages like the others. Every gesture writes
 one line to the admin log, with the count, never an address.
 
+The list narrows to the days the answers arrived (both included) and to the
+value given to a question with choices (a list, a choice among several, a
+country), on one line above the tabs; the tabs count for those filters, and the
+pages, the gestures and the export keep them. A value is the wording the visitor
+picked: once a choice is renamed, its older answers keep the old wording, which
+the filter offers marked "no longer offered". The values are read from the
+answers themselves, in PHP, since a database cannot search inside the JSON the
+same way everywhere.
+
 Each form states how long its answers are kept, 365 days by default. They are
 deleted on their own by `thelia_cms:forms:purge`, and by `maintenance:purge`
 along with the carts and the admin logs. Hooking onto the command a Thelia site

@@ -3,8 +3,15 @@
 {% block title %}{{ 'Answers'|trans({}, 'theliacms') }}{% endblock %}
 {% block body_testid %}cms-form-submissions{% endblock %}
 
+{% block head_extra %}
+    <style>
+        {% include '@TheliaCMSModule/backOffice/default-twig/_filter_bar.css.twig' %}
+    </style>
+{% endblock %}
+
 {% block content %}
     {% set list_parameters = filters.parameters|merge({ edit_language_id: edit_language_id }) %}
+    {% set list_fields = filters.hiddenFields|merge([{ name: 'edit_language_id', value: edit_language_id }]) %}
     {% set may_select = may_change or may_delete %}
 
     {% embed '@BackOfficeDefaultTwig/_page_header.html.twig' with { title: block('title') } %}
@@ -30,35 +37,120 @@
         {% endblock %}
     {% endembed %}
 
-    <div class="card mb-3">
-        <div class="card-body">
-            {# Finding every answer from one person is what answering a request
-               to see or to erase their data starts with, so the search is the
-               first thing on the screen rather than a filter hidden away. #}
-            <form class="row g-2 align-items-end" method="get" action="{{ path('admin.cms.forms.submissions', { id: cms_form.id }) }}">
-                <input type="hidden" name="edit_language_id" value="{{ edit_language_id }}">
-                {% if filters.statusParameter %}
-                    <input type="hidden" name="status" value="{{ filters.statusParameter }}">
-                {% endif %}
-                <div class="col-md-6">
-                    <label class="form-label" for="cms-submissions-email">{{ 'Search by email address'|trans({}, 'theliacms') }}</label>
+    {# One line, on the model of the list of pages: a plain GET form and native
+       controls, so it works without JavaScript; the period and the answers
+       fold into `<details>` menus, counted on their button and named under the
+       bar. Finding every answer from one person is what answering a request to
+       see or to erase their data starts with, so the address comes first. #}
+    {% set period_count = (filters.from ? 1 : 0) + (filters.to ? 1 : 0) %}
+    <form method="get" action="{{ path('admin.cms.forms.submissions', { id: cms_form.id }) }}" class="card mb-3 cms-filter-card" data-testid="cms-submissions-filters">
+        <input type="hidden" name="edit_language_id" value="{{ edit_language_id }}">
+        {% if filters.statusParameter %}
+            <input type="hidden" name="status" value="{{ filters.statusParameter }}">
+        {% endif %}
+        <div class="card-body py-2">
+            <div class="cms-filter-bar">
+                <div class="input-group cms-filter-bar__search">
+                    <label class="visually-hidden" for="cms-submissions-email">{{ 'Search by email address'|trans({}, 'theliacms') }}</label>
                     <input class="form-control" type="search" id="cms-submissions-email" name="email" value="{{ email }}"
-                           placeholder="{{ 'Part of an address is enough'|trans({}, 'theliacms') }}">
+                           placeholder="{{ 'Search by email address'|trans({}, 'theliacms') }}" title="{{ 'Part of an address is enough'|trans({}, 'theliacms') }}">
+                    <button class="btn btn-primary" type="submit">
+                        <i class="bi bi-search" aria-hidden="true"></i>
+                        <span class="visually-hidden">{{ 'Search'|trans({}, 'theliacms') }}</span>
+                    </button>
                 </div>
-                <div class="col-md-auto">
-                    <button class="btn btn-primary" type="submit">{{ 'Search'|trans({}, 'theliacms') }}</button>
-                    {% if email %}
-                        <a class="btn btn-link" href="{{ path('admin.cms.forms.submissions', filters.onStatus(filters.statusParameter)|filter((value, name) => name != 'email')|merge({ id: cms_form.id, edit_language_id: edit_language_id })) }}">
-                            {{ 'Clear'|trans({}, 'theliacms') }}
-                        </a>
-                    {% endif %}
-                </div>
-                <div class="col-md text-md-end text-muted" data-testid="cms-submissions-total">
+
+                <details class="cms-filter-menu" data-cms-filter-menu data-testid="cms-submissions-period-menu">
+                    <summary class="btn {{ period_count > 0 ? 'btn-primary' : 'btn-outline-secondary' }}">
+                        {{ 'Received'|trans({}, 'theliacms') }}
+                        {% if period_count > 0 %}<span class="badge text-bg-light ms-1">{{ period_count }}</span>{% endif %}
+                    </summary>
+                    <div class="cms-filter-menu__panel cms-filter-menu__panel--end">
+                        {# ISO in the address, whatever the browser shows. #}
+                        <div class="row g-2 mb-1">
+                            <div class="col-6">
+                                <label class="form-label" for="cms-submissions-from">{{ 'From'|trans({}, 'theliacms') }}</label>
+                                <input type="date" class="form-control" id="cms-submissions-from" name="from"
+                                       value="{{ filters.from ? filters.from|date('Y-m-d') }}" placeholder="2026-01-31" pattern="\d{4}-\d{2}-\d{2}"
+                                       aria-describedby="cms-submissions-period-help" data-testid="cms-submissions-from">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label" for="cms-submissions-to">{{ 'To'|trans({}, 'theliacms') }}</label>
+                                <input type="date" class="form-control" id="cms-submissions-to" name="to"
+                                       value="{{ filters.to ? filters.to|date('Y-m-d') }}" placeholder="2026-01-31" pattern="\d{4}-\d{2}-\d{2}"
+                                       aria-describedby="cms-submissions-period-help" data-testid="cms-submissions-to">
+                            </div>
+                        </div>
+                        <div class="form-text mb-3" id="cms-submissions-period-help">{{ 'Both days included, as 2026-01-31.'|trans({}, 'theliacms') }}</div>
+                        <button type="submit" class="btn btn-primary btn-sm">{{ 'Apply'|trans({}, 'theliacms') }}</button>
+                    </div>
+                </details>
+
+                {% if questions is not empty %}
+                    <details class="cms-filter-menu" data-cms-filter-menu data-testid="cms-submissions-answer-menu">
+                        <summary class="btn {{ filters.answers is not empty ? 'btn-primary' : 'btn-outline-secondary' }}">
+                            {{ 'Answer'|trans({}, 'theliacms') }}
+                            {% if filters.answers is not empty %}<span class="badge text-bg-light ms-1">{{ filters.answers|length }}</span>{% endif %}
+                        </summary>
+                        <div class="cms-filter-menu__panel cms-filter-menu__panel--end">
+                            {% for question in questions %}
+                                <div class="mb-3">
+                                    <label class="form-label" for="cms-submissions-answer-{{ loop.index }}">{{ question.label }}</label>
+                                    <select class="form-select" id="cms-submissions-answer-{{ loop.index }}" name="answer[{{ question.name }}]"
+                                            data-testid="cms-submissions-answer-{{ question.name }}">
+                                        <option value="">{{ 'Any answer'|trans({}, 'theliacms') }}</option>
+                                        {% for choice in question.values %}
+                                            <option value="{{ choice.value }}" {{ choice.value == question.asked ? 'selected' }}>
+                                                {{ choice.offered ? choice.value : '%value% (no longer offered)'|trans({ '%value%': choice.value }, 'theliacms') }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            {% endfor %}
+                            <div class="form-text mb-3">{{ 'An answer keeps the wording the visitor picked: a choice renamed since then does not find its older answers.'|trans({}, 'theliacms') }}</div>
+                            <button type="submit" class="btn btn-primary btn-sm">{{ 'Apply'|trans({}, 'theliacms') }}</button>
+                        </div>
+                    </details>
+                {% endif %}
+
+                <div class="cms-filter-bar__sort align-self-center text-muted text-nowrap" data-testid="cms-submissions-total">
                     {{ '%count% answer(s)'|trans({'%count%': total}, 'theliacms') }}
                 </div>
-            </form>
+            </div>
         </div>
-    </div>
+
+        {% if filters.narrowed %}
+            {% set chip_base = { id: cms_form.id, edit_language_id: edit_language_id } %}
+            <div class="card-footer d-flex flex-wrap align-items-center gap-2 py-2" data-testid="cms-submissions-active-filters">
+                <span class="text-muted small">{{ 'Showing only'|trans({}, 'theliacms') }}</span>
+                {% set chips = [] %}
+                {% if email %}
+                    {% set chips = chips|merge([{ label: email, url: path('admin.cms.forms.submissions', filters.without('email')|merge(chip_base)) }]) %}
+                {% endif %}
+                {% if filters.from or filters.to %}
+                    {% set period = not filters.to
+                        ? 'from %from%'|trans({ '%from%': filters.from|date('d/m/Y') }, 'theliacms')
+                        : (not filters.from
+                            ? 'until %to%'|trans({ '%to%': filters.to|date('d/m/Y') }, 'theliacms')
+                            : 'from %from% to %to%'|trans({ '%from%': filters.from|date('d/m/Y'), '%to%': filters.to|date('d/m/Y') }, 'theliacms')) %}
+                    {% set chips = chips|merge([{ label: period, url: path('admin.cms.forms.submissions', filters.without('from')|merge(chip_base)) }]) %}
+                {% endif %}
+                {% for question in questions|filter(q => q.asked) %}
+                    {% set chips = chips|merge([{ label: question.label ~ ' : ' ~ question.asked, url: path('admin.cms.forms.submissions', filters.without('answer', question.name)|merge(chip_base)) }]) %}
+                {% endfor %}
+                {% for chip in chips %}
+                    <a class="badge rounded-pill text-bg-light border text-decoration-none d-inline-flex align-items-center gap-1" href="{{ chip.url }}">
+                        {{ chip.label }}
+                        <i class="bi bi-x-lg" aria-hidden="true"></i>
+                        <span class="visually-hidden">{{ 'Remove this filter'|trans({}, 'theliacms') }}</span>
+                    </a>
+                {% endfor %}
+                <a class="btn btn-sm btn-link ms-auto" href="{{ path('admin.cms.forms.submissions', filters.cleared|merge(chip_base)) }}" data-testid="cms-submissions-reset">
+                    {{ 'Clear'|trans({}, 'theliacms') }}
+                </a>
+            </div>
+        {% endif %}
+    </form>
 
     {# The tabs count for the address searched: an archived answer from the
        person asking for their data is never out of sight. #}
@@ -85,7 +177,9 @@
     {% if submissions is empty %}
         <div class="card">
             <div class="card-body text-center py-5 text-muted">
-                {% if email %}
+                {% if filters.narrowed and not email %}
+                    {{ 'No answer matches these filters.'|trans({}, 'theliacms') }}
+                {% elseif email %}
                     {{ 'No answer from this address.'|trans({}, 'theliacms') }}
                 {% elseif filters.statusParameter %}
                     {{ 'No answer here.'|trans({}, 'theliacms') }}
@@ -104,8 +198,8 @@
                   action="{{ path('admin.cms.forms.submissions_bulk', { id: cms_form.id }) }}"
                   data-confirm-delete="{{ 'Delete the selected answers for good? This is what answering a request to be forgotten does.'|trans({}, 'theliacms') }}">
                 <input type="hidden" name="_token" value="{{ assignToken() }}">
-                {% for name, value in list_parameters %}
-                    <input type="hidden" name="{{ name }}" value="{{ value }}">
+                {% for field in list_fields %}
+                    <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
                 {% endfor %}
                 <input type="hidden" name="page" value="{{ page }}">
                 <div class="form-check mb-0 me-2">
@@ -150,8 +244,8 @@
                                     <form method="post" action="{{ path('admin.cms.forms.submissions_status', { id: cms_form.id, submissionId: submission.id }) }}">
                                         <input type="hidden" name="_token" value="{{ assignToken() }}">
                                         <input type="hidden" name="to" value="{{ status.value }}">
-                                        {% for name, value in list_parameters %}
-                                            <input type="hidden" name="{{ name }}" value="{{ value }}">
+                                        {% for field in list_fields %}
+                                            <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
                                         {% endfor %}
                                         <input type="hidden" name="page" value="{{ page }}">
                                         <button class="btn btn-sm btn-outline-secondary" type="submit" data-testid="cms-submission-{{ submission.id }}-to-{{ status.value }}">
@@ -170,8 +264,8 @@
                                 <form method="post" action="{{ path('admin.cms.forms.submissions_delete', { id: cms_form.id, submissionId: submission.id }) }}"
                                       onsubmit="return confirm('{{ 'Delete this answer for good? This is what answering a request to be forgotten does.'|trans({}, 'theliacms')|e('js') }}')">
                                     <input type="hidden" name="_token" value="{{ assignToken() }}">
-                                    {% for name, value in list_parameters %}
-                                        <input type="hidden" name="{{ name }}" value="{{ value }}">
+                                    {% for field in list_fields %}
+                                        <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
                                     {% endfor %}
                                     <input type="hidden" name="page" value="{{ page }}">
                                     <button class="btn btn-sm btn-outline-danger" type="submit">
@@ -229,6 +323,7 @@
             {{ 'This form keeps its answers until someone deletes them, which is rarely what a privacy policy says.'|trans({}, 'theliacms') }}
         {% endif %}
     </p>
+    <script src="{{ cms_asset('assets/page-filters.js') }}?v={{ assets_version }}" defer></script>
     {% if may_select %}
         <script src="{{ cms_asset('assets/submissions.js') }}?v={{ assets_version }}" defer></script>
     {% endif %}

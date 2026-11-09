@@ -39,43 +39,7 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
-        /* The filters on one line from 1400 px, wrapped below. Each select is as
-           wide as the option it shows; on one line, a long tag or two counted
-           menus shrink the selects (the browser cuts their text) instead of
-           pushing the sort to a second line. */
-        .cms-filter-bar { display: flex; flex-wrap: wrap; align-items: stretch; gap: .5rem; }
-        .cms-filter-bar__search { flex: 1 1 12rem; width: auto; min-width: 10rem; }
-        .cms-filter-bar > div:not(.cms-filter-bar__search) { min-width: 0; }
-        .cms-filter-bar .form-select { field-sizing: content; min-width: 6rem; max-width: 16rem; width: 100%; }
-        .cms-filter-bar__sort { margin-left: auto; }
-        @media (min-width: 1400px) { .cms-filter-bar { flex-wrap: nowrap; } }
-        /* The card of the theme clips what overflows it, the open menu with it. */
-        .cms-filter-card { overflow: visible; }
-        .cms-filter-menu { position: relative; }
-        .cms-filter-menu > summary { list-style: none; white-space: nowrap; height: 100%; display: flex; align-items: center; }
-        .cms-filter-menu > summary::-webkit-details-marker { display: none; }
-        .cms-filter-menu > summary::after {
-            content: "";
-            display: inline-block;
-            margin-left: .4rem;
-            vertical-align: .2em;
-            border-top: .3em solid;
-            border-right: .3em solid transparent;
-            border-left: .3em solid transparent;
-        }
-        .cms-filter-menu__panel {
-            position: absolute;
-            z-index: 1050;
-            top: calc(100% + .25rem);
-            left: 0;
-            width: 24rem;
-            max-width: calc(100vw - 2rem);
-            padding: 1rem;
-            background: var(--bs-body-bg);
-            border: var(--bs-border-width) solid var(--bs-border-color);
-            border-radius: var(--bs-border-radius);
-            box-shadow: var(--bs-box-shadow);
-        }
+        {% include '@TheliaCMSModule/backOffice/default-twig/_filter_bar.css.twig' %}
     </style>
 {% endblock %}
 

@@ -1,6 +1,6 @@
 # Plan: the answers of a form (N41 to N45)
 
-Status: decided (2026-11-09, by the maintainer), coded lot by lot on `feat/form-answers`; done: N45, N41. Read on `main` at 9009ac8 (2.18.0). Wave 5 of the
+Status: decided (2026-11-09, by the maintainer), coded lot by lot on `feat/form-answers`; done: N45, N41, N42. Read on `main` at 9009ac8 (2.18.0). Wave 5 of the
 roadmap, family "formulaires". Requested by the maintainer; the five lots were first read on
 a896919 and checked again on 9009ac8 (line numbers below are the current ones). Each lot updates
 this plan in its own commit.
@@ -155,10 +155,27 @@ status (a few thousand answers per form). Tests: `SubmissionStatusTest` (6), `Su
 (one stayed green first, the test data fixed). Checked in the browser at 1440 px in French: tabs,
 badges, a selection marked as handled by the bulk form.
 
-### 3. N42: filters by period, status and value (S)
+### 3. N42: filters by period, status and value (S), done
 
 Tests: each filter alone and together, the same rows on the screen and in the export, a renamed
 choice says so (old label not matched), address kept by the pagination.
+
+Done: `SubmissionFilters` reads `from`, `to` (days, both included, put back in order) and
+`answer[<name>]` (several questions at once, all to match); `parameters()`, `onStatus()`,
+`without()`, `cleared()` and `hiddenFields()` carry them through the tabs, the pages, the chips
+and the forms of the gestures. `SubmissionRepository::search()` returns a `SubmissionSearch`, the
+answers asked for matched once per request in PHP (ids and JSON read 500 at a time on the id),
+shared by the page, the count, the tabs (which now count for every filter) and the export.
+The values offered are the ones the answers hold (`choiceAnswers()`, read by
+`SubmissionChoices`), any language, marked "no longer offered" when no current choice of the form
+has them (a country is never marked). Filter bar on one line on the model of the pages, its styles
+moved to `_filter_bar.css.twig` (shared with the page list), `page-filters.js` reused; a menu at
+the end of the bar opens to the left (`cms-filter-menu__panel--end`). Changed from the plan: the
+status stays the tabs of N41, not a menu. Measured on the host (MariaDB, five answers per
+submission): 5,000 submissions, filter 38 ms and values 30 ms; 20,000, 201 ms and 115 ms; memory
++3 MB. Tests: `SubmissionFiltersTest` (+4), `SubmissionFiltersScreenTest` (3); eleven sabotages,
+each red (one stayed green first, the test data enriched). Checked in the browser at 1440 px in
+French: menus, chips, tabs, a selection marked as handled back on the filtered list.
 
 ### 4. N43: export for Excel, filtered (S)
 
@@ -190,5 +207,5 @@ statuses counted.
 
 ## Not checked
 
-- The cost of reading the JSON of a few thousand answers (filter by value, summary).
+- The cost of reading the JSON for the summary (N44); the filter is measured under N42.
 - The upgrade of real profiles on a base with custom profiles.

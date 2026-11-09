@@ -18,6 +18,12 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   plays `Config/update/2.19.0.sql`, which adds the column (every answer kept
   starts as new). An archived answer is still deleted at the end of the
   retention period of its form.
+- **The answers of a form are filtered by the day they arrived and by the value
+  given to a question with choices** (a list, a choice among several, a
+  country), on one line above the status tabs, which count for those filters.
+  The pages, the gestures on a selection and the export keep the filters. A
+  choice renamed since keeps its older answers under the old wording, offered
+  in the filter as "no longer offered".
 
 ### Changed
 

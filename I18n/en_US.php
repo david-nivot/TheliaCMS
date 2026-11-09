@@ -1894,4 +1894,10 @@ return [
     'Delete the selected answers for good? This is what answering a request to be forgotten does.' => 'Delete the selected answers for good? This is what answering a request to be forgotten does.',
     'Select the answer of %date%' => 'Select the answer of %date%',
     'Open this answer in the back office' => 'Open this answer in the back office',
+    'Received' => 'Received',
+    'Answer' => 'Answer',
+    'Any answer' => 'Any answer',
+    '%value% (no longer offered)' => '%value% (no longer offered)',
+    'An answer keeps the wording the visitor picked: a choice renamed since then does not find its older answers.' => 'An answer keeps the wording the visitor picked: a choice renamed since then does not find its older answers.',
+    'No answer matches these filters.' => 'No answer matches these filters.',
 ];
