@@ -47,6 +47,13 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   `admin.cms.form`, so nobody loses what they could do; the Editor profile has
   both.
 
+### Fixed
+
+- **On the Documents tab of a page, adding files comes right under the tabs.**
+  The bar of Publish and Unpublish, with its hint, used to sit between the tabs
+  and the documents; it now follows them, as it follows the fields on the other
+  tabs.
+
 ## [2.18.0] - 2026-11-08
 
 ### Added

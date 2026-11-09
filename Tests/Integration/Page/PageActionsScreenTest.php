@@ -63,6 +63,25 @@ final class PageActionsScreenTest extends AdminScreenTestCase
         );
     }
 
+    public function testTheBarComesAfterTheDocumentsAndSavesTheSettingsForm(): void
+    {
+        $page = $this->createPage('Bar after documents', published: false);
+        $screen = $this->screen($this->editUrl($page));
+
+        $order = $screen->filter('#tab-documents, [data-cms-page-save-bar]')->each(static fn (Crawler $node): string => (string) ($node->attr('id') ?: 'bar'));
+        self::assertSame(['tab-documents', 'bar'], $order, 'Under the Documents panel, not between the tabs and it.');
+        self::assertSame(0, $screen->filter('form [data-cms-page-save-bar]')->count(), 'Out of every form, so it follows every panel.');
+
+        $settings = $screen->filter('form#cms-page-settings-form');
+        self::assertSame(1, $settings->count());
+
+        foreach (['cms-page-save', 'cms-page-save-and-publish'] as $button) {
+            self::assertSame('cms-page-settings-form', $screen->filter('[data-testid="'.$button.'"]')->attr('form'), $button.' sends the settings.');
+        }
+
+        self::assertSame('cms-page-settings-form', $screen->filter('[data-testid="cms-page-save"]')->form()->getFormNode()->getAttribute('id'), 'Clicked, Save posts the settings form.');
+    }
+
     public function testANewPageHoldsOnlySave(): void
     {
         $screen = $this->screen('/admin/cms/pages/new');
