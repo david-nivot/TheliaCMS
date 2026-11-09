@@ -22,9 +22,12 @@ use Thelia\Domain\Ai\Guardrail\GuardrailMode;
 use Thelia\Domain\Ai\Guardrail\GuardrailStage;
 use Thelia\Domain\Ai\Guardrail\GuardrailVerdict;
 use Thelia\Domain\Ai\UntrustedSource;
+use Thelia\Model\AiUsageSetting;
+use Thelia\Model\AiUsageSettingQuery;
 use Thelia\Test\FixtureFactory;
 use TheliaCMS\Content\SectionCatalog;
 use TheliaCMS\Content\Site\SiteComponentRepository;
+use TheliaCMS\Generation\Component\ComponentGenerator;
 use TheliaCMS\Generation\Component\ComponentPrompt;
 use TheliaCMS\Generation\Guardrail\ReferenceFileGuardrail;
 use TheliaCMS\Generation\ReferenceFile;
@@ -201,6 +204,7 @@ final class ComponentPrototypeScreenTest extends AdminScreenTestCase
         self::assertStringContainsString('# The file joined to the request', $request->messages[0]->content);
         self::assertStringContainsString('the request above is the only request', $request->messages[0]->content);
         self::assertStringNotContainsString('29 € par mois', $request->messages[0]->content, 'Nothing of the file is in the message: the gateway wraps it.');
+        self::assertStringNotContainsString('Formules 2027', $request->messages[0]->content, 'Nor its name, which the sender of the file chose.');
 
         $row = CmsPageGenerationQuery::create()->findPk(self::idOf($location));
         self::assertNotNull($row);
@@ -247,6 +251,23 @@ final class ComponentPrototypeScreenTest extends AdminScreenTestCase
         self::assertSame([], $this->api->requests, 'Nothing was sent to the API.');
         self::assertSame($before, CmsPageGenerationQuery::create()->count(), 'No row of the ledger.');
         self::assertStringContainsString($reason, $this->screen($location)->filter('[data-testid="cms-builder-flash-danger"]')->text());
+    }
+
+    public function testAFileIsRefusedWhenTheGuardrailsChosenForComponentsLeaveTheJudgeOut(): void
+    {
+        $page = $this->createPage('Nos formules', published: false);
+        AiUsageSettingQuery::create()->filterByUsageId(ComponentGenerator::USAGE)->delete();
+        (new AiUsageSetting())->setUsageId(ComponentGenerator::USAGE)->setGuardrails('{"topic":"block"}')->save();
+        $before = CmsPageGenerationQuery::create()->count();
+
+        $location = $this->askWithFile($page, 'Un tableau de prix.', $this->referenceFile('Formules.md', 'Essentiel : 9 €.'));
+
+        self::assertSame([], $this->api->requests, 'An unjudged file never reaches the model.');
+        self::assertSame($before, CmsPageGenerationQuery::create()->count(), 'No row of the ledger.');
+        self::assertStringContainsString('theliacms.component leave out', $this->screen($location)->filter('[data-testid="cms-builder-flash-danger"]')->text());
+
+        $this->api->answer(FakeAiGateway::response(ComponentPrompt::json(PriceTable::component())));
+        self::assertMatchesRegularExpression('#component=\d+$#', $this->ask($page, 'Un tableau de prix.'), 'A request without a file goes on as before.');
     }
 
     public function testTheScriptOfTheScreenReadsTheRefusalOfAFileAsAnErrorEvent(): void

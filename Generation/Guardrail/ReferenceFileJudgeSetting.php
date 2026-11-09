@@ -19,8 +19,8 @@ use Thelia\Model\AiUsageSettingQuery;
 use TheliaCMS\Generation\PageGenerator;
 
 /**
- * Whether the merchant's settings of the usage of pages leave the judge of
- * joined files out. The usage lists it, but a merchant who chooses the
+ * Whether the merchant's settings of a usage that takes a joined file (the
+ * pages, by default, or the components) leave the judge of joined files out. The usage lists it, but a merchant who chooses the
  * guardrails of the usage replaces that list (the AI layer runs the ones
  * chosen, or those the usage declares when none is chosen): a list that does
  * not name `reference_file` lets a file through unjudged, without a word.
@@ -31,9 +31,9 @@ use TheliaCMS\Generation\PageGenerator;
  */
 final readonly class ReferenceFileJudgeSetting
 {
-    public function leavesTheJudgeOut(): bool
+    public function leavesTheJudgeOut(string $usage = PageGenerator::USAGE): bool
     {
-        $chosen = trim((string) AiUsageSettingQuery::create()->filterByUsageId(PageGenerator::USAGE)->findOne()?->getGuardrails());
+        $chosen = trim((string) AiUsageSettingQuery::create()->filterByUsageId($usage)->findOne()?->getGuardrails());
 
         if ('' === $chosen) {
             return false;

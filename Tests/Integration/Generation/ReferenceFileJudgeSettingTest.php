@@ -17,6 +17,7 @@ namespace TheliaCMS\Tests\Integration\Generation;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Thelia\Model\AiUsageSetting;
 use Thelia\Model\AiUsageSettingQuery;
+use TheliaCMS\Generation\Component\ComponentGenerator;
 use TheliaCMS\Generation\Guardrail\ReferenceFileJudgeSetting;
 use TheliaCMS\Generation\PageGenerator;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
@@ -47,5 +48,16 @@ final class ReferenceFileJudgeSettingTest extends CmsIntegrationTestCase
         }
 
         self::assertSame($leftOut, $this->getService(ReferenceFileJudgeSetting::class)->leavesTheJudgeOut());
+    }
+
+    public function testTheUsageOfComponentsIsReadOnItsOwn(): void
+    {
+        AiUsageSettingQuery::create()->filterByUsageId(PageGenerator::USAGE)->delete();
+        AiUsageSettingQuery::create()->filterByUsageId(ComponentGenerator::USAGE)->delete();
+        (new AiUsageSetting())->setUsageId(ComponentGenerator::USAGE)->setGuardrails('{"topic":"block"}')->save();
+        $setting = $this->getService(ReferenceFileJudgeSetting::class);
+
+        self::assertTrue($setting->leavesTheJudgeOut(ComponentGenerator::USAGE));
+        self::assertFalse($setting->leavesTheJudgeOut(), 'The usage of pages keeps its judge.');
     }
 }

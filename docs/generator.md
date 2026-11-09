@@ -304,8 +304,11 @@ refused before the call with the same reasons (no row of the ledger), sent as
 an `UntrustedContent` of source `document` by `ComponentGenerator`, whose usage
 `theliacms.component` lists the same judge in `block` mode. The message of
 `ComponentPrompt` ends with the same block ("the request" or "the change
-asked" is the only request). The ledger keeps the name, length and fingerprint
-in the JSON of the request of the component, never its text. A refused file
+asked" is the only request), the name of the file left out of the message. A
+file is refused, before it is read, when the guardrails the merchant chose for
+`theliacms.component` leave `reference_file` out (`ReferenceFileJudgeSetting`
+reads that usage). The ledger keeps the name, length and fingerprint in the
+JSON of the request of the component, never its text. A refused file
 or a failed candidate is not put back in the form. **CMS > Components** and the
 `make_component` tool of the brief take no file.
 

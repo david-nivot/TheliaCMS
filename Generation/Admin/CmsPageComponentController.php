@@ -42,7 +42,9 @@ use TheliaCMS\Generation\Component\ComponentRequest;
 use TheliaCMS\Generation\GenerationException;
 use TheliaCMS\Generation\GenerationLog;
 use TheliaCMS\Generation\GenerationTargets;
+use TheliaCMS\Generation\Guardrail\ReferenceFileJudgeSetting;
 use TheliaCMS\Generation\ReferenceFile;
+use TheliaCMS\Generation\ReferenceFileRefusal;
 use TheliaCMS\Generation\ReferenceFileRefusedException;
 use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Model\CmsPage;
@@ -90,6 +92,7 @@ final readonly class CmsPageComponentController
         private ContentTargets $contentTargets,
         private ContentSteps $steps,
         private GenerationRunner $runner,
+        private ReferenceFileJudgeSetting $judgeSetting,
     ) {
     }
 
@@ -110,7 +113,7 @@ final readonly class CmsPageComponentController
         }
 
         try {
-            $reference = self::referenceOf($request);
+            $reference = $this->referenceOf($request);
         } catch (ReferenceFileRefusedException $refused) {
             // Refused before anything is called: no row of the ledger.
             return $this->runner->refuse($request, $this->support->translate($refused->refusal->message()), $screen);
@@ -264,11 +267,21 @@ final readonly class CmsPageComponentController
      *
      * @throws ReferenceFileRefusedException when the file is not one the generator takes
      */
-    private static function referenceOf(Request $request): ?ReferenceFile
+    private function referenceOf(Request $request): ?ReferenceFile
     {
         $upload = $request->files->get('reference');
 
-        return $upload instanceof UploadedFile ? ReferenceFile::fromUpload($upload) : null;
+        if (!$upload instanceof UploadedFile) {
+            return null;
+        }
+
+        // Without its judge, a file would reach the model unchecked: it is
+        // refused, and the editor told why, before it is even read.
+        if ($this->judgeSetting->leavesTheJudgeOut(ComponentGenerator::USAGE)) {
+            throw new ReferenceFileRefusedException(ReferenceFileRefusal::JudgeLeftOutOfComponents);
+        }
+
+        return ReferenceFile::fromUpload($upload);
     }
 
     private function denyUnlessMayPrototype(): void

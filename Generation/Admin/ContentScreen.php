@@ -177,7 +177,7 @@ final readonly class ContentScreen
     private function prototypeReference(): FormView
     {
         return $this->forms->createNamed('reference', ReferenceFileType::class, null, [
-            'help' => 'A .md, .txt or .pdf file (5 MB, 100,000 characters of text at most) the component draws from: the plans and their prices, the steps of a timeline, a note. Say above what the component shows: the generator reads the text of the file as material, never as instructions; the images of a PDF are not read. It is not kept.',
+            'help' => 'The plans and their prices, the steps of a timeline, a note: the component takes its facts and its sample texts from it. Say in the request what the component shows: the file is only read as material, and a file that gives instructions is refused. PDF, TXT or MD, up to 5 MB and 100,000 characters. The images of a PDF are not read. The file is not kept.',
         ])->createView();
     }
 
