@@ -293,7 +293,7 @@
                             {{ 'The generator reads the brief of the type %type% first: write here what is particular to this page.'|trans({ '%type%': subject.target.typeTitle }, 'theliacms') }}
                         </p>
                     {% endif %}
-                    {% form_theme brief_form with bo_form_themes only %}
+                    {% form_theme brief_form with bo_form_themes|merge(['@TheliaCMSModule/backOffice/default-twig/content/_reference_file_theme.html.twig']) only %}
                     {{ form_start(brief_form, { attr: { 'data-cms-generate': '', novalidate: 'novalidate' }|merge(replaces_draft ? { 'data-cms-confirm': 'Replace the whole draft? Its %count% section(s) will be lost.'|trans({ '%count%': subject.document.sections|length }, 'theliacms') } : {}) }) }}
                         <input type="hidden" name="_token" value="{{ assignToken() }}">
                         {{ form_row(brief_form.text) }}
@@ -354,7 +354,7 @@
                         <section class="cms-content__section" data-testid="cms-content-change">
                             <h2 class="cms-content__heading">{{ 'Ask for a change'|trans({}, 'theliacms') }}</h2>
                             <p class="text-muted small">{{ 'On the whole draft: the sections the change does not concern are kept as they are.'|trans({}, 'theliacms') }}</p>
-                            {% form_theme change_form with bo_form_themes only %}
+                            {% form_theme change_form with bo_form_themes|merge(['@TheliaCMSModule/backOffice/default-twig/content/_reference_file_theme.html.twig']) only %}
                             {{ form_start(change_form, { attr: { 'data-cms-generate': '', novalidate: 'novalidate' } }) }}
                                 <input type="hidden" name="_token" value="{{ assignToken() }}">
                                 {{ form_row(change_form.text, { label: false }) }}
@@ -467,7 +467,7 @@
                                                 </form>
                                             </div>
                                             <p class="cms-content__add-hint">{{ 'Rewrite this section'|trans({}, 'theliacms') }}</p>
-                                            {% form_theme section.form with bo_form_themes only %}
+                                            {% form_theme section.form with bo_form_themes|merge(['@TheliaCMSModule/backOffice/default-twig/content/_reference_file_theme.html.twig']) only %}
                                             {{ form_start(section.form, { attr: { 'data-cms-generate': '', novalidate: 'novalidate' } }) }}
                                                 <input type="hidden" name="_token" value="{{ assignToken() }}">
                                                 {{ form_widget(section.form.section) }}

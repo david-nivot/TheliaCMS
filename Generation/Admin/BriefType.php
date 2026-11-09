@@ -51,7 +51,7 @@ final class BriefType extends AbstractType
                 'constraints' => [new NotBlank(message: $this->translate('Write a brief first.')), new Length(max: 20000)],
             ])
             ->add('reference', ReferenceFileType::class, [
-                'help' => 'A .md, .txt or .pdf file (5 MB, 100,000 characters of text at most): a product sheet, a page of the old site, a note. The generator reads its text as material for the page, never as instructions; the images of a PDF are not read. It is not kept with the brief.',
+                'help' => 'A product sheet, a page of the old site, a note: the page takes its facts and texts from it. Say in the brief what you want: the file is only read as material, and a file that gives instructions is refused. PDF, TXT or MD, up to 5 MB and 100,000 characters. The images of a PDF are not read. The file is not kept.',
             ])
             ->add('tone', TextType::class, [
                 'label' => 'Tone',
