@@ -7,6 +7,18 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **An answer to a form is new, handled or archived.** It arrives as new; the
+  list of answers shows the new and handled ones, with a tab per status and one
+  for all, each counting for the address searched. A status is changed on one
+  answer or on a selection, and a selection can also be deleted at once; the
+  export takes the status shown, and the JSON export carries it. The mail to
+  the recipients links to the answer in the back office. Updating the module
+  plays `Config/update/2.19.0.sql`, which adds the column (every answer kept
+  starts as new). An archived answer is still deleted at the end of the
+  retention period of its form.
+
 ### Changed
 
 - **The answers of a form have rights of their own.** Reading and deleting

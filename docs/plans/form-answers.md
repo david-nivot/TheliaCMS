@@ -1,6 +1,6 @@
 # Plan: the answers of a form (N41 to N45)
 
-Status: decided (2026-11-09, by the maintainer), coded lot by lot on `feat/form-answers`; done: N45. Read on `main` at 9009ac8 (2.18.0). Wave 5 of the
+Status: decided (2026-11-09, by the maintainer), coded lot by lot on `feat/form-answers`; done: N45, N41. Read on `main` at 9009ac8 (2.18.0). Wave 5 of the
 roadmap, family "formulaires". Requested by the maintainer; the five lots were first read on
 a896919 and checked again on 9009ac8 (line numbers below are the current ones). Each lot updates
 this plan in its own commit.
@@ -135,12 +135,25 @@ buttons hidden without the right (`may_read_answers`, `may_export`). The dashboa
 of answers: a number, no personal data. Tests: `SubmissionRightsTest` (4), `AdminResourcesUpdateTest`
 (split right); six sabotages, each one red. README (Permissions) and the in-app help updated.
 
-### 2. N41: status and bulk actions (M)
+### 2. N41: status and bulk actions (M), done
 
 Column, migration, badge, change of status by POST, selection with "mark as handled", "archive",
 "delete" (on the model of `Page/Admin/CmsPageBulkController.php` and `PageBulkAction.php`).
 Tests: default `new`, change by one and by many, rights (UPDATE, DELETE), log line without address,
 an archived answer still purged at its age.
+
+Done: column `status` (`Config/update/2.19.0.sql`, replayable, played twice on the host),
+`SubmissionStatus`, `SubmissionFilters` (email and status, read by the screen, the export and the
+gestures; N42 extends it), `SubmissionBulkAction`; routes `submissions_status` and `submissions_bulk`;
+tabs Current (new and handled, the default), New, Handled, Archived, All, each counting for the
+address searched; the export takes the status shown and the JSON carries it; one admin log line per
+gesture, filed under `admin.cms.form.answers` (the export and the single delete too), never an
+address; the recipients' mail links to `…/submissions#cms-submission-<id>`. Changed from the plan:
+an "All" tab, so a request to see one's data finds the archived answers too; no index on the
+status (a few thousand answers per form). Tests: `SubmissionStatusTest` (6), `SubmissionFiltersTest`
+(4), `FormSubmissionTest::testTheMailLinksToTheAnswerItWasKeptAs`; nine sabotages, each one red
+(one stayed green first, the test data fixed). Checked in the browser at 1440 px in French: tabs,
+badges, a selection marked as handled by the bulk form.
 
 ### 3. N42: filters by period, status and value (S)
 

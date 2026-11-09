@@ -43,17 +43,19 @@ final readonly class SubmissionStore
     ): void {
         $now = new \DateTimeImmutable();
 
+        $kept = null;
+
         if (1 === (int) $record->getStoreSubmissions()) {
-            (new CmsFormSubmission())
+            $kept = (new CmsFormSubmission())
                 ->setFormId($record->getId())
                 ->setLocale($locale)
                 ->setEmail($submission->email())
                 ->setData(SubmissionData::encode($submission->answers, $now))
-                ->setIpHash($this->fingerprints->of($ipAddress))
-                ->save();
+                ->setIpHash($this->fingerprints->of($ipAddress));
+            $kept->save();
         }
 
-        $this->mailer->notifyRecipients($record, $definition, $submission->answers, $locale);
+        $this->mailer->notifyRecipients($record, $definition, $submission->answers, $locale, null === $kept ? null : (int) $kept->getId());
 
         $to = $submission->email();
 

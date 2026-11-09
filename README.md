@@ -858,6 +858,16 @@ takes a couple of minutes rather than an afternoon of SQL. The CSV keeps a
 column for a question that has since been removed from the form, and defuses any
 cell a spreadsheet would run as a formula.
 
+Each answer is **new**, **handled** or **archived**. It arrives as new; the list
+shows the new and handled ones by default, with a tab per status and one for all
+of them, each counting for the address searched, so an archived answer from the
+person asking for their data is never out of sight. A status is changed on one
+answer, or on a selection, along with deleting it; the export takes the list as
+it is shown. The mail to the recipients links to the answer in the back office,
+and carries no more personal data for it. A status never holds an answer back
+from the purge: an archived answer ages like the others. Every gesture writes
+one line to the admin log, with the count, never an address.
+
 Each form states how long its answers are kept, 365 days by default. They are
 deleted on their own by `thelia_cms:forms:purge`, and by `maintenance:purge`
 along with the carts and the admin logs. Hooking onto the command a Thelia site
@@ -1241,7 +1251,7 @@ profile under **Configuration > Administrators**.
 | `admin.cms.custom-code` | `<iframe>` in published content, beyond the standard allow list |
 | `admin.cms.settings` | the settings screen: showcase mode, maintenance, the 404 page, the generator card, the skills, the components offered to the generator |
 | `admin.cms.form` | building the forms: fields, settings, recipients |
-| `admin.cms.form.answers` | the answers a form received: reading them (view) and deleting them (delete). Personal data, so apart from building the forms |
+| `admin.cms.form.answers` | the answers a form received: reading them (view), changing their status (update) and deleting them (delete). Personal data, so apart from building the forms |
 | `admin.cms.form.answers.export` | exporting the answers (view), which hands over every one of them at once |
 
 A right split off an older one (the two rights on the answers came out of

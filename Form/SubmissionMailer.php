@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace TheliaCMS\Form;
 
 use Psr\Log\LoggerInterface;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Mailer\MailerFactory;
 use Thelia\Model\ConfigQuery;
@@ -40,13 +41,15 @@ final readonly class SubmissionMailer
         private MailerFactory $mailer,
         private TranslatorInterface $translator,
         private LoggerInterface $logger,
+        private UrlGeneratorInterface $urls,
     ) {
     }
 
     /**
      * @param list<Answer> $answers
+     * @param int|null     $submissionId the answer kept, linked from the mail; none when the form keeps nothing
      */
-    public function notifyRecipients(CmsForm $form, FormDefinition $definition, array $answers, string $locale): void
+    public function notifyRecipients(CmsForm $form, FormDefinition $definition, array $answers, string $locale, ?int $submissionId = null): void
     {
         $recipients = Recipients::parse($form->getRecipients());
 
@@ -66,7 +69,23 @@ final readonly class SubmissionMailer
             // So that hitting reply in a mail client answers the person rather
             // than the shop itself.
             replyTo: $this->replyTo($answers),
+            answerUrl: null === $submissionId ? null : $this->answerUrl((int) $form->getId(), $submissionId),
         );
+    }
+
+    /**
+     * Where the answer is read, and marked as handled, in the back office: the
+     * address of the screen only, which opens to a signed-in administrator
+     * with the right; the mail carries no more personal data for it.
+     */
+    private function answerUrl(int $formId, int $submissionId): ?string
+    {
+        try {
+            return $this->urls->generate('admin.cms.forms.submissions', ['id' => $formId], UrlGeneratorInterface::ABSOLUTE_URL)
+                .'#cms-submission-'.$submissionId;
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     public function sendReceipt(CmsForm $form, string $to, string $locale): void
@@ -91,9 +110,15 @@ final readonly class SubmissionMailer
      * @param list<Answer>          $answers
      * @param array<string, string> $replyTo
      */
-    private function send(array $to, string $subject, string $intro, array $answers, string $locale, array $replyTo): void
+    private function send(array $to, string $subject, string $intro, array $answers, string $locale, array $replyTo, ?string $answerUrl): void
     {
-        $this->deliver($to, $subject, $this->htmlBody($intro, $answers, $locale), $this->textBody($intro, $answers, $locale), $replyTo);
+        $this->deliver(
+            $to,
+            $subject,
+            $this->htmlBody($intro, $answers, $locale, $answerUrl),
+            $this->textBody($intro, $answers, $locale, $answerUrl),
+            $replyTo,
+        );
     }
 
     /**
@@ -119,7 +144,7 @@ final readonly class SubmissionMailer
     /**
      * @param list<Answer> $answers
      */
-    private function htmlBody(string $intro, array $answers, string $locale): string
+    private function htmlBody(string $intro, array $answers, string $locale, ?string $answerUrl): string
     {
         $rows = '';
 
@@ -132,21 +157,30 @@ final readonly class SubmissionMailer
         }
 
         return \sprintf(
-            '<p>%s</p><table>%s</table>',
+            '<p>%s</p><table>%s</table>%s',
             htmlspecialchars($intro, \ENT_QUOTES | \ENT_SUBSTITUTE),
             $rows,
+            null === $answerUrl ? '' : \sprintf(
+                '<p><a href="%s">%s</a></p>',
+                htmlspecialchars($answerUrl, \ENT_QUOTES | \ENT_SUBSTITUTE),
+                htmlspecialchars($this->trans('Open this answer in the back office', [], $locale), \ENT_QUOTES | \ENT_SUBSTITUTE),
+            ),
         );
     }
 
     /**
      * @param list<Answer> $answers
      */
-    private function textBody(string $intro, array $answers, string $locale): string
+    private function textBody(string $intro, array $answers, string $locale, ?string $answerUrl): string
     {
         $lines = [$intro, ''];
 
         foreach ($answers as $answer) {
             $lines[] = $answer->label.': '.$this->asText($answer, $locale);
+        }
+
+        if (null !== $answerUrl) {
+            array_push($lines, '', $this->trans('Open this answer in the back office', [], $locale).': '.$answerUrl);
         }
 
         return implode("\n", $lines);

@@ -312,6 +312,7 @@ CREATE TABLE `cms_form_submission`
     `email` VARCHAR(255),
     `data` LONGTEXT,
     `ip_hash` VARCHAR(64),
+    `status` VARCHAR(16) DEFAULT 'new' NOT NULL,
     `created_at` TIMESTAMP NULL,
     `updated_at` TIMESTAMP NULL,
     PRIMARY KEY (`id`),
