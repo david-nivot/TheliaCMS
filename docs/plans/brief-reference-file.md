@@ -1,9 +1,10 @@
 # Plan: a reference file joined to the brief of a page
 
-Status: decided on 2026-11-05, implemented on 2026-11-06 on `feat/brief-reference-file`. Roadmap item N5, first step
-only: a text file (`.md`, `.txt`) on the form "What should this page say?"
-of the content screen. Images, the brief of a rich-text field, "Ask for a
-change" and the components (N6) are not part of it.
+Status: decided on 2026-11-05, implemented on 2026-11-06 on `feat/brief-reference-file`;
+"Ask for a change" added on 2026-11-09. Roadmap item N5, first step only: a
+text file (`.md`, `.txt`) on the form "What should this page say?" of the
+content screen, and on "Ask for a change". Images, the brief of a rich-text
+field, a section written again and the components (N6) are not part of it.
 
 ## What is asked
 
@@ -123,8 +124,11 @@ gives, never as instructions.
 ## Decisions taken
 
 1. Scope: the brief of a page or of a catalogue item on the content screen,
-   `.md` and `.txt` only. Not the brief of a rich-text field, not "Ask for a
-   change" or a section written again, not the components, no image.
+   and "Ask for a change" on its whole draft (2026-11-09), `.md` and `.txt`
+   only. The field is one form type, `Generation/Admin/ReferenceFileType.php`,
+   on both forms. Not the brief of a rich-text field, not a section written
+   again (planned next: the same field on `ChangeType` with `section`), not
+   the components, no image.
 2. Ceiling: 100 000 characters, five times the brief. Fixed in the module,
    no setting: the budget of the usage is reserved on it like on a page
    read, which is the control the merchant already has.

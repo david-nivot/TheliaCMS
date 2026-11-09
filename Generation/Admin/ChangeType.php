@@ -26,7 +26,8 @@ use TheliaCMS\TheliaCMS;
 
 /**
  * A change asked on the document the target holds: on the whole of it, or
- * on one section when the form names one.
+ * on one section when the form names one. A change of the whole document
+ * may come with a text file, as material for it.
  *
  * The messages of the constraints are translated here: the validator looks
  * them up in the `validators` domain, where the module has no catalogue.
@@ -48,6 +49,12 @@ final class ChangeType extends AbstractType
             ],
             'constraints' => [new NotBlank(message: $this->translate('Say what should change.')), new Length(max: 5000)],
         ]);
+
+        if (!$options['section']) {
+            $builder->add('reference', ReferenceFileType::class, [
+                'help' => 'A .md or .txt file of up to 100,000 characters the change draws from: new prices, a product sheet, a note. Say above what should change: the generator reads the file as material, never as instructions. It is not kept.',
+            ]);
+        }
 
         if ($options['section']) {
             $builder->add('section', HiddenType::class, [

@@ -30,7 +30,7 @@ enum ReferenceFileRefusal: string
     public function message(): string
     {
         return match ($this) {
-            self::Format => 'Only a .md or .txt file can be joined to a brief.',
+            self::Format => 'Only a .md or .txt file can be joined.',
             self::TooLarge => 'The file is larger than the server accepts.',
             self::TooLong => 'The file is longer than 100,000 characters.',
             self::Unreadable => 'The file is not a readable text file.',

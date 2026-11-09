@@ -48,13 +48,13 @@ the CMS. Ask whoever looks after the site if it is not done yet.
    so and works again next month or as soon as the budget is raised.
 4. **The five uses**: pages (`theliacms.page_generation`), their translations
    (`theliacms.page_translation`), texts of a field (`theliacms.text`),
-   components (`theliacms.component`) and the check of a file joined to a brief
-   (`theliacms.guardrail_reference`) are each turned on and given a range, so
+   components (`theliacms.component`) and the check of a file joined to a brief or to a
+   change (`theliacms.guardrail_reference`) are each turned on and given a range, so
    you can allow one and not another. Translations start on the standard range,
    lighter than the one of pages; raise it there if you want them written by the
    stronger model. The check of a file runs on the fast range: without a model
-   there, a brief with a file is refused and says so, a brief without one is
-   written as before.
+   there, a brief or a change with a file is refused and says so, one without a
+   file is written as before.
 
 The **Generator** card of CMS > Settings keeps three choices: how hard the AI
 thinks (more effort, better but slower and dearer; read by Anthropic models only),

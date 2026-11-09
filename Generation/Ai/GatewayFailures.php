@@ -63,8 +63,8 @@ final readonly class GatewayFailures
             $exception instanceof AiKeyDecryptionException => GenerationUnavailableException::because($this->say('The key of the AI connection cannot be read. Enter it again in the AI settings of Thelia.'), $exception),
             $exception instanceof AiProviderUnavailableException => GenerationUnavailableException::because($this->say('The AI provider does not answer right now. Try again in a few minutes.'), $exception),
             $exception instanceof AiGuardrailBlockedException && ReferenceFileGuardrail::NAME === $exception->verdict->guardrail => GenerationRefusedException::because($this->say(ReferenceFileGuardrail::REJECTED === $exception->verdict->reason
-                ? 'The file joined to the brief reads as instructions rather than as a document on the page, and the page was not written. Join another file, or none.'
-                : 'The file joined to the brief could not be checked, and the page was not written. The check runs on the usage theliacms.guardrail_reference, which needs a connection and a model of the fast range in the AI settings of Thelia.'), $exception),
+                ? 'The joined file reads as instructions rather than as a document on the page, and nothing was written. Join another file, or none.'
+                : 'The joined file could not be checked, and nothing was written. The check runs on the usage theliacms.guardrail_reference, which needs a connection and a model of the fast range in the AI settings of Thelia.'), $exception),
             $exception instanceof AiGuardrailBlockedException => GenerationRefusedException::because($this->say('A safety check of the site stopped this request. Reword the brief and try again.'), $exception),
             default => GenerationException::because($this->say('The generator could not reach the AI. Try again, and tell the person who looks after the site if it lasts.'), $exception),
         };

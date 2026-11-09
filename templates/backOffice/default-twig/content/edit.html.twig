@@ -358,6 +358,7 @@
                             {{ form_start(change_form, { attr: { 'data-cms-generate': '', novalidate: 'novalidate' } }) }}
                                 <input type="hidden" name="_token" value="{{ assignToken() }}">
                                 {{ form_row(change_form.text, { label: false }) }}
+                                {{ form_row(change_form.reference, { attr: { 'data-testid': 'cms-content-change-reference' } }) }}
                                 <button type="submit" class="btn btn-outline-primary" data-testid="cms-content-revise">
                                     <i class="bi bi-arrow-repeat" aria-hidden="true"></i> {{ 'Apply the change'|trans({}, 'theliacms') }}
                                 </button>

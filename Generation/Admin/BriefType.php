@@ -15,17 +15,13 @@ declare(strict_types=1);
 namespace TheliaCMS\Generation\Admin;
 
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Contracts\Translation\TranslatorInterface;
-use TheliaCMS\Generation\ReferenceFile;
-use TheliaCMS\Generation\ReferenceFileRefusal;
 use TheliaCMS\TheliaCMS;
 
 /**
@@ -48,27 +44,14 @@ final class BriefType extends AbstractType
 
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
-        // The browser refuses a file above the ceiling before sending it,
-        // and names the limit that stops it: the module's, or PHP's when
-        // it is lower, as the media library does.
-        $phpLimit = (int) UploadedFile::getMaxFilesize();
-        $moduleLimitPlays = ReferenceFile::MAX_BYTES <= $phpLimit;
-
         $builder
             ->add('text', TextareaType::class, [
                 'label' => 'What should this page say?',
                 'attr' => ['rows' => 9, 'placeholder' => 'Who it is for, what it has to say, what the visitor should do next. Facts, figures and names you want in it: the generator invents none.'],
                 'constraints' => [new NotBlank(message: $this->translate('Write a brief first.')), new Length(max: 20000)],
             ])
-            ->add('reference', FileType::class, [
-                'label' => 'A file to write from',
-                'required' => false,
+            ->add('reference', ReferenceFileType::class, [
                 'help' => 'A .md or .txt file of up to 100,000 characters: a product sheet, a page of the old site saved as text, a note. The generator reads it as material for the page, never as instructions. It is not kept with the brief.',
-                'attr' => [
-                    'accept' => implode(',', array_map(static fn (string $extension): string => '.'.$extension, ReferenceFile::EXTENSIONS)),
-                    'data-max-size' => min(ReferenceFile::MAX_BYTES, $phpLimit),
-                    'data-max-size-message' => $this->translate(($moduleLimitPlays ? ReferenceFileRefusal::TooLong : ReferenceFileRefusal::TooLarge)->message()),
-                ],
             ])
             ->add('tone', TextType::class, [
                 'label' => 'Tone',

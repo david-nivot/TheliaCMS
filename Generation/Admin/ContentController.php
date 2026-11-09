@@ -100,13 +100,11 @@ final readonly class ContentController
         }
 
         $data = $form->getData();
-        $upload = $data['reference'] ?? null;
 
         try {
-            $reference = $upload instanceof UploadedFile ? ReferenceFile::fromUpload($upload) : null;
+            $reference = self::referenceOf($data);
         } catch (ReferenceFileRefusedException $refused) {
-            // Refused before anything is called: no row of the ledger.
-            return $this->runner->refuse($request, $this->support->translate($refused->refusal->message()), $target->screenUrl());
+            return $this->refuseFile($request, $refused, $target);
         }
 
         $brief = new Brief((string) $data['text'], self::blankToNull($data['tone'] ?? null), self::blankToNull($data['audience'] ?? null), $reference);
@@ -134,7 +132,15 @@ final readonly class ContentController
             return $this->back($target);
         }
 
-        return $this->run($request, $target, GenerationRequest::revision($target->generationTarget(), $target->locale(), $current, new Brief((string) $form->getData()['text'])));
+        $data = $form->getData();
+
+        try {
+            $reference = self::referenceOf($data);
+        } catch (ReferenceFileRefusedException $refused) {
+            return $this->refuseFile($request, $refused, $target);
+        }
+
+        return $this->run($request, $target, GenerationRequest::revision($target->generationTarget(), $target->locale(), $current, new Brief((string) $data['text'], reference: $reference)));
     }
 
     #[Route(self::PAGE.'/section', name: 'admin.cms.pages.content.section', methods: ['POST'], requirements: self::PAGE_REQUIREMENTS)]
@@ -406,6 +412,28 @@ final readonly class ContentController
         });
 
         return $this->afterHand($request, $target, $problems, $done);
+    }
+
+    /**
+     * The file joined to a brief or to a change, read once from its upload.
+     *
+     * @param array<string, mixed> $data
+     *
+     * @throws ReferenceFileRefusedException when the file is not one the generator takes
+     */
+    private static function referenceOf(array $data): ?ReferenceFile
+    {
+        $upload = $data['reference'] ?? null;
+
+        return $upload instanceof UploadedFile ? ReferenceFile::fromUpload($upload) : null;
+    }
+
+    /**
+     * A file refused before anything is called: no row of the ledger.
+     */
+    private function refuseFile(Request $request, ReferenceFileRefusedException $refused, ContentScreenTarget $target): Response
+    {
+        return $this->runner->refuse($request, $this->support->translate($refused->refusal->message()), $target->screenUrl());
     }
 
     private function playStep(Request $request, int $id, ?string $type, bool $redo): RedirectResponse

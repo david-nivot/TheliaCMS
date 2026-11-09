@@ -228,7 +228,7 @@ ending in `.jpg`, `.png`, `.webp`, `.gif`, `.svg` or `.avif`) is not a page: it
 is not offered for reading, and goes as it is into an image prop. A translation
 cites none: its source is the document of the other language.
 
-### A file joined to the brief
+### A file joined to the brief or to a change
 
 The brief of a page or of a catalogue item takes a text file, `.md` or
 `.txt`, of up to 100,000 characters (five times the brief; `Generation/ReferenceFile.php`,
@@ -254,6 +254,16 @@ of the call when the merchant keeps prompts, for as long as it keeps them. The
 recall of the brief names the file; the form does not put it back, and a page
 written again from its brief is written without it unless the editor joins it
 again.
+
+"Ask for a change" takes a file the same way, with the same ceiling, the same
+refusals and the same judge: a change of the whole draft (a revision) may come
+with new prices, a product sheet, a note, read as material for the change; the
+change typed in the form stays the only request, and the block of the message
+says so. The ledger keeps the name of that file in the JSON of the change; the
+recall of the brief never shows it, since it reads the latest brief only. A
+file joined to a change says what to draw from, not what to do: a file that
+gives the change itself ("replace the prices by…") reads as instructions and is
+refused. Rewriting one section takes no file yet.
 
 A file that instructs rather than documents (it addresses an assistant, asks
 to act or to ignore rules, or has nothing to do with a page to write) is
