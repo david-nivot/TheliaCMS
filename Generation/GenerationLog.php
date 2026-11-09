@@ -140,6 +140,7 @@ final readonly class GenerationLog
         ?AiProvenance $provenance = null,
         ?int $rowId = null,
         RunDetails $details = new RunDetails(),
+        ?ReferenceFile $reference = null,
     ): int {
         $row = $this->rowOf($rowId)
             ->setTargetType(GenerationTarget::TYPE_COMPONENT)
@@ -147,7 +148,7 @@ final readonly class GenerationLog
             ->setLocale($locale)
             ->setKind($kind)
             ->setPrompt($request)
-            ->setBrief(json_encode(['text' => $request], \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES | \JSON_THROW_ON_ERROR))
+            ->setBrief(self::componentRequestJson($request, $reference))
             ->setModel($model)
             ->setRequestId($requestId)
             ->setStatus($status)
@@ -195,7 +196,7 @@ final readonly class GenerationLog
     /**
      * The same for a call that writes a component.
      */
-    public function beginComponent(int $componentId, string $locale, string $kind, string $request): int
+    public function beginComponent(int $componentId, string $locale, string $kind, string $request, ?ReferenceFile $reference = null): int
     {
         $row = (new CmsPageGeneration())
             ->setTargetType(GenerationTarget::TYPE_COMPONENT)
@@ -203,7 +204,7 @@ final readonly class GenerationLog
             ->setLocale($locale)
             ->setKind($kind)
             ->setPrompt($request)
-            ->setBrief(json_encode(['text' => $request], \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES | \JSON_THROW_ON_ERROR))
+            ->setBrief(self::componentRequestJson($request, $reference))
             ->setStatus(self::STATUS_RUNNING)
             ->setCostUsd('0.000000')
             ->setCreatedBy($this->securityContext->getAdminUser()?->getId());
@@ -512,10 +513,33 @@ final readonly class GenerationLog
         $json = ['text' => $brief->text, 'tone' => $brief->tone, 'audience' => $brief->audience];
 
         if (null !== $brief->reference) {
-            $json['reference'] = ['name' => $brief->reference->name, 'length' => $brief->reference->length(), 'fingerprint' => $brief->reference->fingerprint()];
+            $json['reference'] = self::referenceJson($brief->reference);
         }
 
         return json_encode($json, \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES | \JSON_THROW_ON_ERROR);
+    }
+
+    /**
+     * The request of a component as the ledger keeps it: as a brief, the
+     * name, length and fingerprint of its file, never its text.
+     */
+    private static function componentRequestJson(string $request, ?ReferenceFile $reference): string
+    {
+        $json = ['text' => $request];
+
+        if (null !== $reference) {
+            $json['reference'] = self::referenceJson($reference);
+        }
+
+        return json_encode($json, \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES | \JSON_THROW_ON_ERROR);
+    }
+
+    /**
+     * @return array{name: string, length: int, fingerprint: string}
+     */
+    private static function referenceJson(ReferenceFile $reference): array
+    {
+        return ['name' => $reference->name, 'length' => $reference->length(), 'fingerprint' => $reference->fingerprint()];
     }
 
     /**

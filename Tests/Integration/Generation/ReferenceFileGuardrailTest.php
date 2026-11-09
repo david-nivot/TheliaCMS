@@ -32,6 +32,7 @@ use Thelia\Domain\Ai\Provider\AiTargetResolver;
 use Thelia\Domain\Ai\Service\AiSettings;
 use Thelia\Domain\Ai\UntrustedContent;
 use Thelia\Domain\Ai\UntrustedSource;
+use TheliaCMS\Generation\Component\ComponentGenerator;
 use TheliaCMS\Generation\Guardrail\ReferenceFileGuardrail;
 use TheliaCMS\Generation\PageGenerator;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
@@ -63,7 +64,7 @@ final class ReferenceFileGuardrailTest extends CmsIntegrationTestCase
         );
     }
 
-    public function testTheGuardrailIsInstalledUnderItsNameAndListedByTheUsageOfPages(): void
+    public function testTheGuardrailIsInstalledUnderItsNameAndListedByTheUsagesOfPagesAndComponents(): void
     {
         $runner = $this->getService(AiGuardrailRunner::class);
 
@@ -71,6 +72,7 @@ final class ReferenceFileGuardrailTest extends CmsIntegrationTestCase
 
         $registry = $this->getService(AiUsageRegistryInterface::class);
         self::assertSame([ReferenceFileGuardrail::NAME => GuardrailMode::Block], $registry->get(PageGenerator::USAGE)->guardrails);
+        self::assertSame([ReferenceFileGuardrail::NAME => GuardrailMode::Block], $registry->get(ComponentGenerator::USAGE)->guardrails, 'A file joined to the request of a component is judged the same way.');
         self::assertSame(ReferenceFileGuardrail::PURPOSE, $registry->get(ReferenceFileGuardrail::USAGE)->purpose, 'The judge is a usage of its own, in the register.');
     }
 

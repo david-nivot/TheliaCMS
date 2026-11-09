@@ -1926,4 +1926,5 @@ return [
     'The file is larger than 5 MB.' => 'The file is larger than 5 MB.',
     'The PDF cannot be read: it is damaged or protected by a password.' => 'The PDF cannot be read: it is damaged or protected by a password.',
     'The PDF holds no text: a scanned document is not read. Join its text as a .txt file.' => 'The PDF holds no text: a scanned document is not read. Join its text as a .txt file.',
+    'A .md, .txt or .pdf file (5 MB, 100,000 characters of text at most) the component draws from: the plans and their prices, the steps of a timeline, a note. Say above what the component shows: the generator reads the text of the file as material, never as instructions; the images of a PDF are not read. It is not kept.' => 'A .md, .txt or .pdf file (5 MB, 100,000 characters of text at most) the component draws from: the plans and their prices, the steps of a timeline, a note. Say above what the component shows: the generator reads the text of the file as material, never as instructions; the images of a PDF are not read. It is not kept.',
 ];

@@ -25,6 +25,9 @@ use Thelia\Domain\Ai\AiTier;
 use Thelia\Domain\Ai\AiTransparency;
 use Thelia\Domain\Ai\AsAiUsage;
 use Thelia\Domain\Ai\Exception\AiExceptionInterface;
+use Thelia\Domain\Ai\Guardrail\GuardrailMode;
+use Thelia\Domain\Ai\UntrustedContent;
+use Thelia\Domain\Ai\UntrustedSource;
 use TheliaCMS\Content\Site\InvalidSiteComponentException;
 use TheliaCMS\Content\Site\SiteComponent;
 use TheliaCMS\Content\Site\SiteComponentRepository;
@@ -41,6 +44,7 @@ use TheliaCMS\Generation\GenerationLog;
 use TheliaCMS\Generation\GenerationObserverInterface;
 use TheliaCMS\Generation\GenerationRefusedException;
 use TheliaCMS\Generation\GeneratorSettings;
+use TheliaCMS\Generation\Guardrail\ReferenceFileGuardrail;
 use TheliaCMS\Generation\InvalidGenerationException;
 use TheliaCMS\Generation\RunDetails;
 use TheliaCMS\Generation\Usage;
@@ -65,6 +69,9 @@ use TheliaCMS\Generation\Usage;
     tier: AiTier::Advanced,
     capabilities: [AiCapability::StructuredOutput, AiCapability::Streaming],
     transparency: AiTransparency::Generative,
+    // A file joined to the request that instructs rather than documents is
+    // refused before the call, as on the brief of a page.
+    guardrails: [ReferenceFileGuardrail::NAME => GuardrailMode::Block],
 )]
 final readonly class ComponentGenerator
 {
@@ -103,6 +110,9 @@ final readonly class ComponentGenerator
             self::USAGE,
             [AiMessage::user($this->prompts->userMessage($request))],
             implode("\n\n", array_column($this->prompts->system(), 'text')),
+            // The file joined to the request travels as data the gateway wraps,
+            // never in the message: whatever it asks, the request is the request.
+            untrustedContents: null === $request->reference ? [] : [new UntrustedContent(UntrustedSource::Document, $request->reference->text, $request->reference->name)],
             outputSchema: new AiOutputSchema('site_component', ComponentPrompt::schema()),
             maxOutputTokens: $this->settings->maxTokens(),
             providerOptions: ['anthropic' => ['effort' => $effort]],
@@ -116,7 +126,7 @@ final readonly class ComponentGenerator
         $corrections = 0;
         $retries = 0;
         $finishReason = null;
-        $rowId = $this->log->beginComponent($request->componentId ?? 0, $request->locale, $request->kind(), $request->text);
+        $rowId = $this->log->beginComponent($request->componentId ?? 0, $request->locale, $request->kind(), $request->text, $request->reference);
 
         $record = function (string $status, ?string $error = null, ?string $component = null) use ($request, $rowId, $effort, &$model, $started, &$usage, &$costUsd, &$coreLogId, &$provenance, &$turns, &$finishReason, &$corrections, &$retries): int {
             return $this->log->recordComponent(
@@ -139,6 +149,7 @@ final readonly class ComponentGenerator
                 GenerationLog::STATUS_DONE === $status ? $provenance : null,
                 $rowId,
                 new RunDetails($effort, $corrections, $retries),
+                $request->reference,
             );
         };
 

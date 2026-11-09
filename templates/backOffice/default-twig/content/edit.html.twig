@@ -677,12 +677,14 @@
                                in the preview, kept as a prototype of the site and added to
                                the draft from the panel on the left. #}
                             <h3 class="cms-content__add-family">{{ 'A new component'|trans({}, 'theliacms') }}</h3>
-                            <form method="post" action="{{ subject.url('component_generate') }}" class="cms-content__prototype-form" data-cms-generate novalidate data-testid="cms-content-prototype-request">
+                            {% form_theme prototype_reference.request with bo_form_themes only %}
+                            <form method="post" action="{{ subject.url('component_generate') }}" class="cms-content__prototype-form" enctype="multipart/form-data" data-cms-generate novalidate data-testid="cms-content-prototype-request">
                                 <input type="hidden" name="_token" value="{{ assignToken() }}">
                                 <label class="form-label" for="cms-content-prototype-request">{{ 'Prototype a component'|trans({}, 'theliacms') }}</label>
                                 <textarea class="form-control" id="cms-content-prototype-request" name="request" rows="3" required
                                           placeholder="{{ 'A table of two to four plans side by side, one put forward'|trans({}, 'theliacms') }}"></textarea>
                                 <div class="form-text">{{ 'The generator writes it (its props, its template, its styles) and the site checks it; you see it in the preview before anything is kept. It takes up to a minute.'|trans({}, 'theliacms') }}</div>
+                                {{ form_row(prototype_reference.request, { id: 'cms-content-prototype-request-reference', row_attr: { class: 'mt-3 mb-2' }, attr: { 'data-testid': 'cms-content-prototype-request-reference' } }) }}
                                 <button type="submit" class="btn btn-sm btn-primary mt-2">
                                     <i class="bi bi-stars" aria-hidden="true"></i> {{ 'Prototype it'|trans({}, 'theliacms') }}
                                 </button>

@@ -1926,4 +1926,5 @@ return [
     'The file is larger than 5 MB.' => 'Le fichier dépasse 5 Mo.',
     'The PDF cannot be read: it is damaged or protected by a password.' => 'Le PDF ne peut pas être lu : il est endommagé ou protégé par un mot de passe.',
     'The PDF holds no text: a scanned document is not read. Join its text as a .txt file.' => 'Le PDF ne contient pas de texte : un document scanné n’est pas lu. Joignez son texte dans un fichier .txt.',
+    'A .md, .txt or .pdf file (5 MB, 100,000 characters of text at most) the component draws from: the plans and their prices, the steps of a timeline, a note. Say above what the component shows: the generator reads the text of the file as material, never as instructions; the images of a PDF are not read. It is not kept.' => 'Un fichier .md, .txt ou .pdf (5 Mo et 100 000 caractères de texte au plus) dont le composant s’inspire : les formules et leurs prix, les étapes d’une frise, une note. Dites ci-dessus ce que le composant affiche : le générateur lit le texte du fichier comme de la matière, jamais comme des consignes ; les images d’un PDF ne sont pas lues. Il n’est pas conservé.',
 ];

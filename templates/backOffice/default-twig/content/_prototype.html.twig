@@ -5,6 +5,7 @@
     here, changed by asking again, or discarded (nothing was stored but the
     call). A candidate that failed shows what went wrong and asks again.
 #}
+{% form_theme prototype_reference.panel with bo_form_themes only %}
 <section class="cms-content__section cms-content__prototype" data-testid="cms-content-prototype" data-status="{{ prototype.candidate.status }}">
     <div class="cms-content__add-head">
         <h2 class="cms-content__heading mb-0">{{ 'Component prototyped'|trans({}, 'theliacms') }}</h2>
@@ -17,11 +18,12 @@
         <div class="alert alert-warning small" role="status">
             {{ 'The generator could not make a component the site can keep:'|trans({}, 'theliacms') }} {{ prototype.candidate.error }}
         </div>
-        <form method="post" action="{{ subject.url('component_generate') }}" data-cms-generate novalidate data-testid="cms-content-prototype-again">
+        <form method="post" action="{{ subject.url('component_generate') }}" enctype="multipart/form-data" data-cms-generate novalidate data-testid="cms-content-prototype-again">
             <input type="hidden" name="_token" value="{{ assignToken() }}">
             <label class="form-label" for="cms-content-prototype-again">{{ 'Ask again'|trans({}, 'theliacms') }}</label>
             <textarea class="form-control" id="cms-content-prototype-again" name="request" rows="3" required>{{ prototype.candidate.request }}</textarea>
             <div class="form-text">{{ 'Reword the request, or say more about what the component shows.'|trans({}, 'theliacms') }}</div>
+            {{ form_row(prototype_reference.panel, { id: 'cms-content-prototype-again-reference', row_attr: { class: 'mt-3 mb-2' }, attr: { 'data-testid': 'cms-content-prototype-again-reference' } }) }}
             <button type="submit" class="btn btn-sm btn-primary mt-2"><i class="bi bi-stars" aria-hidden="true"></i> {{ 'Prototype it'|trans({}, 'theliacms') }}</button>
         </form>
     {% else %}
@@ -48,12 +50,13 @@
             <a class="btn btn-sm btn-outline-secondary" href="{{ subject.url('screen') }}">{{ 'Discard'|trans({}, 'theliacms') }}</a>
         </div>
         <p class="form-text">{{ 'Kept, it is a prototype of this site: shown on the pages that hold it, offered to nobody else until CMS > Components keeps it for the whole site.'|trans({}, 'theliacms') }}</p>
-        <form method="post" action="{{ subject.url('component_generate') }}" class="mt-2" data-cms-generate novalidate data-testid="cms-content-prototype-change">
+        <form method="post" action="{{ subject.url('component_generate') }}" class="mt-2" enctype="multipart/form-data" data-cms-generate novalidate data-testid="cms-content-prototype-change">
             <input type="hidden" name="_token" value="{{ assignToken() }}">
             <input type="hidden" name="candidate" value="{{ prototype.candidate.logId }}">
             <label class="form-label" for="cms-content-prototype-change">{{ 'Ask a change'|trans({}, 'theliacms') }}</label>
             <textarea class="form-control" id="cms-content-prototype-change" name="request" rows="2" required
                       placeholder="{{ 'Put the price in bigger type, one plan per line on a phone'|trans({}, 'theliacms') }}"></textarea>
+            {{ form_row(prototype_reference.panel, { id: 'cms-content-prototype-change-reference', row_attr: { class: 'mt-3 mb-2' }, attr: { 'data-testid': 'cms-content-prototype-change-reference' } }) }}
             <button type="submit" class="btn btn-sm btn-outline-primary mt-2"><i class="bi bi-stars" aria-hidden="true"></i> {{ 'Change it'|trans({}, 'theliacms') }}</button>
         </form>
     {% endif %}

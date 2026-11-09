@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Generation\Admin;
 
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -41,6 +42,8 @@ use TheliaCMS\Generation\Component\ComponentRequest;
 use TheliaCMS\Generation\GenerationException;
 use TheliaCMS\Generation\GenerationLog;
 use TheliaCMS\Generation\GenerationTargets;
+use TheliaCMS\Generation\ReferenceFile;
+use TheliaCMS\Generation\ReferenceFileRefusedException;
 use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Page\Admin\CmsPageAdminRepository;
@@ -59,6 +62,9 @@ use TheliaCMS\Security\CmsResources;
  * content screen shows it when its address names it (`?component=<id>`).
  * Making one takes the right to generate and the rights a component of the
  * site takes (settings and custom code): it is markup and a stylesheet.
+ *
+ * A file may be joined to the request, as to the brief of a page: read by
+ * ReferenceFile, judged by the guardrail of the usage, sent as data.
  */
 #[Route('/admin/cms/pages/{id}/content/component', name: 'admin.cms.pages.content.component.', requirements: ['id' => '\d+'])]
 final readonly class CmsPageComponentController
@@ -83,6 +89,7 @@ final readonly class CmsPageComponentController
         private GenerationTargets $targets,
         private ContentTargets $contentTargets,
         private ContentSteps $steps,
+        private GenerationRunner $runner,
     ) {
     }
 
@@ -102,7 +109,14 @@ final readonly class CmsPageComponentController
             return new RedirectResponse($screen);
         }
 
-        $generation = $this->requestFor($request, $text, $lang->getLocale());
+        try {
+            $reference = self::referenceOf($request);
+        } catch (ReferenceFileRefusedException $refused) {
+            // Refused before anything is called: no row of the ledger.
+            return $this->runner->refuse($request, $this->support->translate($refused->refusal->message()), $screen);
+        }
+
+        $generation = $this->requestFor($request, $text, $lang->getLocale(), $reference);
 
         // A call is as long as the model takes; the limit of a request of the
         // back office is not meant for it.
@@ -228,12 +242,12 @@ final readonly class CmsPageComponentController
     /**
      * A new component, or a change of the candidate on show.
      */
-    private function requestFor(Request $request, string $text, string $locale): ComponentRequest
+    private function requestFor(Request $request, string $text, string $locale, ?ReferenceFile $reference): ComponentRequest
     {
         $candidateId = (int) $request->request->get('candidate', 0);
 
         if ($candidateId <= 0) {
-            return new ComponentRequest($text, $locale);
+            return new ComponentRequest($text, $locale, reference: $reference);
         }
 
         $candidate = $this->candidates->find($candidateId);
@@ -242,7 +256,19 @@ final readonly class CmsPageComponentController
             throw new NotFoundHttpException();
         }
 
-        return new ComponentRequest($text, $locale, $candidate->component);
+        return new ComponentRequest($text, $locale, $candidate->component, reference: $reference);
+    }
+
+    /**
+     * The file joined to the request, read once from its upload.
+     *
+     * @throws ReferenceFileRefusedException when the file is not one the generator takes
+     */
+    private static function referenceOf(Request $request): ?ReferenceFile
+    {
+        $upload = $request->files->get('reference');
+
+        return $upload instanceof UploadedFile ? ReferenceFile::fromUpload($upload) : null;
     }
 
     private function denyUnlessMayPrototype(): void

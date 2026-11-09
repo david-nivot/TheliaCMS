@@ -111,6 +111,12 @@ final readonly class ContentScreen
             // has the routes for it (a catalogue item has none).
             'may_prototype' => $mayGenerate && isset($subject->routes['component_generate']) && $this->componentPermission->mayMake(),
             'prototype' => $this->prototype($request, $subject),
+            // The file joined to the request of a component: one field per
+            // form that may be on the screen at once, the drawer and the panel.
+            'prototype_reference' => [
+                'request' => $this->prototypeReference(),
+                'panel' => $this->prototypeReference(),
+            ],
             'steps' => $mayChange && isset($subject->routes['undo']) ? $this->steps($subject) : null,
             'assets_version' => self::assetsVersion(),
         ]);
@@ -164,6 +170,17 @@ final readonly class ContentScreen
      *
      * @return array{candidate: \TheliaCMS\Generation\Component\ComponentCandidate, component: \TheliaCMS\Content\Site\SiteComponent|null, props: list<array<string, mixed>>, preview_url: string|null, preview_content_url: string|null, failed: bool, figures: string}|null
      */
+    /**
+     * The file field of a form that asks for a component, posted as
+     * `reference` beside the request: the same field as on the brief.
+     */
+    private function prototypeReference(): FormView
+    {
+        return $this->forms->createNamed('reference', ReferenceFileType::class, null, [
+            'help' => 'A .md, .txt or .pdf file (5 MB, 100,000 characters of text at most) the component draws from: the plans and their prices, the steps of a timeline, a note. Say above what the component shows: the generator reads the text of the file as material, never as instructions; the images of a PDF are not read. It is not kept.',
+        ])->createView();
+    }
+
     private function prototype(Request $request, ContentSubject $subject): ?array
     {
         $id = $request->query->getInt(CmsPageComponentController::PARAMETER);

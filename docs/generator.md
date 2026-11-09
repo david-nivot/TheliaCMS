@@ -281,11 +281,24 @@ file joined to a change says what to draw from, not what to do: a file that
 gives the change itself ("replace the prices by…") reads as instructions and is
 refused.
 
+The request of a component prototyped from the content screen (**Prototype a
+component**, **Ask a change** of the candidate, **Ask again** after a failure)
+takes a file the same way: posted as `reference` beside `request` to
+`CmsPageComponentController::generate()`, read by the same `ReferenceFile`,
+refused before the call with the same reasons (no row of the ledger), sent as
+an `UntrustedContent` of source `document` by `ComponentGenerator`, whose usage
+`theliacms.component` lists the same judge in `block` mode. The message of
+`ComponentPrompt` ends with the same block ("the request" or "the change
+asked" is the only request). The ledger keeps the name, length and fingerprint
+in the JSON of the request of the component, never its text. A refused file
+or a failed candidate is not put back in the form. **CMS > Components** and the
+`make_component` tool of the brief take no file.
+
 A file that instructs rather than documents (it addresses an assistant, asks
 to act or to ignore rules, or has nothing to do with a page to write) is
 refused, not only neutralised, by `Generation/Guardrail/ReferenceFileGuardrail.php`:
 an optional guardrail of the AI layer named `reference_file`, listed in
-`block` mode by `theliacms.page_generation`, modelled on the topic guardrail of
+`block` mode by `theliacms.page_generation` and `theliacms.component`, modelled on the topic guardrail of
 the core. It runs on the first turn of a request that holds a `document`
 content, as a call of the fast range under the usage
 `theliacms.guardrail_reference` (system audience, no optional guardrail, the

@@ -1,7 +1,9 @@
 # Plan: a reference file joined to the brief of a page
 
 Status: decided on 2026-11-05, implemented on 2026-11-06 on `feat/brief-reference-file`;
-"Ask for a change", "Rewrite this section" and PDF files added on 2026-11-09. Roadmap
+"Ask for a change", "Rewrite this section" and PDF files added on 2026-11-09. The request of a component
+prototyped from the content screen added on 2026-11-09 (`CmsPageComponentController`,
+`ComponentGenerator`, same judge); CMS > Components still takes no file. Roadmap
 item N5, first step only: a file (`.md`, `.txt`, `.pdf` read as its text) on
 the form "What should this page say?" of the content screen, on "Ask for a change" and on
 "Rewrite this section". Images, the brief of a rich-text field and the
@@ -128,7 +130,9 @@ gives, never as instructions.
    and "Ask for a change" on its whole draft or on one section (2026-11-09),
    `.md`, `.txt` and `.pdf` (its text extracted, 5 MB). The field is one form type,
    `Generation/Admin/ReferenceFileType.php`, on the brief and on `ChangeType`.
-   Not the brief of a rich-text field, not the components, no image.
+   Not the brief of a rich-text field, no image. The request of a component
+   prototyped from a page takes the same file (2026-11-09); CMS > Components
+   and the `make_component` tool do not.
 2. Ceiling: 100 000 characters, five times the brief. Fixed in the module,
    no setting: the budget of the usage is reserved on it like on a page
    read, which is the control the merchant already has.

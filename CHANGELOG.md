@@ -7,6 +7,16 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **A file joined to the request of a component prototyped from a page.**
+  "Prototype a component", "Ask a change" and "Ask again" take a `.md`,
+  `.txt` or `.pdf` file, with the ceilings, the refusals and the judge of the
+  file of a brief: read as material for the component and its sample, never
+  as instructions; the usage `theliacms.component` lists the guardrail
+  `reference_file` in `block` mode. The ledger keeps the name of the file,
+  never its text.
+
 ## [2.20.0] - 2026-11-09
 
 ### Added
