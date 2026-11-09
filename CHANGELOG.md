@@ -7,6 +7,8 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+## [2.23.0] - 2026-11-09
+
 ### Added
 
 - **The pages of one page, on a list of their own.** A button next to the
@@ -3068,7 +3070,8 @@ the published pages.
 - The breadcrumb of a page filed under a draft one offered a link to that page,
   which answers 404, both to the reader and in the `BreadcrumbList`.
 
-[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.22.0...HEAD
+[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.23.0...HEAD
+[2.23.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.23.0
 [2.22.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.22.0
 [2.21.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.21.0
 [2.20.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.20.0
