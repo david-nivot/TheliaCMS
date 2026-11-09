@@ -278,6 +278,7 @@ return [
     'No page inside this one yet.' => 'Aucune page dans celle-ci pour l’instant.',
     'Pages inside “%title%”' => 'Pages dans « %title% »',
     'See the pages inside %title%' => 'Voir les pages dans « %title% »',
+    'See the %count% other pages inside %title%' => 'Voir les %count% autres pages dans « %title% »',
     'Settings of this page' => 'Réglages de cette page',
     'Under' => 'Sous',
     'Where these pages sit' => 'Emplacement de ces pages',

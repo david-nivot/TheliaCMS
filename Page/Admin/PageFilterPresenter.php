@@ -151,7 +151,9 @@ final readonly class PageFilterPresenter
      */
     public function toggleUrl(PageFilters $filters, int $languageId, int $pageId): string
     {
-        return $this->listUrl($filters->toggling($pageId), $languageId);
+        // Back to the row: without the script that opens it in place, the
+        // screen is loaded again and would start from the top.
+        return $this->listUrl($filters->toggling($pageId), $languageId).'#'.PageListPresenter::rowAnchor($pageId);
     }
 
     public function listUrl(PageFilters $filters, int $languageId): string

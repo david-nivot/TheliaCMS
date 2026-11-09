@@ -278,6 +278,7 @@ return [
     'No page inside this one yet.' => 'No page inside this one yet.',
     'Pages inside “%title%”' => 'Pages inside “%title%”',
     'See the pages inside %title%' => 'See the pages inside %title%',
+    'See the %count% other pages inside %title%' => 'See the %count% other pages inside %title%',
     'Settings of this page' => 'Settings of this page',
     'Under' => 'Under',
     'Where these pages sit' => 'Where these pages sit',

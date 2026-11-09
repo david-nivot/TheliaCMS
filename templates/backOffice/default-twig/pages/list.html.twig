@@ -24,6 +24,10 @@
         }
         .cms-tree__fold:hover { color: var(--bs-primary); }
         .cms-tree__spacer { display: inline-block; width: 1.5rem; vertical-align: middle; }
+        /* A row an address lands on stays clear of the top bar of the back office. */
+        .cms-page-row { scroll-margin-top: 6rem; }
+        .cms-tree__more > td { background: var(--bs-tertiary-bg); }
+        [data-cms-page-tree][aria-busy="true"] { opacity: .6; transition: opacity .15s; }
         /* A page that is not shown on the site is marked, not faded: fading a row
            takes its text from 4.5 to 1 down to 2 to 1, so the rows hardest to read
            end up being the ones that need attention. */
@@ -105,7 +109,7 @@
     {% else %}
         {% include '@TheliaCMSModule/backOffice/default-twig/pages/_filters.html.twig' %}
 
-        <div class="card">
+        <div class="card"{% if not is_filtering %} data-cms-page-tree{% endif %}>
             {% if section %}
                 {# The pages of one page: the way down to it, each step the list of
                    its own pages, and a page started here goes under it. #}
@@ -154,7 +158,7 @@
                 {% else %}
                     <span>{{ 'Structure of the site'|trans({}, 'theliacms') }}</span>
                     {% if filters.fold_all_url %}
-                        <a class="btn btn-sm btn-link p-0" href="{{ filters.fold_all_url }}" data-testid="cms-pages-fold-all">
+                        <a class="btn btn-sm btn-link p-0" href="{{ filters.fold_all_url }}" data-testid="cms-pages-fold-all" data-cms-tree-toggle>
                             {{ 'Close every branch'|trans({}, 'theliacms') }}
                         </a>
                     {% endif %}
@@ -252,8 +256,8 @@
                         </thead>
                         <tbody>
                             {% for row in rows %}
-                                <tr data-testid="cms-page-row-{{ row.id }}" data-row-id="{{ row.id }}"
-                                    class="{{ row.visible ? '' : 'cms-page-row--hidden' }}">
+                                <tr data-testid="cms-page-row-{{ row.id }}" data-row-id="{{ row.id }}" id="{{ row.anchor }}"
+                                    class="cms-page-row{{ row.visible ? '' : ' cms-page-row--hidden' }}">
                                     {% if bulk %}
                                         <td class="cms-pages-select">
                                             <input class="form-check-input" type="checkbox" form="cms-pages-bulk" name="pages[]" value="{{ row.id }}"
@@ -272,7 +276,7 @@
                                             {% endif %}
 
                                             {% if row.toggle_url %}
-                                                <a class="cms-tree__fold me-1" href="{{ row.toggle_url }}"
+                                                <a class="cms-tree__fold me-1" href="{{ row.toggle_url }}" data-cms-tree-toggle
                                                    aria-expanded="{{ row.is_open ? 'true' : 'false' }}"
                                                    data-testid="cms-page-fold-{{ row.id }}">
                                                     <i class="bi {{ row.is_open ? 'bi-chevron-down' : 'bi-chevron-right' }}" aria-hidden="true"></i>
@@ -395,6 +399,18 @@
                                         </div>
                                     </td>
                                 </tr>
+                                {% if row.more %}
+                                    {# The rest of a large branch is on the list of its pages. #}
+                                    <tr class="cms-tree__more" data-testid="cms-page-more-{{ row.more.parent_id }}">
+                                        <td colspan="7">
+                                            <span class="cms-tree__indent" style="width: {{ row.depth * 1.75 + 1.5 }}rem"></span>
+                                            <a href="{{ row.more.url }}" class="small">
+                                                {{ 'See the %count% other pages inside %title%'|trans({ '%count%': row.more.count, '%title%': row.more.parent_title }, 'theliacms') }}
+                                                <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endif %}
                             {% endfor %}
                         </tbody>
                     </table>
@@ -419,5 +435,8 @@
 
     {% if bulk %}
         <script src="{{ cms_asset('assets/page-bulk.js') }}?v={{ bulk.script_version }}" defer></script>
+    {% endif %}
+    {% if rows is defined and not is_filtering %}
+        <script src="{{ cms_asset('assets/page-tree.js') }}?v={{ tree_script_version }}" defer></script>
     {% endif %}
 {% endblock %}

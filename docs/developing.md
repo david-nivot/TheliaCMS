@@ -298,6 +298,14 @@ other checks, without `CMS_PAGE_ID`, plus `CMS_LANGUAGE_ID`, the id of French
 on the shop (the site is read in its language). It reads only: it moves,
 saves and publishes nothing.
 
+`Tests/Browser/page-tree-unfolds-in-place.mjs` checks, on the same site and
+with the same variables, that a branch opens and closes without loading the
+screen again (a mark left on `window` survives), the row clicked staying at its
+place within 2 px and keeping the focus, that the address names the branches
+open (a reload shows them), that **Close every branch** works in place too, and
+that without JavaScript the link lands on the row by its anchor. Window
+1440x620, so that the tree scrolls. It reads only.
+
 ## CSS and the security policy
 
 - `Content/Pipeline/CssAllowList.php` keeps of a `style` attribute or of a

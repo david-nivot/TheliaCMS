@@ -94,6 +94,8 @@ final readonly class PageListPresenter
             'results' => $results,
             'section' => null === $section ? null : $this->section($section, $filters, $languageId),
             'reorderable' => null === $results || null !== $siblings,
+            // A changed script is fetched again, not read from the cache of the browser.
+            'tree_script_version' => substr(hash('xxh3', (string) @filemtime(__DIR__.'/../../templates/backOffice/default-twig/assets/page-tree.js')), 0, 12),
             'live_count' => $liveCount,
             'filters' => $this->filterBar->present($filters, $languageId, $trashCount, $tagNames, $typeNames, $this->pages->statusCounts($locale), $authors, $section?->title),
             'filter_query' => $filters->toQueryParams(),
@@ -226,6 +228,7 @@ final readonly class PageListPresenter
         }
 
         $presented = [];
+        $titles = [];
         // The screens a row opens carry the state of the list, so their "back to
         // the list" lands on this list and not on the folded tree.
         $return = $filters->toReturnParameter();
@@ -239,6 +242,8 @@ final readonly class PageListPresenter
             $rank = null === $siblings ? null : ($siblings->page - 1) * $siblings->perPage + $index;
 
             $localTitle = trim((string) $row->page->getTitle());
+            // A branch comes after its page: the title of a parent is known by then.
+            $titles[$id] = $this->title($row);
 
             $presented[] = [
                 'id' => $id,
@@ -270,6 +275,14 @@ final readonly class PageListPresenter
                     $row->ancestorTitles,
                 ),
                 'children_url' => $row->hasChildren() ? $this->filterBar->listUrl($filters->inside($id), $languageId) : null,
+                'anchor' => self::rowAnchor($id),
+                // The pages of the branch the tree leaves out after this one.
+                'more' => $row->moreSiblings > 0 ? [
+                    'count' => $row->moreSiblings,
+                    'parent_id' => $parent,
+                    'parent_title' => $titles[$parent] ?? '',
+                    'url' => $this->filterBar->listUrl($filters->inside($parent), $languageId),
+                ] : null,
                 'tag' => $tags[(int) $row->page->getTagId()]['name'] ?? null,
                 'tag_badge' => $tags[(int) $row->page->getTagId()]['badge'] ?? PageTagColor::NO_COLOR_BADGE,
                 'tag_badge_style' => $tags[(int) $row->page->getTagId()]['badge_style'] ?? '',
@@ -290,11 +303,20 @@ final readonly class PageListPresenter
                 // list of results would be a position among siblings the editor
                 // cannot see.
                 'can_move_up' => null !== $rank ? $rank > 0 : $isTree && $firstOfParent[$parent] !== $index,
-                'can_move_down' => null !== $rank ? $rank < $siblings->total - 1 : $isTree && $lastOfParent[$parent] !== $index,
+                'can_move_down' => null !== $rank ? $rank < $siblings->total - 1 : $isTree && ($lastOfParent[$parent] !== $index || $row->moreSiblings > 0),
             ];
         }
 
         return $presented;
+    }
+
+    /**
+     * The id of the row of a page on the list, which a link or a redirection
+     * names to land on it.
+     */
+    public static function rowAnchor(int $pageId): string
+    {
+        return 'cms-page-'.$pageId;
     }
 
     /**

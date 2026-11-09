@@ -35,6 +35,7 @@ final readonly class PageListRow
      * @param list<int>               $ancestorIds            the same pages, by id, in the same order
      * @param string|null             $titleInAnotherLanguage a title to show when this language has none
      * @param \DateTimeImmutable|null $modifiedAt             the last change of the page or of its content in this language
+     * @param int                     $moreSiblings           pages after this one under the same page that the tree leaves out
      */
     public function __construct(
         public CmsPage $page,
@@ -47,6 +48,7 @@ final readonly class PageListRow
         public array $ancestorIds = [],
         public ?string $titleInAnotherLanguage = null,
         public ?\DateTimeImmutable $modifiedAt = null,
+        public int $moreSiblings = 0,
     ) {
     }
 

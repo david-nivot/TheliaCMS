@@ -22,6 +22,19 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   above a result (**Under** …) opens its list too. A page in the bin, a model or
   an id that names no page is ignored, and the tree comes back.
 
+### Changed
+
+- **A branch of the tree opens and closes in place.** The arrow of a page and
+  **Close every branch** no longer load the screen again: the tree is replaced
+  where it stands, the row clicked stays at its place and keeps the focus, and
+  the address follows, so a reload or a screen opened from a row finds the
+  tree as it is. Without JavaScript, or when the answer is not a tree (a
+  session expired), the link is followed and lands on the row. Moving a page
+  up or down and hiding or showing it also come back to its row.
+- **A large branch shows its first 20 pages.** The others are on the list of
+  the pages of the branch, which a line under the twentieth leads to (**See the
+  N other pages inside …**).
+
 ## [2.22.0] - 2026-11-09
 
 ### Added

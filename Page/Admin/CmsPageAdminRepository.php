@@ -612,23 +612,38 @@ final readonly class CmsPageAdminRepository
      * depth would silently drop the pages below it, and what has to be guarded
      * against is a tree holding a cycle.
      *
+     * An unfolded branch shows its first pages only: the last one shown says
+     * how many follow, for the screen to lead to the list of all of them. The
+     * root of the site is shown whole, being no page to list the pages of.
+     *
      * @param array<int, list<CmsPage>> $byParent
      *
-     * @return list<array{page: CmsPage, depth: int}>
+     * @return list<array{page: CmsPage, depth: int, more?: int}>
      */
     private function walk(array $byParent, int $parentId, int $depth, PageFilters $filters, array &$seen = []): array
     {
         $rows = [];
+        $shown = 0;
+        $lastOfBranch = 0;
+        $siblings = array_values(array_filter($byParent[$parentId] ?? [], static fn (CmsPage $page): bool => !isset($seen[(int) $page->getId()])));
 
-        foreach ($byParent[$parentId] ?? [] as $page) {
+        foreach ($siblings as $index => $page) {
             $id = (int) $page->getId();
 
             if (isset($seen[$id])) {
                 continue;
             }
 
+            if ($depth > 0 && $shown === PageFilters::BRANCH_ROWS) {
+                $rows[$lastOfBranch]['more'] = \count($siblings) - $index;
+
+                break;
+            }
+
             $seen[$id] = true;
             $rows[] = ['page' => $page, 'depth' => $depth];
+            $lastOfBranch = array_key_last($rows);
+            ++$shown;
 
             if ($filters->isOpen($id)) {
                 $rows = array_merge($rows, $this->walk($byParent, $id, $depth + 1, $filters, $seen));
@@ -666,7 +681,7 @@ final readonly class CmsPageAdminRepository
      * Turns walked pages into rows, reading state and addresses for all of them
      * in two statements.
      *
-     * @param list<array{page: CmsPage, depth: int}> $ordered
+     * @param list<array{page: CmsPage, depth: int, more?: int}> $ordered
      * @param array<int, int>                        $childCounts
      *
      * @return list<PageListRow>
@@ -701,6 +716,7 @@ final readonly class CmsPageAdminRepository
                 childCount: $childCounts[$id] ?? 0,
                 isOpen: $filters->isOpen($id),
                 modifiedAt: PageListRow::latestOf($page->getUpdatedAt(), ($contents[$id] ?? null)?->getUpdatedAt()),
+                moreSiblings: $row['more'] ?? 0,
             );
         }
 
@@ -750,6 +766,7 @@ final readonly class CmsPageAdminRepository
                 ancestorIds: $row->ancestorIds,
                 titleInAnotherLanguage: $found[$row->id()] ?? null,
                 modifiedAt: $row->modifiedAt,
+                moreSiblings: $row->moreSiblings,
             ),
             $rows,
         );
@@ -872,6 +889,7 @@ final readonly class CmsPageAdminRepository
                 ancestorIds: $chainIds,
                 titleInAnotherLanguage: $row->titleInAnotherLanguage,
                 modifiedAt: $row->modifiedAt,
+                moreSiblings: $row->moreSiblings,
             );
         }
 

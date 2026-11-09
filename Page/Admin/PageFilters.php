@@ -81,6 +81,12 @@ final readonly class PageFilters
     public const int PER_PAGE = 50;
 
     /**
+     * Pages of an unfolded branch the tree shows; the others are on the list
+     * of the pages of the branch, which the tree leads to.
+     */
+    public const int BRANCH_ROWS = 20;
+
+    /**
      * A site small enough to be read whole is shown whole, so that adding search
      * to the listing does not cost a click to every site that never needed it.
      */
