@@ -100,10 +100,16 @@ final readonly class ReferenceFileGuardrail implements AiGuardrailInterface, AiG
 
     private const int REQUEST_TAIL = 3000;
 
-    /** How much of the file the judge reads: its head, and its tail when it is longer, where instructions hide too. */
-    private const int FILE_HEAD = 16000;
+    /**
+     * How much of the file one call of the judge reads. A longer file is
+     * judged a slice at a time, the slices overlapping so that a sentence cut
+     * at the edge of one is whole in the next: every character is read, and
+     * each call stays within what the smallest models of the fast range
+     * hold. A file of 100,000 characters takes six calls; most take one.
+     */
+    private const int FILE_SLICE = 20000;
 
-    private const int FILE_TAIL = 4000;
+    private const int FILE_OVERLAP = 1000;
 
     private const string ELLIPSIS = "\n[…]\n";
 
@@ -168,17 +174,38 @@ final readonly class ReferenceFileGuardrail implements AiGuardrailInterface, AiG
             return GuardrailVerdict::pass(self::NAME, $stage);
         }
 
+        $asked = new UntrustedContent(UntrustedSource::VisitorInput, self::excerpt(self::requestOf($request), self::REQUEST_HEAD, self::REQUEST_TAIL), 'request');
+
+        foreach ($documents as $document) {
+            $slices = self::slices($document->content);
+
+            foreach ($slices as $index => $slice) {
+                $verdict = $this->judge($stage, $request, $asked, $document, $slice, $index + 1, \count($slices));
+
+                // The first slice that instructs, or that cannot be judged,
+                // settles it: the rest is not paid for.
+                if (!$verdict->passed) {
+                    return $verdict;
+                }
+            }
+        }
+
+        return GuardrailVerdict::pass(self::NAME, $stage);
+    }
+
+    /**
+     * One call of the judge on one slice of a file.
+     */
+    private function judge(GuardrailStage $stage, AiRequest $request, UntrustedContent $asked, UntrustedContent $document, string $slice, int $part, int $parts): GuardrailVerdict
+    {
         // The name of the file is the sender's: it reaches the judge as the
         // reference of the wrapped content, escaped by the gateway, never
         // as a part of the instructions.
         $judge = new AiRequest(
             self::USAGE,
-            [AiMessage::user('Classify the file joined to the request.')],
+            [AiMessage::user(1 === $parts ? 'Classify the file joined to the request.' : \sprintf('Classify the file joined to the request. It is long: you read part %d of %d, judge this part as it is.', $part, $parts))],
             self::INSTRUCTIONS,
-            [
-                new UntrustedContent(UntrustedSource::VisitorInput, self::excerpt(self::requestOf($request), self::REQUEST_HEAD, self::REQUEST_TAIL), 'request'),
-                ...array_map(static fn (UntrustedContent $document): UntrustedContent => new UntrustedContent(UntrustedSource::Document, self::excerpt($document->content, self::FILE_HEAD, self::FILE_TAIL), $document->reference), $documents),
-            ],
+            [$asked, new UntrustedContent(UntrustedSource::Document, $slice, $document->reference)],
             maxOutputTokens: self::ANSWER_TOKENS,
             correlationId: $request->correlationId,
             actor: AiActor::system('guardrail_reference'),
@@ -227,6 +254,26 @@ final readonly class ReferenceFileGuardrail implements AiGuardrailInterface, AiG
         }
 
         return '(no request)';
+    }
+
+    /**
+     * A text cut into slices the judge reads one call at a time, each
+     * starting a little before the previous one ends.
+     *
+     * @return non-empty-list<string>
+     */
+    private static function slices(string $text): array
+    {
+        $length = mb_strlen($text);
+        $slices = [];
+        $start = 0;
+
+        do {
+            $slices[] = mb_substr($text, $start, self::FILE_SLICE);
+            $start += self::FILE_SLICE - self::FILE_OVERLAP;
+        } while ($start + self::FILE_OVERLAP < $length);
+
+        return $slices;
     }
 
     /**

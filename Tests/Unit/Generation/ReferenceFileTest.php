@@ -50,6 +50,22 @@ final class ReferenceFileTest extends TestCase
         self::assertSame(hash('xxh128', $file->text), $file->fingerprint());
     }
 
+    public function testATextSavedByWindowsInItsOwnEncodingIsReadInUtf8(): void
+    {
+        // "Café à 3 € : l’offre « été »", as Notepad or Excel write it in French.
+        $windows1252 = "Caf\xE9 \xE0 3 \x80 : l\x92offre \xAB \xE9t\xE9 \xBB\r\n";
+
+        self::assertSame("Café à 3 € : l’offre « été »\r\n", ReferenceFile::fromUpload($this->upload('tarifs.txt', $windows1252))->text);
+    }
+
+    public function testATextSavedAsUtf16WithItsByteOrderMarkIsReadInUtf8(): void
+    {
+        $text = "Café à 3 €\n";
+
+        self::assertSame($text, ReferenceFile::fromUpload($this->upload('tarifs.txt', "\xFF\xFE".mb_convert_encoding($text, 'UTF-16LE', 'UTF-8')))->text);
+        self::assertSame($text, ReferenceFile::fromUpload($this->upload('tarifs.md', "\xFE\xFF".mb_convert_encoding($text, 'UTF-16BE', 'UTF-8')))->text);
+    }
+
     public function testAPdfIsReadAsItsTextUnderItsOwnName(): void
     {
         $file = ReferenceFile::fromUpload($this->upload('Fiche produit.PDF', MinimalPdf::of('Bol en gres : garantie 5 ans')));
@@ -98,7 +114,9 @@ final class ReferenceFileTest extends TestCase
         yield 'another extension' => ['sheet.docx', 'Some text.', ReferenceFileRefusal::Format];
         yield 'no extension' => ['README', 'Some text.', ReferenceFileRefusal::Format];
         yield 'a NUL byte' => ['sheet.txt', "Some\0text.", ReferenceFileRefusal::Unreadable];
-        yield 'not UTF-8' => ['sheet.txt', "Caf\xE9", ReferenceFileRefusal::Unreadable];
+        yield 'a binary file renamed' => ['sheet.txt', "PK\x03\x04\x14\x06\x08 word/document.xml \xE9\xA0", ReferenceFileRefusal::Unreadable];
+        yield 'a byte that is no character of Windows-1252' => ['sheet.txt', "Caf\xE9 \x81", ReferenceFileRefusal::Unreadable];
+        yield 'UTF-16 cut on an odd byte' => ['sheet.txt', "\xFF\xFEC\x00a\x00f", ReferenceFileRefusal::Unreadable];
         yield 'blank' => ['sheet.md', "  \n\t", ReferenceFileRefusal::Empty];
         yield 'only a byte order mark' => ['sheet.md', "\u{FEFF}", ReferenceFileRefusal::Empty];
         yield 'too many characters' => ['sheet.md', str_repeat('a', ReferenceFile::MAX_CHARACTERS + 1), ReferenceFileRefusal::TooLong];
@@ -109,6 +127,8 @@ final class ReferenceFileTest extends TestCase
         yield 'a PDF protected by a password' => ['sheet.pdf', MinimalPdf::of('Secret', '/Encrypt 5 0 R'), ReferenceFileRefusal::UnreadablePdf];
         yield 'a PDF without text, as a scan' => ['scan.pdf', MinimalPdf::of(''), ReferenceFileRefusal::NoText];
         yield 'a PDF heavier than its ceiling' => ['sheet.pdf', MinimalPdf::of('Texte').str_repeat(' ', ReferenceFile::MAX_PDF_BYTES), ReferenceFileRefusal::TooHeavy];
+        yield 'a PDF whose pages inflate past what the parser holds' => ['bomb.pdf', MinimalPdf::withInflatingStreams('Texte', 5, 1024 * 1024), ReferenceFileRefusal::HeavyPdf];
+        yield 'a PDF whose images inflate past what the parser holds' => ['bomb.pdf', MinimalPdf::withInflatingStreams('Texte', 5, 16 * 1024 * 1024, '/Subtype /Image'), ReferenceFileRefusal::HeavyPdf];
         yield 'a PDF whose text is too long' => ['long.pdf', MinimalPdf::of(str_repeat('mot ', 26_000)), ReferenceFileRefusal::TooLong];
     }
 

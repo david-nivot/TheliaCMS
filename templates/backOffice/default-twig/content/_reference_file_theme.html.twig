@@ -1,0 +1,21 @@
+{#
+    The field of a file joined to a brief or to a change (ReferenceFileType):
+    its help, too long for the label, is a tooltip on a "?" beside it, the way
+    the section forms show theirs (_section_form_theme.html.twig): shown on
+    hover and on focus by the stylesheet, held open by a click by the script.
+#}
+{%- block cms_reference_file_row -%}
+    {%- set help_text = help is empty ? '' : (translation_domain is same as(false) ? help : help|trans(help_translation_parameters, translation_domain)) -%}
+    <div{% with { attr: row_attr|merge({class: (row_attr.class|default('') ~ ' mb-3 cms-content__field')|trim}) } %}{{ block('attributes', 'form_div_layout.html.twig') }}{% endwith %}>
+        <div class="cms-content__field-head">
+            {{- form_label(form, null, { help: null }) -}}
+            {%- if help_text is not empty -%}
+                <button type="button" class="cms-content__help-toggle" data-cms-help-toggle aria-expanded="false" aria-describedby="{{ id }}_help"
+                        aria-label="{{ 'About this field'|trans({}, 'theliacms') }}">?</button>
+                <span class="cms-content__help" role="tooltip" id="{{ id }}_help">{{ help_text }}</span>
+            {%- endif -%}
+        </div>
+        {{- form_widget(form) -}}
+        {{- form_errors(form) -}}
+    </div>
+{%- endblock cms_reference_file_row -%}

@@ -33,6 +33,8 @@ use Thelia\Domain\Ai\Guardrail\GuardrailMode;
 use Thelia\Domain\Ai\Guardrail\GuardrailStage;
 use Thelia\Domain\Ai\Guardrail\GuardrailVerdict;
 use Thelia\Domain\Ai\UntrustedSource;
+use Thelia\Model\AiUsageSetting;
+use Thelia\Model\AiUsageSettingQuery;
 use Thelia\Model\Lang;
 use Thelia\Model\LangQuery;
 use Thelia\Model\ModuleConfigQuery;
@@ -47,6 +49,7 @@ use TheliaCMS\Generation\GenerationRequest;
 use TheliaCMS\Generation\GenerationTarget;
 use TheliaCMS\Generation\GeneratorSettings;
 use TheliaCMS\Generation\Guardrail\ReferenceFileGuardrail;
+use TheliaCMS\Generation\PageGenerator;
 use TheliaCMS\Generation\ReferenceFile;
 use TheliaCMS\Generation\Tool\ReadUrlTool;
 use TheliaCMS\Model\CmsPageContentQuery;
@@ -801,6 +804,36 @@ final class ContentScreenTest extends AdminScreenTestCase
         self::assertSame('Tarifs 2027.md', $brief['reference']['name']);
         self::assertStringNotContainsString('24 €', (string) $row->getBrief(), 'The ledger keeps nothing of the text.');
         self::assertSame(0, $this->screen($this->url($page->getId()))->filter('[data-testid="cms-content-brief-reference-recall"]')->count(), 'A file joined to a change is not recalled as the file of the brief.');
+    }
+
+    public function testAFileIsRefusedBeforeAnyCallWhenTheSettingsOfTheUsageLeaveItsJudgeOut(): void
+    {
+        $page = $this->createPage('Juge écarté', published: false);
+        AiUsageSettingQuery::create()->filterByUsageId(PageGenerator::USAGE)->delete();
+        (new AiUsageSetting())->setUsageId(PageGenerator::USAGE)->setGuardrails('{"topic":"block"}')->save();
+
+        $form = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-content-brief"] form[data-cms-generate]')->form();
+        $form['cms_brief[text]'] = 'Une fiche produit.';
+        $this->client->request('POST', $form->getUri(), $form->getPhpValues(), ['cms_brief' => ['reference' => $this->referenceFile('fiche.md', "# Bol en grès\n")]], self::SAME_SITE);
+
+        self::assertSame(302, $this->client->getResponse()->getStatusCode());
+        self::assertSame([], $this->api->requests, 'Nothing was sent to the API.');
+        $flash = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-builder-flash-danger"]');
+        self::assertStringContainsString('A joined file is checked by the guardrail reference_file', $flash->text());
+    }
+
+    public function testTheHelpOfTheFileIsATooltipBesideItsLabel(): void
+    {
+        $page = $this->createPage('Aide du fichier', published: false);
+        $screen = $this->screen($this->url($page->getId()));
+
+        foreach (['cms-content-brief-reference', 'cms-content-change-reference'] as $testId) {
+            $row = $screen->filter(\sprintf('[data-testid="%s"]', $testId))->closest('.cms-content__field');
+            self::assertNotNull($row, $testId.' sits in a field row of its own.');
+            self::assertSame(1, $row->filter('.cms-content__field-head [data-cms-help-toggle]')->count(), 'A "?" beside the label.');
+            self::assertStringContainsString('The file is not kept.', $row->filter('.cms-content__help[role="tooltip"]')->text());
+            self::assertSame(0, $row->filter('.bo-form-label__help')->count(), 'The help is no longer written in the label.');
+        }
     }
 
     public function testAFileTheChangeDoesNotTakeIsRefusedBeforeAnyCallWithItsReason(): void
