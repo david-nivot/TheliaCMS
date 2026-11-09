@@ -1,0 +1,26 @@
+{#
+    The status tabs of the answers, shared by the list and its summary; each tab
+    counts for the other filters. Expects cms_form, filters, status_counts,
+    edit_language_id and list_route.
+#}
+{# The tabs count for the address searched: an archived answer from the
+   person asking for their data is never out of sight. #}
+{% set current_count = status_counts['new'] + status_counts['handled'] %}
+<ul class="nav nav-pills flex-wrap gap-1 mb-3" data-testid="cms-submissions-statuses">
+    {% for tab in [
+        { value: '', label: 'Current'|trans({}, 'theliacms'), count: current_count },
+        { value: 'new', label: 'New'|trans({}, 'theliacms'), count: status_counts['new'] },
+        { value: 'handled', label: 'Handled'|trans({}, 'theliacms'), count: status_counts['handled'] },
+        { value: 'archived', label: 'Archived'|trans({}, 'theliacms'), count: status_counts['archived'] },
+        { value: 'all', label: 'All'|trans({}, 'theliacms'), count: current_count + status_counts['archived'] },
+    ] %}
+        {% set active = tab.value == filters.statusParameter %}
+        <li class="nav-item">
+            <a class="nav-link py-1 px-3{{ active ? ' active' }}" data-testid="cms-submissions-status-{{ tab.value ?: 'current' }}"
+               href="{{ path(list_route, filters.onStatus(tab.value)|merge({ id: cms_form.id, edit_language_id: edit_language_id })) }}"
+               {{ active ? 'aria-current="page"' }}>
+                {{ tab.label }} <span class="badge {{ active ? 'text-bg-light' : 'text-bg-secondary' }} ms-1">{{ tab.count }}</span>
+            </a>
+        </li>
+    {% endfor %}
+</ul>

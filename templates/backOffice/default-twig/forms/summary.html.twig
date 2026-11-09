@@ -1,0 +1,127 @@
+{% extends '@BackOfficeDefaultTwig/base.html.twig' %}
+
+{% block title %}{{ 'Summary of the answers'|trans({}, 'theliacms') }}{% endblock %}
+{% block body_testid %}cms-form-submissions-summary{% endblock %}
+
+{% block head_extra %}
+    <style>
+        {% include '@TheliaCMSModule/backOffice/default-twig/_filter_bar.css.twig' %}
+        /* A bar is the share of the largest count, drawn in plain HTML: the
+           number stays text, read out and copied, and no chart library ships
+           with the back office. */
+        .cms-summary-bar { height: .75rem; min-width: 1px; background: var(--bs-primary); border-radius: var(--bs-border-radius-sm); }
+        .cms-summary-bar--empty { background: var(--bs-border-color); }
+        .cms-summary-table th { font-weight: normal; white-space: nowrap; }
+        .cms-summary-table td:first-of-type { width: 100%; }
+    </style>
+{% endblock %}
+
+{% block content %}
+    {% set list_route = 'admin.cms.forms.submissions_summary' %}
+    {% set answers_base = filters.parameters|merge({ id: cms_form.id, edit_language_id: edit_language_id }) %}
+
+    {% embed '@BackOfficeDefaultTwig/_page_header.html.twig' with { title: block('title') } %}
+        {% block title %}
+            {{ 'Summary of the answers'|trans({}, 'theliacms') }}
+            <span class="text-muted fs-6 ms-2">{{ cms_form.title|default(cms_form.code) }}</span>
+        {% endblock %}
+
+        {% block actions %}
+            <a class="btn btn-sm btn-outline-secondary" href="{{ path('admin.cms.forms.submissions', answers_base) }}" data-testid="cms-summary-answers-link">
+                <i class="bi bi-card-list me-1" aria-hidden="true"></i> {{ 'See the answers'|trans({}, 'theliacms') }}
+            </a>
+            <a class="btn btn-sm btn-outline-secondary" href="{{ path('admin.cms.forms.edit', { id: cms_form.id, edit_language_id: edit_language_id }) }}">
+                <i class="bi bi-arrow-left" aria-hidden="true"></i> {{ 'Back to the form'|trans({}, 'theliacms') }}
+            </a>
+        {% endblock %}
+    {% endembed %}
+
+    {% include '@TheliaCMSModule/backOffice/default-twig/forms/_submission_filters.html.twig' %}
+
+    {% include '@TheliaCMSModule/backOffice/default-twig/forms/_submission_statuses.html.twig' %}
+
+    {# The statuses of every answer the other filters keep, whatever the tab. #}
+    <div class="row g-3 mb-3" data-testid="cms-summary-tiles">
+        {% for tile in [
+            { key: 'shown', label: 'In this list'|trans({}, 'theliacms'), count: summary.total },
+            { key: 'new', label: 'New'|trans({}, 'theliacms'), count: summary.statuses['new'] },
+            { key: 'handled', label: 'Handled'|trans({}, 'theliacms'), count: summary.statuses['handled'] },
+            { key: 'archived', label: 'Archived'|trans({}, 'theliacms'), count: summary.statuses['archived'] },
+        ] %}
+            <div class="col-6 col-lg-3">
+                <div class="card h-100">
+                    <div class="card-body py-3">
+                        <div class="text-muted small">{{ tile.label }}</div>
+                        <div class="fs-3 fw-semibold" data-testid="cms-summary-tile-{{ tile.key }}">{{ tile.count }}</div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    {% if summary.total == 0 %}
+        <div class="card">
+            <div class="card-body text-center py-5 text-muted">
+                {{ (filters.narrowed ? 'No answer matches these filters.' : 'No answer here.')|trans({}, 'theliacms') }}
+            </div>
+        </div>
+    {% else %}
+        <div class="row g-3">
+            <div class="col-lg-6">
+                <div class="card h-100">
+                    <div class="card-header">
+                        {% set heading = { day: 'Answers by day', week: 'Answers by week', month: 'Answers by month' }[summary.by] %}
+                        {{ heading|trans({}, 'theliacms') }}
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm align-middle mb-0 cms-summary-table" data-testid="cms-summary-periods">
+                            <tbody>
+                                {% for period in summary.periods %}
+                                    <tr data-testid="cms-summary-period-{{ period.start|date('Y-m-d') }}">
+                                        <th scope="row">{{ summary.by == 'week' ? 'Week of %date%'|trans({ '%date%': period.label }, 'theliacms') : period.label }}</th>
+                                        <td><div class="cms-summary-bar{{ period.count == 0 ? ' cms-summary-bar--empty' }}" style="width: {{ summary.most > 0 ? (period.count / summary.most * 100)|round(1) : 0 }}%" aria-hidden="true"></div></td>
+                                        <td class="text-end" data-testid="cms-summary-count">{{ period.count }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6 d-flex flex-column gap-3">
+                {% for question in summary.questions %}
+                    {% set most = (question.values|first).count %}
+                    <div class="card" data-testid="cms-summary-question-{{ question.name }}">
+                        <div class="card-header d-flex justify-content-between gap-2">
+                            <span>{{ question.label }}</span>
+                            <span class="text-muted small">{{ '%count% answer(s)'|trans({ '%count%': question.answered }, 'theliacms') }}</span>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-sm align-middle mb-0 cms-summary-table">
+                                <tbody>
+                                    {% for choice in question.values %}
+                                        <tr>
+                                            {# Each value leads to its answers, the other filters kept. #}
+                                            <th scope="row">
+                                                <a href="{{ path('admin.cms.forms.submissions', answers_base|merge({ answer: (filters.answers|merge({ (question.name): choice.value })) })) }}">{{ choice.value }}</a>
+                                            </th>
+                                            <td><div class="cms-summary-bar" style="width: {{ (choice.count / most * 100)|round(1) }}%" aria-hidden="true"></div></td>
+                                            <td class="text-end text-nowrap" data-testid="cms-summary-value-count">{{ choice.count }} <span class="text-muted small">{{ '(%percent%%)'|trans({ '%percent%': (choice.count / question.answered * 100)|round }, 'theliacms') }}</span></td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="card">
+                        <div class="card-body text-muted">{{ 'This form has no question with choices to count.'|trans({}, 'theliacms') }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <script src="{{ cms_asset('assets/page-filters.js') }}?v={{ assets_version }}" defer></script>
+{% endblock %}

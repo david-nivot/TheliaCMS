@@ -44,6 +44,7 @@ use Twig\Environment;
 final readonly class CmsSubmissionAdminController
 {
     private const string TEMPLATE = '@TheliaCMSModule/backOffice/default-twig/forms/submissions.html.twig';
+    private const string SUMMARY_TEMPLATE = '@TheliaCMSModule/backOffice/default-twig/forms/summary.html.twig';
 
     public function __construct(
         private Environment $twig,
@@ -54,6 +55,7 @@ final readonly class CmsSubmissionAdminController
         private CmsActivityLog $activityLog,
         private EditLanguage $languages,
         private SubmissionChoices $choices,
+        private SubmissionSummary $summary,
     ) {
     }
 
@@ -85,6 +87,31 @@ final readonly class CmsSubmissionAdminController
             'may_export' => $this->support->isGranted(CmsResources::FORM_ANSWERS_EXPORT, AccessManager::VIEW),
             'yes' => $this->support->translate('Yes'),
             'no' => $this->support->translate('No'),
+        ]));
+    }
+
+    /**
+     * The answers of the list counted: over time, by status, by the value of
+     * each question with choices. Reading them is all it takes.
+     */
+    #[Route('/summary', name: 'submissions_summary', methods: ['GET'])]
+    public function summary(Request $request, int $id): Response
+    {
+        $record = $this->formOrFail($id);
+        $lang = $this->languages->resolve($request);
+        $filters = SubmissionFilters::fromRequest($request);
+        $search = $this->submissions->search($record, $filters);
+        $summary = $this->summary->of($search, $this->support->screenLocale());
+
+        return new Response($this->twig->render(self::SUMMARY_TEMPLATE, [
+            'cms_form' => $record->setLocale($lang->getLocale()),
+            'summary' => $summary,
+            'filters' => $filters,
+            'email' => $filters->email,
+            'questions' => $this->choices->questions($record, $lang->getLocale(), $filters),
+            'status_counts' => $summary['statuses'],
+            'total' => $summary['total'],
+            'edit_language_id' => $lang->getId(),
         ]));
     }
 

@@ -880,6 +880,12 @@ the filter offers marked "no longer offered". The values are read from the
 answers themselves, in PHP, since a database cannot search inside the JSON the
 same way everywhere.
 
+**Answer summary**, from the list, counts what the list holds instead of
+showing it: the answers by day, by week from two months, by month from half a
+year, the empty periods included; the count of each status; and, for each
+question with choices, how often each value was given, each one leading to its
+answers. It follows the same filters and tabs, and draws its bars in plain HTML.
+
 Each form states how long its answers are kept, 365 days by default. They are
 deleted on their own by `thelia_cms:forms:purge`, and by `maintenance:purge`
 along with the carts and the admin logs. Hooking onto the command a Thelia site

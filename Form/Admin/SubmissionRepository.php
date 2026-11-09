@@ -128,6 +128,42 @@ final readonly class SubmissionRepository
     }
 
     /**
+     * How many answers of the list arrived each day, the days without any left
+     * out.
+     *
+     * @return array<string, int> by day, as `Y-m-d`, oldest first
+     */
+    public function countsByDay(SubmissionSearch $search): array
+    {
+        $rows = $this->query($search, $search->filters->statuses())
+            ->withColumn('DATE('.CmsFormSubmissionTableMap::COL_CREATED_AT.')', 'day')
+            ->withColumn('COUNT(*)', 'total')
+            ->groupBy('day')
+            ->orderBy('day')
+            ->select(['day', 'total'])
+            ->find()
+            ->getData();
+
+        $counts = [];
+
+        foreach ($rows as $row) {
+            $counts[(string) $row['day']] = (int) $row['total'];
+        }
+
+        return $counts;
+    }
+
+    /**
+     * The decoded answers of every submission of the list, a batch at a time.
+     *
+     * @return \Generator<int, list<array<string, mixed>>> by id of the submission
+     */
+    public function answersOf(SubmissionSearch $search): \Generator
+    {
+        return $this->decoded($this->query($search, $search->filters->statuses()));
+    }
+
+    /**
      * The answers given to the questions with choices, every submission of the
      * form included whatever the list shows: what can be asked for does not
      * change with the period or the tab.

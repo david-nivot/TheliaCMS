@@ -24,6 +24,11 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   The pages, the gestures on a selection and the export keep the filters. A
   choice renamed since keeps its older answers under the old wording, offered
   in the filter as "no longer offered".
+- **A summary of the answers of a form** counts them rather than listing them:
+  how many arrived each day, week or month (chosen from the length of the
+  period), how many are new, handled and archived, and how each question with
+  choices was answered, each value leading to its answers. It follows the
+  filters and the tabs of the list, and is reached from it.
 
 ### Changed
 

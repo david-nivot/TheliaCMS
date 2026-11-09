@@ -1,6 +1,6 @@
 # Plan: the answers of a form (N41 to N45)
 
-Status: decided (2026-11-09, by the maintainer), coded lot by lot on `feat/form-answers`; done: N45, N41, N42, N43. Read on `main` at 9009ac8 (2.18.0). Wave 5 of the
+Status: decided (2026-11-09, by the maintainer), coded lot by lot on `feat/form-answers`; done: N45, N41, N42, N43, N44. Read on `main` at 9009ac8 (2.18.0). Wave 5 of the
 roadmap, family "formulaires". Requested by the maintainer; the five lots were first read on
 a896919 and checked again on 9009ac8 (line numbers below are the current ones). Each lot updates
 this plan in its own commit.
@@ -193,10 +193,24 @@ logged with the count of the search, still `no-store`; the tests read it through
 in both languages with filters, BOM, formula; 1,201 rows in 1 + 3 statements, newest first, none
 twice); eight sabotages, each red.
 
-### 5. N44: summary of the answers (M)
+### 5. N44: summary of the answers (M), done
 
 Tests: counts by period across a month boundary, split of a choice field, follows the filters,
 statuses counted.
+
+Done: `SubmissionSummary` (read service): counts by day from SQL (`countsByDay()`, `DATE()` grouped),
+gathered in PHP by day under 62 days, by week (from Monday) under 183, by month beyond, every period
+between the bounds of the filter (else the first and last answer) kept, empty ones included, labels
+by `IntlDateFormatter` in the language of the screen; the statuses by `countsByStatus()`; the
+questions with choices (select, radio, country) from the JSON of the list (`answersOf()`), values
+most given first. Screen `…/submissions/summary` (`submissions_summary`, GET, listed in
+`WriteRoutesTest`), reached by "Answer summary" on the list and back by "See the answers", both
+keeping the filters; filter bar and tabs moved to `forms/_submission_filters.html.twig` and
+`_submission_statuses.html.twig`, shared by both screens; tiles and bars in plain HTML, each value
+a link to its answers. Measured: 5,000 answers 30 ms, 20,000 answers 127 ms. Tests:
+`SubmissionSummaryTest` (5); eleven sabotages, each red (the screen test first too poor to catch
+the filters ignored, a February answer added). Checked in the browser at 1440 px in French: by
+week over three months, by day over October, a value leading to the same count on the list.
 
 ## Estimate (pilot days, read on 9009ac8)
 
@@ -218,5 +232,4 @@ statuses counted.
 
 ## Not checked
 
-- The cost of reading the JSON for the summary (N44); the filter is measured under N42.
 - The upgrade of real profiles on a base with custom profiles.

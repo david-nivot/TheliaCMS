@@ -23,6 +23,10 @@
         {% block actions %}
             {# The export takes the list as it is shown: the same address, the
                same status. #}
+            <a class="btn btn-sm btn-outline-secondary" data-testid="cms-submissions-summary-link"
+               href="{{ path('admin.cms.forms.submissions_summary', filters.parameters|merge({ id: cms_form.id, edit_language_id: edit_language_id })) }}">
+                <i class="bi bi-bar-chart me-1" aria-hidden="true"></i> {{ 'Answer summary'|trans({}, 'theliacms') }}
+            </a>
             {% if total > 0 and may_export %}
                 <a class="btn btn-sm btn-outline-secondary" href="{{ path('admin.cms.forms.submissions_export', filters.parameters|merge({ id: cms_form.id, format: 'csv' })) }}">
                     <i class="bi bi-filetype-csv me-1" aria-hidden="true"></i> {{ 'Export as CSV'|trans({}, 'theliacms') }}
@@ -37,142 +41,10 @@
         {% endblock %}
     {% endembed %}
 
-    {# One line, on the model of the list of pages: a plain GET form and native
-       controls, so it works without JavaScript; the period and the answers
-       fold into `<details>` menus, counted on their button and named under the
-       bar. Finding every answer from one person is what answering a request to
-       see or to erase their data starts with, so the address comes first. #}
-    {% set period_count = (filters.from ? 1 : 0) + (filters.to ? 1 : 0) %}
-    <form method="get" action="{{ path('admin.cms.forms.submissions', { id: cms_form.id }) }}" class="card mb-3 cms-filter-card" data-testid="cms-submissions-filters">
-        <input type="hidden" name="edit_language_id" value="{{ edit_language_id }}">
-        {% if filters.statusParameter %}
-            <input type="hidden" name="status" value="{{ filters.statusParameter }}">
-        {% endif %}
-        <div class="card-body py-2">
-            <div class="cms-filter-bar">
-                <div class="input-group cms-filter-bar__search">
-                    <label class="visually-hidden" for="cms-submissions-email">{{ 'Search by email address'|trans({}, 'theliacms') }}</label>
-                    <input class="form-control" type="search" id="cms-submissions-email" name="email" value="{{ email }}"
-                           placeholder="{{ 'Search by email address'|trans({}, 'theliacms') }}" title="{{ 'Part of an address is enough'|trans({}, 'theliacms') }}">
-                    <button class="btn btn-primary" type="submit">
-                        <i class="bi bi-search" aria-hidden="true"></i>
-                        <span class="visually-hidden">{{ 'Search'|trans({}, 'theliacms') }}</span>
-                    </button>
-                </div>
+    {% set list_route = 'admin.cms.forms.submissions' %}
+    {% include '@TheliaCMSModule/backOffice/default-twig/forms/_submission_filters.html.twig' %}
 
-                <details class="cms-filter-menu" data-cms-filter-menu data-testid="cms-submissions-period-menu">
-                    <summary class="btn {{ period_count > 0 ? 'btn-primary' : 'btn-outline-secondary' }}">
-                        {{ 'Received'|trans({}, 'theliacms') }}
-                        {% if period_count > 0 %}<span class="badge text-bg-light ms-1">{{ period_count }}</span>{% endif %}
-                    </summary>
-                    <div class="cms-filter-menu__panel cms-filter-menu__panel--end">
-                        {# ISO in the address, whatever the browser shows. #}
-                        <div class="row g-2 mb-1">
-                            <div class="col-6">
-                                <label class="form-label" for="cms-submissions-from">{{ 'From'|trans({}, 'theliacms') }}</label>
-                                <input type="date" class="form-control" id="cms-submissions-from" name="from"
-                                       value="{{ filters.from ? filters.from|date('Y-m-d') }}" placeholder="2026-01-31" pattern="\d{4}-\d{2}-\d{2}"
-                                       aria-describedby="cms-submissions-period-help" data-testid="cms-submissions-from">
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label" for="cms-submissions-to">{{ 'To'|trans({}, 'theliacms') }}</label>
-                                <input type="date" class="form-control" id="cms-submissions-to" name="to"
-                                       value="{{ filters.to ? filters.to|date('Y-m-d') }}" placeholder="2026-01-31" pattern="\d{4}-\d{2}-\d{2}"
-                                       aria-describedby="cms-submissions-period-help" data-testid="cms-submissions-to">
-                            </div>
-                        </div>
-                        <div class="form-text mb-3" id="cms-submissions-period-help">{{ 'Both days included, as 2026-01-31.'|trans({}, 'theliacms') }}</div>
-                        <button type="submit" class="btn btn-primary btn-sm">{{ 'Apply'|trans({}, 'theliacms') }}</button>
-                    </div>
-                </details>
-
-                {% if questions is not empty %}
-                    <details class="cms-filter-menu" data-cms-filter-menu data-testid="cms-submissions-answer-menu">
-                        <summary class="btn {{ filters.answers is not empty ? 'btn-primary' : 'btn-outline-secondary' }}">
-                            {{ 'Answer'|trans({}, 'theliacms') }}
-                            {% if filters.answers is not empty %}<span class="badge text-bg-light ms-1">{{ filters.answers|length }}</span>{% endif %}
-                        </summary>
-                        <div class="cms-filter-menu__panel cms-filter-menu__panel--end">
-                            {% for question in questions %}
-                                <div class="mb-3">
-                                    <label class="form-label" for="cms-submissions-answer-{{ loop.index }}">{{ question.label }}</label>
-                                    <select class="form-select" id="cms-submissions-answer-{{ loop.index }}" name="answer[{{ question.name }}]"
-                                            data-testid="cms-submissions-answer-{{ question.name }}">
-                                        <option value="">{{ 'Any answer'|trans({}, 'theliacms') }}</option>
-                                        {% for choice in question.values %}
-                                            <option value="{{ choice.value }}" {{ choice.value == question.asked ? 'selected' }}>
-                                                {{ choice.offered ? choice.value : '%value% (no longer offered)'|trans({ '%value%': choice.value }, 'theliacms') }}
-                                            </option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                            {% endfor %}
-                            <div class="form-text mb-3">{{ 'An answer keeps the wording the visitor picked: a choice renamed since then does not find its older answers.'|trans({}, 'theliacms') }}</div>
-                            <button type="submit" class="btn btn-primary btn-sm">{{ 'Apply'|trans({}, 'theliacms') }}</button>
-                        </div>
-                    </details>
-                {% endif %}
-
-                <div class="cms-filter-bar__sort align-self-center text-muted text-nowrap" data-testid="cms-submissions-total">
-                    {{ '%count% answer(s)'|trans({'%count%': total}, 'theliacms') }}
-                </div>
-            </div>
-        </div>
-
-        {% if filters.narrowed %}
-            {% set chip_base = { id: cms_form.id, edit_language_id: edit_language_id } %}
-            <div class="card-footer d-flex flex-wrap align-items-center gap-2 py-2" data-testid="cms-submissions-active-filters">
-                <span class="text-muted small">{{ 'Showing only'|trans({}, 'theliacms') }}</span>
-                {% set chips = [] %}
-                {% if email %}
-                    {% set chips = chips|merge([{ label: email, url: path('admin.cms.forms.submissions', filters.without('email')|merge(chip_base)) }]) %}
-                {% endif %}
-                {% if filters.from or filters.to %}
-                    {% set period = not filters.to
-                        ? 'from %from%'|trans({ '%from%': filters.from|date('d/m/Y') }, 'theliacms')
-                        : (not filters.from
-                            ? 'until %to%'|trans({ '%to%': filters.to|date('d/m/Y') }, 'theliacms')
-                            : 'from %from% to %to%'|trans({ '%from%': filters.from|date('d/m/Y'), '%to%': filters.to|date('d/m/Y') }, 'theliacms')) %}
-                    {% set chips = chips|merge([{ label: period, url: path('admin.cms.forms.submissions', filters.without('from')|merge(chip_base)) }]) %}
-                {% endif %}
-                {% for question in questions|filter(q => q.asked) %}
-                    {% set chips = chips|merge([{ label: question.label ~ ' : ' ~ question.asked, url: path('admin.cms.forms.submissions', filters.without('answer', question.name)|merge(chip_base)) }]) %}
-                {% endfor %}
-                {% for chip in chips %}
-                    <a class="badge rounded-pill text-bg-light border text-decoration-none d-inline-flex align-items-center gap-1" href="{{ chip.url }}">
-                        {{ chip.label }}
-                        <i class="bi bi-x-lg" aria-hidden="true"></i>
-                        <span class="visually-hidden">{{ 'Remove this filter'|trans({}, 'theliacms') }}</span>
-                    </a>
-                {% endfor %}
-                <a class="btn btn-sm btn-link ms-auto" href="{{ path('admin.cms.forms.submissions', filters.cleared|merge(chip_base)) }}" data-testid="cms-submissions-reset">
-                    {{ 'Clear'|trans({}, 'theliacms') }}
-                </a>
-            </div>
-        {% endif %}
-    </form>
-
-    {# The tabs count for the address searched: an archived answer from the
-       person asking for their data is never out of sight. #}
-    {% set current_count = status_counts['new'] + status_counts['handled'] %}
-    <ul class="nav nav-pills flex-wrap gap-1 mb-3" data-testid="cms-submissions-statuses">
-        {% for tab in [
-            { value: '', label: 'Current'|trans({}, 'theliacms'), count: current_count },
-            { value: 'new', label: 'New'|trans({}, 'theliacms'), count: status_counts['new'] },
-            { value: 'handled', label: 'Handled'|trans({}, 'theliacms'), count: status_counts['handled'] },
-            { value: 'archived', label: 'Archived'|trans({}, 'theliacms'), count: status_counts['archived'] },
-            { value: 'all', label: 'All'|trans({}, 'theliacms'), count: current_count + status_counts['archived'] },
-        ] %}
-            {% set active = tab.value == filters.statusParameter %}
-            <li class="nav-item">
-                <a class="nav-link py-1 px-3{{ active ? ' active' }}" data-testid="cms-submissions-status-{{ tab.value ?: 'current' }}"
-                   href="{{ path('admin.cms.forms.submissions', filters.onStatus(tab.value)|merge({ id: cms_form.id, edit_language_id: edit_language_id })) }}"
-                   {{ active ? 'aria-current="page"' }}>
-                    {{ tab.label }} <span class="badge {{ active ? 'text-bg-light' : 'text-bg-secondary' }} ms-1">{{ tab.count }}</span>
-                </a>
-            </li>
-        {% endfor %}
-    </ul>
+    {% include '@TheliaCMSModule/backOffice/default-twig/forms/_submission_statuses.html.twig' %}
 
     {% if submissions is empty %}
         <div class="card">
