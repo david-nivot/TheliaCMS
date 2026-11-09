@@ -257,6 +257,57 @@ console is clean. The back office scrolls smoothly: the script waits for the
 scroll to settle before it measures. A click on Save and publish is checked
 by hand, on a page made for it.
 
+### A sample site to check the page list on
+
+The page list needs a site that is more than a handful of pages: a tree folded
+by default (over forty pages), branches four levels deep, subsections of eight
+pages and more, tags, images, dates over several years, drafts, hidden and
+scheduled pages. `Tests/Browser/sample-site/` makes one on the development
+database of a DDEV host: a cycling magazine started in 2021, written in French,
+about 150 pages, 6 tags and 20 images, a subsection of 30 pages of the media library, part of it in
+English. It is the same on every run (fixed seed). From the root of the host:
+
+```bash
+ddev exec php local/modules/TheliaCMS/Tests/Browser/sample-site/seed.php   # once
+local/modules/TheliaCMS/Tests/Browser/sample-site/save.sh                  # keeps it
+local/modules/TheliaCMS/Tests/Browser/sample-site/restore.sh               # puts it back
+```
+
+- Everything lands in `var/theliacms-sample-site/` (another directory as the
+  argument of each script): `manifest.json` lists the ids made, `db.sql.gz` is
+  the whole development database after the seed, `images.tar.gz` the files of
+  its images. `seed.php` refuses to run while `manifest.json` exists.
+- `restore.sh` replaces the whole development database, administrators
+  included; it keeps the one it replaces next to the save first. After a new
+  version of the module, `php Thelia module:refresh`.
+- The seed writes through the writers of the module, read by reflection from
+  the controllers that hold them (they are private services), then dates each
+  page with SQL. A `save()` after that stamps the row with today: anything the
+  seed writes on a page goes before the dates.
+- Putting back a database from before the seed leaves its image files in
+  `local/library/images/` (listed in `images.list`). The ids are reused by the
+  next seed: a resized copy left in `public/image-library/<id>` would show the
+  previous image.
+
+`Tests/Browser/page-section-list.mjs` checks the list of the pages of one page
+on that site: down from the tree by the number of pages of a row, the order,
+the breadcrumb, the moves at both ends, Create a page here, a search kept
+inside, the links of the pages above a result, the way back to the tree, no
+horizontal scroll at 1440 and 1024 px, no console error. Same variables as the
+other checks, without `CMS_PAGE_ID`, plus `CMS_LANGUAGE_ID`, the id of French
+on the shop (the site is read in its language). It reads only: it moves,
+saves and publishes nothing.
+
+`Tests/Browser/page-tree-unfolds-in-place.mjs` checks, on the same site and
+with the same variables, that a branch opens and closes without loading the
+screen again (a mark left on `window` survives), the row clicked staying at its
+place within 2 px and keeping the focus, that the address names the branches
+open (a reload shows them), that the button of a page names its pages, that a
+branch of 30 pages shows 20 and leads to the list of all of them, that
+**Close every branch** works in place too, and
+that without JavaScript the link lands on the row by its anchor. Window
+1440x620, so that the tree scrolls. It reads only.
+
 ## CSS and the security policy
 
 - `Content/Pipeline/CssAllowList.php` keeps of a `style` attribute or of a

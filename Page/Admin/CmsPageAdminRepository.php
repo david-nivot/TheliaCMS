@@ -210,6 +210,33 @@ final readonly class CmsPageAdminRepository
         ));
     }
 
+    /**
+     * A page of the list whose pages are asked for, with the pages above it:
+     * live, and neither a model nor the header zone, which hold no page.
+     */
+    public function section(int $id, string $locale): ?PageSection
+    {
+        $page = CmsPageQuery::create()
+            ->filterById($id)
+            ->filterByDeletedAt(null, Criteria::ISNULL)
+            ->filterByModel(0)
+            ->joinWithI18n($locale, Criteria::LEFT_JOIN)
+            ->findOne();
+
+        if (null === $page) {
+            return null;
+        }
+
+        return new PageSection(
+            id: $id,
+            title: $this->label($page, $locale),
+            trail: array_reverse(array_map(
+                fn (CmsPage $ancestor): array => ['id' => (int) $ancestor->getId(), 'title' => $this->label($ancestor, $locale)],
+                $this->ancestorsOf($page, $locale),
+            )),
+        );
+    }
+
     public function findLive(int $id): ?CmsPage
     {
         return CmsPageQuery::create()
@@ -402,7 +429,8 @@ final readonly class CmsPageAdminRepository
     }
 
     /**
-     * Orders the results by the sort asked, by title when none is.
+     * Orders the results by the sort asked, by title when none is, by position
+     * among the pages of one page.
      *
      * The pages with nothing to sort on come last in both directions: a page
      * with no title in this language sorted first would push the pages that
@@ -411,6 +439,12 @@ final readonly class CmsPageAdminRepository
      */
     private function ordered(CmsPageQuery $query, PageFilters $filters): CmsPageQuery
     {
+        // The pages of one page, unsorted, come in the order of the site: the
+        // one of its menus, and the one a move changes.
+        if (null !== $filters->inside && null === $filters->sort) {
+            return $query->orderByPosition()->orderById();
+        }
+
         $direction = $filters->isDescending() ? Criteria::DESC : Criteria::ASC;
         $page = '`'.CmsPageTableMap::TABLE_NAME.'`';
 
@@ -468,6 +502,10 @@ final readonly class CmsPageAdminRepository
 
         if (null !== $filters->author) {
             $query->filterByUpdatedBy($filters->author);
+        }
+
+        if (null !== $filters->inside) {
+            $query->filterByParent($filters->inside);
         }
 
         // One join of the content row serves the states, the date of the last
@@ -574,23 +612,38 @@ final readonly class CmsPageAdminRepository
      * depth would silently drop the pages below it, and what has to be guarded
      * against is a tree holding a cycle.
      *
+     * An unfolded branch shows its first pages only: the last one shown says
+     * how many follow, for the screen to lead to the list of all of them. The
+     * root of the site is shown whole, being no page to list the pages of.
+     *
      * @param array<int, list<CmsPage>> $byParent
      *
-     * @return list<array{page: CmsPage, depth: int}>
+     * @return list<array{page: CmsPage, depth: int, more?: int}>
      */
     private function walk(array $byParent, int $parentId, int $depth, PageFilters $filters, array &$seen = []): array
     {
         $rows = [];
+        $shown = 0;
+        $lastOfBranch = 0;
+        $siblings = array_values(array_filter($byParent[$parentId] ?? [], static fn (CmsPage $page): bool => !isset($seen[(int) $page->getId()])));
 
-        foreach ($byParent[$parentId] ?? [] as $page) {
+        foreach ($siblings as $index => $page) {
             $id = (int) $page->getId();
 
             if (isset($seen[$id])) {
                 continue;
             }
 
+            if ($depth > 0 && $shown === PageFilters::BRANCH_ROWS) {
+                $rows[$lastOfBranch]['more'] = \count($siblings) - $index;
+
+                break;
+            }
+
             $seen[$id] = true;
             $rows[] = ['page' => $page, 'depth' => $depth];
+            $lastOfBranch = array_key_last($rows);
+            ++$shown;
 
             if ($filters->isOpen($id)) {
                 $rows = array_merge($rows, $this->walk($byParent, $id, $depth + 1, $filters, $seen));
@@ -628,8 +681,8 @@ final readonly class CmsPageAdminRepository
      * Turns walked pages into rows, reading state and addresses for all of them
      * in two statements.
      *
-     * @param list<array{page: CmsPage, depth: int}> $ordered
-     * @param array<int, int>                        $childCounts
+     * @param list<array{page: CmsPage, depth: int, more?: int}> $ordered
+     * @param array<int, int>                                    $childCounts
      *
      * @return list<PageListRow>
      */
@@ -663,6 +716,7 @@ final readonly class CmsPageAdminRepository
                 childCount: $childCounts[$id] ?? 0,
                 isOpen: $filters->isOpen($id),
                 modifiedAt: PageListRow::latestOf($page->getUpdatedAt(), ($contents[$id] ?? null)?->getUpdatedAt()),
+                moreSiblings: $row['more'] ?? 0,
             );
         }
 
@@ -709,8 +763,10 @@ final readonly class CmsPageAdminRepository
                 childCount: $row->childCount,
                 isOpen: $row->isOpen,
                 ancestorTitles: $row->ancestorTitles,
+                ancestorIds: $row->ancestorIds,
                 titleInAnotherLanguage: $found[$row->id()] ?? null,
                 modifiedAt: $row->modifiedAt,
+                moreSiblings: $row->moreSiblings,
             ),
             $rows,
         );
@@ -813,10 +869,12 @@ final readonly class CmsPageAdminRepository
 
         foreach ($rows as $row) {
             $chain = [];
+            $chainIds = [];
             $parentId = (int) $row->page->getParent();
 
             while ($parentId > 0 && isset($known[$parentId])) {
                 array_unshift($chain, $known[$parentId]['title']);
+                array_unshift($chainIds, $parentId);
                 $parentId = $known[$parentId]['parent'];
             }
 
@@ -828,8 +886,10 @@ final readonly class CmsPageAdminRepository
                 childCount: $row->childCount,
                 isOpen: $row->isOpen,
                 ancestorTitles: $chain,
+                ancestorIds: $chainIds,
                 titleInAnotherLanguage: $row->titleInAnotherLanguage,
                 modifiedAt: $row->modifiedAt,
+                moreSiblings: $row->moreSiblings,
             );
         }
 

@@ -7,6 +7,37 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **The pages of one page, on a list of their own.** A button next to the
+  title of a page that holds others (**12 pages**) opens the list of the pages
+  directly under it (`?inside=<id>`): flat, in the order of the site, paginated by 50,
+  with the search, the filters, the sorts and the bulk actions of the list. Its
+  head shows where the page sits, each page above a link to its own list and
+  **All pages** back to the tree as it was left, and offers **Create a page
+  here**, which starts the new page under it, and the settings of the page.
+  The pages move up and down there as on the tree, across the pages of results;
+  a search or a sort among them turns the moves off. A search typed there stays
+  inside the page until its chip is removed. On a list of results, each page
+  above a result (**Under** …) opens its list too. A page in the bin, a model or
+  an id that names no page is ignored, and the tree comes back.
+
+### Changed
+
+- **A branch of the tree opens and closes in place.** The arrow of a page and
+  **Close every branch** no longer load the screen again: the tree is replaced
+  where it stands, the row clicked stays at its place and keeps the focus, and
+  the address follows, so a reload or a screen opened from a row finds the
+  tree as it is. Without JavaScript, or when the answer is not a tree (a
+  session expired), the link is followed and lands on the row. Moving a page
+  up or down and hiding or showing it also come back to its row.
+- **A large branch shows its first 20 pages.** The others are on the list of
+  the pages of the branch, which a line under the twentieth leads to (**See the
+  N other pages inside …**).
+- **A long title of the tree wraps under itself.** It went back under the
+  indentation, which hid the level of the page; the title column keeps room
+  for four levels, so opening a branch does not widen it and move the table.
+
 ## [2.22.0] - 2026-11-09
 
 ### Added

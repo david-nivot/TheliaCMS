@@ -73,16 +73,31 @@ final readonly class PageListPresenter
 
         $authors = $this->pages->authors();
 
-        $filters = $this->unfoldSmallSite($filters->knowing($tagNames, $typeNames, $authors), $liveCount);
+        $filters = $filters->knowing($tagNames, $typeNames, $authors);
+        // A page that is gone, in the bin or a model holds no page to list.
+        $section = null === $filters->inside ? null : $this->pages->section($filters->inside, $locale);
+
+        if (null === $section) {
+            $filters = $filters->withoutFilter(PageFilters::INSIDE);
+        }
+
+        $filters = $this->unfoldSmallSite($filters, $liveCount);
         $results = $filters->isFiltering() ? $this->pages->results($locale, $filters) : null;
         $rows = null === $results ? $this->pages->branch($locale, $filters) : $results->rows;
+        // The pages of one page, nothing else asked, are siblings in the order of
+        // the site: they move like the rows of the tree.
+        $siblings = null !== $results && $filters->isInsideOnly() ? $results : null;
 
         return [
             'is_filtering' => $filters->isFiltering(),
-            'rows' => $this->rows($rows, $filters, $languageId, $locale, null === $results, $this->stalePages->ids($locale, array_map(static fn (PageListRow $row): int => $row->id(), $rows)), $tags, $typeNames),
+            'rows' => $this->rows($rows, $filters, $languageId, $locale, null === $results, $this->stalePages->ids($locale, array_map(static fn (PageListRow $row): int => $row->id(), $rows)), $tags, $typeNames, $siblings),
             'results' => $results,
+            'section' => null === $section ? null : $this->section($section, $filters, $languageId),
+            'reorderable' => null === $results || null !== $siblings,
+            // A changed script is fetched again, not read from the cache of the browser.
+            'tree_script_version' => substr(hash('xxh3', (string) @filemtime(__DIR__.'/../../templates/backOffice/default-twig/assets/page-tree.js')), 0, 12),
             'live_count' => $liveCount,
-            'filters' => $this->filterBar->present($filters, $languageId, $trashCount, $tagNames, $typeNames, $this->pages->statusCounts($locale), $authors),
+            'filters' => $this->filterBar->present($filters, $languageId, $trashCount, $tagNames, $typeNames, $this->pages->statusCounts($locale), $authors, $section?->title),
             'filter_query' => $filters->toQueryParams(),
             // The selection is offered on the flat list only: on the tree, a
             // folded branch would go to the bin under a box nobody saw ticked.
@@ -134,6 +149,33 @@ final readonly class PageListPresenter
     }
 
     /**
+     * What the head of the list says about the page whose pages it shows: the
+     * way down to it, each step a list of its own, and where a new page starts
+     * under it.
+     *
+     * @return array{id: int, title: string, trail: list<array{title: string, url: string}>, all_url: string, create_url: string, edit_url: string}
+     */
+    private function section(PageSection $section, PageFilters $filters, int $languageId): array
+    {
+        // The new page and the settings come back to this list.
+        $return = $filters->toReturnParameter();
+        $returnQuery = null === $return ? [] : [PageFilters::RETURN => $return];
+
+        return [
+            'id' => $section->id,
+            'title' => $section->title,
+            'trail' => array_map(
+                fn (array $step): array => ['title' => $step['title'], 'url' => $this->filterBar->listUrl($filters->inside($step['id']), $languageId)],
+                $section->trail,
+            ),
+            // The tree, with its branches as they were left.
+            'all_url' => $this->filterBar->listUrl(new PageFilters(open: $filters->open, foldChosen: $filters->foldChosen), $languageId),
+            'create_url' => $this->urls->generate('admin.cms.pages.create', [EditLanguage::PARAMETER => $languageId, 'parent' => $section->id, ...$returnQuery]),
+            'edit_url' => $this->route('admin.cms.pages.edit', $section->id, $languageId, extra: $returnQuery),
+        ];
+    }
+
+    /**
      * A site nobody needs to fold is not folded.
      *
      * Adding branches to the listing must not cost a click to the sites that were
@@ -156,10 +198,11 @@ final readonly class PageListPresenter
      * @param list<CmsTag>          $allTags   every tag of the site, read once for the whole listing:
      *                                         asking each page for its tag would be a query per line
      * @param array<string, string> $typeNames the names of the page types, by code
+     * @param PageResults|null      $siblings  the results when they are the pages of one page and nothing else, which move among themselves
      *
      * @return list<array<string, mixed>>
      */
-    private function rows(array $rows, PageFilters $filters, int $languageId, string $locale, bool $isTree, array $stale, array $allTags, array $typeNames): array
+    private function rows(array $rows, PageFilters $filters, int $languageId, string $locale, bool $isTree, array $stale, array $allTags, array $typeNames, ?PageResults $siblings = null): array
     {
         $firstOfParent = [];
         $lastOfParent = [];
@@ -185,6 +228,7 @@ final readonly class PageListPresenter
         }
 
         $presented = [];
+        $titles = [];
         // The screens a row opens carry the state of the list, so their "back to
         // the list" lands on this list and not on the folded tree.
         $return = $filters->toReturnParameter();
@@ -193,8 +237,13 @@ final readonly class PageListPresenter
         foreach ($rows as $index => $row) {
             $parent = (int) $row->page->getParent();
             $id = $row->id();
+            // Among the pages of one page, the ends are those of all of them, not
+            // of the page of results on screen.
+            $rank = null === $siblings ? null : ($siblings->page - 1) * $siblings->perPage + $index;
 
             $localTitle = trim((string) $row->page->getTitle());
+            // A branch comes after its page: the title of a parent is known by then.
+            $titles[$id] = $this->title($row);
 
             $presented[] = [
                 'id' => $id,
@@ -219,7 +268,21 @@ final readonly class PageListPresenter
                 // the text of a label that translation would change.
                 'is_unpublished' => PageStatus::Unpublished === $row->status,
                 'visible' => 1 === $row->page->getVisible(),
-                'ancestor_path' => $row->ancestorPath(),
+                // Each page above, a link to the list of its pages.
+                'ancestors' => array_map(
+                    fn (int $ancestorId, string $title): array => ['title' => $title, 'url' => $this->filterBar->listUrl($filters->inside($ancestorId), $languageId)],
+                    $row->ancestorIds,
+                    $row->ancestorTitles,
+                ),
+                'children_url' => $row->hasChildren() ? $this->filterBar->listUrl($filters->inside($id), $languageId) : null,
+                'anchor' => self::rowAnchor($id),
+                // The pages of the branch the tree leaves out after this one.
+                'more' => $row->moreSiblings > 0 ? [
+                    'count' => $row->moreSiblings,
+                    'parent_id' => $parent,
+                    'parent_title' => $titles[$parent] ?? '',
+                    'url' => $this->filterBar->listUrl($filters->inside($parent), $languageId),
+                ] : null,
                 'tag' => $tags[(int) $row->page->getTagId()]['name'] ?? null,
                 'tag_badge' => $tags[(int) $row->page->getTagId()]['badge'] ?? PageTagColor::NO_COLOR_BADGE,
                 'tag_badge_style' => $tags[(int) $row->page->getTagId()]['badge_style'] ?? '',
@@ -239,12 +302,21 @@ final readonly class PageListPresenter
                 // Reordering is only offered on the tree: a position moved from a
                 // list of results would be a position among siblings the editor
                 // cannot see.
-                'can_move_up' => $isTree && $firstOfParent[$parent] !== $index,
-                'can_move_down' => $isTree && $lastOfParent[$parent] !== $index,
+                'can_move_up' => null !== $rank ? $rank > 0 : $isTree && $firstOfParent[$parent] !== $index,
+                'can_move_down' => null !== $rank ? $rank < $siblings->total - 1 : $isTree && ($lastOfParent[$parent] !== $index || $row->moreSiblings > 0),
             ];
         }
 
         return $presented;
+    }
+
+    /**
+     * The id of the row of a page on the list, which a link or a redirection
+     * names to land on it.
+     */
+    public static function rowAnchor(int $pageId): string
+    {
+        return 'cms-page-'.$pageId;
     }
 
     /**

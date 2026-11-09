@@ -96,7 +96,8 @@ final readonly class CmsPageAdminController
 
     /**
      * A blank page; `?page_type=recipe` starts it with that type, and the
-     * fields of the type.
+     * fields of the type, `?parent=12` under that page (the list of the pages
+     * of a page offers it).
      */
     #[Route('/new', name: 'create', methods: ['GET', 'POST'])]
     public function create(Request $request): Response
@@ -108,6 +109,13 @@ final readonly class CmsPageAdminController
 
         if ($this->pageTypes->exists($type)) {
             $page->setPageType($type);
+        }
+
+        // Only a live page that is no model can hold one; anything else starts at the root.
+        $parent = $this->pages->findLive($request->query->getInt('parent'));
+
+        if (null !== $parent && 0 === $parent->getModel()) {
+            $page->setParent((int) $parent->getId());
         }
 
         return $this->handleForm($request, $page);
@@ -274,7 +282,7 @@ final readonly class CmsPageAdminController
                 : 'This page is the model of its template: it is never online.'));
         }
 
-        return $this->backToList($request);
+        return $this->backToList($request, $id);
     }
 
     #[Route('/{id}/move/{direction}', name: 'move', requirements: ['id' => '\d+', 'direction' => 'up|down'], methods: ['POST'])]
@@ -284,7 +292,7 @@ final readonly class CmsPageAdminController
 
         $this->writer->move($this->livePageOrFail($id), 'up' === $direction ? -1 : 1);
 
-        return $this->backToList($request);
+        return $this->backToList($request, $id);
     }
 
     #[Route('/{id}/duplicate', name: 'duplicate', requirements: ['id' => '\\d+'], methods: ['POST'])]
@@ -658,12 +666,13 @@ final readonly class CmsPageAdminController
      * sent from a screen opened from the list, else the one whose filters the
      * action carries itself (the buttons of a row).
      */
-    private function backToList(Request $request): RedirectResponse
+    private function backToList(Request $request, ?int $row = null): RedirectResponse
     {
         return $this->support->redirect('admin.cms.pages.list', [
             self::EDIT_LANGUAGE_PARAMETER => $this->editLang($request)->getId(),
             ...$this->returnedFilters($request)->toQueryParams(),
-        ]);
+            // The row acted on, where the screen was: a long list loaded again starts from the top.
+        ], null === $row ? null : PageListPresenter::rowAnchor($row));
     }
 
     private function returnedFilters(Request $request): PageFilters
