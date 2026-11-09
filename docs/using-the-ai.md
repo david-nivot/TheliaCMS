@@ -25,6 +25,14 @@ For the people who run the shop and write its pages. The technical side is in
   no component of the site shows what the brief asks; each one is a call of
   its own, counted in the history.
 - Reads a web page you cite, if you allowed it (see below).
+- Reads a file you join to the brief: a `.md`, `.txt` or `.pdf` file of up to
+  5 MB and 100,000 characters of text, such as a product sheet or a page of
+  the old site. Only the text of a PDF is read: not its images, and not a
+  scanned PDF, which is refused. What it says counts as given by your brief; the AI reads it as
+  material, never as instructions. A file that reads as instructions rather
+  than as a document on the page is refused before anything is written, and
+  the screen says so. The file is not kept: the history of the page names it,
+  and you join it again to write from it again.
 
 Each use is recorded in the history of the page, with its date, its outcome and
 its cost.
@@ -39,12 +47,15 @@ the CMS. Ask whoever looks after the site if it is not done yet.
    the CMS does not ask you to name one.
 3. **Budget**: how much the AI may spend. When it is used up, the generator says
    so and works again next month or as soon as the budget is raised.
-4. **The four uses**: pages (`theliacms.page_generation`), their translations
-   (`theliacms.page_translation`), texts of a field (`theliacms.text`) and
-   components (`theliacms.component`) are each turned on and given a range, so
+4. **The five uses**: pages (`theliacms.page_generation`), their translations
+   (`theliacms.page_translation`), texts of a field (`theliacms.text`),
+   components (`theliacms.component`) and the check of a file joined to a brief or to a
+   change (`theliacms.guardrail_reference`) are each turned on and given a range, so
    you can allow one and not another. Translations start on the standard range,
    lighter than the one of pages; raise it there if you want them written by the
-   stronger model.
+   stronger model. The check of a file runs on the fast range: without a model
+   there, a brief or a change with a file is refused and says so, one without a
+   file is written as before.
 
 The **Generator** card of CMS > Settings keeps three choices: how hard the AI
 thinks (more effort, better but slower and dearer; read by Anthropic models only),

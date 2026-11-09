@@ -1097,6 +1097,23 @@
             });
         }
 
+        function fileAboveCeiling(form) {
+            var inputs = form.querySelectorAll("input[type=file][data-max-size]");
+
+            for (var i = 0; i < inputs.length; i++) {
+                var ceiling = parseInt(inputs[i].getAttribute("data-max-size") || "0", 10);
+                var files = inputs[i].files || [];
+
+                for (var j = 0; j < files.length; j++) {
+                    if (ceiling > 0 && files[j].size > ceiling) {
+                        return inputs[i].getAttribute("data-max-size-message") || labels.failed.replace("%status%", "413");
+                    }
+                }
+            }
+
+            return null;
+        }
+
         root.querySelectorAll("form[data-cms-generate]").forEach(function (form) {
             form.addEventListener("submit", function (event) {
                 // A brief that replaces a draft holding sections asks first,
@@ -1105,6 +1122,17 @@
 
                 if (warning && !running && !window.confirm(warning)) {
                     event.preventDefault();
+
+                    return;
+                }
+
+                // A file above the ceiling is refused before it is sent, with
+                // the limit that stops it, the module's or the server's.
+                var tooLarge = fileAboveCeiling(form);
+
+                if (tooLarge) {
+                    event.preventDefault();
+                    notify("danger", tooLarge);
 
                     return;
                 }

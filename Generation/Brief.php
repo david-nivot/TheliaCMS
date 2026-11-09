@@ -15,8 +15,9 @@ declare(strict_types=1);
 namespace TheliaCMS\Generation;
 
 /**
- * What an editor asks for: the page in their own words, and what they know
- * about tone and audience when they care to say it.
+ * What an editor asks for: the page in their own words, what they know
+ * about tone and audience when they care to say it, and a file they join
+ * as material for the page when they have one.
  */
 final readonly class Brief
 {
@@ -26,6 +27,7 @@ final readonly class Brief
         public string $text,
         public ?string $tone = null,
         public ?string $audience = null,
+        public ?ReferenceFile $reference = null,
     ) {
         if ('' === trim($text)) {
             throw new \InvalidArgumentException('A brief says something.');

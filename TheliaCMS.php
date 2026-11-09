@@ -420,6 +420,8 @@ class TheliaCMS extends BaseModule
                 __DIR__.'/Content/Site/SiteComponent.php',
                 __DIR__.'/Content/Site/InvalidSiteComponentException.php',
                 __DIR__.'/Generation/Brief.php',
+                __DIR__.'/Generation/ReferenceFile.php',
+                __DIR__.'/Generation/ReferenceFileRefusedException.php',
                 __DIR__.'/Generation/Component/ComponentRequest.php',
                 __DIR__.'/Generation/Component/ComponentResult.php',
                 __DIR__.'/Generation/Component/ComponentCandidate.php',

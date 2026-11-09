@@ -14,14 +14,13 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Generation\Tool;
 
-use Smalot\PdfParser\Config;
-use Smalot\PdfParser\Parser;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 use Thelia\Domain\Ai\AiToolDefinition;
 use Thelia\Domain\Webhook\WebhookHttpClientFactory;
+use TheliaCMS\Generation\ReadableText;
 
 /**
  * Reads a public web page, or a PDF, for the model, from this server.
@@ -58,9 +57,6 @@ final readonly class ReadUrlTool
     private const array TEXT_TYPES = ['text/html', 'application/xhtml+xml', 'text/plain'];
 
     private const string PDF_TYPE = 'application/pdf';
-
-    /** What the parser may use to inflate the streams of a PDF: a small file can hold a very large one. */
-    private const int PDF_DECODE_MEMORY_LIMIT = 16_777_216;
 
     private HttpClientInterface $client;
 
@@ -140,7 +136,7 @@ final readonly class ReadUrlTool
                     return FetchedPage::failed($url, 'unreadable_pdf');
                 }
             } else {
-                $text = 'text/plain' === $type ? self::normalize(self::utf8($body)) : self::textOfHtml(self::utf8($body));
+                $text = 'text/plain' === $type ? ReadableText::normalize(ReadableText::utf8($body)) : self::textOfHtml(ReadableText::utf8($body));
             }
 
             return '' === $text ? FetchedPage::failed($url, 'empty_page') : FetchedPage::read($url, mb_substr($text, 0, self::MAX_CHARACTERS));
@@ -237,20 +233,7 @@ final readonly class ReadUrlTool
             return null;
         }
 
-        $config = new Config();
-        $config->setDecodeMemoryLimit(self::PDF_DECODE_MEMORY_LIMIT);
-        $config->setRetainImageContent(false);
-
-        try {
-            return self::normalize(self::utf8((new Parser([], $config))->parseContent($body)->getText()));
-        } catch (\Throwable) {
-            return null;
-        }
-    }
-
-    private static function utf8(string $body): string
-    {
-        return mb_check_encoding($body, 'UTF-8') ? $body : mb_convert_encoding($body, 'UTF-8', 'ISO-8859-1');
+        return ReadableText::ofPdf($body);
     }
 
     private static function textOfHtml(string $html): string
@@ -259,14 +242,6 @@ final readonly class ReadUrlTool
         $html = preg_replace('~<!--.*?-->~s', ' ', $html) ?? '';
         $html = preg_replace('~</?(p|div|section|article|header|footer|nav|main|aside|ul|ol|li|h[1-6]|br|tr|table|blockquote|figure|form)\b[^>]*>~i', "\n", $html) ?? '';
 
-        return self::normalize(html_entity_decode(strip_tags($html), \ENT_QUOTES | \ENT_SUBSTITUTE | \ENT_HTML5, 'UTF-8'));
-    }
-
-    private static function normalize(string $text): string
-    {
-        $text = preg_replace('/[^\S\n]+/u', ' ', $text) ?? '';
-        $text = preg_replace('/ ?\n ?/u', "\n", $text) ?? '';
-
-        return trim(preg_replace('/\n{2,}/', "\n", $text) ?? '');
+        return ReadableText::normalize(html_entity_decode(strip_tags($html), \ENT_QUOTES | \ENT_SUBSTITUTE | \ENT_HTML5, 'UTF-8'));
     }
 }

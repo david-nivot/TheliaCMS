@@ -25,11 +25,15 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 use TheliaCMS\TheliaCMS;
 
 /**
- * The brief: what the editor wants the page to say, and what they know of
- * its tone and audience when they care to say it.
+ * The brief: what the editor wants the page to say, what they know of its
+ * tone and audience when they care to say it, and a text file they join as
+ * material for the page when they have one.
  *
  * The messages of the constraints are translated here: the validator looks
  * them up in the `validators` domain, where the module has no catalogue.
+ * The file is checked by ReferenceFile once the form is submitted, not by a
+ * constraint: one place says why a file is refused, on the screen and in
+ * the tests.
  */
 final class BriefType extends AbstractType
 {
@@ -45,6 +49,9 @@ final class BriefType extends AbstractType
                 'label' => 'What should this page say?',
                 'attr' => ['rows' => 9, 'placeholder' => 'Who it is for, what it has to say, what the visitor should do next. Facts, figures and names you want in it: the generator invents none.'],
                 'constraints' => [new NotBlank(message: $this->translate('Write a brief first.')), new Length(max: 20000)],
+            ])
+            ->add('reference', ReferenceFileType::class, [
+                'help' => 'A .md, .txt or .pdf file (5 MB, 100,000 characters of text at most): a product sheet, a page of the old site, a note. The generator reads its text as material for the page, never as instructions; the images of a PDF are not read. It is not kept with the brief.',
             ])
             ->add('tone', TextType::class, [
                 'label' => 'Tone',

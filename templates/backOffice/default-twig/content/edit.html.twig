@@ -301,6 +301,7 @@
                             <div class="col-6">{{ form_row(brief_form.tone) }}</div>
                             <div class="col-6">{{ form_row(brief_form.audience) }}</div>
                         </div>
+                        {{ form_row(brief_form.reference, { attr: { 'data-testid': 'cms-content-brief-reference' } }) }}
                         <button type="submit" class="btn btn-primary" data-testid="cms-content-generate"{% if not may_generate %} disabled{% endif %}>
                             <i class="bi bi-stars" aria-hidden="true"></i> {{ (replaces_draft ? 'Replace the draft' : 'Write the draft')|trans({}, 'theliacms') }}
                         </button>
@@ -318,10 +319,11 @@
                         {% if last_brief %}
                             <h2 class="cms-content__heading">{{ 'The brief'|trans({}, 'theliacms') }}</h2>
                             <p class="cms-content__brief-recall" data-testid="cms-content-brief-recall">{{ last_brief.text }}</p>
-                            {% if last_brief.tone or last_brief.audience %}
+                            {% if last_brief.tone or last_brief.audience or last_brief_reference %}
                                 <p class="cms-content__brief-meta">
                                     {% if last_brief.tone %}<span>{{ 'Tone: %tone%'|trans({ '%tone%': last_brief.tone }, 'theliacms') }}</span>{% endif %}
                                     {% if last_brief.audience %}<span>{{ 'Audience: %audience%'|trans({ '%audience%': last_brief.audience }, 'theliacms') }}</span>{% endif %}
+                                    {% if last_brief_reference %}<span data-testid="cms-content-brief-reference-recall">{{ 'With the file %name% (%length% characters), not kept: join it again to write from it again.'|trans({ '%name%': last_brief_reference.name, '%length%': last_brief_reference.length|number_format(0, '.', ' ') }, 'theliacms') }}</span>{% endif %}
                                 </p>
                             {% endif %}
                             <button type="button" class="btn btn-sm btn-outline-primary" command="show-modal" commandfor="cms-content-brief-dialog" data-cms-dialog-open data-testid="cms-content-brief-open">
@@ -356,6 +358,7 @@
                             {{ form_start(change_form, { attr: { 'data-cms-generate': '', novalidate: 'novalidate' } }) }}
                                 <input type="hidden" name="_token" value="{{ assignToken() }}">
                                 {{ form_row(change_form.text, { label: false }) }}
+                                {{ form_row(change_form.reference, { attr: { 'data-testid': 'cms-content-change-reference' } }) }}
                                 <button type="submit" class="btn btn-outline-primary" data-testid="cms-content-revise">
                                     <i class="bi bi-arrow-repeat" aria-hidden="true"></i> {{ 'Apply the change'|trans({}, 'theliacms') }}
                                 </button>
@@ -469,6 +472,7 @@
                                                 <input type="hidden" name="_token" value="{{ assignToken() }}">
                                                 {{ form_widget(section.form.section) }}
                                                 {{ form_row(section.form.text, { label: false }) }}
+                                                {{ form_row(section.form.reference, { attr: { 'data-testid': 'cms-section-rewrite-reference-' ~ section.id } }) }}
                                                 <button type="submit" class="btn btn-sm btn-outline-primary">
                                                     {{ 'Rewrite'|trans({}, 'theliacms') }}
                                                 </button>

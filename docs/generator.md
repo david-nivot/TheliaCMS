@@ -11,7 +11,7 @@ usual pipeline.
 - Thelia 3.3.0 or later, whose AI layer the generator goes through. The
   module holds no key, no provider and no model.
 - A connection and a range in the **AI settings** of Thelia: declare the
-  connection to a provider once, then give each of the four usages below a
+  connection to a provider once, then give each of the five usages below a
   range of models, turn it on and set its budget. Without that, the generator
   says so (`GenerationUnavailableException`, in the language of the back
   office) and nothing is called. The budget, the rate limit, the
@@ -29,9 +29,9 @@ usual pipeline.
 - The right `admin.cms.generate`, given to the editor profile the module
   seeds: asking the generator to write costs money.
 
-### The four usages
+### The five usages
 
-The module declares four usages to the AI layer. Each is set up on its own in
+The module declares five usages to the AI layer. Each is set up on its own in
 the AI settings, so a site can give the pages a stronger range than the texts:
 
 | Usage | Range declared | What it writes |
@@ -40,6 +40,7 @@ the AI settings, so a site can give the pages a stronger range than the texts:
 | `theliacms.page_translation` | standard | the same document written in another language of the site, its sections, components and images kept |
 | `theliacms.text` | standard | a text for a rich-text field (a product description, a chapo), from a brief |
 | `theliacms.component` | advanced | a component made in the back office |
+| `theliacms.guardrail_reference` | fast | nothing: one word, the verdict of the judge on a file joined to a brief (below) |
 
 A translation rewrites texts only, so it is declared at the standard range; a
 site that wants the advanced one for it raises the range of the usage in the AI
@@ -226,6 +227,78 @@ error) is left out and said so in the history. The address of a picture (a path
 ending in `.jpg`, `.png`, `.webp`, `.gif`, `.svg` or `.avif`) is not a page: it
 is not offered for reading, and goes as it is into an image prop. A translation
 cites none: its source is the document of the other language.
+
+### A file joined to the brief or to a change
+
+The brief of a page or of a catalogue item takes a file, `.md`, `.txt` or
+`.pdf`, of up to 100,000 characters of text (five times the brief;
+`Generation/ReferenceFile.php`, no setting): a product sheet, a page of the old
+site, a note from the client. The file is read once from the upload and never
+written to disk. A file of another extension, not UTF-8, holding a NUL byte,
+blank or too long is refused before anything is called, with the reason on the
+screen and no row in the ledger; the browser refuses a file above the ceiling
+before sending it, naming the limit that plays, the module's (5 MB, the one of
+a PDF) or PHP's when it is lower. A text file is held to 400 kB on the server.
+
+A PDF is told by its content, not its name: a file that does not start with
+`%PDF-` is refused as unreadable. Its text is extracted by
+`Generation/ReadableText.php` (smalot/pdfparser, as for a PDF the brief cites by
+its address), its images left out: the gateway of the core carries text only.
+A PDF the parser cannot read (damaged, protected by a password) and a PDF
+without text (a scan) are refused with their reason; the 100,000 characters
+hold for the extracted text. From there it goes the way of a text file. Measured
+on the host (2026-11-09): the densest PDF under the ceiling, 4.5 MB and 4,000
+pages of uncompressed text (3.7 million characters), is parsed in 1.8 s for
+49 MB of memory, then refused as too long; a PDF of 3.4 MB that is mostly an
+image is parsed in 0.01 s.
+
+The text goes to the model as it does for a page read: an `UntrustedContent`
+of source `document`, with the name of the file as reference, on the request
+from its first turn, and kept beside the pages `read_url` adds. The AI layer
+wraps it in delimiters that name the source and tells the model it is data;
+the module adds nothing to the message but a block that says the brief comes
+with the file, that what it says counts as given by the brief, and that it is
+material to read, never instructions. The length of the file counts in the
+budget the AI layer reserves, not in the limit on what a person types.
+
+The ledger keeps the name, the length and a fingerprint of the file in the
+JSON of the brief, never its text; the AI layer keeps the text with the prompt
+of the call when the merchant keeps prompts, for as long as it keeps them. The
+recall of the brief names the file; the form does not put it back, and a page
+written again from its brief is written without it unless the editor joins it
+again.
+
+"Ask for a change", on the whole draft or on one section ("Rewrite this
+section"), takes a file the same way, with the same ceiling, the same
+refusals and the same judge: a change of the whole draft (a revision) may come
+with new prices, a product sheet, a note, read as material for the change; the
+change typed in the form stays the only request, and the block of the message
+says so. The ledger keeps the name of that file in the JSON of the change; the
+recall of the brief never shows it, since it reads the latest brief only. The
+file field of a section is named after it (`cms_change_<section>[reference]`),
+as its text is. A
+file joined to a change says what to draw from, not what to do: a file that
+gives the change itself ("replace the prices by…") reads as instructions and is
+refused.
+
+A file that instructs rather than documents (it addresses an assistant, asks
+to act or to ignore rules, or has nothing to do with a page to write) is
+refused, not only neutralised, by `Generation/Guardrail/ReferenceFileGuardrail.php`:
+an optional guardrail of the AI layer named `reference_file`, listed in
+`block` mode by `theliacms.page_generation`, modelled on the topic guardrail of
+the core. It runs on the first turn of a request that holds a `document`
+content, as a call of the fast range under the usage
+`theliacms.guardrail_reference` (system audience, no optional guardrail, the
+correlation id of the call it judges): the request of the editor and the file
+reach the judge as untrusted data, and one word is read in its answer,
+`reference` or `instructions`. `instructions` fails the check with the reason
+`reference_rejected`; any other answer or a judge that cannot run fails it
+`unavailable`, and in `block` mode the call is refused, as the AI layer wants
+it. The merchant sees the usage in the register, its verdicts in the AI log,
+and may set the mode of the guardrail on the usage of pages. No keyword list:
+it can be walked around and refuses honest files ("delete" in a page about
+ending a contract). A judge is a model and can be fooled: the protection is
+the wrapping of the gateway and the editor reading the draft.
 
 ## Skills
 

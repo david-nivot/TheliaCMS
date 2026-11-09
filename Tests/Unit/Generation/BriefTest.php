@@ -16,9 +16,11 @@ namespace TheliaCMS\Tests\Unit\Generation;
 
 use PHPUnit\Framework\TestCase;
 use TheliaCMS\Generation\Brief;
+use TheliaCMS\Generation\ReferenceFile;
 
 /**
- * The web pages a brief cites, which the model may read before it writes.
+ * The web pages a brief cites, which the model may read before it writes,
+ * and the file it comes with when the editor joined one.
  */
 final class BriefTest extends TestCase
 {
@@ -44,5 +46,14 @@ final class BriefTest extends TestCase
         $brief = new Brief('Reprends https://example.com/recettes/tarte et ajoute https://cdn.example.com/tarte.webp.');
 
         self::assertSame(['https://example.com/recettes/tarte'], $brief->addresses());
+    }
+
+    public function testABriefComesWithoutAFileUnlessOneIsJoined(): void
+    {
+        self::assertNull((new Brief('Nos services.'))->reference);
+
+        $file = new ReferenceFile('fiche.md', '# Nos services');
+
+        self::assertSame($file, (new Brief('Nos services.', null, null, $file))->reference);
     }
 }
