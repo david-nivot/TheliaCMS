@@ -7,6 +7,41 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **A file joined to the brief.** On the content screen of a page or of a
+  catalogue item, the brief takes a `.md` or `.txt` file of up to 100,000
+  characters (a product sheet, a page of the old site saved as text, a note).
+  The generator reads it as it reads a web page the brief cites: as untrusted
+  content of source `document` wrapped by the AI layer, named after the file
+  only inside that wrapping (the prompt never writes the name), present from the first turn and kept beside the pages read. The ledger keeps
+  the name, the length and a fingerprint of the file, never its text; the
+  recall of the brief names it, and the form does not put it back. A file that
+  instructs rather than documents is refused before the paid call by a guardrail
+  of the module, `reference_file`, a judge of the fast range under the usage
+  `theliacms.guardrail_reference`, listed in `block` mode on
+  `theliacms.page_generation`: the merchant sees it in the register of usages,
+  reads its verdicts in the AI log and may set its mode. The judge needs a
+  connection and a model of the fast range; without one, a brief with a file is
+  refused and says so, a brief without one is written as before. A file above
+  the ceiling is refused by the browser before it is sent, with the limit that
+  plays (the module's or PHP's). No schema change, no setting.
+- **A file joined to a change.** "Ask for a change" on the content screen, on
+  the whole draft or on one section ("Rewrite this section"), takes the same
+  file as the brief, with the same ceiling, refusals
+  and judge: the file is material for the change, the change typed stays the
+  only request. The ledger keeps its name in the JSON of the change; the recall
+  of the brief does not show it. The messages of a refused file no longer
+  speak of the brief only ("Only a .md, .txt or .pdf file can be joined.",
+  "The joined file reads as instructions…").
+- **A PDF joined to the brief or to a change.** Besides `.md` and `.txt`, the
+  file may be a PDF of up to 5 MB: its text is extracted on the server, as for
+  a PDF the brief cites, and read like the text of a text file (same judge,
+  same 100,000 characters, the ledger keeps its name). Its images are not read.
+  A file named `.pdf` that is not one, a damaged or protected PDF and a scanned
+  PDF without text are refused before any call, each with its reason. The
+  browser ceiling becomes 5 MB.
+
 ## [2.20.0] - 2026-11-09
 
 ### Added
@@ -61,38 +96,6 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   profile is given on the two new rights the access it had on
   `admin.cms.form`, so nobody loses what they could do; the Editor profile has
   both.
-- **A file joined to the brief.** On the content screen of a page or of a
-  catalogue item, the brief takes a `.md` or `.txt` file of up to 100,000
-  characters (a product sheet, a page of the old site saved as text, a note).
-  The generator reads it as it reads a web page the brief cites: as untrusted
-  content of source `document` wrapped by the AI layer, named after the file,
-  present from the first turn and kept beside the pages read. The ledger keeps
-  the name, the length and a fingerprint of the file, never its text; the
-  recall of the brief names it, and the form does not put it back. A file that
-  instructs rather than documents is refused before the paid call by a guardrail
-  of the module, `reference_file`, a judge of the fast range under the usage
-  `theliacms.guardrail_reference`, listed in `block` mode on
-  `theliacms.page_generation`: the merchant sees it in the register of usages,
-  reads its verdicts in the AI log and may set its mode. The judge needs a
-  connection and a model of the fast range; without one, a brief with a file is
-  refused and says so, a brief without one is written as before. A file above
-  the ceiling is refused by the browser before it is sent, with the limit that
-  plays (the module's or PHP's). No schema change, no setting.
-- **A file joined to a change.** "Ask for a change" on the content screen, on
-  the whole draft or on one section ("Rewrite this section"), takes the same
-  file as the brief, with the same ceiling, refusals
-  and judge: the file is material for the change, the change typed stays the
-  only request. The ledger keeps its name in the JSON of the change; the recall
-  of the brief does not show it. The messages of a refused file no longer
-  speak of the brief only ("Only a .md, .txt or .pdf file can be joined.",
-  "The joined file reads as instructions…").
-- **A PDF joined to the brief or to a change.** Besides `.md` and `.txt`, the
-  file may be a PDF of up to 5 MB: its text is extracted on the server, as for
-  a PDF the brief cites, and read like the text of a text file (same judge,
-  same 100,000 characters, the ledger keeps its name). Its images are not read.
-  A file named `.pdf` that is not one, a damaged or protected PDF and a scanned
-  PDF without text are refused before any call, each with its reason. The
-  browser ceiling becomes 5 MB.
 
 ### Fixed
 

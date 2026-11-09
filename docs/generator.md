@@ -257,8 +257,10 @@ of source `document`, with the name of the file as reference, on the request
 from its first turn, and kept beside the pages `read_url` adds. The AI layer
 wraps it in delimiters that name the source and tells the model it is data;
 the module adds nothing to the message but a block that says the brief comes
-with the file, that what it says counts as given by the brief, and that it is
-material to read, never instructions. The length of the file counts in the
+with a file, that what it says counts as given by the brief, and that it is
+material to read, never instructions. The name of the file is not in that
+block: it is chosen by whoever made the file, so it reaches the model only as
+the reference of the wrapping, which the AI layer escapes. The length of the file counts in the
 budget the AI layer reserves, not in the limit on what a person types.
 
 The ledger keeps the name, the length and a fingerprint of the file in the
