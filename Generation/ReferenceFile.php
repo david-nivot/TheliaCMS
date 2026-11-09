@@ -98,7 +98,7 @@ final readonly class ReferenceFile
             throw new ReferenceFileRefusedException(ReferenceFileRefusal::Failed);
         }
 
-        $text = $isPdf ? self::textOfPdf($body) : $body;
+        $text = $isPdf ? self::textOfPdf($body) : self::textOfTextFile($body);
 
         if (str_contains($text, "\0") || !mb_check_encoding($text, 'UTF-8')) {
             throw new ReferenceFileRefusedException(ReferenceFileRefusal::Unreadable);
@@ -123,6 +123,29 @@ final readonly class ReferenceFile
     }
 
     /**
+     * The text of a .txt or .md file in UTF-8, whatever the editor's tools
+     * saved it in: UTF-16 with its byte order mark ("Unicode" in Notepad),
+     * or Windows-1252, what Windows writes French in by default. A body
+     * with a byte that is no character there, or a control character a text
+     * does not hold (a binary file renamed), is left as it is and refused as
+     * unreadable.
+     */
+    private static function textOfTextFile(string $body): string
+    {
+        foreach (["\xFF\xFE" => 'UTF-16LE', "\xFE\xFF" => 'UTF-16BE'] as $mark => $encoding) {
+            if (str_starts_with($body, $mark) && 0 === (\strlen($body) % 2)) {
+                return (string) mb_convert_encoding(substr($body, 2), 'UTF-8', $encoding);
+            }
+        }
+
+        if (mb_check_encoding($body, 'UTF-8') || 1 === preg_match('/[\x00-\x08\x0B\x0E-\x1F\x7F\x81\x8D\x8F\x90\x9D]/', $body)) {
+            return $body;
+        }
+
+        return (string) mb_convert_encoding($body, 'UTF-8', 'Windows-1252');
+    }
+
+    /**
      * The text of a PDF, told by its content rather than its name: a file
      * that does not start as a PDF is not handed to the parser.
      *
@@ -132,6 +155,12 @@ final readonly class ReferenceFile
     {
         if (!str_starts_with(ltrim(substr($body, 0, 1024)), self::PDF_SIGNATURE)) {
             throw new ReferenceFileRefusedException(ReferenceFileRefusal::Unreadable);
+        }
+
+        // Weighed before the parser sees it: a PDF it cannot hold in memory
+        // stops PHP, not the parser.
+        if (ReadableText::isTooHeavyToParse($body)) {
+            throw new ReferenceFileRefusedException(ReferenceFileRefusal::HeavyPdf);
         }
 
         $text = ReadableText::ofPdf($body);

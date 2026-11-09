@@ -234,8 +234,11 @@ The brief of a page or of a catalogue item takes a file, `.md`, `.txt` or
 `.pdf`, of up to 100,000 characters of text (five times the brief;
 `Generation/ReferenceFile.php`, no setting): a product sheet, a page of the old
 site, a note from the client. The file is read once from the upload and never
-written to disk. A file of another extension, not UTF-8, holding a NUL byte,
-blank or too long is refused before anything is called, with the reason on the
+written to disk. A text file in UTF-16 with its byte order mark, or in
+Windows-1252 (what Windows writes French in by default), is read into UTF-8.
+A file of another extension, holding a NUL byte or a control character a text
+does not hold (a binary file renamed), blank or too long is refused before
+anything is called, with the reason on the
 screen and no row in the ledger; the browser refuses a file above the ceiling
 before sending it, naming the limit that plays, the module's (5 MB, the one of
 a PDF) or PHP's when it is lower. A text file is held to 400 kB on the server.
@@ -246,19 +249,31 @@ A PDF is told by its content, not its name: a file that does not start with
 its address), its images left out: the gateway of the core carries text only.
 A PDF the parser cannot read (damaged, protected by a password) and a PDF
 without text (a scan) are refused with their reason; the 100,000 characters
-hold for the extracted text. From there it goes the way of a text file. Measured
-on the host (2026-11-09): the densest PDF under the ceiling, 4.5 MB and 4,000
-pages of uncompressed text (3.7 million characters), is parsed in 1.8 s for
-49 MB of memory, then refused as too long; a PDF of 3.4 MB that is mostly an
-image is parsed in 0.01 s.
+hold for the extracted text. From there it goes the way of a text file.
+
+The parser holds every stream it inflates, and a stream of pages costs it up
+to 37 times its size (measured on the host, 2026-11-09: a page stream of 16 MB
+inflated takes 595 MB and 6.9 s, one of 4 MB 148 MB): a PDF of 160 kB holding
+five such streams stopped PHP on a memory limit of 512 MB, a fatal error no
+`catch` reaches. So the streams are weighed before the parser sees them
+(`ReadableText::isTooHeavyToParse()`, a stream at a time, a kilobyte of input
+inflated at a time): 4 MB at most for the streams read for text, 64 MB for
+all of them, images and fonts included. A heavier PDF is refused as too heavy
+to read, and a PDF the brief cites by its address is unreadable. A PDF of
+100,000 characters, the most a file holds, weighs far less. The densest PDF
+measured under the ceiling, 4.5 MB and 4,000 pages of uncompressed text
+(3.7 million characters), is now refused before parsing, rather than parsed in
+1.8 s for 49 MB and refused as too long.
 
 The text goes to the model as it does for a page read: an `UntrustedContent`
 of source `document`, with the name of the file as reference, on the request
 from its first turn, and kept beside the pages `read_url` adds. The AI layer
 wraps it in delimiters that name the source and tells the model it is data;
 the module adds nothing to the message but a block that says the brief comes
-with the file, that what it says counts as given by the brief, and that it is
-material to read, never instructions. The length of the file counts in the
+with a file, that what it says counts as given by the brief, and that it is
+material to read, never instructions. The name of the file is not in that
+block: it is chosen by whoever made the file, so it reaches the model only as
+the reference of the wrapping, which the AI layer escapes. The length of the file counts in the
 budget the AI layer reserves, not in the limit on what a person types.
 
 The ledger keeps the name, the length and a fingerprint of the file in the
@@ -294,8 +309,22 @@ reach the judge as untrusted data, and one word is read in its answer,
 `reference` or `instructions`. `instructions` fails the check with the reason
 `reference_rejected`; any other answer or a judge that cannot run fails it
 `unavailable`, and in `block` mode the call is refused, as the AI layer wants
-it. The merchant sees the usage in the register, its verdicts in the AI log,
-and may set the mode of the guardrail on the usage of pages. No keyword list:
+it. The judge reads the whole file, a slice of 20,000 characters per call, the
+slices overlapping by 1,000 so that a sentence cut at the edge of one is whole
+in the next: every call stays within the smallest models of the fast range (8k
+tokens), a file of 100,000 characters takes six calls, most files one, and the
+first slice that instructs, or cannot be judged, settles it without the rest
+being paid for. The merchant sees the usage in the register, its verdicts in
+the AI log, and may set the mode of the guardrail on the usage of pages.
+
+A merchant who chooses the guardrails of the usage of pages replaces the list
+it declares (the AI layer runs the ones chosen): a choice that does not name
+`reference_file` would let a file through unjudged. The controller refuses a
+joined file then, before reading it, and says where to add the judge
+(`Generation/Guardrail/ReferenceFileJudgeSetting.php`, which reads the setting
+the way the core does: an empty or unreadable choice keeps what the usage
+declares). A judge chosen in `annotate` mode is the merchant's choice and is
+kept. No keyword list:
 it can be walked around and refuses honest files ("delete" in a page about
 ending a contract). A judge is a model and can be fooled: the protection is
 the wrapping of the gateway and the editor reading the draft.

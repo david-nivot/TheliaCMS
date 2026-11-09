@@ -34,8 +34,10 @@ use TheliaCMS\Content\InvalidDocumentException;
 use TheliaCMS\Generation\Alongside;
 use TheliaCMS\Generation\Brief;
 use TheliaCMS\Generation\GenerationRequest;
+use TheliaCMS\Generation\Guardrail\ReferenceFileJudgeSetting;
 use TheliaCMS\Generation\HeaderOutcome;
 use TheliaCMS\Generation\ReferenceFile;
+use TheliaCMS\Generation\ReferenceFileRefusal;
 use TheliaCMS\Generation\ReferenceFileRefusedException;
 use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Security\CmsResources;
@@ -73,6 +75,7 @@ final readonly class ContentController
         private SectionUpdate $sectionUpdate,
         private TranslatorInterface $translator,
         private ContentSteps $steps,
+        private ReferenceFileJudgeSetting $judgeSetting,
     ) {
     }
 
@@ -102,7 +105,7 @@ final readonly class ContentController
         $data = $form->getData();
 
         try {
-            $reference = self::referenceOf($data);
+            $reference = $this->referenceOf($data);
         } catch (ReferenceFileRefusedException $refused) {
             return $this->refuseFile($request, $refused, $target);
         }
@@ -135,7 +138,7 @@ final readonly class ContentController
         $data = $form->getData();
 
         try {
-            $reference = self::referenceOf($data);
+            $reference = $this->referenceOf($data);
         } catch (ReferenceFileRefusedException $refused) {
             return $this->refuseFile($request, $refused, $target);
         }
@@ -168,7 +171,7 @@ final readonly class ContentController
         $data = $form->getData();
 
         try {
-            $reference = self::referenceOf($data);
+            $reference = $this->referenceOf($data);
         } catch (ReferenceFileRefusedException $refused) {
             return $this->refuseFile($request, $refused, $target);
         }
@@ -427,11 +430,21 @@ final readonly class ContentController
      *
      * @throws ReferenceFileRefusedException when the file is not one the generator takes
      */
-    private static function referenceOf(array $data): ?ReferenceFile
+    private function referenceOf(array $data): ?ReferenceFile
     {
         $upload = $data['reference'] ?? null;
 
-        return $upload instanceof UploadedFile ? ReferenceFile::fromUpload($upload) : null;
+        if (!$upload instanceof UploadedFile) {
+            return null;
+        }
+
+        // Without its judge, a file would reach the model unchecked: it is
+        // refused, and the editor told why, before it is even read.
+        if ($this->judgeSetting->leavesTheJudgeOut()) {
+            throw new ReferenceFileRefusedException(ReferenceFileRefusal::JudgeLeftOut);
+        }
+
+        return ReferenceFile::fromUpload($upload);
     }
 
     /**

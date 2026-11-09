@@ -31,7 +31,10 @@ For the people who run the shop and write its pages. The technical side is in
   scanned PDF, which is refused. What it says counts as given by your brief; the AI reads it as
   material, never as instructions. A file that reads as instructions rather
   than as a document on the page is refused before anything is written, and
-  the screen says so. The file is not kept: the history of the page names it,
+  the screen says so; the whole file is checked, however long. A PDF too heavy
+  to read (mostly drawings or plans) is refused: join its text as a `.txt`
+  file. A text saved by Windows, in its own encoding or as Unicode, is read as
+  it is. The file is not kept: the history of the page names it,
   and you join it again to write from it again.
 
 Each use is recorded in the history of the page, with its date, its outcome and
