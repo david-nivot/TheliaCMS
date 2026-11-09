@@ -1873,4 +1873,6 @@ return [
     'Grid' => 'Grid',
     'Display' => 'Display',
     'Uses' => 'Uses',
+    'You are not allowed to export the answers.' => 'You are not allowed to export the answers.',
+    'You are not allowed to delete the answers.' => 'You are not allowed to delete the answers.',
 ];

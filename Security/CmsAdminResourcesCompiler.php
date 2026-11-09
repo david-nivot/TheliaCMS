@@ -24,6 +24,8 @@ final class CmsAdminResourcesCompiler extends AbstractAdminResourcesCompiler
             'PAGE' => CmsResources::PAGE,
             'MENU' => CmsResources::MENU,
             'FORM' => CmsResources::FORM,
+            'FORM_ANSWERS' => CmsResources::FORM_ANSWERS,
+            'FORM_ANSWERS_EXPORT' => CmsResources::FORM_ANSWERS_EXPORT,
             'MEDIA' => CmsResources::MEDIA,
             'SETTINGS' => CmsResources::SETTINGS,
             'CUSTOM_CODE' => CmsResources::CUSTOM_CODE,

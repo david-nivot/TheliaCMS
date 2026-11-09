@@ -11,7 +11,7 @@
         {% endblock %}
 
         {% block actions %}
-            {% if total > 0 %}
+            {% if total > 0 and may_export %}
                 <a class="btn btn-sm btn-outline-secondary" href="{{ path('admin.cms.forms.submissions_export', { id: cms_form.id, format: 'csv', email: email }) }}">
                     <i class="bi bi-filetype-csv me-1" aria-hidden="true"></i> {{ 'Export as CSV'|trans({}, 'theliacms') }}
                 </a>

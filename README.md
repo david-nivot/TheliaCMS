@@ -1229,7 +1229,7 @@ that an editor sees belongs there too.
 
 ## Permissions
 
-Seven resources, seeded on activation with no access granted. Open them per
+Nine resources, seeded on activation with no access granted. Open them per
 profile under **Configuration > Administrators**.
 
 | Resource | Covers |
@@ -1240,7 +1240,13 @@ profile under **Configuration > Administrators**.
 | `admin.cms.media` | the media library |
 | `admin.cms.custom-code` | `<iframe>` in published content, beyond the standard allow list |
 | `admin.cms.settings` | the settings screen: showcase mode, maintenance, the 404 page, the generator card, the skills, the components offered to the generator |
-| `admin.cms.form` | the forms and their answers |
+| `admin.cms.form` | building the forms: fields, settings, recipients |
+| `admin.cms.form.answers` | the answers a form received: reading them (view) and deleting them (delete). Personal data, so apart from building the forms |
+| `admin.cms.form.answers.export` | exporting the answers (view), which hands over every one of them at once |
+
+A right split off an older one (the two rights on the answers came out of
+`admin.cms.form`) is given, when the update creates it, the access each profile
+had on the older right: an update never takes away what a profile could do.
 
 Every route under `/admin/cms` is guarded by the resource of its section, so a
 route added later cannot ship unprotected by omission.

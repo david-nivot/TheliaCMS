@@ -7,6 +7,17 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Changed
+
+- **The answers of a form have rights of their own.** Reading and deleting
+  them take `admin.cms.form.answers`, exporting them takes
+  `admin.cms.form.answers.export`; `admin.cms.form` now covers building the
+  forms only. Without the right, the list of forms and the form screen show no
+  link to the answers, and the export buttons are gone. On the update, each
+  profile is given on the two new rights the access it had on
+  `admin.cms.form`, so nobody loses what they could do; the Editor profile has
+  both.
+
 ## [2.18.0] - 2026-11-08
 
 ### Added

@@ -36,7 +36,9 @@
                             <th scope="col">{{ 'Code'|trans({}, 'theliacms') }}</th>
                             <th scope="col">{{ 'Status'|trans({}, 'theliacms') }}</th>
                             <th scope="col">{{ 'Fields'|trans({}, 'theliacms') }}</th>
-                            <th scope="col">{{ 'Answers'|trans({}, 'theliacms') }}</th>
+                            {% if may_read_answers %}
+                                <th scope="col">{{ 'Answers'|trans({}, 'theliacms') }}</th>
+                            {% endif %}
                             <th scope="col" class="text-end">{{ 'Actions'|trans({}, 'theliacms') }}</th>
                         </tr>
                     </thead>
@@ -67,6 +69,7 @@
                                         </span>
                                     {% endif %}
                                 </td>
+                                {% if may_read_answers %}
                                 <td>
                                     {% if row.submissionCount > 0 %}
                                         <a href="{{ path('admin.cms.forms.submissions', { id: record.id, edit_language_id: edit_language_id }) }}">
@@ -76,14 +79,17 @@
                                         <span class="text-muted">0</span>
                                     {% endif %}
                                 </td>
+                                {% endif %}
                                 <td class="text-end">
                                     <div class="d-inline-flex gap-1">
                                         <a class="btn btn-sm btn-outline-secondary" href="{{ path('admin.cms.forms.edit', { id: record.id, edit_language_id: edit_language_id }) }}">
                                             {{ 'Edit'|trans({}, 'theliacms') }}
                                         </a>
-                                        <a class="btn btn-sm btn-outline-secondary" href="{{ path('admin.cms.forms.submissions', { id: record.id, edit_language_id: edit_language_id }) }}">
-                                            {{ 'Answers'|trans({}, 'theliacms') }}
-                                        </a>
+                                        {% if may_read_answers %}
+                                            <a class="btn btn-sm btn-outline-secondary" href="{{ path('admin.cms.forms.submissions', { id: record.id, edit_language_id: edit_language_id }) }}">
+                                                {{ 'Answers'|trans({}, 'theliacms') }}
+                                            </a>
+                                        {% endif %}
                                     </div>
                                 </td>
                             </tr>

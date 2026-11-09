@@ -1873,4 +1873,6 @@ return [
     'Grid' => 'Grille',
     'Display' => 'Affichage',
     'Uses' => 'Utilisations',
+    'You are not allowed to export the answers.' => 'Vous n’êtes pas autorisé à exporter les réponses.',
+    'You are not allowed to delete the answers.' => 'Vous n’êtes pas autorisé à supprimer les réponses.',
 ];

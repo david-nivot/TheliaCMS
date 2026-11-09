@@ -72,7 +72,8 @@ final readonly class CmsSubmissionAdminController
             'pages' => max(1, (int) ceil($total / SubmissionRepository::PER_PAGE)),
             'total' => $total,
             'edit_language_id' => $lang->getId(),
-            'may_delete' => $this->support->isGranted(CmsResources::FORM, AccessManager::DELETE),
+            'may_delete' => $this->support->isGranted(CmsResources::FORM_ANSWERS, AccessManager::DELETE),
+            'may_export' => $this->support->isGranted(CmsResources::FORM_ANSWERS_EXPORT, AccessManager::VIEW),
             'yes' => $this->support->translate('Yes'),
             'no' => $this->support->translate('No'),
         ]));
@@ -81,6 +82,8 @@ final readonly class CmsSubmissionAdminController
     #[Route('/export.{format}', name: 'submissions_export', requirements: ['format' => 'csv|json'], methods: ['GET'])]
     public function export(Request $request, int $id, string $format): Response
     {
+        $this->support->denyUnless(CmsResources::FORM_ANSWERS_EXPORT, AccessManager::VIEW, 'You are not allowed to export the answers.');
+
         $record = $this->formOrFail($id);
         $email = trim((string) $request->query->get('email', ''));
         $rows = $this->submissions->all($record, $email);
@@ -112,7 +115,7 @@ final readonly class CmsSubmissionAdminController
     #[Route('/{submissionId}/delete', name: 'submissions_delete', requirements: ['submissionId' => '\d+'], methods: ['POST'])]
     public function delete(Request $request, int $id, int $submissionId): Response
     {
-        $this->support->denyUnless(CmsResources::FORM, AccessManager::DELETE, 'You are not allowed to change forms.');
+        $this->support->denyUnless(CmsResources::FORM_ANSWERS, AccessManager::DELETE, 'You are not allowed to delete the answers.');
 
         $record = $this->formOrFail($id);
         $submission = $this->submissions->find($record, $submissionId);
