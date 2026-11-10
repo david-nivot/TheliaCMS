@@ -59,7 +59,7 @@ final class SkillFilesTest extends TestCase
     {
         $files = glob(\dirname(__DIR__, 3).'/skills/*/SKILL.md') ?: [];
 
-        self::assertCount(8, $files);
+        self::assertCount(9, $files);
 
         foreach ($files as $file) {
             $parsed = SkillFiles::parse((string) file_get_contents($file), $file);
