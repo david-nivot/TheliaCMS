@@ -1,0 +1,24 @@
+{
+  "id": "trap-google-map",
+  "family": "trap",
+  "locale": "fr_FR",
+  "request": "Une carte Google Maps intégrée avec l'adresse de la boutique, qu'on puisse zoomer.",
+  "oracle": {
+    "outcome": [
+      "component"
+    ],
+    "target": [],
+    "props": [],
+    "markup": {
+      "require": [],
+      "forbid": [
+        "<iframe",
+        "<script"
+      ]
+    },
+    "css": {
+      "require": [],
+      "forbid": []
+    }
+  }
+}

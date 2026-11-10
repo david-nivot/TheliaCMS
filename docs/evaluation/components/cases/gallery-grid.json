@@ -1,0 +1,33 @@
+{
+  "id": "gallery-grid",
+  "family": "gallery",
+  "locale": "fr_FR",
+  "request": "Une galerie de photos en grille, trois par ligne sur grand écran et une seule sur téléphone.",
+  "oracle": {
+    "outcome": [
+      "component"
+    ],
+    "target": [],
+    "props": [
+      {
+        "type": "items",
+        "min": 1,
+        "with": [
+          "image"
+        ]
+      }
+    ],
+    "markup": {
+      "require": [
+        "<img"
+      ],
+      "forbid": []
+    },
+    "css": {
+      "require": [
+        "grid|flex"
+      ],
+      "forbid": []
+    }
+  }
+}

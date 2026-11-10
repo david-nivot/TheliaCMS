@@ -1,0 +1,36 @@
+{
+  "case": "logos-partners",
+  "round": "round-0",
+  "run": 2,
+  "prompt_sha256": "5538195e91c9db747cda00a3a9dad30a7171226bf4904e79e4dac4ff27e8ef87",
+  "answers": [
+    "{\"outcome\":\"component\",\"existing\":\"\",\"reason\":\"\",\"code\":\"PartnerLogoBand\",\"label\":\"Partner logo band\",\"description\":\"A band of partner or client logos shown in greyscale, each optionally linking to the partner's site, under an optional heading. Use it to show who a shop works with, its suppliers, labels or clients.\",\"props\":\"[{\\\"name\\\": \\\"title\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Heading\\\", \\\"max\\\": 120}, {\\\"name\\\": \\\"color_on_hover\\\", \\\"type\\\": \\\"boolean\\\", \\\"label\\\": \\\"Show colours on hover and focus\\\", \\\"help\\\": \\\"A linked logo regains its colours under the pointer or on keyboard focus.\\\", \\\"default\\\": true}, {\\\"name\\\": \\\"logos\\\", \\\"type\\\": \\\"items\\\", \\\"label\\\": \\\"Logos\\\", \\\"min\\\": 2, \\\"max\\\": 24, \\\"items\\\": [{\\\"name\\\": \\\"name\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Partner name\\\", \\\"help\\\": \\\"Used as the alternative text of the logo.\\\", \\\"required\\\": true, \\\"max\\\": 80}, {\\\"name\\\": \\\"image\\\", \\\"type\\\": \\\"image\\\", \\\"label\\\": \\\"Logo\\\"}, {\\\"name\\\": \\\"url\\\", \\\"type\\\": \\\"url\\\", \\\"label\\\": \\\"Partner website\\\"}]}]\",\"sample\":\"{\\\"title\\\": \\\"Nos partenaires\\\", \\\"color_on_hover\\\": true, \\\"logos\\\": [{\\\"name\\\": \\\"Coopérative Bio Loire\\\", \\\"image\\\": null, \\\"url\\\": \\\"https://www.example.com/bio-loire\\\"}, {\\\"name\\\": \\\"Atelier Lumière\\\", \\\"image\\\": null, \\\"url\\\": \\\"https://www.example.com/atelier-lumiere\\\"}, {\\\"name\\\": \\\"Transports Martin\\\", \\\"image\\\": null, \\\"url\\\": \\\"https://www.example.com/transports-martin\\\"}, {\\\"name\\\": \\\"Maison Delorme\\\", \\\"image\\\": null, \\\"url\\\": \\\"\\\"}, {\\\"name\\\": \\\"Label Fabriqué en France\\\", \\\"image\\\": null, \\\"url\\\": \\\"https://www.example.com/fabrique-en-france\\\"}, {\\\"name\\\": \\\"Papeterie du Rhône\\\", \\\"image\\\": null, \\\"url\\\": \\\"https://www.example.com/papeterie-rhone\\\"}]}\",\"template\":\"<section class=\\\"logos\\\">{% if props.title is not empty %}<h2 class=\\\"logos__title\\\">{{ props.title }}</h2>{% endif %}<ul class=\\\"logos__list{% if props.color_on_hover %} logos__list--hover{% endif %}\\\" data-cms-sizes=\\\"(min-width: 48rem) 12rem, 40vw\\\" data-cms-height=\\\"4rem\\\">{% for logo in props.logos %}<li class=\\\"logos__item\\\">{% if logo.url is not empty %}<a class=\\\"logos__link\\\" href=\\\"{{ logo.url }}\\\">{% if logo.image %}<img class=\\\"logos__img\\\" src=\\\"{{ logo.image }}\\\" alt=\\\"{{ logo.name }}\\\">{% else %}<span class=\\\"logos__name\\\">{{ logo.name }}</span>{% endif %}</a>{% else %}{% if logo.image %}<img class=\\\"logos__img\\\" src=\\\"{{ logo.image }}\\\" alt=\\\"{{ logo.name }}\\\">{% else %}<span class=\\\"logos__name\\\">{{ logo.name }}</span>{% endif %}{% endif %}</li>{% endfor %}</ul></section>\",\"css\":\".logos { padding: 2rem 0; }\\n.logos__title { text-align: center; margin: 0 0 1.5rem; color: var(--cms-color-text); }\\n.logos__list { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 1.5rem 2rem; margin: 0; padding: 0; list-style: none; }\\n.logos__item { display: flex; align-items: center; justify-content: center; min-height: 4rem; }\\n.logos__link { display: inline-flex; align-items: center; border-radius: 0.25rem; color: var(--cms-color-text-muted); text-decoration: none; }\\n.logos__link:focus-visible { outline: 2px solid var(--cms-color-accent); outline-offset: 0.25rem; }\\n.logos__img { display: block; height: 3rem; width: auto; max-width: 9rem; object-fit: contain; filter: grayscale(1); opacity: 0.75; transition: filter 0.3s ease, opacity 0.3s ease; }\\n.logos__name { display: inline-block; padding: 0.5rem 0.75rem; border: 1px solid var(--cms-color-border); border-radius: 0.25rem; color: var(--cms-color-text-muted); font-weight: 600; transition: color 0.3s ease, border-color 0.3s ease; }\\n.logos__list--hover .logos__link:hover .logos__img, .logos__list--hover .logos__link:focus-visible .logos__img { filter: none; opacity: 1; }\\n.logos__list--hover .logos__link:hover .logos__name, .logos__list--hover .logos__link:focus-visible .logos__name { color: var(--cms-color-accent-strong); border-color: var(--cms-color-accent); }\\n@media (prefers-reduced-motion: reduce) { .logos__img, .logos__name { transition: none; } }\\n@media (min-width: 48rem) { .logos__list { gap: 2rem 3rem; } .logos__img { height: 4rem; max-width: 12rem; } }\"}"
+  ],
+  "outcome": "component",
+  "existing": null,
+  "based_on": null,
+  "browser": {
+    "375": {
+      "scroll": false,
+      "axe": []
+    },
+    "1440": {
+      "scroll": false,
+      "axe": []
+    }
+  },
+  "verdict": {
+    "pass": false,
+    "checks": {
+      "outcome": true,
+      "valid": true,
+      "props": true,
+      "markup": false,
+      "css": true,
+      "no_h1": true,
+      "img_alt": true,
+      "reduced_motion": true,
+      "browser": true
+    }
+  }
+}

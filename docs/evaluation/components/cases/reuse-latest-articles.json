@@ -1,0 +1,23 @@
+{
+  "id": "reuse-latest-articles",
+  "family": "reuse",
+  "locale": "fr_FR",
+  "request": "La liste de nos derniers articles de blog, avec leur image.",
+  "oracle": {
+    "outcome": [
+      "existing"
+    ],
+    "target": [
+      "Partial:cms-page-list"
+    ],
+    "props": [],
+    "markup": {
+      "require": [],
+      "forbid": []
+    },
+    "css": {
+      "require": [],
+      "forbid": []
+    }
+  }
+}

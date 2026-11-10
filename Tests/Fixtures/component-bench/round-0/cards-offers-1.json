@@ -1,0 +1,46 @@
+{
+  "case": "cards-offers",
+  "round": "round-0",
+  "run": 1,
+  "prompt_sha256": "c9ff3a33ccd1571e80ed7b858c59153995628eb9fe1234804f5edf7391bf4efd",
+  "answers": [
+    "{\"outcome\":\"component\",\"existing\":\"\",\"reason\":\"\",\"code\":\"PricingPlans\",\"label\":\"Pricing plans\",\"description\":\"Subscription plans side by side as cards, each with a name, a price, a list of benefits and a button to subscribe, one of them optionally highlighted. Use it to compare two to four offers or subscriptions on a pricing or service page.\",\"props\":\"[{\\\"name\\\": \\\"title\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Heading\\\", \\\"max\\\": 120}, {\\\"name\\\": \\\"intro\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Introduction\\\", \\\"max\\\": 300}, {\\\"name\\\": \\\"period_label\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Price period\\\", \\\"help\\\": \\\"Shown after every price, for example: per month.\\\", \\\"max\\\": 40}, {\\\"name\\\": \\\"featured_label\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Highlight label\\\", \\\"help\\\": \\\"Shown on the highlighted plan, for example: Most popular.\\\", \\\"max\\\": 40}, {\\\"name\\\": \\\"plans\\\", \\\"type\\\": \\\"items\\\", \\\"label\\\": \\\"Plans\\\", \\\"min\\\": 1, \\\"max\\\": 6, \\\"items\\\": [{\\\"name\\\": \\\"name\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Plan name\\\", \\\"required\\\": true, \\\"max\\\": 60}, {\\\"name\\\": \\\"price\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Price\\\", \\\"help\\\": \\\"With its currency, for example: 19.90 €.\\\", \\\"required\\\": true, \\\"max\\\": 30}, {\\\"name\\\": \\\"description\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Short description\\\", \\\"max\\\": 200}, {\\\"name\\\": \\\"features\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Benefits\\\", \\\"help\\\": \\\"One benefit per line.\\\", \\\"max\\\": 1000}, {\\\"name\\\": \\\"featured\\\", \\\"type\\\": \\\"boolean\\\", \\\"label\\\": \\\"Highlighted\\\", \\\"default\\\": false}, {\\\"name\\\": \\\"button_label\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Button text\\\", \\\"help\\\": \\\"Name the plan in it, for example: Subscribe to Comfort.\\\", \\\"max\\\": 60}, {\\\"name\\\": \\\"button_url\\\", \\\"type\\\": \\\"url\\\", \\\"label\\\": \\\"Button link\\\"}]}]\",\"sample\":\"{\\\"title\\\": \\\"Nos formules d’abonnement\\\", \\\"intro\\\": \\\"Choisissez la formule qui vous convient. Vous pouvez changer ou résilier à tout moment.\\\", \\\"period_label\\\": \\\"par mois\\\", \\\"featured_label\\\": \\\"La plus choisie\\\", \\\"plans\\\": [{\\\"name\\\": \\\"Essentiel\\\", \\\"price\\\": \\\"9,90 €\\\", \\\"description\\\": \\\"Pour découvrir nos produits à petit prix.\\\", \\\"features\\\": \\\"Une box par mois\\\\nLivraison en point relais offerte\\\\nSans engagement\\\", \\\"featured\\\": false, \\\"button_label\\\": \\\"Souscrire à la formule Essentiel\\\", \\\"button_url\\\": \\\"/abonnement/essentiel\\\"}, {\\\"name\\\": \\\"Confort\\\", \\\"price\\\": \\\"19,90 €\\\", \\\"description\\\": \\\"Le meilleur équilibre entre prix et avantages.\\\", \\\"features\\\": \\\"Deux box par mois\\\\nLivraison à domicile offerte\\\\n10 % de remise sur la boutique\\\\nSans engagement\\\", \\\"featured\\\": true, \\\"button_label\\\": \\\"Souscrire à la formule Confort\\\", \\\"button_url\\\": \\\"/abonnement/confort\\\"}, {\\\"name\\\": \\\"Premium\\\", \\\"price\\\": \\\"34,90 €\\\", \\\"description\\\": \\\"Pour profiter de tout, en priorité.\\\", \\\"features\\\": \\\"Quatre box par mois\\\\nLivraison express offerte\\\\n20 % de remise sur la boutique\\\\nAccès en avant-première aux nouveautés\\\\nService client prioritaire\\\", \\\"featured\\\": false, \\\"button_label\\\": \\\"Souscrire à la formule Premium\\\", \\\"button_url\\\": \\\"/abonnement/premium\\\"}]}\",\"template\":\"<section class=\\\"pricing\\\">{% if props.title is not empty %}<h2 class=\\\"pricing__title\\\">{{ props.title }}</h2>{% endif %}{% if props.intro is not empty %}<p class=\\\"pricing__intro\\\">{{ props.intro }}</p>{% endif %}<ul class=\\\"pricing__plans\\\">{% for plan in props.plans %}<li class=\\\"plan{% if plan.featured %} plan--featured{% endif %}\\\"><h3 class=\\\"plan__name\\\">{{ plan.name }}</h3>{% if plan.featured and props.featured_label is not empty %}<p class=\\\"plan__badge\\\">{{ props.featured_label }}</p>{% endif %}<p class=\\\"plan__price\\\"><span class=\\\"plan__amount\\\">{{ plan.price }}</span>{% if props.period_label is not empty %} <span class=\\\"plan__period\\\">{{ props.period_label }}</span>{% endif %}</p>{% if plan.description is not empty %}<p class=\\\"plan__description\\\">{{ plan.description }}</p>{% endif %}{% if plan.features is not empty %}<ul class=\\\"plan__features\\\">{% for feature in plan.features|split(\\\"\\\\n\\\") %}{% if feature|trim is not empty %}<li class=\\\"plan__feature\\\">{{ feature|trim }}</li>{% endif %}{% endfor %}</ul>{% endif %}{% if plan.button_url is not empty and plan.button_label is not empty %}<a class=\\\"plan__button\\\" href=\\\"{{ plan.button_url }}\\\">{{ plan.button_label }}</a>{% endif %}</li>{% endfor %}</ul></section>\",\"css\":\".pricing__title { margin: 0 0 0.5rem; text-align: center; }\\n.pricing__intro { margin: 0 auto 2rem; max-width: 40rem; text-align: center; color: var(--cms-color-text-muted); }\\n.pricing__plans { display: grid; gap: 1.5rem; margin: 0; padding: 0; list-style: none; }\\n.plan { display: flex; flex-direction: column; gap: 0.75rem; padding: 1.5rem; border: 1px solid var(--cms-color-border); border-radius: 0.75rem; background: var(--cms-color-surface); color: var(--cms-color-text); }\\n.plan--featured { border: 2px solid var(--cms-color-accent); }\\n.plan__name { margin: 0; font-size: 1.25rem; }\\n.plan__badge { align-self: flex-start; margin: 0; padding: 0.25rem 0.75rem; border-radius: 999px; background: var(--cms-color-accent-surface); color: var(--cms-color-accent-strong); font-size: 0.875rem; font-weight: 600; }\\n.plan__price { margin: 0; }\\n.plan__amount { font-size: 2rem; font-weight: 700; line-height: 1.1; }\\n.plan__period { color: var(--cms-color-text-muted); }\\n.plan__description { margin: 0; color: var(--cms-color-text-muted); }\\n.plan__features { flex: 1; margin: 0.5rem 0 0; padding: 0.75rem 0 0; list-style: none; border-top: 1px solid var(--cms-color-border); }\\n.plan__feature { position: relative; padding: 0.35rem 0 0.35rem 1.75rem; }\\n.plan__feature::before { content: \\\"\\\"; position: absolute; left: 0.3rem; top: 0.55rem; width: 0.4rem; height: 0.75rem; border-right: 2px solid var(--cms-color-accent); border-bottom: 2px solid var(--cms-color-accent); transform: rotate(45deg); }\\n.plan__button { display: block; margin-top: 0.75rem; padding: 0.75rem 1rem; border: 2px solid var(--cms-color-accent); border-radius: 0.5rem; color: var(--cms-color-accent-strong); font-weight: 600; text-align: center; text-decoration: none; transition: background-color 0.2s, color 0.2s; }\\n.plan--featured .plan__button { background: var(--cms-color-accent); color: var(--cms-color-on-accent); }\\n.plan__button:hover, .plan__button:focus-visible { background: var(--cms-color-accent-strong); border-color: var(--cms-color-accent-strong); color: var(--cms-color-on-accent); }\\n.plan__button:focus-visible { outline: 2px solid var(--cms-color-accent-strong); outline-offset: 2px; }\\n@media (min-width: 48rem) { .pricing__plans { grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); align-items: stretch; } }\"}"
+  ],
+  "outcome": "component",
+  "existing": null,
+  "based_on": null,
+  "browser": {
+    "375": {
+      "scroll": false,
+      "axe": [
+        {
+          "id": "color-contrast",
+          "impact": "serious"
+        }
+      ]
+    },
+    "1440": {
+      "scroll": false,
+      "axe": [
+        {
+          "id": "color-contrast",
+          "impact": "serious"
+        }
+      ]
+    }
+  },
+  "verdict": {
+    "pass": false,
+    "checks": {
+      "outcome": true,
+      "valid": true,
+      "props": true,
+      "markup": true,
+      "css": true,
+      "no_h1": true,
+      "img_alt": true,
+      "reduced_motion": true,
+      "browser": false
+    }
+  }
+}

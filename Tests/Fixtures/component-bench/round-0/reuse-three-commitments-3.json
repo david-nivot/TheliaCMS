@@ -1,0 +1,20 @@
+{
+  "case": "reuse-three-commitments",
+  "round": "round-0",
+  "run": 3,
+  "prompt_sha256": "e4e071791db076fbc4afa0bf9382ecb88d05193f991e731b1e758ebfd2639026",
+  "answers": [
+    "{\"outcome\":\"existing\",\"existing\":\"cms:columns\",\"reason\":\"Le composant Colonnes affiche déjà deux à quatre colonnes côte à côte, chacune avec une image (comme une icône), un titre et un texte court, ce qui convient à trois engagements.\",\"code\":\"\",\"label\":\"\",\"description\":\"\",\"props\":\"\",\"sample\":\"\",\"template\":\"\",\"css\":\"\"}"
+  ],
+  "outcome": "existing",
+  "existing": "cms:columns",
+  "based_on": null,
+  "browser": null,
+  "verdict": {
+    "pass": true,
+    "checks": {
+      "outcome": true,
+      "target": true
+    }
+  }
+}

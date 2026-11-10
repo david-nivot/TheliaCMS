@@ -1,0 +1,37 @@
+{
+  "case": "gallery-grid",
+  "round": "round-0",
+  "run": 3,
+  "prompt_sha256": "1a419e0e94e28349a68e35c7cb2a1c85c773f668d82d13e58ce1548218bdad07",
+  "answers": [
+    "{\"outcome\":\"copy\",\"existing\":\"Site:Carousel\",\"reason\":\"La variante garde les mêmes photos et légendes, mais les dispose dans une grille, une par ligne sur téléphone et trois par ligne sur grand écran, au lieu d’une rangée qui défile.\",\"code\":\"\",\"label\":\"\",\"description\":\"\",\"props\":\"\",\"sample\":\"\",\"template\":\"\",\"css\":\"\"}",
+    "{\"outcome\":\"component\",\"existing\":\"\",\"reason\":\"\",\"code\":\"PhotoGrid\",\"label\":\"Photo grid\",\"description\":\"A gallery of photos laid out in a grid, one per row on a phone and three per row on a wide screen, each with an optional caption. Use it to show a set of pictures at once: a workshop, a collection, an event.\",\"props\":\"[{\\\"name\\\":\\\"title\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Heading\\\",\\\"max\\\":120},{\\\"name\\\":\\\"photos\\\",\\\"type\\\":\\\"items\\\",\\\"label\\\":\\\"Photos\\\",\\\"min\\\":1,\\\"max\\\":24,\\\"items\\\":[{\\\"name\\\":\\\"image\\\",\\\"type\\\":\\\"image\\\",\\\"label\\\":\\\"Photo\\\"},{\\\"name\\\":\\\"alt\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Alternative text\\\",\\\"help\\\":\\\"What the photo shows, in one sentence.\\\",\\\"required\\\":true,\\\"max\\\":160},{\\\"name\\\":\\\"caption\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Caption\\\",\\\"max\\\":160}]}]\",\"sample\":\"{\\\"title\\\":\\\"Dans l’atelier\\\",\\\"photos\\\":[{\\\"image\\\":null,\\\"alt\\\":\\\"Découpe du cuir sur l’établi\\\",\\\"caption\\\":\\\"La découpe\\\"},{\\\"image\\\":null,\\\"alt\\\":\\\"Couture d’une anse à la main\\\",\\\"caption\\\":\\\"La couture\\\"},{\\\"image\\\":null,\\\"alt\\\":\\\"Teinture des tranches au pinceau\\\",\\\"caption\\\":\\\"La teinture des tranches\\\"},{\\\"image\\\":null,\\\"alt\\\":\\\"Pose d’un fermoir en laiton sur un rabat\\\",\\\"caption\\\":\\\"La pose du fermoir\\\"},{\\\"image\\\":null,\\\"alt\\\":\\\"Contrôle final d’un sac à la lumière du jour\\\",\\\"caption\\\":\\\"Le contrôle\\\"},{\\\"image\\\":null,\\\"alt\\\":\\\"Sacs terminés alignés sur une étagère\\\",\\\"caption\\\":\\\"Prêts à partir\\\"}]}\",\"template\":\"<section class=\\\"gallery\\\">{% if props.title is not empty %}<h2 class=\\\"gallery__title\\\">{{ props.title }}</h2>{% endif %}<ul class=\\\"gallery__grid\\\" data-cms-sizes=\\\"(min-width: 48rem) 33vw, 100vw\\\">{% for photo in props.photos %}<li class=\\\"gallery__item\\\"><figure class=\\\"gallery__figure\\\">{% if photo.image %}<img class=\\\"gallery__image\\\" src=\\\"{{ photo.image }}\\\" alt=\\\"{{ photo.alt }}\\\">{% endif %}{% if photo.caption is not empty %}<figcaption class=\\\"gallery__caption\\\">{{ photo.caption }}</figcaption>{% endif %}</figure></li>{% endfor %}</ul></section>\",\"css\":\".gallery__title { margin: 0 0 1rem; color: var(--cms-color-text); }\\n.gallery__grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin: 0; padding: 0; list-style: none; }\\n.gallery__item { margin: 0; }\\n.gallery__figure { margin: 0; }\\n.gallery__image { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 0.5rem; }\\n.gallery__caption { margin: 0.5rem 0 0; color: var(--cms-color-text-muted); }\\n@media (min-width: 48rem) { .gallery__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5rem; } }\"}"
+  ],
+  "outcome": "component",
+  "existing": null,
+  "based_on": "Site:Carousel",
+  "browser": {
+    "375": {
+      "scroll": false,
+      "axe": []
+    },
+    "1440": {
+      "scroll": false,
+      "axe": []
+    }
+  },
+  "verdict": {
+    "pass": false,
+    "checks": {
+      "outcome": true,
+      "valid": true,
+      "props": true,
+      "markup": false,
+      "css": true,
+      "no_h1": true,
+      "img_alt": true,
+      "reduced_motion": true,
+      "browser": true
+    }
+  }
+}

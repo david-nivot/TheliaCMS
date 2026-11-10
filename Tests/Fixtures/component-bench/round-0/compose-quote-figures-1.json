@@ -1,0 +1,36 @@
+{
+  "case": "compose-quote-figures",
+  "round": "round-0",
+  "run": 1,
+  "prompt_sha256": "bc6f1749ecd76afc406ef78a4f7907ea11c685f8f2cfe2f68f6df146a8e507bf",
+  "answers": [
+    "{\"outcome\":\"component\",\"existing\":\"\",\"reason\":\"\",\"code\":\"QuoteWithFigures\",\"label\":\"Quote and key figures\",\"description\":\"A quote from a person, such as the director, with their name, role and optional portrait, followed right below by a row of key figures, each a big number with a label and an optional note. Use it for a word from the management with the results of the year, in an annual review or an about page.\",\"props\":\"[{\\\"name\\\": \\\"title\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Heading\\\", \\\"help\\\": \\\"Optional heading above the quote.\\\", \\\"max\\\": 120}, {\\\"name\\\": \\\"quote\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Quote\\\", \\\"required\\\": true, \\\"max\\\": 600}, {\\\"name\\\": \\\"name\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Name of the person quoted\\\", \\\"max\\\": 80}, {\\\"name\\\": \\\"role\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Role\\\", \\\"help\\\": \\\"For instance: Managing director.\\\", \\\"max\\\": 120}, {\\\"name\\\": \\\"portrait\\\", \\\"type\\\": \\\"image\\\", \\\"label\\\": \\\"Portrait\\\"}, {\\\"name\\\": \\\"portrait_alt\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Description of the portrait\\\", \\\"help\\\": \\\"What the portrait shows, in one sentence.\\\", \\\"max\\\": 200}, {\\\"name\\\": \\\"figures_title\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Heading of the figures\\\", \\\"help\\\": \\\"Optional, for instance: The year in figures.\\\", \\\"max\\\": 120}, {\\\"name\\\": \\\"figures\\\", \\\"type\\\": \\\"items\\\", \\\"label\\\": \\\"Key figures\\\", \\\"min\\\": 1, \\\"max\\\": 4, \\\"items\\\": [{\\\"name\\\": \\\"value\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Figure\\\", \\\"required\\\": true, \\\"max\\\": 20}, {\\\"name\\\": \\\"label\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"What it counts\\\", \\\"required\\\": true, \\\"max\\\": 80}, {\\\"name\\\": \\\"note\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Note\\\", \\\"max\\\": 160}]}]\",\"sample\":\"{\\\"title\\\": \\\"Le mot du directeur\\\", \\\"quote\\\": \\\"Cette année, nous avons ouvert un deuxième atelier et accueilli huit nouvelles personnes dans l’équipe. Merci à chacun de nos clients pour sa fidélité : c’est grâce à vous que nous grandissons.\\\", \\\"name\\\": \\\"Jean Dupuis\\\", \\\"role\\\": \\\"Directeur général\\\", \\\"portrait\\\": null, \\\"portrait_alt\\\": \\\"Jean Dupuis, souriant, debout dans l’atelier de Lyon.\\\", \\\"figures_title\\\": \\\"L’année 2024 en chiffres\\\", \\\"figures\\\": [{\\\"value\\\": \\\"12 500\\\", \\\"label\\\": \\\"commandes expédiées\\\", \\\"note\\\": \\\"18 % de plus qu’en 2023\\\"}, {\\\"value\\\": \\\"98 %\\\", \\\"label\\\": \\\"de clients satisfaits\\\", \\\"note\\\": \\\"Selon notre enquête de décembre\\\"}, {\\\"value\\\": \\\"4\\\", \\\"label\\\": \\\"nouvelles boutiques\\\", \\\"note\\\": \\\"À Lyon, Nantes, Lille et Bordeaux\\\"}]}\",\"template\":\"<section class=\\\"quote-figures\\\">{% if props.title is not empty %}<h2 class=\\\"quote-figures__title\\\">{{ props.title }}</h2>{% endif %}<figure class=\\\"quote-figures__quote\\\"><blockquote class=\\\"quote-figures__text\\\"><p>{{ props.quote }}</p></blockquote>{% if props.name is not empty %}<figcaption class=\\\"quote-figures__author\\\" data-cms-sizes=\\\"5rem\\\">{% if props.portrait %}<img class=\\\"quote-figures__portrait\\\" src=\\\"{{ props.portrait }}\\\" alt=\\\"{{ props.portrait_alt|default('') }}\\\">{% endif %}<span class=\\\"quote-figures__who\\\"><span class=\\\"quote-figures__name\\\">{{ props.name }}</span>{% if props.role is not empty %}<span class=\\\"quote-figures__role\\\">{{ props.role }}</span>{% endif %}</span></figcaption>{% endif %}</figure>{% if props.figures is not empty %}<div class=\\\"quote-figures__figures\\\">{% if props.figures_title is not empty %}{% if props.title is not empty %}<h3 class=\\\"quote-figures__subtitle\\\">{{ props.figures_title }}</h3>{% else %}<h2 class=\\\"quote-figures__subtitle\\\">{{ props.figures_title }}</h2>{% endif %}{% endif %}<ul class=\\\"figures\\\">{% for figure in props.figures %}<li class=\\\"figure\\\"><span class=\\\"figure__value\\\">{{ figure.value }}</span><span class=\\\"figure__label\\\">{{ figure.label }}</span>{% if figure.note is not empty %}<span class=\\\"figure__note\\\">{{ figure.note }}</span>{% endif %}</li>{% endfor %}</ul></div>{% endif %}</section>\",\"css\":\".quote-figures { display: grid; gap: 2rem; color: var(--cms-color-text); }\\n.quote-figures__title { margin: 0; }\\n.quote-figures__quote { margin: 0; padding-left: 1.25rem; border-left: 4px solid var(--cms-color-accent); }\\n.quote-figures__text { margin: 0; }\\n.quote-figures__text p { margin: 0; font-size: 1.25rem; line-height: 1.5; font-style: italic; }\\n.quote-figures__author { display: flex; align-items: center; gap: 1rem; margin-top: 1.25rem; }\\n.quote-figures__portrait { width: 4rem; height: 4rem; border-radius: 50%; object-fit: cover; flex-shrink: 0; }\\n.quote-figures__who { display: flex; flex-direction: column; }\\n.quote-figures__name { font-weight: 700; }\\n.quote-figures__role { color: var(--cms-color-text-muted); font-size: 0.9375rem; }\\n.quote-figures__subtitle { margin: 0 0 1rem; font-size: 1.125rem; }\\n.figures { display: grid; gap: 1rem; margin: 0; padding: 0; list-style: none; }\\n.figure { display: flex; flex-direction: column; gap: 0.25rem; padding: 1.25rem; background: var(--cms-color-accent-surface); border-top: 3px solid var(--cms-color-accent); border-radius: 0.5rem; }\\n.figure__value { font-size: 2.25rem; font-weight: 700; line-height: 1.1; color: var(--cms-color-accent-strong); }\\n.figure__label { font-weight: 600; }\\n.figure__note { color: var(--cms-color-text-muted); font-size: 0.875rem; }\\n@media (min-width: 48rem) { .quote-figures__text p { font-size: 1.5rem; } .quote-figures__portrait { width: 5rem; height: 5rem; } .figures { grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 1.5rem; } }\"}"
+  ],
+  "outcome": "component",
+  "existing": null,
+  "based_on": null,
+  "browser": {
+    "375": {
+      "scroll": false,
+      "axe": []
+    },
+    "1440": {
+      "scroll": false,
+      "axe": []
+    }
+  },
+  "verdict": {
+    "pass": true,
+    "checks": {
+      "outcome": true,
+      "valid": true,
+      "props": true,
+      "markup": true,
+      "css": true,
+      "no_h1": true,
+      "img_alt": true,
+      "reduced_motion": true,
+      "browser": true
+    }
+  }
+}

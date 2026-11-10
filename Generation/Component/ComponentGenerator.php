@@ -28,6 +28,7 @@ use Thelia\Domain\Ai\Exception\AiExceptionInterface;
 use Thelia\Domain\Ai\Guardrail\GuardrailMode;
 use Thelia\Domain\Ai\UntrustedContent;
 use Thelia\Domain\Ai\UntrustedSource;
+use TheliaCMS\Content\SectionCatalog;
 use TheliaCMS\Content\Site\InvalidSiteComponentException;
 use TheliaCMS\Content\Site\SiteComponent;
 use TheliaCMS\Content\Site\SiteComponentRepository;
@@ -54,6 +55,12 @@ use TheliaCMS\Generation\Usage;
  * keep: checked by the validator, its code free (a new one) or unchanged (a
  * change), and a change still taking the props the pages using it hold.
  * Nothing is saved here; the editor looks at it first.
+ *
+ * The model may answer that the site already has what is asked (`existing`:
+ * the name of a component of the catalogue, no component), or that it is a
+ * variant of a component of the site (`copy`): the source of that component
+ * is then sent in the same conversation, and the variant comes back as a
+ * component under a new code, which records what it is based on.
  *
  * One conversation per request, without tools: the request, the component,
  * and the corrections it needs. A component the site refuses goes back with
@@ -93,6 +100,7 @@ final readonly class ComponentGenerator
         private LoggerInterface $logger,
         private GatewayFailures $failures,
         private SiteComponentUsage $usage,
+        private SectionCatalog $catalog,
         private SitePropReader $props = new SitePropReader(),
         private ObservedStream $streams = new ObservedStream(),
     ) {
@@ -126,6 +134,7 @@ final readonly class ComponentGenerator
         $corrections = 0;
         $retries = 0;
         $finishReason = null;
+        $copying = null;
         $rowId = $this->log->beginComponent($request->componentId ?? 0, $request->locale, $request->kind(), $request->text, $request->reference);
 
         $record = function (string $status, ?string $error = null, ?string $component = null) use ($request, $rowId, $effort, &$model, $started, &$usage, &$costUsd, &$coreLogId, &$provenance, &$turns, &$finishReason, &$corrections, &$retries): int {
@@ -195,7 +204,27 @@ final readonly class ComponentGenerator
                 $this->failures->assertUsable($response, $this->settings->maxTokens(), 'raise the limit of the generator or ask for a simpler component.');
 
                 try {
-                    $component = $this->validator->validate($this->componentFrom(trim($response->text), $request));
+                    $answer = self::decode(trim($response->text));
+                    $outcome = $this->outcomeOf($answer, $request, null !== $copying);
+
+                    if (ComponentResult::EXISTING === $outcome) {
+                        $name = $this->existingNamed($answer);
+                        $reason = trim((string) $answer['reason']);
+                        $durationMs = (int) ((hrtime(true) - $started) / 1_000_000);
+                        $logId = $record(GenerationLog::STATUS_DONE, null, ComponentCandidates::documentOf(null, $name, null, $reason));
+
+                        return new ComponentResult(null, $model, null, $usage, round($costUsd, 6), $durationMs, $turns, $logId, $provenance, ComponentResult::EXISTING, $name, null, $reason);
+                    }
+
+                    if (ComponentResult::COPY === $outcome) {
+                        [$name, $source] = $this->copiedNamed($answer);
+                        $copying = ['name' => $name, 'reason' => trim((string) ($answer['reason'] ?? ''))];
+                        $conversation = $conversation->withMessages(SentBackAnswer::of($response), AiMessage::user(ComponentPrompt::copy($source, $name)));
+
+                        continue;
+                    }
+
+                    $component = $this->validator->validate($this->componentFrom($answer, $request));
 
                     // A change of a kept component must still take what the
                     // pages hold: one that breaks them is corrected like any
@@ -216,9 +245,9 @@ final readonly class ComponentGenerator
                 }
 
                 $durationMs = (int) ((hrtime(true) - $started) / 1_000_000);
-                $logId = $record(GenerationLog::STATUS_DONE, null, ComponentPrompt::json($component));
+                $logId = $record(GenerationLog::STATUS_DONE, null, ComponentCandidates::documentOf($component, null, $copying['name'] ?? null, $copying['reason'] ?? ''));
 
-                return new ComponentResult($component, $model, null, $usage, round($costUsd, 6), $durationMs, $turns, $logId, $provenance);
+                return new ComponentResult($component, $model, null, $usage, round($costUsd, 6), $durationMs, $turns, $logId, $provenance, ComponentResult::COMPONENT, null, $copying['name'] ?? null, $copying['reason'] ?? '');
             }
         } catch (GenerationRefusedException $exception) {
             $exception->logId = $record(GenerationLog::STATUS_REFUSED, $exception->getMessage());
@@ -257,12 +286,13 @@ final readonly class ComponentGenerator
     }
 
     /**
-     * The component of the answer, still to be checked. A change keeps its
-     * code; a new component takes one no component of the site holds.
+     * The answer as an array, still to be read.
+     *
+     * @return array<mixed>
      *
      * @throws InvalidSiteComponentException
      */
-    private function componentFrom(string $text, ComponentRequest $request): SiteComponent
+    private static function decode(string $text): array
     {
         if (1 === preg_match('/^```(?:json)?\s*(.*?)\s*```$/s', $text, $match)) {
             $text = $match[1];
@@ -278,6 +308,96 @@ final readonly class ComponentGenerator
             throw InvalidSiteComponentException::because(['The answer is not a JSON object.']);
         }
 
+        return $answer;
+    }
+
+    /**
+     * What the answer says it is: `component` when it does not say, as an
+     * answer of before the outcomes did. A change, and the answer that
+     * follows a copy, are components.
+     *
+     * @param array<mixed> $answer
+     *
+     * @throws InvalidSiteComponentException
+     */
+    private function outcomeOf(array $answer, ComponentRequest $request, bool $afterCopy): string
+    {
+        $outcome = $answer['outcome'] ?? ComponentResult::COMPONENT;
+
+        if (!\is_string($outcome) || !\in_array($outcome, ComponentResult::OUTCOMES_ASKED, true)) {
+            throw InvalidSiteComponentException::because([\sprintf('"outcome" is one of: %s.', implode(', ', ComponentResult::OUTCOMES_ASKED))]);
+        }
+
+        if (ComponentResult::COMPONENT !== $outcome && null !== $request->current) {
+            throw InvalidSiteComponentException::because(['A change of a component is answered with the outcome "component": the whole component, its code unchanged.']);
+        }
+
+        if (ComponentResult::COMPONENT !== $outcome && $afterCopy) {
+            throw InvalidSiteComponentException::because(['The source of the component was sent for you to write the variant: answer with the outcome "component", the whole component under a new code.']);
+        }
+
+        return $outcome;
+    }
+
+    /**
+     * The name of the component the site already has, as the answer gives it.
+     *
+     * @param array<mixed> $answer
+     *
+     * @throws InvalidSiteComponentException
+     */
+    private function existingNamed(array $answer): string
+    {
+        $name = \is_string($answer['existing'] ?? null) ? trim($answer['existing']) : '';
+        $problems = [];
+
+        if (null === ($this->catalog->all()[$name] ?? null)) {
+            $problems[] = \sprintf('"%s" is not a component of the list: "existing" holds the name of one of them, as written between backticks.', $name);
+        }
+
+        if ('' === trim((string) ($answer['reason'] ?? ''))) {
+            $problems[] = 'With the outcome "existing", "reason" says in one sentence what that component already does.';
+        }
+
+        if ([] !== $problems) {
+            throw InvalidSiteComponentException::because($problems);
+        }
+
+        return $name;
+    }
+
+    /**
+     * The component of the site to copy: its name and its source.
+     *
+     * @param array<mixed> $answer
+     *
+     * @return array{0: string, 1: SiteComponent}
+     *
+     * @throws InvalidSiteComponentException
+     */
+    private function copiedNamed(array $answer): array
+    {
+        $name = \is_string($answer['existing'] ?? null) ? trim($answer['existing']) : '';
+        $code = ComponentCandidate::siteCodeOf($name);
+        $source = null === $code ? null : $this->components->find($code);
+
+        if (null === $source) {
+            throw InvalidSiteComponentException::because([\sprintf('"%s" is not a component of the site: with the outcome "copy", "existing" holds the name of one of the components `Site:…` of the list. Otherwise make a component.', $name)]);
+        }
+
+        return [$source->name(), $source];
+    }
+
+    /**
+     * The component of the answer, still to be checked. A change keeps its
+     * code; a new component takes one no component of the site holds.
+     *
+     * @param array<mixed> $answer
+     *
+     * @throws InvalidSiteComponentException
+     */
+    private function componentFrom(array $answer, ComponentRequest $request): SiteComponent
+    {
         $problems = [];
         $props = self::decoded($answer['props'] ?? null, 'props', $problems);
         $sample = self::decoded($answer['sample'] ?? null, 'sample', $problems);

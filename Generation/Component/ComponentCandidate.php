@@ -39,7 +39,29 @@ final readonly class ComponentCandidate
         public int $turns,
         public int $durationMs,
         public ?\DateTimeInterface $createdAt,
+        public string $outcome = ComponentResult::COMPONENT,
+        public ?string $existing = null,
+        public ?string $basedOn = null,
+        public string $reason = '',
     ) {
+    }
+
+    /**
+     * A call that found the site already has what was asked: nothing to keep.
+     */
+    public function isExisting(): bool
+    {
+        return ComponentResult::EXISTING === $this->outcome;
+    }
+
+    /**
+     * The code of the component of the site the call named, whether it is
+     * the one that already does what was asked or the one it was copied from;
+     * null for a component of the module or of the theme, which has no screen.
+     */
+    public static function siteCodeOf(?string $name): ?string
+    {
+        return null !== $name && str_starts_with($name, SiteComponent::PREFIX) ? substr($name, \strlen(SiteComponent::PREFIX)) : null;
     }
 
     public function isChange(): bool

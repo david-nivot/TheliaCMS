@@ -1,0 +1,23 @@
+{
+  "id": "reuse-faq",
+  "family": "reuse",
+  "locale": "fr_FR",
+  "request": "Une FAQ : les questions qu'on nous pose le plus avant de commander.",
+  "oracle": {
+    "outcome": [
+      "existing"
+    ],
+    "target": [
+      "Site:Faq"
+    ],
+    "props": [],
+    "markup": {
+      "require": [],
+      "forbid": []
+    },
+    "css": {
+      "require": [],
+      "forbid": []
+    }
+  }
+}

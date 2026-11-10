@@ -55,6 +55,7 @@ final readonly class ComponentPrompt
         private SectionCatalog $catalog,
         private ShopContext $shop,
         private BlockStyles $blocks,
+        private ?SampleMedia $media = null,
     ) {
     }
 
@@ -80,9 +81,25 @@ final readonly class ComponentPrompt
             '',
             '# The components the site already has',
             '',
-            'Do not make one of these again; make what none of them does.',
-            '',
         ];
+
+        if (null === $request->current) {
+            array_push(
+                $lines,
+                'Look at these before you make anything. Answer with an `outcome`:',
+                '',
+                '- `existing`: a component of this list already does what is asked, the request differing by its wording or its example only. Put its name, as written between backticks, in `existing`; say in `reason`, in one sentence in the language of the request, what it already does; leave every other field empty.',
+                '- `copy`: what is asked is a variant of a component named `Site:…` in this list (another look, one prop more or less). Put its name in `existing`; say in `reason` what the variant changes; leave every other field empty. You are sent its source, and write the variant under a new code.',
+                '- `component`: any other request, which none of these does. `existing` and `reason` stay empty.',
+                '',
+            );
+        } else {
+            array_push(
+                $lines,
+                'The request is a change of a component, so the `outcome` is always `component`, with `existing` and `reason` empty.',
+                '',
+            );
+        }
 
         foreach ($this->catalog->all() as $name => $definition) {
             if (null !== $request->current && $name === $request->current->name()) {
@@ -93,6 +110,7 @@ final readonly class ComponentPrompt
         }
 
         $lines[] = '';
+        array_push($lines, ...$this->mediaLines($request->locale));
 
         if (null !== $request->current) {
             $lines[] = '# The component to change';
@@ -126,6 +144,30 @@ final readonly class ComponentPrompt
     }
 
     /**
+     * The media of the library the sample may show, one line each, with the
+     * heading; nothing when the library holds none.
+     *
+     * @return list<string>
+     */
+    private function mediaLines(string $locale): array
+    {
+        $items = $this->media?->offered($locale) ?? [];
+
+        if ([] === $items) {
+            return [];
+        }
+
+        return [
+            '# Pictures and videos for the sample',
+            '',
+            'The media library of the site holds these, the most recent first: the number is the id, followed by the kind, the size and what it shows. The sample takes the id of one of them for an `image` or `video` prop, chosen for what it shows, and null when none fits.',
+            '',
+            ...array_map(static fn (SampleMediaItem $item): string => $item->line(), $items),
+            '',
+        ];
+    }
+
+    /**
      * The message that sends a component back for correction.
      *
      * @param list<string> $problems
@@ -133,6 +175,20 @@ final readonly class ComponentPrompt
     public static function correction(array $problems): string
     {
         return "The component you answered with cannot be kept. Fix every problem below and answer with the whole component again:\n\n- ".implode("\n- ", $problems);
+    }
+
+    /**
+     * The message that sends the source of a component to copy: the variant
+     * is asked under a new code, in the same conversation.
+     */
+    public static function copy(SiteComponent $source, string $name): string
+    {
+        return \sprintf(
+            "Here is the source of `%s`, the component to start from.\n\n```json\n%s\n```\n\nWrite the variant asked as a whole component, under a new code (the code `%s` is taken). Answer with the `outcome` `component`, `existing` and `reason` empty.",
+            $name,
+            self::json($source),
+            $source->code,
+        );
     }
 
     /**
@@ -163,8 +219,11 @@ final readonly class ComponentPrompt
         return [
             'type' => 'object',
             'additionalProperties' => false,
-            'required' => ['code', 'label', 'description', 'props', 'sample', 'template', 'css'],
+            'required' => ['outcome', 'existing', 'reason', 'code', 'label', 'description', 'props', 'sample', 'template', 'css'],
             'properties' => [
+                'outcome' => ['type' => 'string', 'enum' => ComponentResult::OUTCOMES_ASKED, 'description' => '`component` for a new component; `existing` when a component of the list already does what is asked; `copy` when what is asked is a variant of a component `Site:…` of the list. With `existing` or `copy`, every other field is empty.'],
+                'existing' => $string('The name of the component of the list, with `existing` or `copy`; empty for `component`.'),
+                'reason' => $string('With `existing`: what that component already does. With `copy`: what the variant changes. One sentence in the language of the request; empty for `component`.'),
                 'code' => $string('PascalCase, 2 to 40 letters and digits, saying what the component is: "PriceTable".'),
                 'label' => $string('The name of the component in a list, in the default language of the shop: two to four words, such as "Price table". What it does goes in the description.'),
                 'description' => $string('One or two sentences, in English, on what the component is for and when a page uses it: what the generator of pages reads to pick it.'),
@@ -241,7 +300,7 @@ final readonly class ComponentPrompt
             '',
             '# Sample',
             '',
-            'The props of the example: what the toolkit shows and what the generator of pages sees. Fill every prop with realistic text in the language of the site, as many items as a real page would hold. An image is null unless the request gives the `https` address of a picture.',
+            'The props of the example: what the toolkit shows and what the generator of pages sees. Fill every prop with realistic text in the language of the site, as many items as a real page would hold. An `image` or `video` prop of the sample takes the id of one of the pictures and videos the user message lists under "Pictures and videos for the sample", chosen for what it shows (an id is written as a number, never as an address), or null when none of them fits or when the message lists none; with no list, every `image` and `video` of the sample is null. An `image` may also take the `https` address of a picture when the request gives one.',
             '',
             // Each skill opens with its own heading.
             ...array_map(static fn (string $skill): string => trim($skill)."\n", array_filter([$accessibility, $motion])),
