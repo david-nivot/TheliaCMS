@@ -34,6 +34,9 @@ use TheliaCMS\Generation\DocumentProblem;
 use TheliaCMS\Generation\GenerationRequest;
 use TheliaCMS\Generation\GenerationTarget;
 use TheliaCMS\Media\CmsMediaLibrary;
+use TheliaCMS\Media\Icon\IconFileFinder;
+use TheliaCMS\Media\Icon\KnownIcons;
+use TheliaCMS\Media\Icon\ThemeIcons;
 use TheliaCMS\Model\CmsForm;
 use TheliaCMS\Model\CmsMenu;
 use TheliaCMS\Page\PublishedPageRepository;
@@ -287,6 +290,57 @@ final class DocumentCheckerTest extends CmsIntegrationTestCase
         self::assertSame([], $this->checker()->problems($source, $request, $source));
     }
 
+    public function testAnIconMustBeOneOfTheThemeOrALiveOneOfTheLibrary(): void
+    {
+        $request = $this->request();
+        $theme = $this->getService(ThemeIcons::class)->names()[0] ?? null;
+        $problems = fn (array $props): array => $this->checker()->problems(new Document([$this->section('card', 'Test:Checked', $props)]), $request);
+
+        self::assertSame([], $problems(['icon' => 'cms:live-one']), 'A live icon of the library.');
+        self::assertSame([], $problems(['icon' => '']), 'Empty is no problem.');
+
+        if (null !== $theme) {
+            self::assertSame([], $problems(['icon' => $theme]), 'An icon of the theme.');
+        }
+
+        $found = $problems(['icon' => 'cms:invented', 'marks' => [['mark' => 'cms:live-one'], ['mark' => 'nope-nothing']]]);
+
+        self::assertSame([DocumentProblem::ICON, DocumentProblem::ICON], array_map(static fn (DocumentProblem $problem): string => $problem->kind, $found));
+        self::assertStringContainsString('"cms:invented"', $found[0]->message);
+        self::assertStringContainsString('`cms:live-one`', $found[0]->message, 'The model is told what it may name.');
+        self::assertSame(['marks', 1, 'mark'], $found[1]->path);
+    }
+
+    public function testAnIconThatStaysIsEmptiedAndSaidInTheLanguageOfThePage(): void
+    {
+        $document = new Document([$this->section('card', 'Test:Checked', ['icon' => 'cms:invented', 'link' => '', 'html' => '<p>Texte</p>'])]);
+
+        foreach (['fr_FR' => 'Une icône de la section "card"', 'en_US' => 'An icon of the section "card"'] as $locale => $sentence) {
+            $request = $this->request($locale);
+            [$settled, $leftOut] = $this->checker()->settle($document, $this->checker()->problems($document, $request), $request);
+
+            self::assertSame('', $settled->sections[0]->props['icon']);
+            self::assertSame('<p>Texte</p>', $settled->sections[0]->props['html']);
+            self::assertCount(1, $leftOut);
+            self::assertStringStartsWith($sentence, $leftOut[0], $locale);
+        }
+    }
+
+    private static function libraryIcons(): IconFileFinder
+    {
+        return new class implements IconFileFinder {
+            public function fileOf(string $name): ?string
+            {
+                return 'live-one' === $name ? __FILE__ : null;
+            }
+
+            public function names(): array
+            {
+                return ['live-one'];
+            }
+        };
+    }
+
     private function pathOf(\TheliaCMS\Model\CmsPage $page): string
     {
         return (string) parse_url($page->getUrl($this->locale()), \PHP_URL_PATH);
@@ -331,6 +385,7 @@ final class DocumentCheckerTest extends CmsIntegrationTestCase
             $this->getService(RouterInterface::class),
             $this->getService(ParserResolver::class),
             $this->getService(TemplateHelperInterface::class),
+            new KnownIcons(self::libraryIcons(), $this->getService(ThemeIcons::class)),
         );
     }
 
@@ -396,6 +451,8 @@ final class DocumentCheckerTest extends CmsIntegrationTestCase
                 return new PropSchema([
                     Prop::image('photo', 'Photo'),
                     Prop::video('clip', 'Clip'),
+                    Prop::icon('icon', 'Icon'),
+                    Prop::items('marks', 'Marks', [Prop::icon('mark', 'Mark')]),
                     Prop::items('clips', 'Clips', [Prop::video('video', 'Video')]),
                     Prop::url('link', 'Link'),
                     Prop::html('html', 'Html'),

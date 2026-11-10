@@ -15,8 +15,8 @@ declare(strict_types=1);
 namespace TheliaCMS\Generation;
 
 /**
- * Something a generated document says that the site does not hold: an image
- * or a video that is not in the media library, a record that does not exist, an address
+ * Something a generated document says that the site does not hold: an image,
+ * a video or an icon that is not in the media library, a record that does not exist, an address
  * that leads nowhere, a heading structure that will not publish. The message
  * is what the model is told, in English; where it is, in the props of its
  * section, is what lets the value be emptied when the model does not mend it.
@@ -25,6 +25,7 @@ final readonly class DocumentProblem
 {
     public const string IMAGE = 'image';
     public const string VIDEO = 'video';
+    public const string ICON = 'icon';
     public const string REFERENCE = 'reference';
     public const string ADDRESS = 'address';
     public const string HEADINGS = 'headings';

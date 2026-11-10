@@ -35,6 +35,7 @@ use TheliaCMS\Content\Prop;
 use TheliaCMS\Content\PropType;
 use TheliaCMS\Content\Section;
 use TheliaCMS\Content\SectionCatalog;
+use TheliaCMS\Media\Icon\KnownIcons;
 use TheliaCMS\Model\CmsFormQuery;
 use TheliaCMS\Model\CmsMenuQuery;
 use TheliaCMS\Model\CmsPageQuery;
@@ -93,6 +94,7 @@ final readonly class DocumentChecker
         private RouterInterface $router,
         private ParserResolver $parserResolver,
         private TemplateHelperInterface $templateHelper,
+        private KnownIcons $icons,
     ) {
     }
 
@@ -201,7 +203,7 @@ final readonly class DocumentChecker
         $existing = [];
 
         foreach ($found as $candidate) {
-            if (DocumentProblem::ADDRESS === $candidate['kind']) {
+            if (\in_array($candidate['kind'], [DocumentProblem::ADDRESS, DocumentProblem::ICON], true)) {
                 continue;
             }
 
@@ -220,6 +222,7 @@ final readonly class DocumentChecker
         }
 
         $problems = [];
+        $permitted = null;
 
         foreach ($found as $candidate) {
             $section = $candidate['section'];
@@ -229,6 +232,15 @@ final readonly class DocumentChecker
             if (DocumentProblem::ADDRESS === $candidate['kind']) {
                 if (!$this->isAddressOfTheSite((string) $candidate['id'])) {
                     $problems[] = new DocumentProblem(DocumentProblem::ADDRESS, \sprintf('%s: "%s" points to %s, which is no page of the site. Take the address from `search_pages`, or use an https address, or leave it empty.', $label, $where, $candidate['id']), $section->id, $candidate['path'], $candidate['row'], (string) $candidate['id']);
+                }
+
+                continue;
+            }
+
+            if (DocumentProblem::ICON === $candidate['kind']) {
+                if (!$this->icons->isKnown((string) $candidate['id'])) {
+                    $permitted ??= $this->icons->listing();
+                    $problems[] = new DocumentProblem(DocumentProblem::ICON, \sprintf('%s: "%s" is the icon "%s", which the site does not hold. %s', $label, $where, $candidate['id'], null === $permitted ? 'The site has no icon: leave the icon empty.' : 'Take a name from this list, or leave the icon empty: '.$permitted), $section->id, $candidate['path'], $candidate['row'], (string) $candidate['id']);
                 }
 
                 continue;
@@ -299,7 +311,7 @@ final readonly class DocumentChecker
     }
 
     /**
-     * Calls `$visit` for every image, reference and internal address of the props.
+     * Calls `$visit` for every image, icon, reference and internal address of the props.
      *
      * @param list<Prop>                                                                        $definitions
      * @param array<string, mixed>                                                              $values
@@ -317,6 +329,7 @@ final readonly class DocumentChecker
                 PropType::Image => \is_int($value) && $value > 0 ? $visit(DocumentProblem::IMAGE, $prop, $at, $row, $value) : null,
                 PropType::Video => \is_int($value) && $value > 0 ? $visit(DocumentProblem::VIDEO, $prop, $at, $row, $value) : null,
                 PropType::Reference => \is_int($value) && $value > 0 ? $visit(DocumentProblem::REFERENCE, $prop, $at, $row, $value) : null,
+                PropType::Icon => \is_string($value) && '' !== $value ? $visit(DocumentProblem::ICON, $prop, $at, $row, $value) : null,
                 PropType::Url => \is_string($value) && str_starts_with($value, '/') && !str_starts_with($value, '//') ? $visit(DocumentProblem::ADDRESS, $prop, $at, $row, $value) : null,
                 PropType::Items => \is_array($value) ? $this->collectRows($prop, $value, $at, $visit) : null,
                 default => null,
@@ -368,7 +381,7 @@ final readonly class DocumentChecker
         $props = $section->props;
 
         foreach ($problems as $problem) {
-            $props = self::set($props, $problem->path, DocumentProblem::ADDRESS === $problem->kind ? '' : null);
+            $props = self::set($props, $problem->path, \in_array($problem->kind, [DocumentProblem::ADDRESS, DocumentProblem::ICON], true) ? '' : null);
         }
 
         try {
@@ -381,7 +394,7 @@ final readonly class DocumentChecker
 
         foreach ($problems as $problem) {
             if (null === $problem->rowPath) {
-                $props = self::set($props, $problem->path, DocumentProblem::ADDRESS === $problem->kind ? '' : null);
+                $props = self::set($props, $problem->path, \in_array($problem->kind, [DocumentProblem::ADDRESS, DocumentProblem::ICON], true) ? '' : null);
             } else {
                 $rows[implode('.', $problem->rowPath)] = $problem->rowPath;
             }
@@ -455,6 +468,7 @@ final readonly class DocumentChecker
         return match ($problem->kind) {
             DocumentProblem::IMAGE => $this->translator->trans('An image of the section "%section%" is not in the media library: it is left out.', $parameters, TheliaCMS::DOMAIN_NAME, $locale),
             DocumentProblem::VIDEO => $this->translator->trans('A video of the section "%section%" is not in the media library: it is left out.', $parameters, TheliaCMS::DOMAIN_NAME, $locale),
+            DocumentProblem::ICON => $this->translator->trans('An icon of the section "%section%" is not one of the site: it is left out.', $parameters, TheliaCMS::DOMAIN_NAME, $locale),
             DocumentProblem::ADDRESS => $this->translator->trans('A link of the section "%section%" (%address%) leads to no page of the site: it is left out.', $parameters, TheliaCMS::DOMAIN_NAME, $locale),
             default => $this->translator->trans('The section "%section%" names a record the site does not hold: it is left out.', $parameters, TheliaCMS::DOMAIN_NAME, $locale),
         };

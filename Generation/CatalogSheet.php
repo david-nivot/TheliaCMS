@@ -19,6 +19,7 @@ use TheliaCMS\Content\PropType;
 use TheliaCMS\Content\SectionAppearance;
 use TheliaCMS\Content\SectionCatalog;
 use TheliaCMS\Content\SectionDefinitionInterface;
+use TheliaCMS\Media\Icon\KnownIcons;
 
 /**
  * The catalogue as the model reads it: every section the site offers, with
@@ -29,6 +30,7 @@ final readonly class CatalogSheet
 {
     public function __construct(
         private SectionCatalog $catalog,
+        private KnownIcons $icons,
     ) {
     }
 
@@ -36,8 +38,16 @@ final readonly class CatalogSheet
     {
         $lines = ["# The catalogue\n", 'The components a section may name, with their props. `*` marks a required prop.', ''];
 
+        $withIcons = false;
+
         foreach ($this->catalog->offered() as $definition) {
-            $lines[] = $this->section($definition);
+            $lines[] = $this->body($definition);
+            $withIcons = $withIcons || self::hasIcon($definition->schema()->props);
+        }
+
+        // One list for the whole sheet, not one per prop.
+        if ($withIcons) {
+            $lines[] = $this->iconList();
         }
 
         $lines[] = self::appearance();
@@ -45,7 +55,50 @@ final readonly class CatalogSheet
         return implode("\n", $lines);
     }
 
+    /**
+     * The sheet of one section; with the names of the icons when a prop of it
+     * is an icon, since it is read alone.
+     */
     public function section(SectionDefinitionInterface $definition): string
+    {
+        $body = $this->body($definition);
+
+        return self::hasIcon($definition->schema()->props) ? $body."\n".$this->iconList() : $body;
+    }
+
+    /**
+     * The names an `icon` prop may hold: what the site draws right now, the
+     * icons of the media library first. A name outside the list is sent back for correction, then emptied.
+     */
+    private function iconList(): string
+    {
+        $listing = $this->icons->listing();
+
+        return implode("\n", [
+            '## The icons',
+            '',
+            null === $listing
+                ? 'The site has no icon: an `icon` prop stays empty.'
+                : \sprintf('The only names an `icon` prop may hold, the icons of the media library (`cms:`) then those of the theme: %s. The list may be cut, then it says how many names it leaves out. A name that is not an icon of the site is sent back for correction, then left empty. Leave the prop empty when none fits.', $listing),
+            '',
+        ]);
+    }
+
+    /**
+     * @param list<Prop> $props
+     */
+    private static function hasIcon(array $props): bool
+    {
+        foreach ($props as $prop) {
+            if (!$prop->editorOnly && (PropType::Icon === $prop->type || (PropType::Items === $prop->type && self::hasIcon($prop->items)))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function body(SectionDefinitionInterface $definition): string
     {
         $lines = [\sprintf('## `%s` — %s', $definition->name(), $definition->label()), '', $definition->description(), '', 'Props:'];
 
@@ -123,6 +176,7 @@ final readonly class CatalogSheet
             PropType::Video => 'always null: the video is chosen by the editor',
             PropType::Url => 'url',
             PropType::Embed => 'https address of a YouTube, Vimeo or Dailymotion video, or empty',
+            PropType::Icon => 'icon name, taken from the list of the icons: `cms:<name>` for an icon of the media library, or the name of an icon of the theme, or empty',
             PropType::Items => $prop->scalarItems ? self::scalarListOf($prop) : \sprintf('list of %d to %d items', $prop->minItems ?? 0, $prop->maxItems ?? 12),
             PropType::Reference => 'id from the search tools',
             PropType::Json => 'JSON string',

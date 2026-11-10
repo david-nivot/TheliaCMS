@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Content\Theme;
 
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Asset\Packages;
 use Symfony\Component\Translation\LocaleSwitcher;
 use Symfony\UX\TwigComponent\ComponentRendererInterface;
@@ -24,6 +25,7 @@ use TheliaCMS\Content\PropSchema;
 use TheliaCMS\Content\PropType;
 use TheliaCMS\Content\SectionDefinitionInterface;
 use TheliaCMS\Content\VideoSource;
+use TheliaCMS\Media\Icon\KnownIcons;
 
 /**
  * A Twig component of the theme, as a section of a document.
@@ -42,6 +44,7 @@ final readonly class ThemeComponentSection implements SectionDefinitionInterface
      * @param list<string>          $idLists   the props that hold several records, handed to the component as a list of ids
      * @param array<string, mixed>  $example   props the theme shows the component with, by the name the schema uses
      * @param Packages|null         $packages  what turns the path of a file of the theme into the address it is served from
+     * @param KnownIcons|null       $icons     when given, an icon prop the site does not hold is handed to the component empty, so that `ux_icon(value)` never asks Iconify for it nor raises
      */
     public function __construct(
         private string $component,
@@ -53,6 +56,8 @@ final readonly class ThemeComponentSection implements SectionDefinitionInterface
         private array $example = [],
         private ?LocaleSwitcher $localeSwitcher = null,
         private ?Packages $packages = null,
+        private ?KnownIcons $icons = null,
+        private ?LoggerInterface $logger = null,
     ) {
     }
 
@@ -266,6 +271,10 @@ final readonly class ThemeComponentSection implements SectionDefinitionInterface
                 }
             }
 
+            if (null !== $this->icons) {
+                $value = $this->withKnownIcons($this->schema->props, $name, $value);
+            }
+
             // A row is stored as the schema names its fields and read by the
             // component as it spells them, as a prop of its own is.
             if (\in_array($name, $rowLists, true) && \is_array($value)) {
@@ -290,6 +299,82 @@ final readonly class ThemeComponentSection implements SectionDefinitionInterface
         $draw = fn (): string => $this->renderer->createAndRender($this->component, $forComponent);
 
         return null === $this->localeSwitcher ? $draw() : $this->localeSwitcher->runWithLocale($locale, $draw);
+    }
+
+    /**
+     * The value of a prop with every icon the site does not hold emptied: an
+     * icon prop, the icon field of the rows of a list, the names of a list of
+     * icons. The component runs `ux_icon()` on what it gets, and ux-icons asks
+     * Iconify for a name it does not find locally or raises on a malformed
+     * one. The fault is logged with the name only.
+     *
+     * @param list<Prop> $props
+     */
+    private function withKnownIcons(array $props, string $name, mixed $value): mixed
+    {
+        foreach ($props as $prop) {
+            if ($prop->name !== $name) {
+                continue;
+            }
+
+            if (PropType::Icon === $prop->type) {
+                return $this->knownIcon($value);
+            }
+
+            if (PropType::Items !== $prop->type || !\is_array($value)) {
+                return $value;
+            }
+
+            if ($prop->scalarItems) {
+                // A list of icons keeps only the icons it can draw: an empty or unknown
+                // entry would make `ux_icon()` throw in a loop of the component.
+                return PropType::Icon === ($prop->items[0]->type ?? null) ? array_values(array_filter($value, fn (mixed $icon): bool => '' !== $icon && null !== $icon && $this->isKnownIcon($icon))) : $value;
+            }
+
+            $iconFields = array_map(static fn (Prop $item): string => $item->name, array_filter($prop->items, static fn (Prop $item): bool => PropType::Icon === $item->type));
+
+            if ([] === $iconFields) {
+                return $value;
+            }
+
+            return array_map(function (mixed $row) use ($iconFields): mixed {
+                if (!\is_array($row)) {
+                    return $row;
+                }
+
+                foreach ($iconFields as $field) {
+                    if (\array_key_exists($field, $row)) {
+                        $row[$field] = $this->knownIcon($row[$field]);
+                    }
+                }
+
+                return $row;
+            }, $value);
+        }
+
+        return $value;
+    }
+
+    private function knownIcon(mixed $value): mixed
+    {
+        return '' === $value || null === $value || $this->isKnownIcon($value) ? $value : '';
+    }
+
+    /**
+     * Whether a non-empty icon value is drawn as is; the fault is logged
+     * otherwise, with the name only.
+     */
+    private function isKnownIcon(mixed $value): bool
+    {
+        if (\is_string($value) && $this->icons?->isKnown($value)) {
+            return true;
+        }
+
+        $this->logger?->warning('A component of the theme is given an icon that does not exist.', [
+            'icon' => \is_string($value) ? mb_substr($value, 0, 128) : get_debug_type($value),
+        ]);
+
+        return false;
     }
 
     /**

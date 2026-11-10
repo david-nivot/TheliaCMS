@@ -24,6 +24,7 @@ use TheliaCMS\Content\ImageFraming;
 use TheliaCMS\Content\PropSchema;
 use TheliaCMS\Content\SectionHidingInterface;
 use TheliaCMS\Content\SectionProviderInterface;
+use TheliaCMS\Media\Icon\KnownIcons;
 
 /**
  * The components the active theme opens to the pages of the CMS, read from
@@ -44,6 +45,7 @@ final readonly class ThemeComponentSections implements SectionProviderInterface,
         private ?LocaleSwitcher $localeSwitcher = null,
         private ?Packages $packages = null,
         private ?ImageFraming $framing = null,
+        private ?KnownIcons $icons = null,
     ) {
     }
 
@@ -67,7 +69,7 @@ final readonly class ThemeComponentSections implements SectionProviderInterface,
                 $twigNames[$prop->name] = self::twigName($prop->name);
             }
 
-            yield new ThemeComponentSection($component, $read['description'], $schema, $twigNames, $this->renderer, $read['id_lists'], self::example($declaration->examples[$component] ?? []), $this->localeSwitcher, $this->packages);
+            yield new ThemeComponentSection($component, $read['description'], $schema, $twigNames, $this->renderer, $read['id_lists'], self::example($declaration->examples[$component] ?? []), $this->localeSwitcher, $this->packages, $this->icons, $this->logger);
         }
     }
 

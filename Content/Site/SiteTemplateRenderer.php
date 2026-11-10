@@ -25,6 +25,7 @@ use Twig\Node\Node;
 use Twig\Sandbox\SecurityError;
 use Twig\Sandbox\SecurityPolicy;
 use Twig\Source;
+use Twig\TwigFunction;
 
 /**
  * Renders the template of a component of the site, written by a model and
@@ -47,12 +48,12 @@ final class SiteTemplateRenderer
     public const array FILTERS = ['escape', 'e', 'default', 'length', 'join', 'upper', 'lower', 'capitalize', 'title', 'trim', 'first', 'last', 'slice', 'nl2br', 'number_format', 'replace', 'split', 'keys'];
 
     /**
-     * Functions of values only. Not `range`, nor `1..3` which compiles to it:
+     * Functions of values only, and `cms_icon` that draws a named icon. Not `range`, nor `1..3` which compiles to it:
      * a range has no bound, and the loops of a component go over its props.
      *
      * @var list<string>
      */
-    public const array FUNCTIONS = ['cycle', 'min', 'max'];
+    public const array FUNCTIONS = ['cycle', 'min', 'max', 'cms_icon'];
 
     /** @var list<string> */
     public const array TESTS = ['empty', 'defined', 'null', 'none', 'odd', 'even', 'iterable', 'same as', 'divisible by'];
@@ -66,6 +67,10 @@ final class SiteTemplateRenderer
     public const int MAX_LOOP_DEPTH = 2;
 
     private ?Environment $twig = null;
+
+    public function __construct(private ?SiteIcon $icon = null)
+    {
+    }
 
     /**
      * The problems of a template, none when it compiles under the policy.
@@ -161,6 +166,10 @@ final class SiteTemplateRenderer
         // Printing a markup prop casts a Twig\Markup to a string: the one
         // method a template may call, and only through printing it.
         $twig->addExtension(new SandboxExtension(new SecurityPolicy(self::TAGS, self::FILTERS, [Markup::class => ['__tostring']], [], self::FUNCTIONS, self::TESTS), true));
+
+        // Without the icon service (a unit test), the function exists and draws nothing.
+        $icon = $this->icon;
+        $twig->addFunction(new TwigFunction('cms_icon', static fn (mixed $reference, array $attributes = []): string => null === $icon ? '' : $icon->render($reference, $attributes), ['is_safe' => ['html']]));
 
         return $this->twig = $twig;
     }

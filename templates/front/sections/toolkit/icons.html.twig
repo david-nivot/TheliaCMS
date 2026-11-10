@@ -1,0 +1,23 @@
+{#
+    The icons of the media library, as a component of the site draws them
+    with `cms_icon()`: the drawing, then the name an editor picks. Laid out as
+    the icons of the theme (Atoms/Icons of Flexy), with the classes of the
+    toolkit and no style of its own.
+#}
+{% set icons = cms_library_icons() %}
+<div class="Story">
+    <div class="Story-section">
+        {% if icons is empty %}
+            <p class="Story-label">No CMS icon yet. Add an SVG to the media library and give it an icon name.</p>
+        {% else %}
+            <div class="Story-canvas IconGrid">
+                {% for name in icons %}
+                    <div class="IconGrid-cell">
+                        <span class="IconGrid-glyph">{{ ux_icon(name) }}</span>
+                        <span class="IconGrid-name">{{ name }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</div>
