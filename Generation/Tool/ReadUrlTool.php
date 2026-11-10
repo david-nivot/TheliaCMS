@@ -89,19 +89,90 @@ final readonly class ReadUrlTool
      */
     public function read(string $url, ?array $hosts = null): FetchedPage
     {
-        $url = trim($url);
+        $reached = $this->reach(trim($url), $hosts, 'text/html,application/pdf,text/plain;q=0.9');
 
+        if (null !== $reached['error']) {
+            return FetchedPage::failed($reached['url'], $reached['error']);
+        }
+
+        $url = $reached['url'];
+        $response = $reached['response'];
+        $type = strtolower(trim(explode(';', (string) ($reached['headers']['content-type'][0] ?? ''))[0]));
+
+        if (!\in_array($type, [...self::TEXT_TYPES, self::PDF_TYPE], true)) {
+            $response->cancel();
+
+            return FetchedPage::failed($url, 'unsupported_content_type');
+        }
+
+        try {
+            $body = $this->body($response, self::MAX_BYTES);
+        } catch (ExceptionInterface $exception) {
+            return FetchedPage::failed($url, self::isBlocked($exception) ? 'blocked_address' : 'url_not_accessible');
+        }
+
+        if (self::PDF_TYPE === $type) {
+            if (null === $text = self::textOfPdf($body)) {
+                return FetchedPage::failed($url, 'unreadable_pdf');
+            }
+        } else {
+            $text = 'text/plain' === $type ? ReadableText::normalize(ReadableText::utf8($body)) : self::textOfHtml(ReadableText::utf8($body));
+        }
+
+        return '' === $text ? FetchedPage::failed($url, 'empty_page') : FetchedPage::read($url, mb_substr($text, 0, self::MAX_CHARACTERS));
+    }
+
+    /**
+     * The bytes of a file at an address, through the same client, the same
+     * checks on the address and on every redirect as a page, for a caller that
+     * decides itself what the bytes are (a picture to import).
+     *
+     * The body is cut one byte past $maxBytes, not waited for: a body longer
+     * than the ceiling comes back with `$maxBytes + 1` bytes, and the caller
+     * refuses it.
+     *
+     * @param list<string>|null $hosts see read()
+     *
+     * @return array{url: string, bytes: string|null, error: string|null} `error` is a code, never an exception
+     */
+    public function download(string $url, ?array $hosts, int $maxBytes, string $accept = '*/*'): array
+    {
+        $reached = $this->reach(trim($url), $hosts, $accept);
+
+        if (null !== $reached['error']) {
+            return ['url' => $reached['url'], 'bytes' => null, 'error' => $reached['error']];
+        }
+
+        try {
+            $body = $this->body($reached['response'], $maxBytes + 1);
+        } catch (ExceptionInterface $exception) {
+            return ['url' => $reached['url'], 'bytes' => null, 'error' => self::isBlocked($exception) ? 'blocked_address' : 'url_not_accessible'];
+        }
+
+        return ['url' => $reached['url'], 'bytes' => $body, 'error' => null];
+    }
+
+    /**
+     * The response of a successful request to an address, redirects followed
+     * hop by hop (each one checked, each one through the guarded client).
+     *
+     * @param list<string>|null $hosts
+     *
+     * @return array{url: string, response: ResponseInterface|null, headers: array<string, list<string>>, error: string|null}
+     */
+    private function reach(string $url, ?array $hosts, string $accept): array
+    {
         for ($hop = 0; $hop <= self::MAX_REDIRECTS; ++$hop) {
             if (null !== $error = self::refusal($url, $hosts)) {
-                return FetchedPage::failed($url, $error);
+                return ['url' => $url, 'response' => null, 'headers' => [], 'error' => $error];
             }
 
             try {
-                $response = $this->client->request('GET', $url, ['headers' => ['Accept' => 'text/html,application/pdf,text/plain;q=0.9']]);
+                $response = $this->client->request('GET', $url, ['headers' => ['Accept' => $accept]]);
                 $status = $response->getStatusCode();
                 $headers = $response->getHeaders(false);
             } catch (ExceptionInterface $exception) {
-                return FetchedPage::failed($url, self::isBlocked($exception) ? 'blocked_address' : 'url_not_accessible');
+                return ['url' => $url, 'response' => null, 'headers' => [], 'error' => self::isBlocked($exception) ? 'blocked_address' : 'url_not_accessible'];
             }
 
             if ($status >= 300 && $status < 400 && isset($headers['location'][0])) {
@@ -114,35 +185,13 @@ final readonly class ReadUrlTool
             if ($status >= 400 || $status < 200 || $status >= 300) {
                 $response->cancel();
 
-                return FetchedPage::failed($url, 'url_not_accessible');
+                return ['url' => $url, 'response' => null, 'headers' => [], 'error' => 'url_not_accessible'];
             }
 
-            $type = strtolower(trim(explode(';', (string) ($headers['content-type'][0] ?? ''))[0]));
-
-            if (!\in_array($type, [...self::TEXT_TYPES, self::PDF_TYPE], true)) {
-                $response->cancel();
-
-                return FetchedPage::failed($url, 'unsupported_content_type');
-            }
-
-            try {
-                $body = $this->body($response);
-            } catch (ExceptionInterface $exception) {
-                return FetchedPage::failed($url, self::isBlocked($exception) ? 'blocked_address' : 'url_not_accessible');
-            }
-
-            if (self::PDF_TYPE === $type) {
-                if (null === $text = self::textOfPdf($body)) {
-                    return FetchedPage::failed($url, 'unreadable_pdf');
-                }
-            } else {
-                $text = 'text/plain' === $type ? ReadableText::normalize(ReadableText::utf8($body)) : self::textOfHtml(ReadableText::utf8($body));
-            }
-
-            return '' === $text ? FetchedPage::failed($url, 'empty_page') : FetchedPage::read($url, mb_substr($text, 0, self::MAX_CHARACTERS));
+            return ['url' => $url, 'response' => $response, 'headers' => $headers, 'error' => null];
         }
 
-        return FetchedPage::failed($url, 'too_many_redirects');
+        return ['url' => $url, 'response' => null, 'headers' => [], 'error' => 'too_many_redirects'];
     }
 
     /**
@@ -205,17 +254,17 @@ final readonly class ReadUrlTool
         return $origin.rtrim(\dirname(($parts['path'] ?? '/').'x'), '/').'/'.$location;
     }
 
-    private function body(ResponseInterface $response): string
+    private function body(ResponseInterface $response, int $limit): string
     {
         $body = '';
 
         foreach ($this->client->stream($response) as $chunk) {
             $body .= $chunk->getContent();
 
-            if (\strlen($body) > self::MAX_BYTES) {
+            if (\strlen($body) > $limit) {
                 $response->cancel();
 
-                return substr($body, 0, self::MAX_BYTES);
+                return substr($body, 0, $limit);
             }
         }
 
