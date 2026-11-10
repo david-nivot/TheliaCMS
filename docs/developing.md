@@ -209,6 +209,12 @@ shows how to test an update, outside a transaction.
   section through the writer before it asks for a screen leaves `app.request`
   null for the rest of the process: ask for any screen first
   (`SectionEditScreenTest::renderedOnce()`).
+- The other way round, once a screen of the back office was drawn, the kernel
+  of the test keeps the templates of the back office ahead of the theme's: a
+  page of the site asked next (a preview, a page of the front) comes out in
+  the layout of the back office, without the hooks of the theme
+  (`layout.body.bottom`). A test that checks what the theme adds asks for that
+  page first (`SiteComponentScreenTest::testThePreviewLinksTheScriptOfTheVideosAsTheSiteDoes`).
 
 ## Browser checks
 
