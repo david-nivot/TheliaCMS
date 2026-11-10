@@ -649,6 +649,11 @@ using it, and where its description stands in every language. One still in use
 cannot be deleted. Its tags are suggested from the ones the library already
 has, and a replacing file is shown before it is saved.
 
+An SVG added to the library can be made an **icon**: a name (`cms:<name>`) under
+which sections and components of the site draw it in the color of the text, when
+the drawing holds only what a published page keeps. The pages already published
+keep the drawing they were published with. See [`docs/icons.md`](docs/icons.md).
+
 The list shows 48 images a page. It narrows to the images still to describe
 in the language edited, the unused ones, the decorative ones or one tag, and
 orders them newest, oldest, by title or heaviest first. The search reads the
@@ -1253,7 +1258,8 @@ one file per language, English for any other). Its summary is read off the
 `<section id>` and `<h2>` of the text, whose ids are the same in every
 language: each screen of the CMS links to the section explaining it
 (`CmsDocumentationLinkHook`, by the name of its route). A change of the module
-that an editor sees belongs there too.
+that an editor sees belongs there too (the icons, for one: sections "Icons" and
+"Choosing an icon in a section").
 
 ## Permissions
 

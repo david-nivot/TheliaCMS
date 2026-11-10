@@ -7,6 +7,83 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **The page generator knows the icons.** The catalogue the model reads lists,
+  once, the names an `icon` prop may hold: the icons of the media library
+  (`cms:<name>`) then those of the theme, alphabetical, cut at 200 names with
+  the library kept first (the number left out is said). A site with no icon
+  says the prop stays empty. A generated page that names an icon the site does
+  not hold is sent back to the model with that list; if it does not mend it,
+  the icon is emptied and said in the language of the page, as for an image.
+  Only the generation checks it: a stored page whose icon was taken away stays
+  valid.
+- **Components of the site draw their icon props with `cms_icon()`.** The
+  sandbox of a component gets `cms_icon(props.mark)`: it draws the icon a
+  prop holds (`cms:<name>`, or an icon of the theme) through ux-icons, with
+  only `class`, `aria-label`, `aria-hidden`, `width`, `height` and `role` as
+  attributes, and nothing for a name that is empty, invalid or no longer
+  known (a line in the log, the page is saved all the same). `ux_icon()`
+  stays out of the sandbox. The component generator is told about the `icon`
+  prop type, and the toolkit of Flexy lists the CMS icons in a story.
+- **An SVG can be added as an icon.** The **Prepare the SVG** screen gets a
+  **Usage** step, the first one, laid out like the others: *Image* (the
+  default) or *Icon*. Choosing *Icon* sets the colors to *Main color follows
+  the text*, and *Image* sets them back to *Keep the colors*, until the editor
+  sets the colors himself; the choice is then kept. With *Icon* checked, the
+  step gives a few tips (one color, no gradient, text or image, a transparent
+  background). An icon takes a name,
+  proposed from the file name (lowercase, accents removed, hyphens) and written
+  after the `cms:` prefix; a name that is not valid or is already taken is
+  refused before anything is stored. The *Icon* usage is offered only when the
+  result, after the base optimization and the color preset, holds nothing that
+  a page would drop from an inline SVG (the same list as the publication
+  filter): otherwise it is disabled and the screen says what stands in the way
+  (a gradient, a mask, CSS style, text...), and the file can still be added as
+  an image. The check is made again on the server when the answer is sent.
+  *Apply these settings to the following files* carries the usage and the
+  colors as they stand: each following file gets the name drawn from its own
+  file name. Replacing the file
+  of an image that is an icon is refused when the new result is not fit to be
+  an icon, and so is replacing it with a JPEG, a PNG or a WebP: an icon is
+  replaced by an SVG only. The media library gets an **Icons** filter, and shows the `cms:` name
+  on the card and on the sheet of an icon.
+- **An `icon` prop type.** A component of the theme (`{# @prop icon icon The
+  icon #}`, also as a field of a list) or of the site declares a prop that
+  holds the name of an icon, as `ux_icon()` reads it: `cms:<name>` for an icon
+  of the media library, or the name of an icon of the theme. The section form
+  shows the name as a text field with a **Choose an icon** button that opens a
+  searchable grid of previews, in two groups, **Theme** and **CMS**; a name that
+  is no longer in the list stays in the field as it is. The theme draws the
+  value with `ux_icon(value)`. Only the shape of the name is checked, never
+  whether the icon exists: a page keeps its icon, and stays valid, when the
+  icon is taken away. `cms_theme_icons()` lists the names of the icons of the
+  active theme to a template or a screen.
+
+- **How many pages cite an icon.** The sheet of an icon in the media library
+  says how many pages (draft or published version) and catalogue items cite it,
+  and that replacing it changes the pages already published only at their next
+  publication; the same sentence shows on the screen that replaces its file. The icon can be renamed, or lose its
+  name, from the sheet while no page or item cites it. The usage count of the
+  library counts a citation of the name, a draft included, as a use: a cited
+  icon is not listed as unused and cannot be deleted. A component of the site
+  whose template writes `cms_icon('cms:<name>')` between quotes counts as a
+  citation too: the sheet says how many components cite the icon, and it keeps
+  its name and stays undeletable while one does. An icon has no
+  alternative text of its own: its sheet does not ask for one and it is never
+  *to describe*; the component that places it gives the text, and the generator
+  of components is told so.
+
+### Changed
+
+- **The preview of a prepared SVG takes the color of its ground.** On the
+  **Prepare the SVG** screen, a color that follows the text was drawn black in
+  the large preview: it now takes the text color chosen beside the grounds,
+  *Theme* (the primary color of the back office), *Black* or *White*. Choosing
+  a ground sets the text color that suits it; choosing a text color leaves the
+  ground as it is. *In a colored text* uses the primary color instead of blue.
+  On a wide screen, the preview stays in sight while the settings scroll.
+
 ## [2.25.0] - 2026-11-10
 
 ### Added

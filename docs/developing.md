@@ -58,6 +58,14 @@ shows how to test an update, outside a transaction.
 - **Compiled Twig** is invalidated on the mtime of the template. A template
   restored within the same second as it was changed keeps the compiled copy of
   the change: `touch` the template, then remove `var/cache/test`.
+- **A new table needs its Propel stubs in `Model/`.** For a table added to
+  `Config/schema.xml` (`cms_icon`), commit the `Model/CmsIcon*.php` stubs
+  with it; without them Propel writes the generated classes into the host's
+  `local/modules/` on the first boot, outside the clone.
+- **A sabotage run right after an edit on the host** can run the old file: the
+  DDEV container sees the change late. Check the sabotaged line in the
+  container (`ddev exec grep ...`) before reading a green run as a test that
+  does not bite.
 - **Rendered partials** are kept in the `cache.app` pool for as long as their
   `cacheTtl()` says (a day for a map). A theme template added or changed
   for a partial shows up when that fragment expires, or after
