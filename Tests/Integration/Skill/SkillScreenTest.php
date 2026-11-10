@@ -108,7 +108,7 @@ final class SkillScreenTest extends AdminScreenTestCase
         ]));
 
         $list = $this->screen(self::SCREEN);
-        self::assertSame(8, $list->filter('[data-testid^="cms-skill-row-"]')->count(), 'The list is readable.');
+        self::assertSame(9, $list->filter('[data-testid^="cms-skill-row-"]')->count(), 'The list is readable.');
         self::assertSame(0, $list->filter('[data-testid^="cms-skill-up-"]')->count(), 'No arrow to reorder is offered.');
 
         $form = $this->editForm();
