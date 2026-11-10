@@ -60,10 +60,11 @@ anything else is refused.
 - `html` props hold markup: paragraphs `<p>`, lists `<ul><li>`, emphasis
   `<strong>`, links `<a href>`, headings from `<h2>` down. No `style` attribute, no `<script>`, no `<iframe>`, no
   inline images: a picture goes in a section of its own (`cms:image`).
-- `image` props take the id of an image found with `search_media`, the
-  absolute `https://` address of a picture the brief gives, or `null` when
-  neither exists. Never a path, never an id you did not get from the tool,
-  never an address you made up.
+- `image` props take the id of an image found with `search_media` or imported
+  with `import_image`, the absolute `https://` address of a picture the brief
+  gives (only when `import_image` is not offered: when it is, import the
+  picture and use its id), or `null` when none exists. Never a path, never an
+  id you did not get from a tool, never an address you made up.
 - `url` props take the `url` of a page found with `search_pages`, a
   `tel:` or `mailto:` address the brief gives, or an absolute `https://`
   address the brief gives. Never a path you did not get from a tool, however

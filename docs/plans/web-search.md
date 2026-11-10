@@ -15,9 +15,10 @@ the editor is told so, but the generator still cannot find the picture.
 - `cms:image` takes an image of the media library or the `https` address of
   a picture kept elsewhere (`Content/ImageSection.php`, `Content/ImageSource.php`).
 - `search_media` lists the images of the library (`Generation/Tool/SearchMediaTool.php`).
-- `web_fetch` is offered only when the brief cites an `http(s)` address
-  (`Generation/PageGenerator.php`, `Generation/Brief.php::addresses()`), and
-  its blocks are sent back as they are (`Generation/StreamedMessage.php`).
+- `read_url`, a client tool run on the server (`Generation/Tool/ReadUrlTool.php`;
+  the `web_fetch` SDK tool was retired in 2.4.0), is offered only when the site
+  allowed the reading of the web and the brief cites an `http(s)` address
+  (`Generation/PageGenerator.php`, `Generation/Brief.php::addresses()`).
 - The answer may say what it left out (`left_out`), stored in
   `cms_page_generation.left_out` and shown in the outcome and the history.
 - The SDK (`anthropic-ai/sdk` 0.59) ships `web_search_20260209` and
@@ -34,18 +35,21 @@ picture, import that picture into the media library.
 
 1. **Setting.** `generator_web_search` in `GeneratorSettings`, off by default,
    with an optional list of allowed or blocked domains, on the settings
-   screen next to `web_fetch`. Off, the request stays byte for byte what it
+   screen next to the reading of pages. Off, the request stays byte for byte what it
    was.
 2. **The server tool.** Offered in `PageGenerator` when the setting is on,
    `maxUses` 3. `StreamedMessage` handles `server_tool_use` and
    `web_search_tool_result` and sends them back unchanged at the next turn;
    `FakeClaudeTransport` reproduces their shapes.
-3. **Reading what was found.** `web_fetch` is offered too when `web_search`
+3. **Reading what was found.** `read_url` is offered too when `web_search`
    is, not only when the brief cites an address.
-4. **`import_image`, a client tool** (`Generation/Tool/ImportImageTool.php`):
+4. **`import_image`, a client tool** (`Generation/Tool/ImportImageTool.php`),
+   **delivered alone, without web search** (see `docs/generator.md`, the ledger
+   part of this step is not done):
    takes an address, a title and a credit; downloads on the server side,
    `https` only, private and reserved addresses refused, redirects limited,
-   type (jpg, png, webp, gif) and size checked; creates the image through the
+   type (jpg, png, webp, read in the bytes; a GIF is refused like on the upload
+   routes) and size checked; creates the image through the
    code of `Media/Admin/CmsMediaWriter`, tags it for the CMS library, and
    returns its id. The publication then resizes it and serves it as WebP like
    any image of the library.

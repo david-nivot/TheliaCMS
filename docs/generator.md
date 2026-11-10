@@ -225,8 +225,43 @@ page says is handed to the model as untrusted content: a given of the brief,
 never an instruction. A page that cannot be read (private, behind a login, an
 error) is left out and said so in the history. The address of a picture (a path
 ending in `.jpg`, `.png`, `.webp`, `.gif`, `.svg` or `.avif`) is not a page: it
-is not offered for reading, and goes as it is into an image prop. A translation
+is not offered for reading, it is a picture to import (next section). A translation
 cites none: its source is the document of the other language.
+
+### Pictures the brief cites: `import_image`
+
+A brief that cites the `https` address of a picture ("import this image:
+https://example.com/banner.jpg") ends with that picture copied into the media
+library and used by its library id, never with the external address in the
+page. Under the same setting as `read_url` (**Read the web pages a brief
+cites**), when the brief cites at least one picture address, the request
+offers `import_image` (`Generation/Tool/ImportImageTool.php`), the user message
+lists the pictures cited and says an image prop takes the id the tool gives.
+It takes the address, a title, a text for what the picture shows and a credit
+(the last two may be empty), and answers with the id and the editor form of
+the address (`/image-library/<id>/…`), or with a failure code and a short
+reason (`url_not_cited`, `url_not_allowed`, `blocked_address`,
+`url_not_accessible`, `too_many_redirects`, `too_large`, `unsupported_type`,
+`too_many_pixels`, `refused`, `import_failed`), never an error: the picture is
+then left out.
+
+- Only an address the brief cites is imported, `https` only. The download goes
+  through the same client as `read_url` (private, loopback and link-local
+  addresses refused when the name is resolved, every redirect checked, and a
+  redirect may not leave the host of the address cited), bounded in time, and cut
+  one byte past the ceiling rather than waited for.
+- The bytes decide, not the extension or the Content-Type: JPEG, PNG or WebP
+  (the formats of the upload routes; a GIF is refused like there), up to 10
+  MiB and 25 million pixels, the limits of the upload routes.
+- The image is stored by `CmsMediaWriter::add()`, so it is tagged for the CMS
+  library like an upload; the title and the credit (as caption) are set, and
+  the alternative text by `describe()`.
+- The same address imported twice in one call gives the same id, without a
+  second download. At most the pictures cited can be imported.
+- Not done: the ledger does not record the imported images (id, source
+  address, credit), which needs a column of `cms_page_generation` and so a
+  migration. The images are in the library, tagged `cms`, with their credit in
+  the caption.
 
 ### A file joined to the brief or to a change
 

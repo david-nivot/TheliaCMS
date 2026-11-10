@@ -31,4 +31,12 @@ final class ReadUrlToolWiringTest extends CmsIntegrationTestCase
             self::assertSame('blocked_address', $tool->read($url)->errorCode, $url);
         }
     }
+
+    public function testTheGeneratorOfTheContainerHoldsTheImageImporter(): void
+    {
+        $generator = $this->getService(\TheliaCMS\Generation\PageGenerator::class);
+        $importer = (new \ReflectionProperty($generator, 'imageImporter'))->getValue($generator);
+
+        self::assertInstanceOf(\TheliaCMS\Generation\Tool\ImportImageTool::class, $importer, 'Without it the tool would never be offered.');
+    }
 }
