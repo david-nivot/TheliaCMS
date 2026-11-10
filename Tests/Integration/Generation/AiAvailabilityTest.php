@@ -32,6 +32,16 @@ use Twig\Environment;
  */
 final class AiAvailabilityTest extends CmsIntegrationTestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // The master switch of the core is on unless said otherwise, but the
+        // database of the tests of a core may hold it off (Thelia 3.3.0 does).
+        ConfigQuery::write('ai_enabled', '1');
+        ConfigQuery::resetCache();
+    }
+
     protected function tearDown(): void
     {
         ConfigQuery::resetCache();
