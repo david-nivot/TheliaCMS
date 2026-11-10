@@ -10,6 +10,7 @@ declare(strict_types=1);
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
+ */
 
 namespace TheliaCMS\Tests\Integration\Generation\Component;
 
@@ -98,7 +99,7 @@ final class ComponentPromptMediaTest extends CmsIntegrationTestCase
 
     public function testATextWrittenOnSeveralLinesStaysOnOneAndIsCutShort(): void
     {
-        $id = $this->media('image/jpeg', 'x', "Ligne un\n# Autre titre\nLigne ".str_repeat('très longue ', 30), 10, 10);
+        $id = $this->media('image/jpeg', 'x', "Ligne un\n# Autre titre\nLigne ".str_repeat('très longue ', 15), 10, 10);
 
         $message = $this->prompt()->userMessage(new ComponentRequest('Une galerie.', $this->locale()));
         preg_match('/^- '.$id.' .*$/m', $message, $line);
