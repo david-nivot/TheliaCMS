@@ -9,6 +9,14 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Added
 
+- **A bench for the generator of components.** `thelia_cms:component-bench:run`
+  plays the cases of `docs/evaluation/components/cases/` against the real
+  generator (N runs per case, a budget in USD that stops the round, a file per
+  run that is not played again on a second launch, nothing kept but the
+  ledger line); `thelia_cms:component-bench:check` applies the contract of each
+  case to those files (outcome, target, props, markup, stylesheet, no `h1`,
+  alternative texts, reduced motion, the browser measures when there are some),
+  writes the verdict into each file and prints the table. It calls no API.
 - **The generator of components answers "the site already has it" or "a
   variant of it".** Asked for a new component, the model now says whether a
   component of the catalogue already does what is asked (the screen says which

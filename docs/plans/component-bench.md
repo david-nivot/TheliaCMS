@@ -153,9 +153,11 @@ One file per case, `docs/evaluation/components/cases/<id>.json`:
    gallery, carousel, video, columns, cards, quote, figures, steps, FAQ,
    call to action, logos, author, table, reuse (`existing`, `copy`) and
    composition (known gap, N71); `seed.json`; `docs/evaluation/components/README.md`.
-3. **The command**: `thelia_cms:component-bench run` (real calls, N runs
-   per case, nothing kept, run files as above) and `check` (applies the
-   oracles to a round, prints the table; calls no API).
+3. **The command** (done 2026-11-10, not committed yet): `thelia_cms:component-bench:run` (real calls, N runs
+   per case, nothing kept, run files as above) and `thelia_cms:component-bench:check`
+   (applies the oracles to a round, prints the table; calls no API;
+   `--refresh-previews` signs the preview addresses again). Commands in
+   `docs/evaluation/components/README.md`, "Running a round".
 4. **Browser**: a Playwright script that opens the signed preview of each
    candidate at 375 and 1440 px, measures the scroll, runs axe-core, takes
    the captures, and writes its verdict into the run file.

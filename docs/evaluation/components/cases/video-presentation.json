@@ -19,9 +19,7 @@
       }
     ],
     "markup": {
-      "require": [
-        "<video"
-      ],
+      "require": [],
       "forbid": [
         "<iframe"
       ]

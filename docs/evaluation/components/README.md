@@ -5,7 +5,7 @@ contract a machine can check, played against the real generator. It measures
 two things: whether the result is a good component, and whether the generator
 reuses what the site already has instead of making it again. The design is in
 `docs/plans/component-bench.md`; the command (`thelia_cms:component-bench`)
-and the browser script are steps 3 and 4 of that plan.
+is step 3 of that plan, the browser script is step 4.
 
 ## What is here
 
@@ -26,12 +26,90 @@ and the browser script are steps 3 and 4 of that plan.
    Expected: `components: 6 created`. The import checks each component like
    one the model wrote, so a seed that no longer validates is reported as a
    warning ("left out"). The command has no dry-run option.
-2. Play a round (real calls, N runs per case): `thelia_cms:component-bench run`.
-3. Apply the oracles to the round, no API call: `thelia_cms:component-bench check`.
+2. Play a round (real calls, N runs per case): `thelia_cms:component-bench:run`.
+3. Apply the oracles to the round, no API call: `thelia_cms:component-bench:check`.
 4. Run the browser script on the candidates (375 and 1440 px, scroll, axe-core,
    captures).
 
 No model judges the results: a judge varies as much as what it judges.
+
+## Running a round
+
+From the root of the host, with the seed imported (see above) and nothing else
+running on it (a cache clear, a copy of the code or a test suite makes the calls
+in flight fail):
+
+```bash
+# Real calls, paid. Round 0: 3 runs per case, 8 USD at most, about 1 h.
+ddev exec php Thelia thelia_cms:component-bench:run --round round-0
+
+# A few cases, or one more run, without touching the files already there
+ddev exec php Thelia thelia_cms:component-bench:run --round round-0 --case quote-dark --case reuse-faq --runs 3
+
+# Apply the oracles (no API call), write the verdict into each file, print the table
+ddev exec php Thelia thelia_cms:component-bench:check --round round-0
+
+# The table alone, as it goes into results.md
+ddev exec php Thelia thelia_cms:component-bench:check --round round-0 --markdown
+
+# The signed addresses expire after an hour: sign them again before the browser script
+ddev exec php Thelia thelia_cms:component-bench:check --round round-0 --refresh-previews
+
+# In the browser (on the host, out of DDEV): 375 and 1440 px, horizontal scroll,
+# axe-core on the component, a capture next to each run file; then check again
+BENCH_ROUND_DIR=var/eval/components/round-0 \
+NODE_PATH=<dir>/node_modules CHROME_PATH=<chromium> \
+node local/modules/TheliaCMS/Tests/Browser/component-bench.mjs
+ddev exec php Thelia thelia_cms:component-bench:check --round round-0
+```
+
+The browser script needs `playwright` and `axe-core` in `NODE_PATH`; it writes
+the `browser` block of each run file, which `check` reads. A run already looked
+at is skipped unless `FORCE=1`.
+
+The media library of a fresh shop is empty, and the generator of components
+cannot search it: the sample of a component draws its pictures and videos only
+when the model gives an address of elsewhere. The cases therefore ask for an
+`image` or `video` prop, never for an `<img>` or a `<video>` in the markup.
+
+`run` options: `--round` (required), `--cases` (default: `cases/` of this
+folder), `--case` (repeatable, a filter), `--runs` (default 3), `--out`
+(default `var/eval/components` of the host), `--budget-usd` (default 8).
+
+- One run of every case is played before the next run of any case, so a budget
+  that stops the round leaves every case with the same number of runs.
+- A trial whose file exists is not played again: a round stopped by the budget,
+  by an error or by hand is resumed with the same command.
+- No trial starts once the cost of the round (every file under the round
+  included, the ones from an earlier run too) reaches `--budget-usd`; the
+  command says so and exits normally.
+- A generation that fails (refused three times, provider down) is a trial: the
+  file holds `error`, the answers received and the cost the ledger recorded, and
+  the round goes on.
+- The generator keeps nothing but its line of the AI ledger: no component is
+  saved. `thelia_cms:component-bench:check` calls no API and can be run as often
+  as the contracts change; it rewrites `verdict` in each file.
+
+The file of a trial, `<out>/<round>/<case>/<n>.json`, is the one of the plan
+(`docs/plans/component-bench.md`, "A run") with, besides: `locale`, `request`,
+`code` and `scope_class` of the component, `component` as its fields
+(`props` and `sample` as JSON values, not strings), `preview_url` (the signed
+preview of the candidate on the address of the shop, only when the outcome is
+`component`) and `error`. `prompt_sha256` is the SHA-256 of the system prompt,
+two line feeds, then the first message of the user. After `copy`, the outcome
+stays `component` and `based_on` names the copied component; `corrections` is
+`turns` minus the first answer, minus the copy turn.
+
+The browser script aims at `.cms-site.<scope_class>` (the wrapper
+`<div class="cms-site cms-site--price-table">` of `SiteComponentSection`: the
+code in kebab case) and writes into the file, for `check` to read:
+
+```json
+"browser": {"375": {"scroll": false, "axe": []}, "1440": {"scroll": false, "axe": [{"id": "color-contrast", "impact": "serious"}]}}
+```
+
+A trial fails the browser check when `scroll` is true at either width or an
+`axe` entry has the impact `serious` or `critical`.
 
 ## The oracle
 
@@ -53,6 +131,10 @@ gives the same component twice. Each case states what a machine can check.
   failed), no `h1`, every `img` with an `alt` printed from a prop, an
   animation guarded by `prefers-reduced-motion`; in the browser, no horizontal
   scroll at 375 px and no axe-core violation of impact `serious` or `critical`.
+- A component written after a `copy` (`based_on` set) counts as outcome `copy`
+  when the case accepts it, and its `based_on` must then be in `target`; when
+  the case does not accept `copy`, it counts as `component`, and `check` only
+  counts whether `based_on` is in `target` (column "Copied a target").
 - `gap` (composition cases only): `"N71"`, the known gap of the roadmap (a
   component cannot draw another). Counted apart from the others.
 
