@@ -30,6 +30,7 @@ use TheliaCMS\Model\CmsComponentQuery;
 use TheliaCMS\Model\CmsPageContentQuery;
 use TheliaCMS\Model\CmsPageGenerationQuery;
 use TheliaCMS\Page\Admin\CmsPageWriter;
+use TheliaCMS\Preview\ComponentPreviewLink;
 use TheliaCMS\Security\CmsResources;
 use TheliaCMS\Tests\Integration\Security\AdminScreenTestCase;
 use TheliaCMS\Tests\Support\FakeAiGateway;
@@ -55,6 +56,23 @@ final class SiteComponentScreenTest extends AdminScreenTestCase
         static::getContainer()->set(AiGatewayInterface::class, $this->api);
     }
 
+    public function testThePreviewLinksTheScriptOfTheVideosAsTheSiteDoes(): void
+    {
+        // Asked first: once a screen of the back office was drawn, the kernel
+        // of the test keeps its templates ahead of the theme's and the preview
+        // comes out in the layout of the back office, which a real request
+        // never does.
+        $this->getService(SiteComponentRepository::class)->save(PriceTable::component(), SiteComponentRepository::STATUS_READY);
+        $preview = $this->getService(ComponentPreviewLink::class)->component('PriceTable', 'en_US');
+
+        $this->client->request('GET', parse_url($preview, \PHP_URL_PATH));
+        $page = (string) $this->client->getResponse()->getContent();
+
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+        self::assertStringContainsString('class="cms-site cms-site--price-table"', $page);
+        self::assertStringContainsString('/cms/embed.js', $page, 'The frame runs scripts: the player of a video is built as on the site.');
+    }
+
     public function testARequestEndsOnACandidateDrawnInTheThemeAndNothingIsKeptYet(): void
     {
         $this->api->answer(self::answer(PriceTable::component(css: '.plan--featured { border: 2px solid var(--cms-color-accent); }')));
@@ -75,7 +93,6 @@ final class SiteComponentScreenTest extends AdminScreenTestCase
         $page = (string) $this->client->getResponse()->getContent();
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
         self::assertStringContainsString('class="cms-site cms-site--price-table"', $page, 'The sample is drawn in the theme.');
-        self::assertStringContainsString('/cms/embed.js', $page, 'The script of the videos is linked in the preview, as on the site, for the frame runs scripts.');
         self::assertStringContainsString('.cms-site--price-table .plan--featured', $page, 'Its stylesheet is printed scoped.');
         self::assertSame('noindex, nofollow', $this->client->getResponse()->headers->get('X-Robots-Tag'));
         self::assertSame('no-referrer', $this->client->getResponse()->headers->get('Referrer-Policy'), 'The signed address does not leak through the Referer.');
