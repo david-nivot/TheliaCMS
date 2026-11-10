@@ -1421,7 +1421,10 @@
         // the frame, gets a placeholder carrying the same attribute; the
         // draft and the published page are left as they are.
         function addPlaceholders(inner) {
-            var container = inner.querySelector(".cms-page-content") || inner.body;
+            // The theme may wrap the document in a container of the same class:
+            // the innermost one is the module's own.
+            var containers = inner.querySelectorAll(".cms-page-content");
+            var container = containers.length ? containers[containers.length - 1] : inner.body;
             var list = Array.prototype.slice.call(items);
 
             list.forEach(function (item, index) {
@@ -1448,13 +1451,20 @@
                 placeholder.appendChild(sentence);
 
                 var next = null;
+                var previous = null;
 
                 for (var after = index + 1; after < list.length && !next; after++) {
                     next = previewSection(list[after].getAttribute("data-section"));
                 }
 
+                for (var before = index - 1; before >= 0 && !previous; before--) {
+                    previous = previewSection(list[before].getAttribute("data-section"));
+                }
+
                 if (next && next.parentNode) {
                     next.parentNode.insertBefore(placeholder, next);
+                } else if (previous && previous.parentNode) {
+                    previous.parentNode.insertBefore(placeholder, previous.nextSibling);
                 } else {
                     container.appendChild(placeholder);
                 }
@@ -1496,7 +1506,7 @@
                 ".cms-inline__bar{display:flex;gap:.5rem;justify-content:flex-end;margin-top:.5rem}" +
                 ".cms-inline__bar button{padding:.25rem .75rem;border:1px solid " + accent() + ";border-radius:.375rem;background:#fff;color:" + accent() + ";font:600 .8125rem/1.5 system-ui,sans-serif;cursor:pointer}" +
                 ".cms-inline__save{background:" + accent() + " !important;color:#fff !important}";
-            style.textContent += ".cms-section-placeholder{box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.25rem;min-height:8rem;margin:1rem 0;padding:1rem;border:2px dashed #adb5bd;border-radius:.5rem;background:#f1f3f5;color:#495057;font:.875rem/1.5 system-ui,sans-serif;text-align:center}" +
+            style.textContent += ".cms-section-placeholder{box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.25rem;width:min(75rem,100% - 2rem);min-height:8rem;margin:1rem auto;padding:1rem;border:2px dashed #adb5bd;border-radius:.5rem;background:#f1f3f5;color:#495057;font:.875rem/1.5 system-ui,sans-serif;text-align:center}" +
                 ".cms-section-placeholder p{margin:0;font:inherit;color:inherit}.cms-section-placeholder__title{font-weight:600}";
             inner.head.appendChild(style);
             addPlaceholders(inner);
