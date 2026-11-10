@@ -794,5 +794,31 @@
         <behavior name="timestampable"/>
     </table>
 
+    <!--
+        The name an SVG of the library answers to as an icon: `name` without the
+        prefix, so `document-valide` is drawn by `cms:document-valide`. One name
+        per image and one image per name.
+
+        No foreign key to `library_image`: that table belongs to TheliaLibrary,
+        is not part of the aggregated schema, and nothing guarantees it exists
+        when the SQL of this module is played. A row whose image was deleted by
+        the library is ignored when read and replaced by the next image that
+        takes its name; the CMS removes the row when it deletes the image.
+    -->
+    <table name="cms_icon" namespace="TheliaCMS\Model">
+        <column autoIncrement="true" name="id" primaryKey="true" required="true" type="INTEGER"/>
+        <column name="name" required="true" size="64" type="VARCHAR"/>
+        <column name="image_id" required="true" type="INTEGER"/>
+
+        <unique name="unq_cms_icon_name">
+            <unique-column name="name"/>
+        </unique>
+        <unique name="unq_cms_icon_image">
+            <unique-column name="image_id"/>
+        </unique>
+
+        <behavior name="timestampable"/>
+    </table>
+
     <external-schema filename="local/config/schema.xml" referenceOnly="true"/>
 </database>

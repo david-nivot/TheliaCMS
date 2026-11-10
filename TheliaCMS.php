@@ -19,8 +19,11 @@ use Propel\Runtime\ActiveQuery\Criteria;
 use Propel\Runtime\Connection\ConnectionInterface;
 use Propel\Runtime\Propel;
 use SEOne\Service\SeoDefaultModels\SeoElementInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ServicesConfigurator;
+use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\UX\Icons\IconRegistryInterface;
 use Thelia\Core\Install\Database;
 use Thelia\Core\SharedCache\SharedCacheContributorInterface;
 use Thelia\Model\ConfigQuery;
@@ -39,6 +42,9 @@ use TheliaCMS\Http\SharedCache\SharedMaxAgeCapListener;
 use TheliaCMS\Install\HomePageSeeder;
 use TheliaCMS\Install\LegalPagesSeeder;
 use TheliaCMS\Install\MenuSeeder;
+use TheliaCMS\Media\Icon\CmsIconRegistry;
+use TheliaCMS\Media\Icon\IconCacheInvalidator;
+use TheliaCMS\Media\Icon\IconNames;
 use TheliaCMS\Model\CmsPageContentQuery;
 use TheliaCMS\Model\CmsPageQuery;
 use TheliaCMS\Notice\NativeContentConsoleNotice;
@@ -463,6 +469,10 @@ class TheliaCMS extends BaseModule
                 // Same, for the shared cache of the public pages of the core,
                 // absent from a core that predates it.
                 __DIR__.'/Http/SharedCache/*',
+                // Registered below: the pool of ux-icons is wired by hand, and
+                // the registry implements one of its interfaces.
+                __DIR__.'/Media/Icon/IconCacheInvalidator.php',
+                __DIR__.'/Media/Icon/CmsIconRegistry.php',
             ])
             ->autowire(true)
             ->autoconfigure(true);
@@ -505,6 +515,19 @@ class TheliaCMS extends BaseModule
             $servicesConfigurator->set(SharedMaxAgeCapListener::class)
                 ->autowire(true)
                 ->autoconfigure(true);
+        }
+
+        // The `cms:` icons. The cache of ux-icons is private and internal to it
+        // (`.ux_icons.cache`, symfony/ux-icons 2.36.1): without ux-icons the
+        // invalidator has nothing to empty. The registry joins the chain below
+        // the local sources (10) and above Iconify (-10).
+        $servicesConfigurator->set(IconCacheInvalidator::class)
+            ->args([new Reference('.ux_icons.cache', ContainerInterface::NULL_ON_INVALID_REFERENCE)]);
+
+        if (interface_exists(IconRegistryInterface::class)) {
+            $servicesConfigurator->set(CmsIconRegistry::class)
+                ->args([new Reference(IconNames::class), new Reference('.ux_icons.icon_factory'), new Reference('logger')])
+                ->tag('ux_icons.registry', ['priority' => 0]);
         }
 
         // The toolkit of the Flexy theme lists the sections of the module when

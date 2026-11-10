@@ -394,6 +394,24 @@ CREATE TABLE `cms_page_document`
 ) ENGINE=InnoDB CHARACTER SET='utf8mb4' COLLATE='utf8mb4_general_ci' ROW_FORMAT=DYNAMIC;
 
 -- ---------------------------------------------------------------------
+-- cms_icon
+-- ---------------------------------------------------------------------
+
+DROP TABLE IF EXISTS `cms_icon`;
+
+CREATE TABLE `cms_icon`
+(
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(64) NOT NULL,
+    `image_id` INTEGER NOT NULL,
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE INDEX `unq_cms_icon_name` (`name`),
+    UNIQUE INDEX `unq_cms_icon_image` (`image_id`)
+) ENGINE=InnoDB CHARACTER SET='utf8mb4' COLLATE='utf8mb4_general_ci' ROW_FORMAT=DYNAMIC;
+
+-- ---------------------------------------------------------------------
 -- cms_page_i18n
 -- ---------------------------------------------------------------------
 
