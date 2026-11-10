@@ -1,0 +1,36 @@
+{
+  "case": "trap-google-map",
+  "round": "round-0",
+  "run": 1,
+  "prompt_sha256": "b9c48c727b3a7c35f7bf97aa1b161b6d781191479ed3602637f3838bebd3f0e3",
+  "answers": [
+    "{\"outcome\":\"component\",\"existing\":\"\",\"reason\":\"\",\"code\":\"StoreLocation\",\"label\":\"Store location\",\"description\":\"The address of the shop with its opening hours, a map picture and a link that opens the location in an online map such as Google Maps, where the visitor can zoom. A site component runs no script and embeds no iframe, so the map itself is a still picture; use it on a contact or access page.\",\"props\":\"[{\\\"name\\\": \\\"title\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Heading\\\", \\\"max\\\": 120}, {\\\"name\\\": \\\"address\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Address\\\", \\\"help\\\": \\\"One line per part of the address.\\\", \\\"required\\\": true, \\\"max\\\": 500}, {\\\"name\\\": \\\"hours\\\", \\\"type\\\": \\\"html\\\", \\\"label\\\": \\\"Opening hours\\\", \\\"help\\\": \\\"Optional: opening days and hours.\\\"}, {\\\"name\\\": \\\"map\\\", \\\"type\\\": \\\"image\\\", \\\"label\\\": \\\"Map picture\\\", \\\"help\\\": \\\"A screenshot or drawing of the map around the shop.\\\"}, {\\\"name\\\": \\\"map_alt\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Description of the map\\\", \\\"help\\\": \\\"What the map shows, in one sentence.\\\", \\\"max\\\": 200}, {\\\"name\\\": \\\"map_url\\\", \\\"type\\\": \\\"url\\\", \\\"label\\\": \\\"Link to the online map\\\", \\\"help\\\": \\\"The address of the shop in Google Maps or another map service.\\\"}, {\\\"name\\\": \\\"link_label\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Text of the link\\\", \\\"help\\\": \\\"Say where it leads, such as: Open the shop's location in Google Maps.\\\", \\\"max\\\": 120}]\",\"sample\":\"{\\\"title\\\": \\\"Venir à la boutique\\\", \\\"address\\\": \\\"Boutique Thelia\\\\n12 rue de la République\\\\n63000 Clermont-Ferrand\\\", \\\"hours\\\": \\\"<p>Du mardi au samedi, de 10 h à 19 h.</p><p>Fermé le dimanche et le lundi.</p>\\\", \\\"map\\\": null, \\\"map_alt\\\": \\\"Plan du centre de Clermont-Ferrand, la boutique au coin de la rue de la République et de la place de Jaude.\\\", \\\"map_url\\\": \\\"https://www.google.com/maps/search/?api=1&query=12+rue+de+la+R%C3%A9publique+63000+Clermont-Ferrand\\\", \\\"link_label\\\": \\\"Ouvrir l’emplacement de la boutique dans Google Maps\\\"}\",\"template\":\"<section class=\\\"location\\\">{% if props.title is not empty %}<h2 class=\\\"location__title\\\">{{ props.title }}</h2>{% endif %}<div class=\\\"location__body\\\"><div class=\\\"location__info\\\"><address class=\\\"location__address\\\">{{ props.address|nl2br }}</address>{% if props.hours is not empty %}<div class=\\\"location__hours\\\">{{ props.hours }}</div>{% endif %}{% if props.map_url is not empty and props.link_label is not empty %}<p class=\\\"location__action\\\"><a class=\\\"location__link\\\" href=\\\"{{ props.map_url }}\\\">{{ props.link_label }}</a></p>{% endif %}</div>{% if props.map %}<div class=\\\"location__map\\\" data-cms-sizes=\\\"(min-width: 48rem) 55vw, 100vw\\\"><img class=\\\"location__image\\\" src=\\\"{{ props.map }}\\\" alt=\\\"{{ props.map_alt|default('') }}\\\" loading=\\\"lazy\\\"></div>{% endif %}</div></section>\",\"css\":\".location__title { margin-bottom: 1.5rem; }\\n.location__body { display: grid; gap: 1.5rem; }\\n.location__address { font-style: normal; font-size: 1.125rem; line-height: 1.6; color: var(--cms-color-text); }\\n.location__hours { margin-top: 1rem; color: var(--cms-color-text-muted); }\\n.location__action { margin-top: 1.5rem; }\\n.location__link { display: inline-block; padding: 0.75rem 1.25rem; border-radius: 0.375rem; background: var(--cms-color-accent); color: var(--cms-color-on-accent); text-decoration: none; transition: background-color 0.2s ease; }\\n.location__link:hover { background: var(--cms-color-accent-strong); }\\n.location__link:focus-visible { background: var(--cms-color-accent-strong); outline: 2px solid var(--cms-color-accent-strong); outline-offset: 3px; }\\n.location__map { overflow: hidden; border: 1px solid var(--cms-color-border); border-radius: 0.5rem; background: var(--cms-color-surface); }\\n.location__image { display: block; width: 100%; height: auto; }\\n@media (min-width: 48rem) { .location__body { grid-template-columns: 2fr 3fr; align-items: start; gap: 2.5rem; } }\"}"
+  ],
+  "outcome": "component",
+  "existing": null,
+  "based_on": null,
+  "browser": {
+    "375": {
+      "scroll": false,
+      "axe": []
+    },
+    "1440": {
+      "scroll": false,
+      "axe": []
+    }
+  },
+  "verdict": {
+    "pass": true,
+    "checks": {
+      "outcome": true,
+      "valid": true,
+      "props": true,
+      "markup": true,
+      "css": true,
+      "no_h1": true,
+      "img_alt": true,
+      "reduced_motion": true,
+      "browser": true
+    }
+  }
+}

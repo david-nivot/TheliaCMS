@@ -1,0 +1,46 @@
+{
+  "case": "author-box",
+  "round": "round-0",
+  "run": 1,
+  "prompt_sha256": "a3739e7efcd9aca1c4b65713f319f2fad32f7b5964f4fe7f7f06dc484f08531a",
+  "answers": [
+    "{\"outcome\":\"component\",\"existing\":\"\",\"reason\":\"\",\"code\":\"AuthorBio\",\"label\":\"Author bio\",\"description\":\"A small box presenting the author of an article: a round portrait, the name, an optional role, a short biography and an optional link to more of their work. Use it at the end of an article or a blog post.\",\"props\":\"[{\\\"name\\\": \\\"heading\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Heading\\\", \\\"help\\\": \\\"A short line above the name, such as About the author.\\\", \\\"max\\\": 80}, {\\\"name\\\": \\\"photo\\\", \\\"type\\\": \\\"image\\\", \\\"label\\\": \\\"Portrait\\\"}, {\\\"name\\\": \\\"photo_alt\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Portrait description\\\", \\\"help\\\": \\\"What the portrait shows, in one sentence.\\\", \\\"max\\\": 200}, {\\\"name\\\": \\\"name\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Name\\\", \\\"required\\\": true, \\\"max\\\": 100}, {\\\"name\\\": \\\"role\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Role\\\", \\\"help\\\": \\\"The job or the title of the author.\\\", \\\"max\\\": 120}, {\\\"name\\\": \\\"bio\\\", \\\"type\\\": \\\"html\\\", \\\"label\\\": \\\"Short biography\\\"}, {\\\"name\\\": \\\"link_url\\\", \\\"type\\\": \\\"url\\\", \\\"label\\\": \\\"Link address\\\"}, {\\\"name\\\": \\\"link_label\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Link text\\\", \\\"help\\\": \\\"Says where the link leads, such as See all the articles by this author.\\\", \\\"max\\\": 100}]\",\"sample\":\"{\\\"heading\\\": \\\"À propos de l’autrice\\\", \\\"photo\\\": null, \\\"photo_alt\\\": \\\"Claire Martin sourit dans l’atelier de la boutique, devant des étagères de bocaux.\\\", \\\"name\\\": \\\"Claire Martin\\\", \\\"role\\\": \\\"Responsable des achats et du conseil produit\\\", \\\"bio\\\": \\\"<p>Claire sélectionne nos produits auprès de petits producteurs depuis 2015. Elle teste chaque nouveauté avant de l’ajouter à la boutique et partage ici ses conseils d’utilisation.</p>\\\", \\\"link_url\\\": \\\"/blog/auteurs/claire-martin\\\", \\\"link_label\\\": \\\"Voir tous les articles de Claire Martin\\\"}\",\"template\":\"<section class=\\\"author\\\"><div class=\\\"author__card\\\">{% if props.photo %}<div class=\\\"author__photo\\\" data-cms-sizes=\\\"6rem\\\"><img class=\\\"author__img\\\" src=\\\"{{ props.photo }}\\\" alt=\\\"{{ props.photo_alt|default('') }}\\\" width=\\\"96\\\" height=\\\"96\\\" loading=\\\"lazy\\\"></div>{% endif %}<div class=\\\"author__body\\\">{% if props.heading is not empty %}<h2 class=\\\"author__heading\\\">{{ props.heading }}</h2><h3 class=\\\"author__name\\\">{{ props.name }}</h3>{% else %}<h2 class=\\\"author__name\\\">{{ props.name }}</h2>{% endif %}{% if props.role is not empty %}<p class=\\\"author__role\\\">{{ props.role }}</p>{% endif %}{% if props.bio is not empty %}<div class=\\\"author__bio\\\">{{ props.bio }}</div>{% endif %}{% if props.link_url is not empty and props.link_label is not empty %}<p class=\\\"author__more\\\"><a class=\\\"author__link\\\" href=\\\"{{ props.link_url }}\\\">{{ props.link_label }}</a></p>{% endif %}</div></div></section>\",\"css\":\".author__card { display: flex; flex-direction: column; gap: 1rem; padding: 1.25rem; border: 1px solid var(--cms-color-border); border-radius: 0.75rem; background: var(--cms-color-accent-surface); color: var(--cms-color-text); }\\n.author__photo { flex: 0 0 auto; width: 4.5rem; height: 4.5rem; }\\n.author__img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }\\n.author__body { min-width: 0; }\\n.author__heading { margin: 0 0 0.25rem; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--cms-color-text-muted); }\\n.author__name { margin: 0; font-size: 1.25rem; line-height: 1.3; }\\n.author__role { margin: 0.25rem 0 0; font-size: 0.95rem; color: var(--cms-color-text-muted); }\\n.author__bio { margin-top: 0.75rem; }\\n.author__bio > :first-child { margin-top: 0; }\\n.author__bio > :last-child { margin-bottom: 0; }\\n.author__more { margin: 0.75rem 0 0; }\\n.author__link { color: var(--cms-color-accent-strong); font-weight: 600; text-underline-offset: 0.2em; transition: color 0.2s ease; }\\n.author__link:hover { color: var(--cms-color-accent); }\\n.author__link:focus-visible { color: var(--cms-color-accent); outline: 2px solid var(--cms-color-accent); outline-offset: 2px; }\\n@media (min-width: 48rem) { .author__card { flex-direction: row; align-items: flex-start; gap: 1.5rem; padding: 1.5rem 1.75rem; } .author__photo { width: 6rem; height: 6rem; } }\"}"
+  ],
+  "outcome": "component",
+  "existing": null,
+  "based_on": null,
+  "browser": {
+    "375": {
+      "scroll": false,
+      "axe": [
+        {
+          "id": "color-contrast",
+          "impact": "serious"
+        }
+      ]
+    },
+    "1440": {
+      "scroll": false,
+      "axe": [
+        {
+          "id": "color-contrast",
+          "impact": "serious"
+        }
+      ]
+    }
+  },
+  "verdict": {
+    "pass": false,
+    "checks": {
+      "outcome": true,
+      "valid": true,
+      "props": true,
+      "markup": false,
+      "css": true,
+      "no_h1": true,
+      "img_alt": true,
+      "reduced_motion": true,
+      "browser": false
+    }
+  }
+}

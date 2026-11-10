@@ -148,6 +148,40 @@ code in kebab case) and writes into the file, for `check` to read:
 A trial fails the browser check when `scroll` is true at either width or an
 `axe` entry has the impact `serious` or `critical`.
 
+## Replaying a round
+
+The answers of round 0 are kept under `Tests/Fixtures/component-bench/round-0/`
+(`<case>-<run>.json`: the raw answers, the browser measures, the outcome and the
+verdict, the prompt hash). `Tests/Integration/Evaluation/ComponentBenchReplayTest.php`
+plays each case again through `component-bench:run`, the fake gateway giving
+the recorded answers, and applies the oracle with the recorded browser
+measures: every trial must come to the verdict it was recorded with. It calls
+no API and runs in the integration suite.
+
+A recording whose prompt hash differs from the prompt the generator sends today
+is stale: its verdict is still checked (it depends on the answers and the code
+only), but it no longer says what the model answers. A second test lists the
+stale ones and is reported incomplete, never failed. The prompts of round 0
+predate the media of the sample (their system prompt says an image is null), so
+all its recordings are stale.
+
+To record another round, from the root of the host, once it is checked:
+
+```bash
+R=round-1; D=local/modules/TheliaCMS/Tests/Fixtures/component-bench/$R; mkdir -p $D
+for f in var/eval/components/$R/*/*.json; do
+  jq '{case, round, run, prompt_sha256, answers, outcome, existing, based_on,
+       browser: (if .browser then (.browser | with_entries(select(.key=="375" or .key=="1440")
+         | .value |= ({scroll} + {axe: [.axe[]? | {id, impact}]} + (if .error then {error} else {} end)))) else null end),
+       verdict: {pass: .verdict.pass, checks: .verdict.checks}}' "$f" \
+    > "$D/$(jq -r .case "$f")-$(jq -r .run "$f").json"
+done
+```
+
+A round whose samples draw media of the library (round 1) replays only on a
+library holding the same ids: the test database does not, so it is not
+recorded.
+
 ## The oracle
 
 The reference is a contract per case, not a frozen output: the model never
@@ -165,7 +199,9 @@ gives the same component twice. Each case states what a machine can check.
   `forbid` may.
 - `props`, `markup` and `css` apply to the `component` outcome only.
 - Checks of every `component` outcome: valid without correction (counted, not
-  failed), no `h1`, every `img` with an `alt` printed from a prop, an
+  failed), no `h1`, every `img` with an `alt` printed from a prop (a picture
+  inside an `aria-hidden="true"` block, the copy a looping carousel draws, may
+  have an empty one), an
   animation guarded by `prefers-reduced-motion`; in the browser, no horizontal
   scroll at 375 px and no axe-core violation of impact `serious` or `critical`.
 - A component written after a `copy` (`based_on` set) counts as outcome `copy`

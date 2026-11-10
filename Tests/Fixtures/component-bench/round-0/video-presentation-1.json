@@ -1,0 +1,47 @@
+{
+  "case": "video-presentation",
+  "round": "round-0",
+  "run": 1,
+  "prompt_sha256": "08ab9fd834a157e066195afb97f9d5efda51fc8d9d01d9050f090ebc4b1652a7",
+  "answers": [
+    "{\"outcome\":\"component\",\"existing\":\"\",\"reason\":\"\",\"code\":\"CompanyVideo\",\"label\":\"Company video\",\"description\":\"A presentation video of the company under a heading, with a sentence below it and an optional transcript that opens. Use it to introduce the company, its team or its workshop with a video of the media library.\",\"props\":\"[{\\\"name\\\": \\\"title\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Heading\\\", \\\"max\\\": 120}, {\\\"name\\\": \\\"video\\\", \\\"type\\\": \\\"video\\\", \\\"label\\\": \\\"Video\\\", \\\"help\\\": \\\"An MP4 video of the media library. It never plays on its own.\\\", \\\"required\\\": true}, {\\\"name\\\": \\\"poster\\\", \\\"type\\\": \\\"image\\\", \\\"label\\\": \\\"Cover picture\\\", \\\"help\\\": \\\"Shown before the video starts.\\\"}, {\\\"name\\\": \\\"video_label\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"What the video shows\\\", \\\"help\\\": \\\"One sentence read by screen readers.\\\", \\\"max\\\": 200}, {\\\"name\\\": \\\"text\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Sentence below the video\\\", \\\"max\\\": 300}, {\\\"name\\\": \\\"transcript_label\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Transcript button\\\", \\\"help\\\": \\\"For instance: Read the transcript of the video.\\\", \\\"max\\\": 80}, {\\\"name\\\": \\\"transcript\\\", \\\"type\\\": \\\"html\\\", \\\"label\\\": \\\"Transcript\\\", \\\"help\\\": \\\"The words spoken in the video, for visitors who cannot hear it.\\\"}]\",\"sample\":\"{\\\"title\\\": \\\"Qui sommes-nous ?\\\", \\\"video\\\": null, \\\"poster\\\": null, \\\"video_label\\\": \\\"L’équipe présente l’atelier et la préparation des commandes.\\\", \\\"text\\\": \\\"Depuis 2009, notre équipe prépare chaque commande à la main dans notre atelier de Clermont-Ferrand.\\\", \\\"transcript_label\\\": \\\"Lire la transcription de la vidéo\\\", \\\"transcript\\\": \\\"<p>Bonjour, je suis Claire, fondatrice de la boutique. Ici, dans notre atelier, nous choisissons chaque produit avec soin.</p><p>Chaque commande est vérifiée puis emballée à la main avant de partir le jour même.</p>\\\"}\",\"template\":\"<section class=\\\"company-video\\\">{% if props.title is not empty %}<h2 class=\\\"company-video__title\\\">{{ props.title }}</h2>{% endif %}{% if props.video %}<div class=\\\"company-video__frame\\\"><video class=\\\"company-video__player\\\" src=\\\"{{ props.video }}\\\" controls preload=\\\"none\\\" playsinline{% if props.poster %} poster=\\\"{{ props.poster }}\\\"{% endif %}{% if props.video_label is not empty %} aria-label=\\\"{{ props.video_label }}\\\"{% endif %}></video></div>{% endif %}{% if props.text is not empty %}<p class=\\\"company-video__text\\\">{{ props.text }}</p>{% endif %}{% if props.transcript is not empty and props.transcript_label is not empty %}<details class=\\\"company-video__transcript\\\"><summary class=\\\"company-video__summary\\\">{{ props.transcript_label }}</summary><div class=\\\"company-video__transcript-body\\\">{{ props.transcript }}</div></details>{% endif %}</section>\",\"css\":\".company-video { display: grid; gap: 1rem; max-width: 60rem; margin: 0 auto; }\\n.company-video__title { margin: 0; color: var(--cms-color-text); }\\n.company-video__frame { aspect-ratio: 16 / 9; overflow: hidden; border-radius: 0.5rem; background: var(--cms-color-text); }\\n.company-video__player { display: block; width: 100%; height: 100%; object-fit: contain; }\\n.company-video__text { margin: 0; color: var(--cms-color-text-muted); }\\n.company-video__transcript { border-top: 1px solid var(--cms-color-border); padding-top: 0.75rem; }\\n.company-video__summary { cursor: pointer; color: var(--cms-color-accent-strong); font-weight: 600; }\\n.company-video__summary:hover { text-decoration: underline; }\\n.company-video__summary:focus-visible { text-decoration: underline; outline: 2px solid var(--cms-color-accent); outline-offset: 2px; }\\n.company-video__transcript-body { margin-top: 0.75rem; color: var(--cms-color-text-muted); }\\n@media (min-width: 48rem) { .company-video { gap: 1.5rem; } .company-video__text { font-size: 1.125rem; text-align: center; } .company-video__title { text-align: center; } }\"}",
+    "{\"outcome\":\"component\",\"existing\":\"\",\"reason\":\"\",\"code\":\"CompanyVideo\",\"label\":\"Company video\",\"description\":\"A presentation video of the company under a heading, with a sentence below it and an optional transcript that opens. Use it to introduce the company, its team or its workshop with a video of the media library.\",\"props\":\"[{\\\"name\\\": \\\"title\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Heading\\\", \\\"max\\\": 120}, {\\\"name\\\": \\\"video\\\", \\\"type\\\": \\\"video\\\", \\\"label\\\": \\\"Video\\\", \\\"help\\\": \\\"An MP4 video of the media library. It never plays on its own. Without it, only the heading and the text show.\\\"}, {\\\"name\\\": \\\"poster\\\", \\\"type\\\": \\\"image\\\", \\\"label\\\": \\\"Cover picture\\\", \\\"help\\\": \\\"Shown before the video starts.\\\"}, {\\\"name\\\": \\\"video_label\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"What the video shows\\\", \\\"help\\\": \\\"One sentence read by screen readers.\\\", \\\"max\\\": 200}, {\\\"name\\\": \\\"text\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Sentence below the video\\\", \\\"max\\\": 300}, {\\\"name\\\": \\\"transcript_label\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Transcript button\\\", \\\"help\\\": \\\"For instance: Read the transcript of the video.\\\", \\\"max\\\": 80}, {\\\"name\\\": \\\"transcript\\\", \\\"type\\\": \\\"html\\\", \\\"label\\\": \\\"Transcript\\\", \\\"help\\\": \\\"The words spoken in the video, for visitors who cannot hear it.\\\"}]\",\"sample\":\"{\\\"title\\\": \\\"Qui sommes-nous ?\\\", \\\"video\\\": null, \\\"poster\\\": null, \\\"video_label\\\": \\\"L’équipe présente l’atelier et la préparation des commandes.\\\", \\\"text\\\": \\\"Depuis 2009, notre équipe prépare chaque commande à la main dans notre atelier de Clermont-Ferrand.\\\", \\\"transcript_label\\\": \\\"Lire la transcription de la vidéo\\\", \\\"transcript\\\": \\\"<p>Bonjour, je suis Claire, fondatrice de la boutique. Ici, dans notre atelier, nous choisissons chaque produit avec soin.</p><p>Chaque commande est vérifiée puis emballée à la main avant de partir le jour même.</p>\\\"}\",\"template\":\"<section class=\\\"company-video\\\">{% if props.title is not empty %}<h2 class=\\\"company-video__title\\\">{{ props.title }}</h2>{% endif %}{% if props.video %}<div class=\\\"company-video__frame\\\"><video class=\\\"company-video__player\\\" src=\\\"{{ props.video }}\\\" controls preload=\\\"none\\\" playsinline{% if props.poster %} poster=\\\"{{ props.poster }}\\\"{% endif %}{% if props.video_label is not empty %} aria-label=\\\"{{ props.video_label }}\\\"{% endif %}></video></div>{% endif %}{% if props.text is not empty %}<p class=\\\"company-video__text\\\">{{ props.text }}</p>{% endif %}{% if props.transcript is not empty and props.transcript_label is not empty %}<details class=\\\"company-video__transcript\\\"><summary class=\\\"company-video__summary\\\">{{ props.transcript_label }}</summary><div class=\\\"company-video__transcript-body\\\">{{ props.transcript }}</div></details>{% endif %}</section>\",\"css\":\".company-video { display: grid; gap: 1rem; max-width: 60rem; margin: 0 auto; }\\n.company-video__title { margin: 0; color: var(--cms-color-text); }\\n.company-video__frame { aspect-ratio: 16 / 9; overflow: hidden; border-radius: 0.5rem; background: var(--cms-color-text); }\\n.company-video__player { display: block; width: 100%; height: 100%; object-fit: contain; }\\n.company-video__text { margin: 0; color: var(--cms-color-text-muted); }\\n.company-video__transcript { border-top: 1px solid var(--cms-color-border); padding-top: 0.75rem; }\\n.company-video__summary { cursor: pointer; color: var(--cms-color-accent-strong); font-weight: 600; }\\n.company-video__summary:hover { text-decoration: underline; }\\n.company-video__summary:focus-visible { text-decoration: underline; outline: 2px solid var(--cms-color-accent); outline-offset: 2px; }\\n.company-video__transcript-body { margin-top: 0.75rem; color: var(--cms-color-text-muted); }\\n@media (min-width: 48rem) { .company-video { gap: 1.5rem; } .company-video__text { font-size: 1.125rem; text-align: center; } .company-video__title { text-align: center; } }\"}"
+  ],
+  "outcome": "component",
+  "existing": null,
+  "based_on": null,
+  "browser": {
+    "375": {
+      "scroll": false,
+      "axe": [
+        {
+          "id": "color-contrast",
+          "impact": "serious"
+        }
+      ]
+    },
+    "1440": {
+      "scroll": false,
+      "axe": [
+        {
+          "id": "color-contrast",
+          "impact": "serious"
+        }
+      ]
+    }
+  },
+  "verdict": {
+    "pass": false,
+    "checks": {
+      "outcome": true,
+      "valid": true,
+      "props": true,
+      "markup": true,
+      "css": true,
+      "no_h1": true,
+      "img_alt": true,
+      "reduced_motion": true,
+      "browser": false
+    }
+  }
+}

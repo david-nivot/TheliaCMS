@@ -1,0 +1,36 @@
+{
+  "case": "logos-partners",
+  "round": "round-0",
+  "run": 1,
+  "prompt_sha256": "5538195e91c9db747cda00a3a9dad30a7171226bf4904e79e4dac4ff27e8ef87",
+  "answers": [
+    "{\"outcome\":\"component\",\"existing\":\"\",\"reason\":\"\",\"code\":\"PartnerLogoBand\",\"label\":\"Partner logos\",\"description\":\"A band of partner or client logos, shown in greyscale at the same height, each optionally linking to the partner's site, with an optional colour on hover. Use it to show who the shop works with or is trusted by.\",\"props\":\"[{\\\"name\\\": \\\"title\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Heading\\\", \\\"max\\\": 120}, {\\\"name\\\": \\\"color_on_hover\\\", \\\"type\\\": \\\"boolean\\\", \\\"label\\\": \\\"Show colours on hover\\\", \\\"help\\\": \\\"The logos return to their colours under the pointer and on keyboard focus.\\\", \\\"default\\\": true}, {\\\"name\\\": \\\"logos\\\", \\\"type\\\": \\\"items\\\", \\\"label\\\": \\\"Logos\\\", \\\"min\\\": 2, \\\"max\\\": 24, \\\"items\\\": [{\\\"name\\\": \\\"image\\\", \\\"type\\\": \\\"image\\\", \\\"label\\\": \\\"Logo\\\"}, {\\\"name\\\": \\\"name\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Name of the partner\\\", \\\"help\\\": \\\"Used as the alternative text of the logo, and shown when there is no logo.\\\", \\\"required\\\": true, \\\"max\\\": 80}, {\\\"name\\\": \\\"url\\\", \\\"type\\\": \\\"url\\\", \\\"label\\\": \\\"Partner's website\\\"}]}]\",\"sample\":\"{\\\"title\\\": \\\"Ils nous font confiance\\\", \\\"color_on_hover\\\": true, \\\"logos\\\": [{\\\"image\\\": null, \\\"name\\\": \\\"Atelier Lumière\\\", \\\"url\\\": \\\"https://www.atelier-lumiere.fr\\\"}, {\\\"image\\\": null, \\\"name\\\": \\\"Coopérative du Vercors\\\", \\\"url\\\": \\\"https://www.coop-vercors.fr\\\"}, {\\\"image\\\": null, \\\"name\\\": \\\"Maison Delorme\\\", \\\"url\\\": \\\"\\\"}, {\\\"image\\\": null, \\\"name\\\": \\\"Les Jardins de Provence\\\", \\\"url\\\": \\\"https://www.jardins-provence.fr\\\"}, {\\\"image\\\": null, \\\"name\\\": \\\"Transports Martin\\\", \\\"url\\\": \\\"\\\"}, {\\\"image\\\": null, \\\"name\\\": \\\"Brasserie du Port\\\", \\\"url\\\": \\\"https://www.brasserieduport.fr\\\"}]}\",\"template\":\"<section class=\\\"logos{% if props.color_on_hover %} logos--hover{% endif %}\\\">{% if props.title is not empty %}<h2 class=\\\"logos__title\\\">{{ props.title }}</h2>{% endif %}<ul class=\\\"logos__list\\\" data-cms-sizes=\\\"12rem\\\" data-cms-height=\\\"3rem\\\">{% for logo in props.logos %}<li class=\\\"logos__item\\\">{% if logo.url is not empty %}<a class=\\\"logos__link\\\" href=\\\"{{ logo.url }}\\\">{% if logo.image %}<img class=\\\"logos__image\\\" src=\\\"{{ logo.image }}\\\" alt=\\\"{{ logo.name }}\\\">{% else %}<span class=\\\"logos__name\\\">{{ logo.name }}</span>{% endif %}</a>{% else %}{% if logo.image %}<img class=\\\"logos__image\\\" src=\\\"{{ logo.image }}\\\" alt=\\\"{{ logo.name }}\\\">{% else %}<span class=\\\"logos__name\\\">{{ logo.name }}</span>{% endif %}{% endif %}</li>{% endfor %}</ul></section>\",\"css\":\".logos { padding: 2rem 0; border-top: 1px solid var(--cms-color-border); border-bottom: 1px solid var(--cms-color-border); }\\n.logos__title { margin: 0 0 1.5rem; text-align: center; font-size: 1.25rem; color: var(--cms-color-text-muted); }\\n.logos__list { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 1.5rem 2.5rem; margin: 0; padding: 0; list-style: none; }\\n.logos__item { display: flex; align-items: center; justify-content: center; min-height: 3rem; }\\n.logos__link { display: flex; align-items: center; color: inherit; text-decoration: none; border-radius: 0.25rem; }\\n.logos__link:focus-visible { outline: 2px solid var(--cms-color-accent); outline-offset: 0.25rem; }\\n.logos__image { display: block; height: 3rem; width: auto; max-width: 10rem; object-fit: contain; filter: grayscale(1); opacity: 0.75; transition: filter 0.2s ease, opacity 0.2s ease; }\\n.logos__name { font-weight: 600; font-size: 1.1rem; color: var(--cms-color-text-subtle); transition: color 0.2s ease; }\\n.logos--hover .logos__item:hover .logos__image, .logos--hover .logos__link:focus-visible .logos__image { filter: grayscale(0); opacity: 1; }\\n.logos--hover .logos__item:hover .logos__name, .logos--hover .logos__link:focus-visible .logos__name { color: var(--cms-color-text); }\\n@media (min-width: 48rem) { .logos { padding: 3rem 0; } .logos__list { gap: 2rem 3.5rem; } .logos__image { max-width: 12rem; } }\"}"
+  ],
+  "outcome": "component",
+  "existing": null,
+  "based_on": null,
+  "browser": {
+    "375": {
+      "scroll": false,
+      "axe": []
+    },
+    "1440": {
+      "scroll": false,
+      "axe": []
+    }
+  },
+  "verdict": {
+    "pass": false,
+    "checks": {
+      "outcome": true,
+      "valid": true,
+      "props": true,
+      "markup": false,
+      "css": true,
+      "no_h1": true,
+      "img_alt": true,
+      "reduced_motion": true,
+      "browser": true
+    }
+  }
+}

@@ -164,8 +164,9 @@ One file per case, `docs/evaluation/components/cases/<id>.json`:
 5. **Round 0**: 3 runs per case, results in
    `docs/evaluation/components/results.md`, captures shown to the
    maintainer to validate the visual references.
-6. **Replay**: recordings of round 0 under `Tests/Fixtures/component-bench/`,
-   an integration test that replays them.
+6. **Replay** (done 2026-11-10): recordings of round 0 under
+   `Tests/Fixtures/component-bench/`, an integration test that replays them
+   (`ComponentBenchReplayTest`; README, "Replaying a round").
 7. Docs and changelog; PR.
 8. **Media of the sample** (decided by the maintainer on 2026-11-10, after
    round 0 was started). Code written on `feat/component-bench-media`: the
