@@ -160,7 +160,7 @@ final class MenuVisibilityTest extends CmsIntegrationTestCase
 
     public function testADetachedMenuStartsWithTheVisibilityOfTheSharedOne(): void
     {
-        $other = LangQuery::create()->filterByActive(1)->filterByLocale($this->locale(), Criteria::NOT_EQUAL)->findOne();
+        $other = LangQuery::create()->filterByActive(true)->filterByLocale($this->locale(), Criteria::NOT_EQUAL)->findOne();
 
         if (null === $other) {
             self::markTestSkipped('A second active language is needed.');

@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace TheliaCMS\Tests\Integration\Menu;
 
 use Symfony\Component\DomCrawler\Crawler;
+use Symfony\Component\DomCrawler\Field\ChoiceFormField;
 use Thelia\Model\LangQuery;
 use TheliaCMS\Menu\MenuCache;
 use TheliaCMS\Model\CmsMenu;
@@ -66,7 +67,9 @@ final class MenuVisibilityScreenTest extends AdminScreenTestCase
 
         $fields = $form->form();
         $name = (string) preg_replace('/\[targetType\]$/', '', (string) $form->filter('select[name$="[targetType]"]')->attr('name'));
-        $fields[$name.'[targetType]']->select('url');
+        $targetType = $fields[$name.'[targetType]'];
+        self::assertInstanceOf(ChoiceFormField::class, $targetType);
+        $targetType->select('url');
         $fields[$name.'[url]']->setValue('https://example.com/annonce');
         $fields[$name.'[label]']->setValue('Annonce');
         $this->client->submit($fields, [], self::SAME_SITE);
@@ -96,7 +99,9 @@ final class MenuVisibilityScreenTest extends AdminScreenTestCase
         $form = $this->formPostingTo($screen, $path);
         $fields = $form->form();
         $name = (string) $form->filter('input[type="checkbox"][name$="[visible]"]')->attr('name');
-        $fields[$name]->untick();
+        $visible = $fields[$name];
+        self::assertInstanceOf(ChoiceFormField::class, $visible);
+        $visible->untick();
         $this->client->submit($fields, [], self::SAME_SITE);
 
         self::assertTrue($this->client->getResponse()->isRedirection(), strip_tags((string) $this->client->getResponse()->getContent()));
