@@ -53,6 +53,18 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   is disabled and says that a tag is added from a media sheet or with the bulk
   action **Add a tag**, instead of hiding the means to narrow the list.
 
+### Fixed
+
+- **The video of a component opens from its preview.** The frame of the
+  preview (candidate, kept component, component prototyped from a page) ran no
+  script, so the play button of an `embed` prop did nothing there while it
+  worked on the site. The frame now runs scripts but has no origin of its own
+  (never `allow-same-origin`), so it still reads nothing of the back office. A
+  player would inherit that sandbox and not play: in the preview, the play
+  button and the link under it open the video on its platform, in a new tab
+  (`allow-popups allow-popups-to-escape-sandbox`). On the site, the player is
+  built in the page as before.
+
 ## [2.25.0] - 2026-11-10
 
 ### Added

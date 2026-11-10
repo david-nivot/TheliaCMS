@@ -30,6 +30,7 @@ use TheliaCMS\Model\CmsComponentQuery;
 use TheliaCMS\Model\CmsPageContentQuery;
 use TheliaCMS\Model\CmsPageGenerationQuery;
 use TheliaCMS\Page\Admin\CmsPageWriter;
+use TheliaCMS\Preview\ComponentPreviewLink;
 use TheliaCMS\Security\CmsResources;
 use TheliaCMS\Tests\Integration\Security\AdminScreenTestCase;
 use TheliaCMS\Tests\Support\ComponentOutcome;
@@ -54,6 +55,23 @@ final class SiteComponentScreenTest extends AdminScreenTestCase
 
         $this->api = new FakeAiGateway();
         static::getContainer()->set(AiGatewayInterface::class, $this->api);
+    }
+
+    public function testThePreviewLinksTheScriptOfTheVideosAsTheSiteDoes(): void
+    {
+        // Asked first: once a screen of the back office was drawn, the kernel
+        // of the test keeps its templates ahead of the theme's and the preview
+        // comes out in the layout of the back office, which a real request
+        // never does.
+        $this->getService(SiteComponentRepository::class)->save(PriceTable::component(), SiteComponentRepository::STATUS_READY);
+        $preview = $this->getService(ComponentPreviewLink::class)->component('PriceTable', 'en_US');
+
+        $this->client->request('GET', parse_url($preview, \PHP_URL_PATH));
+        $page = (string) $this->client->getResponse()->getContent();
+
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+        self::assertStringContainsString('class="cms-site cms-site--price-table"', $page);
+        self::assertStringContainsString('/cms/embed.js', $page, 'The frame runs scripts: the player of a video is built as on the site.');
     }
 
     public function testARequestEndsOnACandidateDrawnInTheThemeAndNothingIsKeptYet(): void
