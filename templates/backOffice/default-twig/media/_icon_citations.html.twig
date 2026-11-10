@@ -1,0 +1,15 @@
+{# What a page or an item says of an icon: how many cite it, and that the pages
+   already published keep the drawing they were rendered with. Takes `citation`
+   (IconCitation); drawn for a cited icon only unless `always` is set. #}
+{% if citation is not null and (citation.isCited or always|default(false)) %}
+    <div class="small" data-testid="cms-icon-citations" data-pages="{{ citation.pages }}" data-items="{{ citation.items }}" data-components="{{ citation.components }}">
+        {% if citation.isCited %}
+            <p class="mb-1">{{ 'This icon is cited by %count% page(s), in a draft or a published version.'|trans({ '%count%': citation.pages }, 'theliacms') }}
+            {% if citation.items > 0 %}{{ 'It is also cited by %count% catalogue item(s).'|trans({ '%count%': citation.items }, 'theliacms') }}{% endif %}
+            {% if citation.components > 0 %}{{ 'It is also cited by %count% component(s) of the site.'|trans({ '%count%': citation.components }, 'theliacms') }}{% endif %}</p>
+            <p class="mb-0 text-body-secondary">{{ 'Replacing this icon changes the pages already published only when they are published again.'|trans({}, 'theliacms') }}</p>
+        {% else %}
+            <p class="mb-0 text-body-secondary">{{ 'No page, catalogue item or component of the site cites this icon.'|trans({}, 'theliacms') }}</p>
+        {% endif %}
+    </div>
+{% endif %}

@@ -44,6 +44,13 @@
                         </td>
                         <td class="text-break" style="min-width: 12rem">
                             <a class="fw-medium" href="{{ sheet }}">{{ item.title }}</a>
+                            {# An icon told from an image at a glance, as on the cards of the grid. #}
+                            {% if item.iconTag %}
+                                <span class="d-block mt-1">
+                                    <span class="badge text-bg-dark" data-testid="cms-media-row-icon-{{ item.id }}">{{ 'Icon'|trans({}, 'theliacms') }}</span>
+                                    <span class="badge text-bg-light font-monospace" title="{{ 'Icon name'|trans({}, 'theliacms') }}">{{ item.iconTag }}</span>
+                                </span>
+                            {% endif %}
                         </td>
                         <td class="text-nowrap">{{ item.format ? item.format|upper }}</td>
                         <td class="text-nowrap">{{ item.dimensions }}</td>
@@ -51,6 +58,9 @@
                         <td class="text-nowrap" data-testid="cms-media-row-alt-{{ item.id }}">
                             {% if item.video %}
                                 <span class="badge text-bg-light"><i class="bi bi-camera-video me-1" aria-hidden="true"></i>{{ 'Video'|trans({}, 'theliacms') }}</span>
+                            {% elseif item.iconTag %}
+                                {# The text of an icon is given where it is placed, by the component. #}
+                                <span class="text-body-secondary" title="{{ 'The text of an icon is given by the component that places it.'|trans({}, 'theliacms') }}">-</span>
                             {% elseif not item.isDescribed %}
                                 <span class="badge text-bg-warning">
                                     <i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>{{ 'No alternative text'|trans({}, 'theliacms') }}

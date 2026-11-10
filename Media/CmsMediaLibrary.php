@@ -18,6 +18,7 @@ use Propel\Runtime\ActiveQuery\Criteria;
 use Propel\Runtime\Propel;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Thelia\Model\Lang;
+use TheliaCMS\Media\Icon\IconNames;
 use TheliaCMS\Page\Admin\EditLanguage;
 use TheliaLibrary\Model\LibraryImage;
 use TheliaLibrary\Model\LibraryImageQuery;
@@ -47,6 +48,7 @@ final readonly class CmsMediaLibrary implements MediaResolver, MediaDescriptions
         private EditLanguage $languages,
         private LibraryImageTagService $imageTags,
         private ImageService $imageService,
+        private IconNames $iconNames,
     ) {
     }
 
@@ -361,6 +363,7 @@ final readonly class CmsMediaLibrary implements MediaResolver, MediaDescriptions
         return match ($filter) {
             MediaFilter::ToDescribe => $this->undescribed($imageIds, $locale),
             MediaFilter::Decorative => array_map('intval', LibraryImageQuery::create()->filterById($imageIds, Criteria::IN)->filterByDecorative(1)->select(['Id'])->find()->toArray()),
+            MediaFilter::Icons => array_values(array_intersect($imageIds, array_keys($this->iconNames->namesByImage()))),
             MediaFilter::Unused, null => $imageIds,
         };
     }
@@ -465,7 +468,8 @@ final readonly class CmsMediaLibrary implements MediaResolver, MediaDescriptions
             "SELECT li.id FROM library_image li
              WHERE li.id IN (%s) AND li.decorative = 0
              AND %s
-             AND NOT EXISTS (SELECT 1 FROM library_image_i18n i WHERE i.id = li.id AND i.locale = :locale AND TRIM(COALESCE(i.alt, '')) <> '')",
+             AND NOT EXISTS (SELECT 1 FROM library_image_i18n i WHERE i.id = li.id AND i.locale = :locale AND TRIM(COALESCE(i.alt, '')) <> '')
+             AND NOT EXISTS (SELECT 1 FROM cms_icon icon WHERE icon.image_id = li.id)",
             implode(',', array_map('intval', $imageIds)),
             MediaKind::Image->condition(),
         ));

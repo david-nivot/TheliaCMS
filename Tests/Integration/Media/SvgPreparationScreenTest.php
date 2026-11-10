@@ -22,6 +22,7 @@ use Thelia\Model\LangQuery;
 use Thelia\Test\FixtureFactory;
 use TheliaCMS\Media\Admin\CmsMediaWriter;
 use TheliaCMS\Media\CmsMediaLibrary;
+use TheliaCMS\Media\Icon\IconNames;
 use TheliaCMS\Media\Svg\Color\SvgPaints;
 use TheliaCMS\Media\Svg\PreparedSvgStore;
 use TheliaCMS\Security\CmsResources;
@@ -46,6 +47,9 @@ final class SvgPreparationScreenTest extends AdminScreenTestCase
     private const string COLORED = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">'
         .'<path d="M2 2h10v10H2z" fill="#1C1C1C"/><path d="M4 14h6v6H4z" fill="#1c1c1c"/><path d="M14 4h6v4h-6z" fill="#1C1C1C"/>'
         .'<circle cx="17" cy="17" r="5" fill="#22A06B"/><path d="M15 17l1.5 1.5L19 16" fill="none" stroke="#fff" stroke-width="1.5"/></svg>';
+
+    /** A gradient: the result is fit for an image, not for an icon. */
+    private const string GRADIENT = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><defs><linearGradient id="g"><stop offset="0" stop-color="#000"/><stop offset="1" stop-color="#fff"/></linearGradient></defs><path d="M0 0h24v24H0z" fill="url(#g)"/></svg>';
 
     private const string TRAPPED = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" onload="alert(1)"><script>alert(2)</script><path d="M0 0h24v24H0z"/></svg>';
 
@@ -107,7 +111,9 @@ final class SvgPreparationScreenTest extends AdminScreenTestCase
 
         self::assertSame('fit', $screen->filter('[data-testid="cms-svg-zoom"] input:checked')->attr('value'));
         self::assertSame(['fit', '1', '4', '10'], $screen->filter('[data-testid="cms-svg-zoom"] input')->each(static fn (Crawler $input): string => (string) $input->attr('value')));
-        self::assertSame(2, $screen->filter('[data-cms-svg-frame] .cms-svg-canvas img')->count(), 'Both previews sit in a frame that scrolls.');
+        self::assertSame(2, $screen->filter('[data-cms-svg-frame]')->count(), 'Both previews sit in a frame that scrolls.');
+        self::assertSame(1, $screen->filter('[data-cms-svg-frame] .cms-svg-canvas [data-testid="cms-svg-original"]')->count());
+        self::assertSame(3, $screen->filter('[data-cms-svg-frame] .cms-svg-canvas .cms-svg-result')->count(), 'The result once per ground, the visible one chosen by the ground.');
     }
 
     public function testAnSvgSentFromThePickerIsPreparedInItsFrameAndHandedBackToIt(): void
@@ -434,6 +440,356 @@ final class SvgPreparationScreenTest extends AdminScreenTestCase
         self::assertStringContainsString($this->said('The SVG declares entities, which are refused. Export it again without them.'), $this->screen($back)->html());
     }
 
+    public function testAFitDrawingIsOfferedAsAnIconUnderTheNameOfItsFile(): void
+    {
+        $screen = $this->opened($this->svg('Mon Écran #2.svg', self::CLEAN));
+
+        self::assertSame(1, $screen->filter('[data-testid="cms-svg-usage"]')->count());
+        self::assertSame('image', $screen->filter('[name="usage"]:checked')->attr('value'), 'An image stays the default.');
+        self::assertNull($screen->filter('#cms-svg-usage-icon')->attr('disabled'));
+        self::assertSame('mon-ecran-2', $screen->filter('[data-testid="cms-svg-icon-name"]')->attr('value'));
+        self::assertSame('cms:', trim($screen->filter('[data-cms-svg-icon-name-wrap] .input-group-text')->text()));
+        self::assertSame(0, $screen->filter('[data-testid="cms-svg-icon-obstacles"]')->count());
+    }
+
+    public function testTheUsageAndTheNameTypedFollowAPreviewOfTheSettings(): void
+    {
+        $this->opened($this->svg('flèche.svg', self::COLORED));
+        $token = $this->tokens[array_key_last($this->tokens)];
+
+        $preview = $this->screen('/admin/cms/media/svg/'.$token.'?usage=icon&icon_name=ma-fleche&edit_language_id='.$this->languageId());
+
+        self::assertSame('icon', $preview->filter('[name="usage"]:checked')->attr('value'), 'A usage in the address is the one shown.');
+        self::assertSame('ma-fleche', $preview->filter('[data-testid="cms-svg-icon-name"]')->attr('value'), 'So is the name typed.');
+        self::assertSame(['icon', 'ma-fleche'], [
+            $preview->filter('[data-testid="cms-svg-presets"] [data-cms-svg-carry="usage"]')->attr('value'),
+            $preview->filter('[data-testid="cms-svg-presets"] [data-cms-svg-carry="icon_name"]')->attr('value'),
+        ], 'The forms that preview a setting carry them.');
+    }
+
+    public function testAnSvgIsAddedAsAnIconUnderTheNameTyped(): void
+    {
+        $screen = $this->opened($this->svg('flèche.svg', self::CLEAN));
+
+        $this->answer($screen, 'add', ['usage' => 'icon', 'icon_name' => 'ma-fleche']);
+
+        $images = $this->getService(CmsMediaLibrary::class)->images();
+        self::assertCount(1, $images);
+        self::assertSame('ma-fleche', $this->getService(IconNames::class)->nameOf((int) $images[0]->getId()));
+        self::assertStringContainsString('/admin/cms/media/'.$images[0]->getId(), (string) $this->client->getResponse()->headers->get('Location'));
+    }
+
+    public function testThePrefixTypedWithTheNameIsDroppedAsTheSheetDoesIt(): void
+    {
+        $screen = $this->opened($this->svg('flèche.svg', self::CLEAN));
+
+        $this->answer($screen, 'add', ['usage' => 'icon', 'icon_name' => ' cms:ma-fleche ']);
+
+        $images = $this->getService(CmsMediaLibrary::class)->images();
+        self::assertCount(1, $images);
+        self::assertSame('ma-fleche', $this->getService(IconNames::class)->nameOf((int) $images[0]->getId()), 'The prefix is part of what the editor sees, not of the name.');
+    }
+
+    public function testAnSvgAddedAsAnImageHasNoIconName(): void
+    {
+        $screen = $this->opened($this->svg('flèche.svg', self::CLEAN));
+
+        $this->answer($screen, 'add', ['usage' => 'image', 'icon_name' => 'ma-fleche']);
+
+        $images = $this->getService(CmsMediaLibrary::class)->images();
+        self::assertCount(1, $images);
+        self::assertNull($this->getService(IconNames::class)->nameOf((int) $images[0]->getId()), 'A name typed for an image that is not an icon is dropped.');
+        self::assertSame([], $this->getService(IconNames::class)->names());
+    }
+
+    public function testADrawingAPageWouldNotKeepWholeIsNotOfferedAsAnIconAndSaysWhy(): void
+    {
+        $screen = $this->opened($this->svg('degrade.svg', self::GRADIENT));
+
+        self::assertNotNull($screen->filter('#cms-svg-usage-icon')->attr('disabled'));
+        self::assertSame('image', $screen->filter('[name="usage"]:checked')->attr('value'));
+        $obstacles = $this->normalize($screen->filter('[data-testid="cms-svg-icon-obstacles"]')->text());
+        self::assertStringContainsString($this->saidWith('a block of definitions (%s)', 'defs'), $obstacles);
+        self::assertStringContainsString($this->saidWith('a gradient or a pattern as paint (%s)', 'fill'), $obstacles);
+        self::assertSame(0, $screen->filter('[data-testid="cms-svg-icon-name"]')->count(), 'No name to give: the drawing cannot be an icon.');
+    }
+
+    public function testTheServerRefusesAnIconThatCannotBeOneEvenIfTheFormAsksForIt(): void
+    {
+        $screen = $this->opened($this->svg('degrade.svg', self::GRADIENT));
+
+        $answer = $this->submit($screen, 'add', ['usage' => 'icon', 'icon_name' => 'degrade']);
+
+        self::assertSame(422, $this->client->getResponse()->getStatusCode());
+        self::assertSame([], $this->getService(CmsMediaLibrary::class)->images(), 'Nothing is stored.');
+        self::assertSame([], $this->getService(IconNames::class)->names());
+        self::assertStringContainsString($this->said('This file cannot be added as an icon: see below what a page would not keep. It can still be added as an image.'), $this->normalize($answer->filter('[data-testid="cms-svg-icon-error"]')->text()));
+        self::assertNotNull($this->getService(PreparedSvgStore::class)->find($this->tokens[array_key_last($this->tokens)]), 'The file waits: the editor can add it as an image.');
+
+        $this->answer($this->screen('/admin/cms/media/svg/'.$this->tokens[array_key_last($this->tokens)].'?edit_language_id='.$this->languageId()), 'add', ['usage' => 'image']);
+        self::assertCount(1, $this->getService(CmsMediaLibrary::class)->images());
+    }
+
+    public function testAnInvalidIconNameIsRefusedAndNothingIsStored(): void
+    {
+        $screen = $this->opened($this->svg('fleche.svg', self::CLEAN));
+
+        foreach (['Ma Flèche', '', 'Fleche', str_repeat('a', 65), 'a--b'] as $name) {
+            $answer = $this->submit($screen, 'add', ['usage' => 'icon', 'icon_name' => $name]);
+
+            self::assertSame(422, $this->client->getResponse()->getStatusCode(), \sprintf('"%s" is refused.', $name));
+            self::assertSame([], $this->getService(CmsMediaLibrary::class)->images(), 'Nothing is stored.');
+            self::assertStringContainsString($this->saidWith('The icon name is made of lowercase letters and digits, separated by single hyphens, %d characters at most.', '64'), $this->normalize($answer->filter('[data-testid="cms-svg-icon-error"]')->text()));
+            self::assertSame($name, $answer->filter('[data-testid="cms-svg-icon-name"]')->attr('value'), 'The name typed is given back.');
+            self::assertSame('icon', $answer->filter('[name="usage"]:checked')->attr('value'), 'So is the usage.');
+        }
+    }
+
+    public function testATakenIconNameIsRefusedAndNothingIsStored(): void
+    {
+        $holder = $this->image('Détient le nom');
+        $this->getService(IconNames::class)->assign((int) $holder->getId(), 'deja-pris');
+        $screen = $this->opened($this->svg('fleche.svg', self::CLEAN));
+
+        $answer = $this->submit($screen, 'add', ['usage' => 'icon', 'icon_name' => 'deja-pris']);
+
+        self::assertSame(422, $this->client->getResponse()->getStatusCode());
+        self::assertCount(1, $this->getService(CmsMediaLibrary::class)->images(), 'Only the holder of the name is in the library.');
+        self::assertStringContainsString($this->saidWith('The icon name "%s" is already used by another image.', 'cms:deja-pris'), $this->normalize($answer->filter('[data-testid="cms-svg-icon-error"]')->text()));
+        self::assertSame((int) $holder->getId(), array_key_first($this->getService(IconNames::class)->namesByImage()));
+    }
+
+    public function testTheUsageIsCarriedToTheFollowingFilesAndTheWayStopsWhereAFileCannotTakeIt(): void
+    {
+        $screen = $this->opened(
+            $this->svg('premiere.svg', self::CLEAN),
+            $this->svg('Partagé.svg', self::CLEAN),
+            $this->svg('degrade.svg', self::GRADIENT),
+        );
+
+        $this->answer($screen, 'add', ['usage' => 'icon', 'icon_name' => 'partage', 'apply_to_following' => '1']);
+        $second = (string) $this->client->getResponse()->headers->get('Location');
+        self::assertStringContainsString('usage=icon', $second);
+
+        // The second file draws its name from its own file name, which the first took.
+        $screen = $this->screen($second);
+        self::assertSame('icon', $screen->filter('[name="usage"]:checked')->attr('value'));
+        self::assertSame('partage', $screen->filter('[data-testid="cms-svg-icon-name"]')->attr('value'));
+        self::assertStringContainsString($this->saidWith('The icon name "%s" is already used by another image.', 'cms:partage'), $this->normalize($screen->filter('[data-testid="cms-svg-icon-error"]')->text()), 'The way stops on it, with the reason, instead of storing it.');
+        self::assertCount(1, $this->getService(CmsMediaLibrary::class)->images());
+
+        $this->submit($screen, 'add', ['usage' => 'icon', 'icon_name' => 'partage']);
+        self::assertSame(422, $this->client->getResponse()->getStatusCode());
+        self::assertCount(1, $this->getService(CmsMediaLibrary::class)->images());
+
+        $this->answer($screen, 'add', ['usage' => 'icon', 'icon_name' => 'partage-2', 'apply_to_following' => '1']);
+        $third = $this->screen((string) $this->client->getResponse()->headers->get('Location'));
+
+        // The third cannot be an icon: it is told so and stays an image.
+        self::assertNotNull($third->filter('#cms-svg-usage-icon')->attr('disabled'));
+        self::assertSame('image', $third->filter('[name="usage"]:checked')->attr('value'));
+        self::assertSame(1, $third->filter('[data-testid="cms-svg-icon-obstacles"]')->count());
+
+        $this->answer($third, 'add', ['usage' => 'image']);
+        self::assertSame(['partage', 'partage-2'], $this->getService(IconNames::class)->names());
+        self::assertCount(3, $this->getService(CmsMediaLibrary::class)->images());
+    }
+
+    public function testTheUsageIsNotCarriedWhenTheEditorDoesNotAskForIt(): void
+    {
+        $screen = $this->opened($this->svg('un.svg', self::CLEAN), $this->svg('deux.svg', self::CLEAN));
+
+        $this->answer($screen, 'add', ['usage' => 'icon', 'icon_name' => 'un']);
+
+        self::assertStringNotContainsString('usage=', (string) $this->client->getResponse()->headers->get('Location'));
+    }
+
+    public function testTheUsageIsTheFirstStepAndNumberedOneLikeTheOthers(): void
+    {
+        $screen = $this->opened($this->svg('check.svg', self::COLORED));
+
+        self::assertSame(
+            ['cms-svg-usage', 'cms-svg-cleaning', 'cms-svg-optimization', 'cms-svg-colors'],
+            $screen->filter('.col-lg-5 > details.card')->each(static fn (Crawler $card): string => (string) $card->attr('data-testid')),
+            'The usage comes first, in a card like the others.',
+        );
+        self::assertSame(
+            ['1.', '2.', '3.', '4.'],
+            $screen->filter('.col-lg-5 > details.card > summary')->each(fn (Crawler $summary): string => explode(' ', $this->normalize($summary->text()))[0]),
+        );
+        self::assertSame(0, $screen->filter('[data-testid="cms-svg-form"] [data-testid="cms-svg-usage"], [data-testid="cms-svg-form"] input[name="usage"][type="radio"]')->count(), 'The form of the file no longer holds the usage.');
+    }
+
+    public function testTheUsageStaysTheFirstStepReadOnlyWhereItCannotBeChosen(): void
+    {
+        $image = $this->image('À remplacer');
+        $this->postSheet(\sprintf('/admin/cms/media/%d', $image->getId()), ['decorative' => '1'], $this->svg('neuf.svg', self::COLORED));
+        $screen = $this->screen($this->remember((string) $this->client->getResponse()->headers->get('Location')));
+
+        self::assertSame(['1.', '2.', '3.', '4.'], $screen->filter('.col-lg-5 > details.card > summary')->each(fn (Crawler $summary): string => explode(' ', $this->normalize($summary->text()))[0]), 'The steps keep their numbers.');
+        self::assertSame(1, $screen->filter('[data-testid="cms-svg-usage"] [data-testid="cms-svg-usage-read-only"]')->count(), 'Said, not asked.');
+        self::assertSame(0, $screen->filter('[data-testid="cms-svg-usage"] input[name="usage"]')->count());
+    }
+
+    public function testChoosingAnIconPresetsTheColorsUntilTheEditorSetsThemAndImageGivesThemBack(): void
+    {
+        $screen = $this->opened($this->svg('check.svg', self::COLORED));
+        self::assertSame('keep', $screen->filter('[data-testid="cms-svg-presets"] input[name="colors"]:checked')->attr('value'));
+        self::assertSame(0, $screen->filter('[data-testid="cms-svg-icon-advice"]')->count(), 'No tips for an image.');
+
+        $icon = $this->withUsage($screen, 'icon');
+        self::assertSame('main', $icon->filter('[data-testid="cms-svg-presets"] input[name="colors"]:checked')->attr('value'), 'An icon takes the main color as the color of the text.');
+        self::assertSame('', $icon->filter('[data-testid="cms-svg-others"] input:checked')->attr('value'), 'Without the lighter option.');
+        $this->client->request('GET', (string) $icon->filter('[data-testid="cms-svg-result"]')->attr('src'));
+        self::assertSame(3, substr_count((string) $this->client->getResponse()->getContent(), 'currentColor'), 'The preview shows the preset: the three dark shapes follow the text.');
+        self::assertSame('0', $icon->filter('[data-testid="cms-svg-form"] input[name="colors_touched"]')->attr('value'));
+
+        $image = $this->withUsage($icon, 'image');
+        self::assertSame('keep', $image->filter('[data-testid="cms-svg-presets"] input[name="colors"]:checked')->attr('value'), 'Image gives the colors back.');
+
+        $this->answer($icon, 'add', ['icon_name' => 'coche']);
+        $stored = (string) file_get_contents(TheliaLibrary::getImageDirectory().$this->getService(CmsMediaLibrary::class)->images()[0]->getFileName());
+        self::assertSame(3, substr_count($stored, 'currentColor'), 'The preset is what is stored.');
+        self::assertSame(['coche'], $this->getService(IconNames::class)->names());
+    }
+
+    public function testTheTipsShowWithTheIconUsage(): void
+    {
+        $screen = $this->withUsage($this->opened($this->svg('check.svg', self::COLORED)), 'icon');
+
+        $tips = $screen->filter('[data-testid="cms-svg-icon-advice"] li');
+        self::assertCount(3, $tips);
+        self::assertStringContainsString($this->said('An icon takes the color of the text around it.'), $tips->first()->text());
+    }
+
+    public function testTheColorsTheEditorSetsAreKeptWhateverTheUsage(): void
+    {
+        $screen = $this->opened($this->svg('check.svg', self::COLORED));
+
+        $monochrome = $this->withColors($screen, ['colors' => 'monochrome']);
+        $icon = $this->withUsage($monochrome, 'icon');
+        self::assertSame('monochrome', $icon->filter('[data-testid="cms-svg-presets"] input[name="colors"]:checked')->attr('value'), 'The choice of the editor is not changed by the usage.');
+        self::assertSame('monochrome', $this->withUsage($icon, 'image')->filter('[data-testid="cms-svg-presets"] input[name="colors"]:checked')->attr('value'));
+
+        // Keeping the colors is a choice too.
+        $kept = $this->withColors($screen, ['colors' => 'keep']);
+        self::assertSame('keep', $this->withUsage($kept, 'icon')->filter('[data-testid="cms-svg-presets"] input[name="colors"]:checked')->attr('value'));
+
+        $this->answer($icon, 'add', ['icon_name' => 'mono']);
+        $stored = (string) file_get_contents(TheliaLibrary::getImageDirectory().$this->getService(CmsMediaLibrary::class)->images()[0]->getFileName());
+        self::assertStringNotContainsStringIgnoringCase('#22a06b', $stored, 'The monochrome preset is stored, not the preselection.');
+    }
+
+    public function testTheServerPresetsTheColorsOfAnIconSentWithoutThePreview(): void
+    {
+        $screen = $this->opened($this->svg('check.svg', self::COLORED));
+
+        $this->answer($screen, 'add', ['usage' => 'icon', 'icon_name' => 'direct']);
+
+        $stored = (string) file_get_contents(TheliaLibrary::getImageDirectory().$this->getService(CmsMediaLibrary::class)->images()[0]->getFileName());
+        self::assertSame(3, substr_count($stored, 'currentColor'));
+    }
+
+    public function testTheUsageAndTheColorsAsTheyStandAreCarriedToTheFollowingFiles(): void
+    {
+        $screen = $this->withUsage($this->opened($this->svg('un.svg', self::COLORED), $this->svg('deux.svg', self::COLORED)), 'icon');
+
+        $this->answer($screen, 'add', ['icon_name' => 'un', 'apply_to_following' => '1']);
+        $next = (string) $this->client->getResponse()->headers->get('Location');
+
+        self::assertStringContainsString('usage=icon', $next);
+        self::assertStringContainsString('colors=main', $next, 'The preselected preset goes on.');
+        $second = $this->screen($next);
+        self::assertSame('main', $second->filter('[data-testid="cms-svg-presets"] input[name="colors"]:checked')->attr('value'));
+        self::assertSame('icon', $second->filter('input[name="usage"]:checked')->attr('value'));
+    }
+
+    public function testAnIconThatCannotBeOneKeepsItsColorsWhateverThePreselection(): void
+    {
+        $screen = $this->withUsage($this->opened($this->svg('degrade.svg', self::GRADIENT)), 'icon');
+
+        self::assertSame('image', $screen->filter('input[name="usage"]:checked')->attr('value'));
+        self::assertSame('keep', $screen->filter('[data-testid="cms-svg-presets"] input[name="colors"]:checked')->attr('value'));
+        self::assertSame(1, $screen->filter('[data-testid="cms-svg-icon-obstacles"]')->count());
+    }
+
+    public function testNoUsageIsOfferedToAFileThatReplacesAnImageNorToTheEditorsPicker(): void
+    {
+        $image = $this->image('À remplacer');
+        $this->postSheet(\sprintf('/admin/cms/media/%d', $image->getId()), ['decorative' => '1'], $this->svg('neuf.svg', self::CLEAN));
+        $replacing = $this->screen($this->remember((string) $this->client->getResponse()->headers->get('Location')));
+
+        self::assertSame(0, $replacing->filter('[data-testid="cms-svg-usage"] input[name="usage"]')->count(), 'Nothing to choose: the usage is only said.');
+
+        $this->upload([$this->svg('picto.svg', self::CLEAN)], json: true, query: '&picker=1');
+        $answer = json_decode((string) $this->client->getResponse()->getContent(), true, flags: \JSON_THROW_ON_ERROR);
+        $picker = $this->screen($this->remember((string) $answer['prepare']));
+        self::assertSame(0, $picker->filter('[data-testid="cms-svg-usage"] input[name="usage"]')->count());
+        self::assertSame(1, $picker->filter('[data-testid="cms-svg-usage-read-only"]')->count());
+
+        // A form that asks for an icon all the same stores an image.
+        $this->handedBackWith('add', $picker, ['usage' => 'icon', 'icon_name' => 'picto']);
+        self::assertSame([], $this->getService(IconNames::class)->names());
+    }
+
+    public function testAForgedIconUsageOnAReplacementGivesTheImageNoIconName(): void
+    {
+        $image = $this->image('À remplacer');
+        $this->postSheet(\sprintf('/admin/cms/media/%d', $image->getId()), ['decorative' => '1'], $this->svg('neuf.svg', self::CLEAN));
+        $replacing = $this->screen($this->remember((string) $this->client->getResponse()->headers->get('Location')));
+        $count = \count($this->getService(CmsMediaLibrary::class)->images());
+
+        $this->answer($replacing, 'add', ['usage' => 'icon', 'icon_name' => 'forge']);
+
+        self::assertNull($this->getService(IconNames::class)->nameOf((int) $image->getId()), 'The usage is not offered to a replacement: the answer cannot make an icon of it.');
+        self::assertSame([], $this->getService(IconNames::class)->names());
+        self::assertCount($count, $this->getService(CmsMediaLibrary::class)->images(), 'No other image is added.');
+        self::assertStringEndsWith('.svg', (string) $this->reloaded($image)?->getFileName(), 'The file is replaced as asked.');
+    }
+
+    public function testReplacingTheFileOfAnIconWithADrawingThatCannotBeOneIsRefused(): void
+    {
+        $icon = $this->getService(CmsMediaWriter::class)->addPreparedSvg(self::CLEAN, 'marque.svg', $this->locale(), 'marque');
+        $fileName = $icon->getFileName();
+        $sheet = \sprintf('/admin/cms/media/%d', $icon->getId());
+        // The sheet of an icon asks no alternative text: nothing but the file is sent.
+        $this->postSheet($sheet, [], $this->svg('degrade.svg', self::GRADIENT));
+        $screen = $this->screen($this->remember((string) $this->client->getResponse()->headers->get('Location')));
+
+        self::assertStringContainsString('cms:marque', $this->normalize($screen->filter('[data-testid="cms-svg-icon-replaced-obstacles"]')->text()), 'It is told before the answer.');
+        self::assertSame(0, $screen->filter('[data-testid="cms-svg-usage-read-only"]')->count(), 'The card does not say the file replaces the icon it cannot replace.');
+
+        $answer = $this->submit($screen, 'add');
+
+        self::assertSame(422, $this->client->getResponse()->getStatusCode());
+        self::assertStringContainsString($this->saidWith('The image is the icon %s: the new file would not be kept whole in a page, so it does not replace the old one.', 'cms:marque'), $this->normalize($answer->filter('[data-testid="cms-svg-icon-error"]')->text()));
+        self::assertSame($fileName, $this->reloaded($icon)?->getFileName(), 'The file of the image is the old one.');
+        self::assertSame('marque', $this->getService(IconNames::class)->nameOf((int) $icon->getId()));
+    }
+
+    public function testReplacingTheFileOfAnIconWithAFitDrawingKeepsItsName(): void
+    {
+        $icon = $this->getService(CmsMediaWriter::class)->addPreparedSvg(self::CLEAN, 'marque.svg', $this->locale(), 'marque');
+        $this->postSheet(\sprintf('/admin/cms/media/%d', $icon->getId()), [], $this->svg('neuve.svg', self::COLORED));
+        $screen = $this->screen($this->remember((string) $this->client->getResponse()->headers->get('Location')));
+
+        $this->answer($screen, 'add');
+
+        self::assertSame('marque', $this->getService(IconNames::class)->nameOf((int) $icon->getId()));
+        self::assertStringContainsString('#22a06b', strtolower((string) file_get_contents(TheliaLibrary::getImageDirectory().$this->reloaded($icon)?->getFileName())));
+    }
+
+    public function testReplacingTheFileOfAnImageThatIsNotAnIconTakesAnyDrawing(): void
+    {
+        $image = $this->image('Pas une icône');
+        $this->postSheet(\sprintf('/admin/cms/media/%d', $image->getId()), ['decorative' => '1'], $this->svg('degrade.svg', self::GRADIENT));
+        $screen = $this->screen($this->remember((string) $this->client->getResponse()->headers->get('Location')));
+
+        $this->answer($screen, 'add');
+
+        self::assertStringEndsWith('.svg', (string) $this->reloaded($image)?->getFileName());
+    }
+
     public function testThePresetsComeFirstAndTheColorsOnlyWhereAMainOneIsChosen(): void
     {
         $this->upload([$this->svg('check.svg', self::COLORED)]);
@@ -474,10 +830,21 @@ final class SvgPreparationScreenTest extends AdminScreenTestCase
         $this->client->request('GET', (string) $screen->filter('[data-testid="cms-svg-tint-dark"]')->attr('src'));
         self::assertStringContainsString('color="#f8f9fa"', (string) $this->client->getResponse()->getContent(), 'The preview on a dark ground draws the text color it would take.');
 
+        // The large preview is drawn once per text color: the theme, black, white.
+        self::assertSame(['theme', 'black', 'white'], $screen->filter('[data-testid="cms-svg-text-color"] input')->each(static fn (Crawler $input): string => (string) $input->attr('value')));
+        self::assertSame('theme', $screen->filter('[data-testid="cms-svg-text-color"] input:checked')->attr('value'));
+        foreach (['cms-svg-result' => '#f26041', 'cms-svg-result-black' => '#212529', 'cms-svg-result-white' => '#f8f9fa'] as $testId => $color) {
+            $this->client->request('GET', (string) $screen->filter('[data-testid="'.$testId.'"]')->attr('src'));
+            self::assertStringContainsString('color="'.$color.'"', (string) $this->client->getResponse()->getContent(), $testId);
+        }
+
+        $this->client->request('GET', (string) $screen->filter('[data-testid="cms-svg-tint-accent"]')->attr('src'));
+        self::assertStringContainsString('color="#f26041"', (string) $this->client->getResponse()->getContent(), 'A colored text takes the primary color of the back office.');
+
         $this->answer($screen, 'add');
 
         $stored = (string) file_get_contents(TheliaLibrary::getImageDirectory().$this->getService(CmsMediaLibrary::class)->images()[0]->getFileName());
-        self::assertSame($preview, $stored, 'What was previewed is what is stored.');
+        self::assertSame(str_replace(' color="#f26041"', '', $preview), $stored, 'What was previewed is what is stored, but the tint of its ground.');
         self::assertStringNotContainsString('color=', $stored, 'The tint of a preview never reaches the file.');
     }
 
@@ -561,10 +928,21 @@ final class SvgPreparationScreenTest extends AdminScreenTestCase
      */
     private function handedBack(string $action, Crawler $screen): array
     {
+        return $this->handedBackWith($action, $screen, []);
+    }
+
+    /**
+     * @param array<string, string> $extra
+     *
+     * @return array{type: string, image: int|null, message: string|null}
+     */
+    private function handedBackWith(string $action, Crawler $screen, array $extra): array
+    {
         $form = $screen->filter('[data-testid="cms-svg-form"]');
         $this->client->request('POST', (string) $form->attr('action'), [
             '_token' => (string) $form->filter('input[name="_token"]')->attr('value'),
             'action' => $action,
+            ...$extra,
         ], [], self::SAME_SITE);
 
         self::assertSame(200, $this->client->getResponse()->getStatusCode(), 'The frame is not sent elsewhere: it answers the picker.');
@@ -598,16 +976,40 @@ final class SvgPreparationScreenTest extends AdminScreenTestCase
      */
     private function answer(Crawler $screen, string $action, array $extra = []): void
     {
+        $this->submit($screen, $action, $extra);
+
+        self::assertSame(302, $this->client->getResponse()->getStatusCode());
+    }
+
+    /**
+     * Sends the form of the screen and leaves the answer, whatever it is, to the test.
+     *
+     * @param array<string, string> $extra
+     */
+    private function submit(Crawler $screen, string $action, array $extra = []): Crawler
+    {
         $form = $screen->filter('[data-testid="cms-svg-form"]');
         self::assertSame(1, $form->count());
 
-        $this->client->request('POST', (string) $form->attr('action'), [
+        return $this->client->request('POST', (string) $form->attr('action'), [
             ...$this->fieldsOf($form),
             'action' => $action,
             ...$extra,
         ], [], self::SAME_SITE);
+    }
 
-        self::assertSame(302, $this->client->getResponse()->getStatusCode());
+    /** The screen of the first file of a sending, opened. */
+    private function opened(UploadedFile ...$files): Crawler
+    {
+        $this->upload($files);
+
+        return $this->screen($this->remember((string) $this->client->getResponse()->headers->get('Location')));
+    }
+
+    /** A sentence with its values, as the screen says it. */
+    private function saidWith(string $english, string ...$values): string
+    {
+        return vsprintf($this->said($english), $values);
     }
 
     /**
@@ -638,6 +1040,17 @@ final class SvgPreparationScreenTest extends AdminScreenTestCase
         self::assertSame(1, $form->count());
 
         return $this->screen((string) $form->attr('action').'?'.http_build_query([...$this->fieldsOf($form), ...$values]));
+    }
+
+    /**
+     * The screen as the usage form of the screen asks for it, with the usage given.
+     */
+    private function withUsage(Crawler $screen, string $usage): Crawler
+    {
+        $form = $screen->filter('[data-testid="cms-svg-usage-form"]');
+        self::assertSame(1, $form->count());
+
+        return $this->screen((string) $form->attr('action').'?'.http_build_query([...$this->fieldsOf($form), 'usage' => $usage]));
     }
 
     private function reloaded(LibraryImage $image): ?LibraryImage

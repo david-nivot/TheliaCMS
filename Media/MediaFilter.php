@@ -24,4 +24,6 @@ enum MediaFilter: string
     /** Shown by no page and no catalogue item. */
     case Unused = 'unused';
     case Decorative = 'decorative';
+    /** Images that have an icon name (`cms:…`). */
+    case Icons = 'icons';
 }

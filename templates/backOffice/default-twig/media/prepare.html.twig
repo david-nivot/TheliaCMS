@@ -11,6 +11,10 @@
 
 {% block content %}
     {% set carried = route_parameters|filter((value, key) => key != 'token') %}
+    {# The usage is always the first step, read only where it cannot be
+       chosen: the steps keep their numbers from one screen to the other. #}
+    {% set usage_card = true %}
+    {% set first_step = 2 %}
 
     {# Backgrounds and zoom are radio buttons read by a selector: no script is
        needed to see a light drawing on a dark ground, or a small one larger.
@@ -38,6 +42,17 @@
         }
         .cms-svg-previews:has(#cms-svg-background-light:checked) .cms-svg-frame { background: #fff; }
         .cms-svg-previews:has(#cms-svg-background-dark:checked) .cms-svg-frame { background: #212529; }
+        /* Side by side, the preview stays in sight while the settings scroll,
+           capped to the window so that none of it is out of reach. Stacked on
+           a narrow screen, it would hide the settings: it scrolls with them. */
+        @media (min-width: 992px) {
+            .cms-svg-previews { position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow-y: auto; }
+        }
+        /* Stronger than `.cms-svg-canvas img`, which shows every image. */
+        .cms-svg-canvas .cms-svg-result { display: none; }
+        .cms-svg-previews:has(#cms-svg-text-theme:checked) .cms-svg-result--theme,
+        .cms-svg-previews:has(#cms-svg-text-black:checked) .cms-svg-result--black,
+        .cms-svg-previews:has(#cms-svg-text-white:checked) .cms-svg-result--white { display: block; }
         @media (max-width: 767.98px) { .cms-svg-frame { height: 200px; } }
         .cms-svg-tint { display: flex; flex-direction: column; align-items: center; gap: .375rem; }
         .cms-svg-tint img { height: 2rem; width: auto; max-width: 100%; }
@@ -76,28 +91,48 @@
 
         <div class="row g-3">
             <div class="col-lg-7">
-                <section class="card h-100 cms-svg-previews" data-testid="cms-svg-preview">
+                <section class="card cms-svg-previews" data-testid="cms-svg-preview">
+                    {# The same header as the cards of the steps. #}
+                    <h2 class="card-header fw-semibold fs-6 lh-base mb-0">
+                        {{ 'Preview'|trans({}, 'theliacms') }}
+                        <small class="float-end fw-normal text-body-secondary" data-testid="cms-svg-size">{{ result.width|round(2) }} × {{ result.height|round(2) }} px</small>
+                    </h2>
                     <div class="card-body">
-                        <h2 class="h6 d-flex flex-wrap justify-content-between gap-2">
-                            {{ 'Preview'|trans({}, 'theliacms') }}
-                            <small class="fw-normal text-body-secondary" data-testid="cms-svg-size">{{ result.width|round(2) }} × {{ result.height|round(2) }} px</small>
-                        </h2>
-
-                        <div class="d-flex flex-wrap gap-2 mb-3">
-                            <div class="btn-group btn-group-sm" role="group" aria-label="{{ 'Background'|trans({}, 'theliacms') }}">
-                                <input type="radio" class="btn-check" name="cms-svg-background" id="cms-svg-background-checkerboard" autocomplete="off" checked>
-                                <label class="btn btn-outline-secondary" for="cms-svg-background-checkerboard">{{ 'Checkerboard'|trans({}, 'theliacms') }}</label>
-                                <input type="radio" class="btn-check" name="cms-svg-background" id="cms-svg-background-light" autocomplete="off">
-                                <label class="btn btn-outline-secondary" for="cms-svg-background-light">{{ 'Light'|trans({}, 'theliacms') }}</label>
-                                <input type="radio" class="btn-check" name="cms-svg-background" id="cms-svg-background-dark" autocomplete="off">
-                                <label class="btn btn-outline-secondary" for="cms-svg-background-dark">{{ 'Dark'|trans({}, 'theliacms') }}</label>
+                        <div class="d-flex flex-wrap gap-3 mb-3">
+                            <div class="d-flex flex-column gap-1">
+                                <span class="small text-body-secondary" id="cms-svg-background-label">{{ 'Background'|trans({}, 'theliacms') }}</span>
+                                <div class="btn-group btn-group-sm" role="group" aria-labelledby="cms-svg-background-label">
+                                    <input type="radio" class="btn-check" name="cms-svg-background" id="cms-svg-background-checkerboard" autocomplete="off" checked>
+                                    <label class="btn btn-outline-secondary" for="cms-svg-background-checkerboard">{{ 'Checkerboard'|trans({}, 'theliacms') }}</label>
+                                    <input type="radio" class="btn-check" name="cms-svg-background" id="cms-svg-background-light" autocomplete="off">
+                                    <label class="btn btn-outline-secondary" for="cms-svg-background-light">{{ 'Light'|trans({}, 'theliacms') }}</label>
+                                    <input type="radio" class="btn-check" name="cms-svg-background" id="cms-svg-background-dark" autocomplete="off">
+                                    <label class="btn btn-outline-secondary" for="cms-svg-background-dark">{{ 'Dark'|trans({}, 'theliacms') }}</label>
+                                </div>
                             </div>
-                            <div class="btn-group btn-group-sm" role="group" aria-label="{{ 'Zoom'|trans({}, 'theliacms') }}" data-testid="cms-svg-zoom">
-                                {# The preview opens fitted to its frame, whatever the size of the drawing. #}
-                                {% for factor in ['fit', '1', '4', '10'] %}
-                                    <input type="radio" class="btn-check" name="cms-svg-zoom" id="cms-svg-zoom-{{ factor }}" value="{{ factor }}" autocomplete="off" {{ factor == 'fit' ? 'checked' : '' }}>
-                                    <label class="btn btn-outline-secondary" for="cms-svg-zoom-{{ factor }}">{{ factor == 'fit' ? 'Fitted'|trans({}, 'theliacms') : factor ~ '×' }}</label>
-                                {% endfor %}
+                            {# The color a color that follows the text takes in the large
+                               preview. A ground sets the one that suits it; a color chosen
+                               leaves the ground as it is. #}
+                            <div class="d-flex flex-column gap-1">
+                                <span class="small text-body-secondary" id="cms-svg-text-label">{{ 'Text color'|trans({}, 'theliacms') }}</span>
+                                <div class="btn-group btn-group-sm" role="group" aria-labelledby="cms-svg-text-label" data-testid="cms-svg-text-color">
+                                    <input type="radio" class="btn-check" name="cms-svg-text" id="cms-svg-text-theme" value="theme" autocomplete="off" checked>
+                                    <label class="btn btn-outline-secondary" for="cms-svg-text-theme">{{ 'Theme'|trans({}, 'theliacms') }}</label>
+                                    <input type="radio" class="btn-check" name="cms-svg-text" id="cms-svg-text-black" value="black" autocomplete="off">
+                                    <label class="btn btn-outline-secondary" for="cms-svg-text-black">{{ 'Black'|trans({}, 'theliacms') }}</label>
+                                    <input type="radio" class="btn-check" name="cms-svg-text" id="cms-svg-text-white" value="white" autocomplete="off">
+                                    <label class="btn btn-outline-secondary" for="cms-svg-text-white">{{ 'White'|trans({}, 'theliacms') }}</label>
+                                </div>
+                            </div>
+                            <div class="d-flex flex-column gap-1">
+                                <span class="small text-body-secondary" id="cms-svg-zoom-label">{{ 'Zoom'|trans({}, 'theliacms') }}</span>
+                                <div class="btn-group btn-group-sm" role="group" aria-labelledby="cms-svg-zoom-label" data-testid="cms-svg-zoom">
+                                    {# The preview opens fitted to its frame, whatever the size of the drawing. #}
+                                    {% for factor in ['fit', '1', '4', '10'] %}
+                                        <input type="radio" class="btn-check" name="cms-svg-zoom" id="cms-svg-zoom-{{ factor }}" value="{{ factor }}" autocomplete="off" {{ factor == 'fit' ? 'checked' : '' }}>
+                                        <label class="btn btn-outline-secondary" for="cms-svg-zoom-{{ factor }}">{{ factor == 'fit' ? 'Fitted'|trans({}, 'theliacms') : factor ~ '×' }}</label>
+                                    {% endfor %}
+                                </div>
                             </div>
                         </div>
 
@@ -113,7 +148,13 @@
                             <div class="col-sm-6">
                                 <figure class="mb-0">
                                     <div class="cms-svg-frame border rounded" data-cms-svg-frame>
-                                        <div class="cms-svg-canvas"><img src="{{ path('admin.cms.media.svg.result', { token: file.token, level: level }|merge(color_values)|filter(value => value != '')) }}" alt="" data-testid="cms-svg-result"></div>
+                                        {# A color that follows the text is drawn black in an image: the
+                                           result is drawn once per text color, the one chosen shown. #}
+                                        <div class="cms-svg-canvas">
+                                            <img class="cms-svg-result cms-svg-result--theme" src="{{ path('admin.cms.media.svg.result', { token: file.token, level: level, tint: 'accent' }|merge(color_values)|filter(value => value != '')) }}" alt="" data-testid="cms-svg-result">
+                                            <img class="cms-svg-result cms-svg-result--black" src="{{ path('admin.cms.media.svg.result', { token: file.token, level: level, tint: 'light' }|merge(color_values)|filter(value => value != '')) }}" alt="" data-testid="cms-svg-result-black">
+                                            <img class="cms-svg-result cms-svg-result--white" src="{{ path('admin.cms.media.svg.result', { token: file.token, level: level, tint: 'dark' }|merge(color_values)|filter(value => value != '')) }}" alt="" data-testid="cms-svg-result-white">
+                                        </div>
                                     </div>
                                     <figcaption class="small mt-2 text-center">
                                         {{ 'Result'|trans({}, 'theliacms') }} · <strong>{{ result_weight }}</strong>
@@ -151,9 +192,117 @@
             </div>
 
             <div class="col-lg-5 d-flex flex-column gap-3">
+                {# Step 1: what the file becomes. It chooses the colors of the file until
+                   the editor sets them himself, so its choice is previewed at once. A file
+                   that replaces the one of an image takes no usage; when that image is an
+                   icon, what stops the replacement is told here. #}
+                {% if usage_card %}
+                    <details class="card" open data-testid="cms-svg-usage">
+                        <summary class="card-header fw-semibold">
+                            1. {{ 'Usage'|trans({}, 'theliacms') }}
+                            <small class="float-end fw-normal text-body-secondary">{{ (icon_offered ? (icon_chosen ? 'Icon' : 'Image') : (icon_replaced ? 'Icon' : 'Image'))|trans({}, 'theliacms') }}</small>
+                        </summary>
+                        <div class="card-body d-flex flex-column gap-3">
+                            {# Read only where the usage cannot be chosen: the file stays
+                               what the image it replaces is, or goes to a field that takes
+                               an image. #}
+                            {# A file that cannot replace the icon is told so below, not that it replaces it. #}
+                            {% if not icon_offered and not (icon_replaced and icon_obstacles is not empty) %}
+                                <p class="small mb-0" data-testid="cms-svg-usage-read-only">
+                                    {% if icon_replaced %}
+                                        {{ 'Icon %name%: the new file takes the place of its drawing, under the same name.'|trans({ '%name%': icon_replaced }, 'theliacms') }}
+                                    {% elseif picker %}
+                                        {{ 'Image: the file is added for the field of the editor that asked for it.'|trans({}, 'theliacms') }}
+                                    {% else %}
+                                        {{ 'Image: the file takes the place of the one of the image, which keeps its address.'|trans({}, 'theliacms') }}
+                                    {% endif %}
+                                </p>
+                            {% endif %}
+                            {% if not icon_offered and icon_error %}
+                                <div class="alert alert-danger py-2 mb-0" role="alert" data-testid="cms-svg-icon-error">{{ icon_error }}</div>
+                            {% endif %}
+                            {# The partial writes nothing for an icon no page cites: no empty box. #}
+                            {% if icon_replaced and icon_citation is not null and icon_citation.isCited %}
+                                <div class="alert alert-info py-2 mb-0">{% include '@TheliaCMSModule/backOffice/default-twig/media/_icon_citations.html.twig' with { citation: icon_citation } only %}</div>
+                            {% endif %}
+                            {% if icon_replaced and icon_obstacles is not empty %}
+                                <div class="small alert alert-warning py-2 mb-0" data-testid="cms-svg-icon-replaced-obstacles">
+                                    <p class="mb-1">{{ 'This image is the icon %name%: a page would not keep this file whole, so it cannot replace it.'|trans({ '%name%': icon_replaced }, 'theliacms') }}</p>
+                                    <ul class="mb-0">
+                                        {% for obstacle in icon_obstacles %}<li>{{ obstacle }}</li>{% endfor %}
+                                    </ul>
+                                </div>
+                            {% endif %}
+
+                            {% if icon_offered %}
+                                {# The choice is previewed by a form of its own; the name typed
+                                   belongs to the form of the file below, and follows the preview
+                                   in a hidden field. #}
+                                <form method="get" action="{{ path('admin.cms.media.svg.show', { token: file.token }) }}" data-testid="cms-svg-usage-form" data-cms-svg-autosubmit>
+                                    {% for name, value in carried|merge({ level: level })|merge(color_carry)|merge({ colors_touched: colors_touched ? '1' : '0' })|filter(value => value != '') %}
+                                        <input type="hidden" name="{{ name }}" value="{{ value }}">
+                                    {% endfor %}
+                                    <input type="hidden" name="icon_name" value="{{ icon_chosen ? icon_name : '' }}" data-cms-svg-carry="icon_name">
+                                    <fieldset>
+                                        <legend class="visually-hidden">{{ 'Usage'|trans({}, 'theliacms') }}</legend>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="usage" id="cms-svg-usage-image" value="image" {{ icon_chosen ? '' : 'checked' }}>
+                                            <label class="form-check-label" for="cms-svg-usage-image">
+                                                {{ 'Image'|trans({}, 'theliacms') }}
+                                                <span class="d-block small text-body-secondary">{{ 'Placed in a page like any picture.'|trans({}, 'theliacms') }}</span>
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="usage" id="cms-svg-usage-icon" value="icon" {{ icon_chosen ? 'checked' : '' }} {{ icon_obstacles is empty ? '' : 'disabled' }}>
+                                            <label class="form-check-label" for="cms-svg-usage-icon">
+                                                {{ 'Icon'|trans({}, 'theliacms') }}
+                                                <span class="d-block small text-body-secondary">{{ 'Drawn in the color of the text, and found by its name.'|trans({}, 'theliacms') }}</span>
+                                            </label>
+                                        </div>
+                                    </fieldset>
+                                    <noscript><button type="submit" class="btn btn-sm btn-outline-secondary mt-2">{{ 'Preview this setting'|trans({}, 'theliacms') }}</button></noscript>
+                                </form>
+
+                                {% if icon_error %}
+                                    <div class="alert alert-danger py-2 mb-0" role="alert" data-testid="cms-svg-icon-error">{{ icon_error }}</div>
+                                {% endif %}
+
+                                {% if icon_obstacles is not empty %}
+                                    <div class="small alert alert-warning py-2 mb-0" data-testid="cms-svg-icon-obstacles">
+                                        <p class="mb-1">{{ 'This file cannot be an icon: a page would not keep what it holds.'|trans({}, 'theliacms') }}</p>
+                                        <ul class="mb-1">
+                                            {% for obstacle in icon_obstacles %}<li>{{ obstacle }}</li>{% endfor %}
+                                        </ul>
+                                        <p class="mb-0">{{ 'It can still be added as an image.'|trans({}, 'theliacms') }}</p>
+                                    </div>
+                                {% else %}
+                                    {% if icon_chosen %}
+                                        <div class="small text-body-secondary" data-testid="cms-svg-icon-advice">
+                                            <p class="fw-semibold mb-1">{{ 'For a good icon'|trans({}, 'theliacms') }}</p>
+                                            <ul class="mb-0 ps-3">
+                                                <li>{{ 'An icon takes the color of the text around it.'|trans({}, 'theliacms') }}</li>
+                                                <li>{{ 'One color, a transparent background, and no gradient, text or image.'|trans({}, 'theliacms') }}</li>
+                                                <li>{{ 'The name is how the icon is found again.'|trans({}, 'theliacms') }}</li>
+                                            </ul>
+                                        </div>
+                                    {% endif %}
+                                    <div data-cms-svg-icon-name-wrap {{ icon_chosen ? '' : 'hidden' }}>
+                                        <label for="cms-svg-icon-name" class="form-label small mb-1">{{ 'Icon name'|trans({}, 'theliacms') }}</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text font-monospace">{{ icon_prefix }}</span>
+                                            <input type="text" form="cms-svg-answer" class="form-control font-monospace {{ icon_error ? 'is-invalid' }}" id="cms-svg-icon-name" name="icon_name" value="{{ icon_name }}" maxlength="64" autocomplete="off" spellcheck="false" data-cms-svg-icon-name data-testid="cms-svg-icon-name">
+                                        </div>
+                                        <p class="small text-body-secondary mt-1 mb-0">{{ 'Lowercase letters and digits, separated by single hyphens.'|trans({}, 'theliacms') }}</p>
+                                    </div>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </details>
+                {% endif %}
+
                 <details class="card" open data-testid="cms-svg-cleaning">
                     <summary class="card-header fw-semibold">
-                        1. {{ 'Cleaning'|trans({}, 'theliacms') }}
+                        {{ first_step }}. {{ 'Cleaning'|trans({}, 'theliacms') }}
                         <small class="float-end fw-normal text-body-secondary">
                             {% if result.changes is empty %}
                                 {{ 'nothing to remove'|trans({}, 'theliacms') }}
@@ -181,7 +330,7 @@
 
                 <details class="card" open data-testid="cms-svg-optimization">
                     <summary class="card-header fw-semibold">
-                        2. {{ 'Optimization'|trans({}, 'theliacms') }}
+                        {{ first_step + 1 }}. {{ 'Optimization'|trans({}, 'theliacms') }}
                         <small class="float-end fw-normal text-body-secondary">{{ 'lossless · required'|trans({}, 'theliacms') }}</small>
                     </summary>
                     <div class="card-body">
@@ -196,9 +345,10 @@
                                address and sends nothing else: the buttons of the file below
                                keep their own form. #}
                             <form method="get" action="{{ path('admin.cms.media.svg.show', { token: file.token }) }}" class="mt-3" data-testid="cms-svg-levels">
-                                {% for name, value in carried|merge(color_values) %}
+                                {% for name, value in carried|merge(color_carry)|merge({ colors_touched: colors_touched ? '1' : '0' }) %}
                                     <input type="hidden" name="{{ name }}" value="{{ value }}">
                                 {% endfor %}
+                                {% include '@TheliaCMSModule/backOffice/default-twig/media/_svg_usage_carry.html.twig' %}
                                 <fieldset class="mb-2">
                                     <legend class="fs-6">{{ 'Further optimization'|trans({}, 'theliacms') }}</legend>
                                     <div class="form-check">
@@ -224,7 +374,7 @@
                 {% set palette = result.palette %}
                 <details class="card" open data-testid="cms-svg-colors">
                     <summary class="card-header fw-semibold">
-                        3. {{ 'Colors'|trans({}, 'theliacms') }}
+                        {{ first_step + 2 }}. {{ 'Colors'|trans({}, 'theliacms') }}
                         <small class="float-end fw-normal text-body-secondary">
                             {% if not palette.readable %}
                                 {{ 'too complex'|trans({}, 'theliacms') }}
@@ -249,6 +399,9 @@
                                 {% for name, value in carried|merge({ level: level })|filter(value => value != '') %}
                                     <input type="hidden" name="{{ name }}" value="{{ value }}">
                                 {% endfor %}
+                                {# A change of this form is the editor's own: the usage leaves the colors alone from then on. #}
+                                <input type="hidden" name="colors_touched" value="1">
+                                {% include '@TheliaCMSModule/backOffice/default-twig/media/_svg_usage_carry.html.twig' %}
 
                                 <fieldset>
                                     <legend class="visually-hidden">{{ 'Preset'|trans({}, 'theliacms') }}</legend>
@@ -334,18 +487,27 @@
                 </details>
 
                 {# Last, once the steps were read: what becomes of the file. #}
-                <form method="post" action="{{ path('admin.cms.media.svg.submit', route_parameters) }}" class="card" data-testid="cms-svg-form">
+                <form method="post" id="cms-svg-answer" action="{{ path('admin.cms.media.svg.submit', route_parameters) }}" class="card" data-testid="cms-svg-form">
                     <input type="hidden" name="_token" value="{{ assignToken() }}">
                     <input type="hidden" name="level" value="{{ level }}">
-                    {% for name, value in color_values %}
+                    {% for name, value in color_carry %}
                         <input type="hidden" name="{{ name }}" value="{{ value }}">
                     {% endfor %}
+                    <input type="hidden" name="colors_touched" value="{{ colors_touched ? '1' : '0' }}">
+                    {% if icon_offered %}
+                        <input type="hidden" name="usage" value="{{ icon_chosen ? 'icon' : 'image' }}" data-cms-svg-carry="usage">
+                    {% endif %}
 
                     <div class="card-body d-flex flex-column gap-3">
                         {% if has_following %}
                             <div class="form-check mb-0">
                                 <input class="form-check-input" type="checkbox" name="apply_to_following" id="cms-svg-apply-following" value="1" data-testid="cms-svg-apply-following">
-                                <label class="form-check-label" for="cms-svg-apply-following">{{ 'Apply these settings to the following file|Apply these settings to the %count% following files'|trans({ '%count%': total - position }, 'theliacms') }}</label>
+                                <label class="form-check-label" for="cms-svg-apply-following">
+                                    {{ 'Apply these settings to the following file|Apply these settings to the %count% following files'|trans({ '%count%': total - position }, 'theliacms') }}
+                                    {% if icon_offered %}
+                                        <span class="d-block small text-body-secondary">{{ 'The usage is carried too: a file that follows becomes an icon named after its own file name, if it can be one.'|trans({}, 'theliacms') }}</span>
+                                    {% endif %}
+                                </label>
                             </div>
                         {% endif %}
 
@@ -386,8 +548,34 @@
             document.querySelectorAll('input[name="cms-svg-zoom"]').forEach((input) => input.addEventListener('change', centre));
             centre();
 
+            // A ground sets the text color that suits it; a text color chosen
+            // leaves the ground as it is.
+            const textFor = { checkerboard: 'theme', light: 'black', dark: 'white' };
+            Object.entries(textFor).forEach(([ground, text]) => {
+                document.getElementById('cms-svg-background-' + ground)?.addEventListener('change', () => {
+                    const choice = document.getElementById('cms-svg-text-' + text);
+                    if (choice) { choice.checked = true; }
+                });
+            });
+
             // A setting of the colors shows its preview as soon as it is chosen.
             document.querySelectorAll('[data-cms-svg-autosubmit]').forEach((form) => form.addEventListener('change', () => form.requestSubmit()));
+
+            // The usage and the name chosen follow a preview of the settings.
+            const usages = [...document.querySelectorAll('input[type="radio"][name="usage"]')];
+            const nameField = document.querySelector('[data-cms-svg-icon-name]');
+            const nameWrap = document.querySelector('[data-cms-svg-icon-name-wrap]');
+            const carryUsage = () => {
+                const chosen = usages.find((input) => input.checked)?.value ?? 'image';
+                document.querySelectorAll('[data-cms-svg-carry="usage"]').forEach((input) => { input.value = chosen; });
+                document.querySelectorAll('[data-cms-svg-carry="icon_name"]').forEach((input) => { input.value = nameField?.value ?? ''; });
+                if (nameWrap) {
+                    nameWrap.hidden = 'icon' !== chosen;
+                }
+            };
+            usages.forEach((input) => input.addEventListener('change', carryUsage));
+            nameField?.addEventListener('input', carryUsage);
+            carryUsage();
 
             // One answer per file: a second click while the first is on its
             // way sends nothing.

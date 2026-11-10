@@ -64,6 +64,7 @@
             'to-describe': 'To describe'|trans({}, 'theliacms'),
             'unused': 'Unused images'|trans({}, 'theliacms'),
             'decorative': 'Decorative images'|trans({}, 'theliacms'),
+            'icons': 'Icons'|trans({}, 'theliacms'),
         } %}
         {% set order_labels = {
             'newest': 'Newest first'|trans({}, 'theliacms'),
@@ -223,6 +224,14 @@
                         <input class="form-check-input position-absolute top-0 start-0 m-2 shadow-sm" style="z-index: 2"
                                type="checkbox" form="cms-media-bulk" name="images[]" value="{{ item.id }}"
                                data-cms-media-select aria-label="{{ 'Select %title%'|trans({ '%title%': item.title }, 'theliacms') }}">
+                        {# An icon told from an image at a glance, on the picture
+                           itself; its name stays among the badges below. Outside
+                           the ratio box, which stretches every child it holds. #}
+                        {% if item.iconTag %}
+                            <span class="badge text-bg-dark position-absolute top-0 end-0 m-2 shadow-sm" style="z-index: 2" data-testid="cms-media-icon-badge">
+                                {{ 'Icon'|trans({}, 'theliacms') }}
+                            </span>
+                        {% endif %}
                         {# `scale-down`, not `cover`: a media library has to show
                            the real shape of a file, and never blow a small image
                            up to fill the card. #}
@@ -257,6 +266,10 @@
                                 </span>
                             {% elseif item.decorative %}
                                 <span class="badge text-bg-light">{{ 'Decorative'|trans({}, 'theliacms') }}</span>
+                            {% endif %}
+
+                            {% if item.iconTag %}
+                                <span class="badge text-bg-light font-monospace" data-testid="cms-media-icon-name" title="{{ 'Icon name'|trans({}, 'theliacms') }}">{{ item.iconTag }}</span>
                             {% endif %}
 
                             {% for tag in item.tags|slice(0, 2) %}

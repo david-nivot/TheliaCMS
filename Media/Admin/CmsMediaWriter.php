@@ -14,10 +14,16 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Media\Admin;
 
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use TheliaCMS\Media\CmsMediaLibrary;
+use TheliaCMS\Media\Icon\IconCacheInvalidator;
+use TheliaCMS\Media\Icon\IconNames;
+use TheliaCMS\Media\Icon\IconNameTakenException;
+use TheliaCMS\Media\Icon\InvalidIconNameException;
 use TheliaCMS\Media\Svg\PreparedSvgStore;
 use TheliaCMS\Media\Svg\SvgUpload;
 use TheliaLibrary\Exception\UnreadableSvgException;
@@ -38,6 +44,9 @@ final readonly class CmsMediaWriter
         private CmsMediaLibrary $library,
         private SvgSanitizerInterface $svgSanitizer,
         private PreparedSvgStore $preparedSvgs,
+        private IconNames $iconNames,
+        private IconCacheInvalidator $iconCache,
+        private LoggerInterface $logger = new NullLogger(),
     ) {
     }
 
@@ -128,14 +137,39 @@ final readonly class CmsMediaWriter
     }
 
     /**
-     * Stores an SVG the editor has seen, under the name of the file it came in.
+     * Stores an SVG the editor has seen, under the name of the file it came in,
+     * and gives it an icon name when one is asked for.
+     *
+     * @param string|null $iconName the name, without its prefix; the caller has checked that it is valid and free
      *
      * @throws UnreadableSvgException
+     * @throws InvalidIconNameException
+     * @throws IconNameTakenException   when another image took the name since it was checked
      */
-    public function addPreparedSvg(string $svg, string $name, string $locale): LibraryImage
+    public function addPreparedSvg(string $svg, string $name, string $locale, ?string $iconName = null): LibraryImage
     {
         $image = $this->withTemporarySvg($svg, $name, fn (File $file): LibraryImage => $this->images->createImage($file, $name, $locale));
         $this->library->tag($image);
+
+        if (null !== $iconName) {
+            try {
+                $this->iconNames->assign((int) $image->getId(), $iconName);
+            } catch (\Throwable $exception) {
+                // The file was added for its name: without it, it is not added, whatever stopped the name.
+                // A cleanup that fails is logged and does not hide what stopped the name.
+                try {
+                    $this->images->deleteImage($image->getId());
+                } catch (\Throwable $cleanup) {
+                    $this->logger->error('The image {image} added for the icon name "{name}" could not be deleted after the name was refused.', [
+                        'image' => $image->getId(),
+                        'name' => $iconName,
+                        'exception' => $cleanup,
+                    ]);
+                }
+
+                throw $exception;
+            }
+        }
 
         return $image;
     }
@@ -149,6 +183,14 @@ final readonly class CmsMediaWriter
     public function replaceWithPreparedSvg(LibraryImage $image, string $svg, string $name, string $locale): void
     {
         $this->withTemporarySvg($svg, $name, fn (File $file): LibraryImage => $this->images->updateImage($image->getId(), $file, null, $locale));
+
+        // An icon draws the new file: what ux-icons kept of it, and the file the names remember, are stale.
+        $this->iconNames->reset();
+        $iconName = $this->iconNames->nameOf($image->getId());
+
+        if (null !== $iconName) {
+            $this->iconCache->forget($iconName);
+        }
     }
 
     /**
@@ -195,7 +237,8 @@ final readonly class CmsMediaWriter
 
         $image->setLocale($locale)->setCaption($data['caption']);
 
-        if (!$image->isVideo()) {
+        // A form without the two fields (a video, an icon) leaves them as they are.
+        if (!$image->isVideo() && \array_key_exists('alt', $data)) {
             $image->setDecorative(true === ($data['decorative'] ?? null) ? 1 : 0)->setAlt($data['alt'] ?? null);
         }
 
@@ -240,7 +283,9 @@ final readonly class CmsMediaWriter
 
     public function delete(LibraryImage $image): void
     {
+        // The name goes after the image: a row left behind by a failure is ignored when names are read.
         $this->images->deleteImage($image->getId());
+        $this->iconNames->remove($image->getId());
     }
 
     private function refusalOf(UploadedFile $file, bool $imagesOnly): ?MediaUploadRefusal

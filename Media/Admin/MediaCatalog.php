@@ -17,6 +17,7 @@ namespace TheliaCMS\Media\Admin;
 use Thelia\Model\Lang;
 use Thelia\Model\LangQuery;
 use TheliaCMS\Media\CmsMediaLibrary;
+use TheliaCMS\Media\Icon\IconNames;
 use TheliaCMS\Media\MediaFile;
 use TheliaCMS\Media\MediaFilter;
 use TheliaCMS\Media\MediaKind;
@@ -33,6 +34,7 @@ final readonly class MediaCatalog
     public function __construct(
         private CmsMediaLibrary $library,
         private MediaUsageFinder $usages,
+        private IconNames $iconNames,
     ) {
     }
 
@@ -63,10 +65,12 @@ final readonly class MediaCatalog
         // when the screen says it.
         $counts = $withUsage ? $this->usages->countsFor(array_map(static fn (LibraryImage $image): int => (int) $image->getId(), $images)) : [];
 
+        // The names of the icons, read once for the page.
+        $iconNames = $this->iconNames->namesByImage();
         $items = [];
 
         foreach ($images as $image) {
-            $item = $this->item($image, $locale, $counts[(int) $image->getId()] ?? 0);
+            $item = $this->item($image, $locale, $counts[(int) $image->getId()] ?? 0, $iconNames);
 
             if (null !== $item) {
                 $items[] = $item;
@@ -136,7 +140,10 @@ final readonly class MediaCatalog
         return $descriptions;
     }
 
-    public function item(LibraryImage $image, string $locale, ?int $usageCount = null): ?MediaItem
+    /**
+     * @param array<int, string>|null $iconNames the names of the icons by image id when the caller has read them for several images; read here when null
+     */
+    public function item(LibraryImage $image, string $locale, ?int $usageCount = null, ?array $iconNames = null): ?MediaItem
     {
         $this->library->measure($image);
 
@@ -163,6 +170,7 @@ final readonly class MediaCatalog
             tags: $this->library->tagsOf($image),
             usageCount: $usageCount ?? $this->usages->countsFor([(int) $image->getId()])[(int) $image->getId()],
             video: $image->isVideo(),
+            iconName: null === $iconNames ? $this->iconNames->nameOf((int) $image->getId()) : ($iconNames[(int) $image->getId()] ?? null),
         );
     }
 

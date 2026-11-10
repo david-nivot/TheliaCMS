@@ -20,11 +20,14 @@ use TheliaCMS\Media\Svg\PreparedSvgStore;
 /**
  * Where the editor stands on the way of several SVG files: the file shown, the
  * ones after it, the images stored on the way so far and, when the way
- * replaces the file of an image, which one. It is all in the address, so no
- * session holds it.
+ * replaces the file of an image, which one, and the usage carried from the file
+ * before. It is all in the address, so no session holds it.
  */
 final readonly class SvgWay
 {
+    /** "1": the editor set the colors of this file himself; "0": they follow the usage; absent: they do when none is asked. */
+    public const string COLORS_TOUCHED_PARAMETER = 'colors_touched';
+
     /**
      * @param list<string> $queue  the tokens of the files after this one
      * @param list<int>    $images the images stored on the way so far
@@ -41,6 +44,13 @@ final readonly class SvgWay
         public bool $picker = false,
         // The color setting carried from the file before, its main color left out.
         public SvgColoring $coloring = new SvgColoring(),
+        // The usage carried from the file before: an icon. Read from the
+        // address by the screen, which offers it only where it can be taken.
+        public bool $icon = false,
+        // The name the editor typed, kept when the screen is asked for a preview.
+        public ?string $iconName = null,
+        // The editor chose the colors of this file: the usage no longer preselects them.
+        public bool $colorsTouched = false,
     ) {
     }
 
@@ -60,6 +70,8 @@ final readonly class SvgWay
         $replace = (int) self::text($query['replace'] ?? '');
         $total = (int) self::text($query['of'] ?? '');
         $level = self::text($query['level'] ?? '');
+        $iconName = trim(self::text($query['icon_name'] ?? ''));
+        $coloring = SvgColoring::fromValues($query);
 
         return new self(
             $token,
@@ -69,8 +81,27 @@ final readonly class SvgWay
             max($total, \count($queue) + 1),
             '' === $level ? null : $level,
             '1' === self::text($query['picker'] ?? ''),
-            SvgColoring::fromValues($query),
+            $coloring,
+            'icon' === self::text($query['usage'] ?? ''),
+            '' === $iconName ? null : $iconName,
+            self::colorsTouched($query, $coloring),
         );
+    }
+
+    /**
+     * Whether the editor set the colors himself: said by the field the forms
+     * carry, and, for an address that does not carry it, by colors that differ
+     * from the default.
+     *
+     * @param array<string, mixed> $values the query or the form
+     */
+    public static function colorsTouched(array $values, SvgColoring $coloring): bool
+    {
+        return match (self::text($values[self::COLORS_TOUCHED_PARAMETER] ?? '')) {
+            '1' => true,
+            '0' => false,
+            default => !$coloring->changesNothing(),
+        };
     }
 
     /** The place of this file among the files of the sending, from 1. */

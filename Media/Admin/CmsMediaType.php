@@ -133,6 +133,23 @@ final class CmsMediaType extends AbstractType
     }
 
     /**
+     * The constraint of the file that replaces an icon: an SVG only, which
+     * goes through the preparation screen where it is judged fit to be an icon.
+     * A JPEG, a PNG or a WebP cannot be drawn by a page as an icon.
+     */
+    public static function iconReplacementConstraint(?TranslatorInterface $translator = null): Callback
+    {
+        return new Callback(static function (mixed $file, ExecutionContextInterface $context) use ($translator): void {
+            if (!$file instanceof UploadedFile || SvgUpload::isSvg($file)) {
+                return;
+            }
+
+            $message = 'An icon can only be replaced by an SVG file.';
+            $context->buildViolation(null === $translator ? $message : $translator->trans($message, [], TheliaCMS::DOMAIN_NAME))->addViolation();
+        });
+    }
+
+    /**
      * The constraint of the file that replaces a video: an MP4 under the
      * ceiling of a video. An image is never replaced by a video, nor the
      * reverse: the pages that use the row would publish the wrong element.
@@ -163,7 +180,9 @@ final class CmsMediaType extends AbstractType
 
         // A video has no alternative text, no decorative flag: it is not read
         // by a screen reader as an image is, and the rule below does not apply.
-        if (!$video) {
+        // Nor does an icon: its text depends on where it is placed, and the
+        // component that draws it gives it.
+        if (!$video && true !== $options['icon']) {
             $builder
                 ->add('decorative', CheckboxType::class, [
                     'label' => 'This image is decorative',
@@ -197,14 +216,18 @@ final class CmsMediaType extends AbstractType
             ->add('file', FileType::class, [
                 'label' => 'Replace the file',
                 'required' => false,
-                'constraints' => [$video ? self::videoConstraint($this->translator) : self::replacementConstraint($this->translator)],
+                'constraints' => [match (true) {
+                    $video => self::videoConstraint($this->translator),
+                    true === $options['icon'] => self::iconReplacementConstraint($this->translator),
+                    default => self::replacementConstraint($this->translator),
+                }],
                 'help' => $video ? 'The new file keeps the same address, so the pages using this video show it right away.' : 'The new file keeps the same address, so the pages using this image show it right away.',
             ]);
     }
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->setDefaults(['translation_domain' => 'theliacms', 'video' => false]);
+        $resolver->setDefaults(['translation_domain' => 'theliacms', 'video' => false, 'icon' => false]);
         $resolver->setAllowedTypes('video', 'bool');
     }
 

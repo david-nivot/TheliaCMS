@@ -16,6 +16,9 @@ namespace TheliaCMS\Media\Admin;
 
 use Propel\Runtime\ActiveQuery\Criteria;
 use TheliaCMS\Catalogue\CatalogueItemType;
+use TheliaCMS\Media\Icon\IconName;
+use TheliaCMS\Media\Icon\IconNames;
+use TheliaCMS\Model\CmsComponentQuery;
 use TheliaCMS\Model\CmsItemContentQuery;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Model\CmsPageContentQuery;
@@ -30,9 +33,17 @@ use TheliaCMS\Model\CmsPageQuery;
  * memory for every image at a time — one query for a whole grid rather than one
  * per card — and as the image of the page, read from its column. The document
  * of a catalogue item uses an image the same way the content of a page does.
+ * An image named as an icon is also used where a document cites its name
+ * (`"cms:<name>"`), a draft included: the drawing is written into the page
+ * when it is saved, so no URL of the image ever shows it. So is it where the
+ * template of a component of the site writes `cms_icon('cms:<name>')`.
  */
 final readonly class MediaUsageFinder
 {
+    public function __construct(private IconNames $icons)
+    {
+    }
+
     /**
      * Number of live pages using each image, keyed by image id.
      *
@@ -45,10 +56,11 @@ final readonly class MediaUsageFinder
         // Page ids as keys: a page holding the image in two languages, or in its
         // content and as its image, is one page using it.
         $pagesByImage = array_fill_keys($imageIds, []);
+        $iconNames = $this->iconNames();
 
         foreach ($this->pageContents() as $content) {
             foreach ($imageIds as $imageId) {
-                if ($this->references($content['html'], $imageId)) {
+                if ($this->references($content['html'], $imageId, $iconNames)) {
                     $pagesByImage[$imageId][$content['pageId']] = true;
                 }
             }
@@ -60,13 +72,45 @@ final readonly class MediaUsageFinder
 
         foreach ($this->itemContents() as $content) {
             foreach ($imageIds as $imageId) {
-                if ($this->references($content['html'], $imageId)) {
+                if ($this->references($content['html'], $imageId, $iconNames)) {
                     $pagesByImage[$imageId][$content['type']->value.'-'.$content['id']] = true;
                 }
             }
         }
 
+        foreach ($this->componentTemplates() as $component) {
+            foreach ($imageIds as $imageId) {
+                if (isset($iconNames[$imageId]) && IconName::isQuotedIn($component['template'], $iconNames[$imageId])) {
+                    $pagesByImage[$imageId]['component-'.$component['code']] = true;
+                }
+            }
+        }
+
         return array_map(\count(...), $pagesByImage);
+    }
+
+    /**
+     * Codes of the components of the site whose template cites an icon.
+     *
+     * @return list<string>
+     */
+    public function componentsUsing(int $imageId): array
+    {
+        $name = $this->iconNames()[$imageId] ?? null;
+
+        if (null === $name) {
+            return [];
+        }
+
+        $codes = [];
+
+        foreach ($this->componentTemplates() as $component) {
+            if (IconName::isQuotedIn($component['template'], $name)) {
+                $codes[] = $component['code'];
+            }
+        }
+
+        return $codes;
     }
 
     /**
@@ -77,9 +121,10 @@ final readonly class MediaUsageFinder
     public function pagesUsing(int $imageId): array
     {
         $localesByPage = [];
+        $iconNames = $this->iconNames();
 
         foreach ($this->pageContents() as $content) {
-            if (!$this->references($content['html'], $imageId)) {
+            if (!$this->references($content['html'], $imageId, $iconNames)) {
                 continue;
             }
 
@@ -116,9 +161,10 @@ final readonly class MediaUsageFinder
     public function itemsUsing(int $imageId): array
     {
         $usages = [];
+        $iconNames = $this->iconNames();
 
         foreach ($this->itemContents() as $content) {
-            if (!$this->references($content['html'], $imageId)) {
+            if (!$this->references($content['html'], $imageId, $iconNames)) {
                 continue;
             }
 
@@ -131,11 +177,28 @@ final readonly class MediaUsageFinder
     }
 
     /**
-     * Number of live pages and catalogue items using an image.
+     * Number of live pages, catalogue items and components of the site using
+     * an image.
      */
     public function useCount(int $imageId): int
     {
-        return \count($this->pagesUsing($imageId)) + \count($this->itemsUsing($imageId));
+        return \count($this->pagesUsing($imageId)) + \count($this->itemsUsing($imageId)) + \count($this->componentsUsing($imageId));
+    }
+
+    /**
+     * The Twig template of every component of the site, draft or ready.
+     *
+     * @return list<array{code: string, template: string}>
+     */
+    private function componentTemplates(): array
+    {
+        $rows = CmsComponentQuery::create()
+            ->filterByTemplate(null, Criteria::ISNOTNULL)
+            ->select(['Code', 'Template'])
+            ->find()
+            ->toArray();
+
+        return array_map(static fn (array $row): array => ['code' => (string) $row['Code'], 'template' => (string) $row['Template']], $rows);
     }
 
     /**
@@ -234,13 +297,30 @@ final readonly class MediaUsageFinder
         return $pages;
     }
 
-    private function references(string $html, int $imageId): bool
+    /**
+     * @param array<int, string> $iconNames the icon name of each image that has one, by image id
+     */
+    private function references(string $html, int $imageId, array $iconNames): bool
     {
+        // An icon is cited by its name in a document, quotes included so that
+        // `cms:arrow` is not found in `cms:arrow-left`.
+        if (isset($iconNames[$imageId]) && str_contains($html, '"'.IconName::prefixed($iconNames[$imageId]).'"')) {
+            return true;
+        }
+
         // The editor project is JSON, and a JSON encoder is free to write the
         // slashes of a URL escaped.
         $html = str_replace('\\/', '/', $html);
 
         // A video is served from a route of its own, which ends on its id.
         return str_contains($html, '/image-library/'.$imageId.'/') || str_contains($html, '/video-library/'.$imageId.'.mp4');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function iconNames(): array
+    {
+        return $this->icons->namesByImage();
     }
 }

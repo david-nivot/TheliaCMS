@@ -29,6 +29,9 @@ use Thelia\Model\Lang;
 use TheliaCMS\Catalogue\CatalogueItems;
 use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Media\CmsMediaLibrary;
+use TheliaCMS\Media\Icon\IconCitations;
+use TheliaCMS\Media\Icon\IconNames;
+use TheliaCMS\Media\Icon\IconRenaming;
 use TheliaCMS\Media\MediaFilter;
 use TheliaCMS\Media\MediaKind;
 use TheliaCMS\Media\MediaOrder;
@@ -64,6 +67,9 @@ final readonly class CmsMediaAdminController
         private EditLanguage $languages,
         private CatalogueItems $items,
         private UrlGeneratorInterface $urls,
+        private IconRenaming $iconRenaming,
+        private IconNames $iconNames,
+        private IconCitations $iconCitations,
     ) {
     }
 
@@ -332,6 +338,8 @@ final readonly class CmsMediaAdminController
             ] + MediaQuery::fromRequest($request)->addressParameters());
         }
 
+        $item = $this->catalog->item($image, $locale);
+
         return new Response($this->twig->render(self::EDIT_TEMPLATE, [
             // The list the image was opened from, to go back to it.
             'list_parameters' => MediaQuery::fromRequest($request)->addressParameters(),
@@ -339,12 +347,45 @@ final readonly class CmsMediaAdminController
             'known_tags' => array_keys($this->library->tagCounts()),
             'assets_version' => substr(hash('xxh3', (string) @filemtime(__DIR__.'/../../templates/backOffice/default-twig/assets/media-sheet.js')), 0, 12),
             'form' => $form->createView(),
-            'item' => $this->catalog->item($image, $locale),
+            'item' => $item,
+            // How many pages and items cite the icon, when the image is one.
+            'icon_citation' => null === $item->iconName ? null : $this->iconCitations->of($item->iconName),
             'usages' => $this->usages->pagesUsing($id),
             'item_usages' => $this->itemUsages($id, $locale),
             'edit_locale' => $locale,
             'edit_language_id' => $lang->getId(),
         ]));
+    }
+
+    /**
+     * Renames the icon. Refused while a page or an item cites it: their
+     * documents would keep the old name, and the icon would disappear from
+     * them at their next publication.
+     */
+    #[Route('/{id}/icon', name: 'icon_rename', requirements: ['id' => '\\d+'], methods: ['POST'])]
+    public function renameIcon(Request $request, int $id): RedirectResponse
+    {
+        $this->denyUnless(AccessManager::UPDATE);
+        $lang = $this->editLang($request);
+        $image = $this->ownedImageOrFail($id);
+        $change = $this->iconRenaming->rename($id, $request->request->getString('icon_name'));
+
+        return $this->backToSheet($request, $lang, $image, $change->message, $change->made ? 'success' : 'warning');
+    }
+
+    /**
+     * Takes the name away: the image stays in the library, no longer an icon.
+     * Refused while a page or an item cites the icon.
+     */
+    #[Route('/{id}/icon/remove', name: 'icon_remove', requirements: ['id' => '\\d+'], methods: ['POST'])]
+    public function removeIcon(Request $request, int $id): RedirectResponse
+    {
+        $this->denyUnless(AccessManager::UPDATE);
+        $lang = $this->editLang($request);
+        $image = $this->ownedImageOrFail($id);
+        $change = $this->iconRenaming->removeName($id);
+
+        return $this->backToSheet($request, $lang, $image, $change->message, $change->made ? 'success' : 'warning');
     }
 
     /**
@@ -450,7 +491,7 @@ final readonly class CmsMediaAdminController
                 }
 
                 if ([] !== $kept) {
-                    $this->support->flash($request, 'warning', $this->support->translate('Kept, still used by a page or an item: %titles%.', ['%titles%' => implode(', ', $kept)]));
+                    $this->support->flash($request, 'warning', $this->support->translate('Kept, still used by a page, an item or a component of the site: %titles%.', ['%titles%' => implode(', ', $kept)]));
                 }
 
                 return $this->backToList($request, $lang, $this->support->translate('%count% image(s) deleted.', ['%count%' => $deleted]));
@@ -470,7 +511,7 @@ final readonly class CmsMediaAdminController
 
         if ($usageCount > 0) {
             return $this->backToList($request, $lang, $this->support->translate(
-                'This image is still used by %count% page(s) or catalogue item(s). Remove it from them first.',
+                'This image is still used by %count% page(s), catalogue item(s) or component(s) of the site. Remove it from them first.',
                 ['%count%' => $usageCount],
             ), 'warning');
         }
@@ -513,12 +554,14 @@ final readonly class CmsMediaAdminController
             'file' => null,
         ];
 
-        // A video has neither alternative text nor decorative flag.
-        if (!$image->isVideo()) {
+        // A video has neither alternative text nor decorative flag, nor an icon.
+        $icon = null !== $this->iconNames->nameOf((int) $image->getId());
+
+        if (!$image->isVideo() && !$icon) {
             $data += ['alt' => $image->getAlt(), 'decorative' => 1 === $image->getDecorative()];
         }
 
-        return $this->forms->create(CmsMediaType::class, $data, ['video' => $image->isVideo()]);
+        return $this->forms->create(CmsMediaType::class, $data, ['video' => $image->isVideo(), 'icon' => $icon]);
     }
 
     private function ownedImageOrFail(int $id): LibraryImage
@@ -540,6 +583,16 @@ final readonly class CmsMediaAdminController
     private function editLang(Request $request): Lang
     {
         return $this->languages->resolve($request);
+    }
+
+    private function backToSheet(Request $request, Lang $lang, LibraryImage $image, string $message, string $level = 'success'): RedirectResponse
+    {
+        $this->support->flash($request, $level, $message);
+
+        return $this->support->redirect('admin.cms.media.edit', [
+            'id' => $image->getId(),
+            self::EDIT_LANGUAGE_PARAMETER => $lang->getId(),
+        ] + MediaQuery::fromRequest($request)->addressParameters());
     }
 
     private function backToList(Request $request, Lang $lang, ?string $message = null, string $level = 'success'): RedirectResponse

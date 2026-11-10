@@ -1,0 +1,5 @@
+{# The usage and the name typed, kept by the forms that preview a setting: a script writes them. #}
+{% if icon_offered %}
+    <input type="hidden" name="usage" value="{{ icon_chosen ? 'icon' : 'image' }}" data-cms-svg-carry="usage">
+    <input type="hidden" name="icon_name" value="{{ icon_chosen ? icon_name : '' }}" data-cms-svg-carry="icon_name">
+{% endif %}

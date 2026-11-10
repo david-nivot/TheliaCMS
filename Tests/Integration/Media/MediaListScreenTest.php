@@ -18,6 +18,7 @@ use Propel\Runtime\ActiveQuery\Criteria;
 use Symfony\Component\DomCrawler\Crawler;
 use Thelia\Model\LangQuery;
 use TheliaCMS\Media\CmsMediaLibrary;
+use TheliaCMS\Media\Icon\IconNames;
 use TheliaCMS\Tests\Integration\Security\AdminScreenTestCase;
 use TheliaLibrary\Model\LibraryImage;
 
@@ -58,6 +59,24 @@ final class MediaListScreenTest extends AdminScreenTestCase
         self::assertSame(2, $counts['undescribed'], 'The count says what the filter lists.');
         self::assertSame([$decorative->getId()], $this->idsOf($this->screen(self::LIST.'?filter=decorative')));
         self::assertNotContains($described->getId(), $this->idsOf($this->screen(self::LIST.'?filter=to-describe')));
+    }
+
+    public function testTheIconsFilterListsTheImagesThatHaveAnIconNameAndTheCardsShowIt(): void
+    {
+        $icon = $this->image('Une icône');
+        $this->image('Une photo');
+        $this->getService(IconNames::class)->assign((int) $icon->getId(), 'une-icone');
+
+        $list = $this->screen(self::LIST.'?filter=icons');
+
+        self::assertSame([$icon->getId()], $this->idsOf($list));
+        self::assertSame('cms:une-icone', trim($list->filter('[data-testid="cms-media-icon-name"]')->text()));
+        self::assertSame(1, $this->screen(self::LIST)->filter('[data-testid="cms-media-icon-name"]')->count(), 'Only the icon carries a name on the unfiltered list.');
+        self::assertSame(1, $this->screen(self::LIST)->filter('[data-testid="cms-media-icon-badge"]')->count(), 'Only the icon is marked on its picture.');
+        $rows = $this->screen(self::LIST.'?view=list');
+        self::assertSame(1, $rows->filter('[data-testid="cms-media-row-icon-'.$icon->getId().'"]')->count(), 'The list marks the icon too.');
+        self::assertSame(0, $rows->filter('[data-testid="cms-media-row-alt-'.$icon->getId().'"] .badge')->count(), 'An icon is neither said described nor to describe: its text depends on where it is placed.');
+        self::assertSame('cms:une-icone', trim($this->screen(self::LIST.'/'.$icon->getId())->filter('[data-testid="cms-media-icon-name"] code')->text()), 'The sheet shows it, read only.');
     }
 
     public function testUnusedLeavesOutTheImageAPageShows(): void

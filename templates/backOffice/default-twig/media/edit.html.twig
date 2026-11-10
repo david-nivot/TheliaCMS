@@ -27,7 +27,8 @@
     {% endembed %}
 
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-        {% if item.video %}<span></span>{% else %}
+        {# An icon has no description of its own either: see the alternative text below. #}
+        {% if item.video or item.iconName is not null %}<span></span>{% else %}
         {# The description is per language and the decorative flag for all of
            them: where the image stands everywhere, without opening it in each
            language. #}
@@ -80,11 +81,47 @@
                             <span>{{ item.format|upper }}</span>
                         </li>
                     {% endif %}
+                    {% if item.iconTag %}
+                        <li class="list-group-item d-flex justify-content-between" data-testid="cms-media-icon-name">
+                            <span class="text-muted">{{ 'Icon name'|trans({}, 'theliacms') }}</span>
+                            <code>{{ item.iconTag }}</code>
+                        </li>
+                    {% endif %}
                 </ul>
             </div>
 
+            {% if icon_citation is not null %}
+                <div class="card mt-3" data-testid="cms-media-icon">
+                    <div class="card-header">{{ 'Icon'|trans({}, 'theliacms') }} <code>{{ item.iconTag }}</code></div>
+                    <div class="card-body d-flex flex-column gap-3">
+                        {% include '@TheliaCMSModule/backOffice/default-twig/media/_icon_citations.html.twig' with { citation: icon_citation, always: true } only %}
+
+                        <form method="post" class="d-flex flex-column gap-2" data-testid="cms-icon-rename"
+                              action="{{ path('admin.cms.media.icon_rename', list_parameters|merge({ id: item.id, edit_language_id: edit_language_id })) }}">
+                            <input type="hidden" name="_token" value="{{ assignToken() }}">
+                            <label for="cms-icon-rename-name" class="form-label small mb-0">{{ 'Icon name'|trans({}, 'theliacms') }}</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text font-monospace">cms:</span>
+                                <input type="text" class="form-control font-monospace" id="cms-icon-rename-name" name="icon_name" value="{{ item.iconName }}" maxlength="64" autocomplete="off" spellcheck="false" data-testid="cms-icon-rename-name" {{ icon_citation.isCited ? 'disabled' : '' }}>
+                                <button type="submit" class="btn btn-outline-secondary" data-testid="cms-icon-rename-submit" {{ icon_citation.isCited ? 'disabled' : '' }}>{{ 'Rename the icon'|trans({}, 'theliacms') }}</button>
+                            </div>
+                        </form>
+
+                        <form method="post" data-testid="cms-icon-remove"
+                              action="{{ path('admin.cms.media.icon_remove', list_parameters|merge({ id: item.id, edit_language_id: edit_language_id })) }}">
+                            <input type="hidden" name="_token" value="{{ assignToken() }}">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary" data-testid="cms-icon-remove-submit" {{ icon_citation.isCited ? 'disabled' : '' }}>{{ 'Remove the icon name'|trans({}, 'theliacms') }}</button>
+                        </form>
+
+                        {% if icon_citation.isCited %}
+                            <p class="small text-body-secondary mb-0" data-testid="cms-icon-locked">{{ 'While a page, an item or a component of the site cites the icon, it keeps its name: they would keep the old one, and the icon would disappear from them.'|trans({}, 'theliacms') }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+
             <div class="card mt-3">
-                {% set used_by = usages|length + item_usages|length %}
+                {% set used_by = usages|length + item_usages|length + (icon_citation is null ? 0 : icon_citation.components) %}
                 <div class="card-header">
                     {% if used_by == 0 %}
                         {{ 'Not used yet'|trans({}, 'theliacms') }}
@@ -125,8 +162,19 @@
                is decorative, and the browser cannot know that. #}
             {{ form_start(form, { attr: { novalidate: 'novalidate' } }) }}
                 <input type="hidden" name="_token" value="{{ assignToken() }}">
-                {# A video has neither alternative text nor decorative flag. #}
-                {% if not item.video %}
+                {# A video has neither alternative text nor decorative flag, and the
+                   text of an icon belongs to where it is placed. #}
+                {% if item.iconName is not null %}
+                    {# The label of the field it stands for, so that the note reads in place. #}
+                    <div class="form-label mb-1" id="cms-media-icon-alt-label">
+                        <span class="bo-form-label__text">{{ 'Alternative text'|trans({}, 'theliacms') }}</span>
+                        <small class="bo-form-label__help text-body-secondary">{{ 'What the image shows, for people who cannot see it. Translated per language.'|trans({}, 'theliacms') }}</small>
+                    </div>
+                    <div class="alert alert-info d-flex gap-2 py-2 small mb-3" role="note" aria-labelledby="cms-media-icon-alt-label" data-testid="cms-media-icon-alt">
+                        <i class="bi bi-info-circle flex-shrink-0" aria-hidden="true"></i>
+                        <span>{{ 'The alternative text of an icon depends on where it is placed: the component that draws it gives it. Next to a text, an icon is hidden from screen readers; alone in a link or a button, that link or button carries the name.'|trans({}, 'theliacms') }}</span>
+                    </div>
+                {% elseif not item.video %}
                     {{ form_row(form.alt) }}
 
                     {# The back-office form theme renders help inside the label, and

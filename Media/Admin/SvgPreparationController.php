@@ -23,6 +23,10 @@ use Thelia\Core\Security\AccessManager;
 use Thelia\Model\Lang;
 use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Media\CmsMediaLibrary;
+use TheliaCMS\Media\Icon\IconName;
+use TheliaCMS\Media\Icon\IconNameTakenException;
+use TheliaCMS\Media\Icon\IconUsageDecision;
+use TheliaCMS\Media\Icon\IconUsageDraft;
 use TheliaCMS\Media\Svg\Color\SvgColoring;
 use TheliaCMS\Media\Svg\Color\SvgColorPreset;
 use TheliaCMS\Media\Svg\Color\SvgPreviewTint;
@@ -48,6 +52,9 @@ use Twig\Environment;
  * is answered, the editor is sent to the sheet of the image, or to the queue of
  * the images to describe. An SVG that replaces the file of an image comes with
  * the id of that image.
+ *
+ * A file added to the library can also become an icon, under a `cms:` name,
+ * when a page would keep the drawing whole.
  */
 #[Route('/admin/cms/media/svg', name: 'admin.cms.media.svg.')]
 final readonly class SvgPreparationController
@@ -71,6 +78,7 @@ final readonly class SvgPreparationController
         private CmsMediaWriter $writer,
         private CmsMediaLibrary $library,
         private EditLanguage $languages,
+        private IconUsageDecision $usage,
     ) {
     }
 
@@ -83,7 +91,7 @@ final readonly class SvgPreparationController
      *
      * @return array<string, mixed>
      */
-    public static function parameters(array $tokens, array $imageIds, ?int $replace, int $languageId, ?int $total = null, ?string $level = null, bool $picker = false, ?SvgColoring $coloring = null): array
+    public static function parameters(array $tokens, array $imageIds, ?int $replace, int $languageId, ?int $total = null, ?string $level = null, bool $picker = false, ?SvgColoring $coloring = null, bool $icon = false, bool $colorsTouched = false): array
     {
         $rest = \array_slice($tokens, 1);
         $total ??= \count($tokens);
@@ -97,6 +105,8 @@ final readonly class SvgPreparationController
             'replace' => $replace,
             'level' => $level,
             'picker' => $picker ? '1' : null,
+            'usage' => $icon ? 'icon' : null,
+            SvgWay::COLORS_TOUCHED_PARAMETER => $colorsTouched ? '1' : null,
             EditLanguage::PARAMETER => $languageId,
         ], static fn (mixed $value): bool => null !== $value && '' !== $value);
     }
@@ -115,16 +125,32 @@ final readonly class SvgPreparationController
         $level = $this->levels->get($way->level ?? '')?->name();
 
         try {
-            $result = $this->preparation->prepare($file->content, $level, $way->coloring);
+            $draft = $this->usage->prepare($file->content, $level, IconUsageDecision::isAsked($way->replace, $way->picker, $way->icon), $way->coloring, $way->colorsTouched);
         } catch (UnreadableSvgException $exception) {
             return $this->refused($request, $lang, $file, $exception, $way->picker);
         }
 
         // The preview and the answer read it back instead of preparing again.
-        $this->store->remember($token, self::setting($level, $result->coloring), $result->content);
+        $this->store->remember($token, self::setting($level, $draft->result->coloring), $draft->result->content);
+
+        return $this->screen($lang, $file, $way, $level, $draft, $way->icon, $way->iconName, null, $way->colorsTouched);
+    }
+
+    /**
+     * The screen of a file, with what the editor chose for it: shown for a
+     * preview, and again with the reason when an answer cannot be taken.
+     *
+     * @param bool        $icon     the usage asked for: it holds only where the drawing can be an icon
+     * @param string|null $iconName the name typed; the one drawn from the file name when none was
+     * @param string|null $problem  why the answer was not taken, already in the language of the screen
+     */
+    private function screen(Lang $lang, PreparedSvgFile $file, SvgWay $way, ?string $level, IconUsageDraft $draft, bool $icon, ?string $iconName, ?string $problem, bool $colorsTouched): Response
+    {
         $locale = $lang->getLocale();
+        $result = $draft->result;
 
         return new Response($this->twig->render(self::SHOW_TEMPLATE, [
+            ...$this->usage->variables($file->name, $way->replace, $way->picker, $draft->judged, $icon, $iconName, $problem),
             'file' => $file,
             'position' => $way->position(),
             'total' => $way->total,
@@ -141,9 +167,12 @@ final readonly class SvgPreparationController
             'presets' => SvgColorPreset::cases(),
             'coloring' => $result->coloring,
             'color_values' => $result->coloring->values(),
+            // What the forms that preview another setting carry: the colors only once the editor set them.
+            'colors_touched' => $colorsTouched,
+            'color_carry' => $colorsTouched ? $result->coloring->values() : [],
             'tints' => SvgPreviewTint::cases(),
             'route_parameters' => $way->parameters($lang->getId()),
-        ]));
+        ]), null === $problem ? Response::HTTP_OK : Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 
     /**
@@ -170,13 +199,35 @@ final readonly class SvgPreparationController
         if ('skip' === $request->request->getString('action')) {
             $this->store->forget($token);
 
-            return $this->next($request, $lang, $way, null, null, null);
+            return $this->next($request, $lang, $way, null, null, null, false, false);
         }
 
         $level = $this->levels->get($request->request->getString('level'))?->name();
-        $coloring = SvgColoring::fromValues($request->request->all());
+        $asked = SvgColoring::fromValues($request->request->all());
+        $touched = SvgWay::colorsTouched($request->request->all(), $asked);
         $locale = $lang->getLocale();
-        $kept = $this->store->result($token, self::setting($level, $coloring));
+        // The usage is read from the answer, never from the address: it is the
+        // choice of the editor on this file, and only a file added to the
+        // library can be an icon.
+        $icon = IconUsageDecision::isAsked($way->replace, $way->picker, 'icon' === $request->request->getString('usage'));
+        $iconName = IconName::normalize($request->request->getString('icon_name'));
+
+        try {
+            $draft = $this->usage->prepare($file->content, $level, $icon, $asked, $touched);
+        } catch (UnreadableSvgException $exception) {
+            return $this->refused($request, $lang, $file, $exception, $way->picker);
+        }
+
+        $svg = $draft->result->content;
+        $coloring = $draft->result->coloring;
+
+        // Checked on the server, on the result the editor would store, before
+        // anything is stored: what the browser let through is not trusted.
+        $problem = $this->usage->problem($draft->judged, $icon, $iconName, $way->replace);
+
+        if (null !== $problem) {
+            return $this->screen($lang, $file, $way, $level, $draft, $icon, $iconName, $problem, $touched);
+        }
 
         // A second answer sent before the first one ended (a double click)
         // finds the file taken and stores nothing.
@@ -185,16 +236,23 @@ final readonly class SvgPreparationController
         }
 
         try {
-            $svg = $kept ?? $this->preparation->prepare($file->content, $level, $coloring)->content;
-
             if (null === $way->replace) {
-                $added = (int) $this->writer->addPreparedSvg($svg, $file->name, $locale)->getId();
+                $added = (int) $this->writer->addPreparedSvg($svg, $file->name, $locale, $icon ? $iconName : null)->getId();
             } else {
                 $this->writer->replaceWithPreparedSvg($this->imageToReplace($way->replace), $svg, $file->name, $locale);
                 $added = null;
             }
         } catch (UnreadableSvgException $exception) {
             return $this->refused($request, $lang, $file, $exception, $way->picker);
+        } catch (IconNameTakenException) {
+            // Another answer took the name after the check above: the writer
+            // added nothing, and the file, claimed, cannot be shown again.
+            $this->store->forget($token);
+            $this->support->flash($request, 'warning', $this->support->translate('Not added: %files%.', [
+                '%files%' => $file->name.' ('.$this->support->translate('the icon name %name% was taken in the meantime', ['%name%' => IconName::prefixed($iconName)]).')',
+            ]));
+
+            return $this->backToList($lang);
         } catch (UnsupportedLibraryImageException) {
             $this->store->forget($token);
             $refusal = $this->support->translate('Not added: %files%.', [
@@ -215,7 +273,7 @@ final readonly class SvgPreparationController
         // The setting is carried to the next files only when the editor says so.
         $carried = '1' === $request->request->getString('apply_to_following');
 
-        return $this->next($request, $lang, $way, $added, $carried ? $level : null, $carried ? $coloring : null);
+        return $this->next($request, $lang, $way, $added, $carried ? $level : null, $carried ? $coloring : null, $carried && $icon, $carried && $touched);
     }
 
     #[Route('/{token}/original', name: 'original', requirements: ['token' => self::TOKEN_REQUIREMENT], methods: ['GET'])]
@@ -275,7 +333,7 @@ final readonly class SvgPreparationController
      * The next file of the way that is still there, or the end of the way.
      * A file that waited too long is said, and the way goes on without it.
      */
-    private function next(Request $request, Lang $lang, SvgWay $way, ?int $added, ?string $level, ?SvgColoring $coloring): Response
+    private function next(Request $request, Lang $lang, SvgWay $way, ?int $added, ?string $level, ?SvgColoring $coloring, bool $icon, bool $colorsTouched): Response
     {
         $images = null === $added ? $way->images : [...$way->images, $added];
         $queue = $way->queue;
@@ -284,7 +342,7 @@ final readonly class SvgPreparationController
             $token = array_shift($queue);
 
             if ($this->store->find($token) instanceof PreparedSvgFile) {
-                return $this->support->redirect('admin.cms.media.svg.show', self::parameters([$token, ...$queue], $images, $way->replace, $lang->getId(), $way->total, $level, $way->picker, $coloring));
+                return $this->support->redirect('admin.cms.media.svg.show', self::parameters([$token, ...$queue], $images, $way->replace, $lang->getId(), $way->total, $level, $way->picker, $coloring, $icon, $colorsTouched));
             }
 
             $this->support->flash($request, 'warning', $this->support->translate('This file has expired, send it again.'));
@@ -330,7 +388,7 @@ final readonly class SvgPreparationController
 
         $this->support->flash($request, 'warning', $this->support->translate('This file has expired, send it again.'));
 
-        return $this->next($request, $lang, $way, null, $way->level, $way->coloring);
+        return $this->next($request, $lang, $way, null, $way->level, $way->coloring, $way->icon, $way->colorsTouched);
     }
 
     /**
