@@ -22,7 +22,7 @@
 
     <div class="card">
         <div class="card-body">
-            {% if may_ask %}
+            {% if may_ask and cms_ai_available('theliacms.component') %}
                 {{ include('@TheliaCMSModule/backOffice/default-twig/components/site/_request_form.html.twig', {
                     testid: 'cms-site-component-request',
                     label: 'What the component is for'|trans({}, 'theliacms'),
@@ -30,6 +30,8 @@
                     help: 'What it shows, what an editor fills in, how it looks. Its texts are written by pages, in every language of the site.'|trans({}, 'theliacms'),
                     button: 'Make the component'|trans({}, 'theliacms'),
                 }) }}
+            {% elseif may_ask %}
+                <p class="mb-0 text-muted" data-testid="cms-site-component-unavailable">{{ 'The generator is not available: the AI of the shop is turned off, or no model is set up for components. Turn it on in the AI settings of Thelia.'|trans({}, 'theliacms') }}</p>
             {% else %}
                 <p class="mb-0 text-muted" data-testid="cms-site-component-not-allowed">{{ 'Asking the generator for a component takes the generator, the settings and the custom code permissions.'|trans({}, 'theliacms') }}</p>
             {% endif %}

@@ -130,6 +130,13 @@
                 <div class="card" data-testid="cms-settings-generator">
                     <div class="card-header">{{ 'Generator'|trans({}, 'theliacms') }}</div>
                     <div class="card-body">
+                        {% if ai_unavailable is not empty %}
+                            <p class="text-muted small" data-testid="cms-settings-ai-unavailable">
+                                <i class="bi bi-info-circle me-1" aria-hidden="true"></i>{{ 'The AI is not available: its buttons are hidden on the screens of the CMS.'|trans({}, 'theliacms') }}
+                                {{ ai_unavailable|join(' ') }}
+                                {{ 'Set it up in the AI settings of Thelia.'|trans({}, 'theliacms') }}
+                            </p>
+                        {% endif %}
                         <div class="row g-3">
                             <div class="col-lg-6">
                                 {{ form_row(form.generatorEffort) }}

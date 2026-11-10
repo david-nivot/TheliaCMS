@@ -6,7 +6,7 @@
 {% block content %}
     {% embed '@BackOfficeDefaultTwig/_page_header.html.twig' with { title: 'Components'|trans({}, 'theliacms') } %}
         {% block actions %}
-            {% if may_ask %}
+            {% if may_ask and cms_ai_available('theliacms.component') %}
                 <a class="btn btn-sm btn-primary me-1" href="{{ path('admin.cms.components.site.new') }}" data-testid="cms-components-new">
                     <i class="bi bi-stars me-1" aria-hidden="true"></i>{{ 'New component'|trans({}, 'theliacms') }}
                 </a>
