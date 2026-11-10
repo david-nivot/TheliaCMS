@@ -89,6 +89,8 @@ final readonly class MenusStep
             }
 
             $model = $existing ?? (new CmsMenu())->setCode($code)->setMenuLocale($menuLocale);
+            // A file written before menus could be hidden has no key: visible.
+            $model->setVisible(($menu['visible'] ?? true) ? 1 : 0);
 
             foreach ($menu['translations'] ?? [] as $locale => $translation) {
                 $model->setLocale((string) $locale)->setTitle((string) ($translation['title'] ?? $code));
@@ -121,7 +123,8 @@ final readonly class MenusStep
                     ->setTargetType($targetType)
                     ->setTargetId($targetId)
                     ->setUrl($item['url'] ?? null)
-                    ->setOpenNewTab(($item['open_new_tab'] ?? false) ? 1 : 0);
+                    ->setOpenNewTab(($item['open_new_tab'] ?? false) ? 1 : 0)
+                    ->setVisible(($item['visible'] ?? true) ? 1 : 0);
 
                 foreach ($item['translations'] ?? [] as $locale => $translation) {
                     $entry->setLocale((string) $locale)->setLabel($translation['label'] ?? null);
