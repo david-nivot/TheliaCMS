@@ -202,6 +202,7 @@ final readonly class CmsMenuRepository
         $items = $this->items((int) $menu->getId());
         $placements = $this->placementsOf($items);
         $rows = [];
+        $hiddenIds = [];
 
         foreach ($this->tree->flatten($placements) as $flat) {
             $item = $items[$flat['id']] ?? null;
@@ -210,7 +211,15 @@ final readonly class CmsMenuRepository
                 continue;
             }
 
-            $siblings = $this->tree->children($placements, $this->shownParent($placements, $flat['id']));
+            $parent = $this->shownParent($placements, $flat['id']);
+            $hiddenByParent = isset($hiddenIds[$parent]);
+            $hidden = $hiddenByParent || 1 !== (int) $item->getVisible();
+
+            if ($hidden) {
+                $hiddenIds[$flat['id']] = true;
+            }
+
+            $siblings = $this->tree->children($placements, $parent);
             $offset = array_search($flat['id'], $siblings, true);
 
             $rows[] = new MenuItemRow(
@@ -220,6 +229,8 @@ final readonly class CmsMenuRepository
                 target: $this->targets->resolve($item, $locale),
                 canMoveUp: \is_int($offset) && $offset > 0,
                 canMoveDown: \is_int($offset) && $offset < \count($siblings) - 1,
+                hidden: $hidden,
+                hiddenByParent: $hiddenByParent,
             );
         }
 

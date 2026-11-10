@@ -56,7 +56,7 @@ final readonly class CmsMenuWriter
      *
      * @throws \DomainException when the code is already taken by another menu, or when the code of a detached menu is changed on its own
      */
-    public function saveMenu(CmsMenu $menu, string $locale, string $code, string $title): void
+    public function saveMenu(CmsMenu $menu, string $locale, string $code, string $title, bool $visible = true): void
     {
         $previousCode = $menu->isNew() ? null : (string) $menu->getCode();
         $shared = CmsMenuQuery::SHARED === (string) $menu->getMenuLocale();
@@ -73,7 +73,7 @@ final readonly class CmsMenuWriter
 
         $wasNew = $menu->isNew();
 
-        $this->transactional(static function (ConnectionInterface $connection) use ($menu, $locale, $code, $title, $previousCode, $shared): void {
+        $this->transactional(static function (ConnectionInterface $connection) use ($menu, $locale, $code, $title, $visible, $previousCode, $shared): void {
             if (null !== $previousCode && $previousCode !== $code && $shared) {
                 foreach (self::detachedRows($previousCode, $connection) as $detached) {
                     $detached->setCode($code)->save($connection);
@@ -81,6 +81,7 @@ final readonly class CmsMenuWriter
             }
 
             $menu->setCode($code);
+            $menu->setVisible($visible ? 1 : 0);
             $menu->setLocale($locale)->setTitle($title);
             $menu->save($connection);
         });
@@ -136,7 +137,7 @@ final readonly class CmsMenuWriter
 
         $shared = CmsMenuQuery::findShared($code) ?? throw new \DomainException('There is no menu with this code.');
 
-        $detached = (new CmsMenu())->setCode($code)->setMenuLocale($locale);
+        $detached = (new CmsMenu())->setCode($code)->setMenuLocale($locale)->setVisible((int) $shared->getVisible());
 
         $this->transactional(function (ConnectionInterface $connection) use ($shared, $detached, $code, $locale): void {
             // Inside the transaction, and backed by the unique index: two
@@ -253,7 +254,8 @@ final readonly class CmsMenuWriter
             ->setTargetType($data->type->value)
             ->setTargetId($data->type->needsTargetId() ? $data->targetId : null)
             ->setUrl(MenuTargetType::Url === $data->type ? $data->url : null)
-            ->setOpenNewTab($data->openNewTab ? 1 : 0);
+            ->setOpenNewTab($data->openNewTab ? 1 : 0)
+            ->setVisible($data->visible ? 1 : 0);
 
         if ($isNew || $moved) {
             $item->setPosition($this->nextPosition((int) $menu->getId(), $parent));
@@ -410,7 +412,8 @@ final readonly class CmsMenuWriter
                 ->setTargetType((string) $item->getTargetType())
                 ->setTargetId($item->getTargetId())
                 ->setUrl($item->getUrl())
-                ->setOpenNewTab((int) $item->getOpenNewTab());
+                ->setOpenNewTab((int) $item->getOpenNewTab())
+                ->setVisible((int) $item->getVisible());
 
             foreach ($item->getCmsMenuItemI18ns(null, $connection) as $translation) {
                 $copy->setLocale((string) $translation->getLocale())->setLabel($translation->getLabel());

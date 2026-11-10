@@ -49,6 +49,16 @@
         </div>
     {% endif %}
 
+    {% if not is_new and menu.visible != 1 %}
+        <div class="alert alert-secondary d-flex gap-2" role="alert" data-testid="cms-menu-hidden">
+            <i class="bi bi-eye-slash" aria-hidden="true"></i>
+            <div>
+                <strong>{{ 'This menu is hidden.'|trans({}, 'theliacms') }}</strong>
+                {{ 'Nothing of it is shown on the site. Its entries are kept: tick "Visible on the site" in the menu settings to bring it back.'|trans({}, 'theliacms') }}
+            </div>
+        </div>
+    {% endif %}
+
     <div class="row g-3">
         <div class="{{ is_new ? 'col-lg-6' : 'col-lg-7' }}">
             {% if not is_new %}
@@ -128,8 +138,8 @@
                                 <tbody data-cms-menu-tree data-place-url="{{ place_url_template }}">
                                     {% for row in rows %}
                                         <tr data-row-id="{{ row.id }}" data-parent="{{ row.item.parent }}" data-depth="{{ row.depth }}"
-                                            class="{{ edited_item and edited_item.id == row.id ? 'table-active' : '' }}"
-                                            data-testid="cms-menu-entry-{{ row.id }}">
+                                            class="{{ edited_item and edited_item.id == row.id ? 'table-active' : '' }}{{ row.hidden ? ' text-muted' : '' }}"
+                                            data-testid="cms-menu-entry-{{ row.id }}"{% if row.hidden %} data-hidden="true"{% endif %}>
                                             <td class="cms-menu-tree__handle" style="width: 2rem"
                                                 {% if may_write %}draggable="true"{% endif %}
                                                 title="{{ 'Drag to move. The buttons do the same thing without a mouse.'|trans({}, 'theliacms') }}">
@@ -142,7 +152,13 @@
                                                     <span style="display: inline-block; width: {{ (row.depth - 1) * 1.75 }}rem"></span>
                                                     <span class="text-secondary me-1" aria-hidden="true">↳</span>
                                                 {% endif %}
-                                                <span class="fw-medium">{{ row.target.label|default('') ?: '—' }}</span>
+                                                <span class="fw-medium{{ row.hidden ? ' text-decoration-line-through' : '' }}">{{ row.target.label|default('') ?: '—' }}</span>
+                                                {% if row.hidden %}
+                                                    <span class="badge text-bg-secondary ms-1" data-testid="cms-menu-entry-{{ row.id }}-hidden">
+                                                        <i class="bi bi-eye-slash" aria-hidden="true"></i>
+                                                        {% if row.hiddenByParent %}{{ 'Hidden by the entry above'|trans({}, 'theliacms') }}{% else %}{{ 'Hidden'|trans({}, 'theliacms') }}{% endif %}
+                                                    </span>
+                                                {% endif %}
                                                 {% if row.item.openNewTab == 1 %}
                                                     <i class="bi bi-box-arrow-up-right ms-1 text-secondary" aria-hidden="true"
                                                        title="{{ 'Opens in a new tab'|trans({}, 'theliacms') }}"></i>
@@ -206,6 +222,7 @@
                         {{ form_errors(menu_form) }}
                         {{ form_row(menu_form.title) }}
                         {{ form_row(menu_form.code) }}
+                        {{ form_row(menu_form.visible) }}
                         <button type="submit" class="btn btn-primary">
                             {{ is_new ? 'Create this menu'|trans({}, 'theliacms') : 'Save'|trans({}, 'theliacms') }}
                         </button>
@@ -241,6 +258,7 @@
                             {{ form_row(item_form.label) }}
                             {{ form_row(item_form.parent) }}
                             {{ form_row(item_form.openNewTab) }}
+                            {{ form_row(item_form.visible) }}
 
                             <button type="submit" class="btn btn-primary" data-testid="cms-menu-entry-submit">
                                 {{ edited_item ? 'Save the entry'|trans({}, 'theliacms') : 'Add to the menu'|trans({}, 'theliacms') }}
