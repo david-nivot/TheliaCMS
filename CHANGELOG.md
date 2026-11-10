@@ -9,6 +9,12 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Added
 
+- **A picture the brief cites is imported into the media library.** A brief
+  that cites the `https` address of a picture now ends with that picture copied
+  into the library (JPEG, PNG or WebP, 10 MiB and 25 million pixels at most) and
+  used by its id, instead of the external address, when the site allows the
+  reading of the web: the generator is offered an `import_image` tool for the
+  pictures the brief cites.
 - **Pictures and videos for the sample of a component.** The generator of
   components is told of the most recent media of the library (12 pictures and 3
   videos at most, with their id, text and size), and the sample of a component
