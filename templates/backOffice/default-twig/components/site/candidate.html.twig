@@ -56,7 +56,7 @@
                         {% endif %}
                     </div>
                 </div>
-                {% if may_ask %}
+                {% if may_ask and cms_ai_available('theliacms.component') %}
                     <div class="card mb-3">
                         <div class="card-body">
                             {{ include('@TheliaCMSModule/backOffice/default-twig/components/site/_request_form.html.twig', {
@@ -73,7 +73,7 @@
             </div>
         </div>
         {{ include('@TheliaCMSModule/backOffice/default-twig/components/site/_definition.html.twig') }}
-    {% elseif may_ask %}
+    {% elseif may_ask and cms_ai_available('theliacms.component') %}
         <div class="card">
             <div class="card-body">
                 {{ include('@TheliaCMSModule/backOffice/default-twig/components/site/_request_form.html.twig', {

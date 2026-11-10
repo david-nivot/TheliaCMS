@@ -7,6 +7,21 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **A degraded mode when the AI is not available.** When the AI of the shop is
+  turned off, or no connection and model serve a usage, the back-office screens
+  no longer offer what would only fail: write from a brief, change the brief,
+  ask for a change, rewrite a section, write a language from another, write it
+  again, prototype a component, make or change a component, and the button that
+  writes a text from a brief beside a rich-text field. A page is still written,
+  edited, published and translated by hand, and the usages that still work keep
+  their buttons. The routes are untouched: called anyway, they answer with
+  their usual message. The templates ask `cms_ai_available('theliacms.component')`;
+  the **Generator** card of CMS > Settings carries one line for an
+  administrator, saying why and for which usages. A monthly cap that is
+  reached does not hide the buttons.
+
 ## [2.25.0] - 2026-11-10
 
 ### Added

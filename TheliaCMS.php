@@ -33,6 +33,7 @@ use Thelia\Model\ResourceQuery;
 use Thelia\Model\RewritingUrlQuery;
 use Thelia\Module\BaseModule;
 use TheliaCMS\Content\Section\SectionStories;
+use TheliaCMS\Generation\Ai\AiAvailability;
 use TheliaCMS\Http\SharedCache\CmsSharedCacheContributor;
 use TheliaCMS\Http\SharedCache\CoreSharedCache;
 use TheliaCMS\Http\SharedCache\SharedMaxAgeCapListener;
@@ -466,6 +467,13 @@ class TheliaCMS extends BaseModule
             ])
             ->autowire(true)
             ->autoconfigure(true);
+
+        // Public so the tests of the screens can replace it by an answer that
+        // needs no AI connection, which the database of the tests has none of.
+        $servicesConfigurator->set(AiAvailability::class)
+            ->autowire(true)
+            ->autoconfigure(true)
+            ->public();
 
         // Dynamic blocks are rendered through an interface so the substitution
         // of a page can be unit-tested without a theme behind it.

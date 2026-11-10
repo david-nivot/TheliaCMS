@@ -58,6 +58,53 @@ in its usage log, and the ledger of the module points at the row of the last
 request of a call (`cms_page_generation.log_id`); the requests of one call
 share a correlation id in that log.
 
+## When the AI is not available
+
+The screens of the back office draw an entry that calls the AI (a button, a
+link, a form, a panel) only when the AI can serve its usage. Everything else
+works as before: a page is written, edited, published and translated by hand.
+
+- **The signal.** `Generation\Ai\AiAvailability::isAvailable($usage)`: the
+  master switch of the AI layer (`AiSettings::isEnabled()`), then the usage
+  turned on in its own settings (`AiUsageRegistryInterface::isActive()`), then a
+  connection and a model that serve it (`AiTargetResolver::resolve()`, which
+  throws `InactiveAiUsageException` without them), then, when the shop accepts
+  the European Union only, the jurisdiction of that connection. These are the
+  checks the gateway makes at each call, in the same order, so an entry is
+  hidden exactly when its call would be refused for one of them.
+  `isActive()` alone is not enough: it does not look at the model, and a usage
+  turned on without a model passes it.
+- **Once per request.** The answer is kept by usage for the request, however
+  many buttons a screen has, and forgotten between two requests of a long
+  worker (`ResetInterface`). The service is public, and not final, so the tests
+  of the screens can replace it.
+- **In the templates.** `cms_ai_available('theliacms.component')`, a Twig
+  function answered by `Twig\AiAvailabilityRuntime`. The usage is the one the
+  entry's call runs under:
+
+| Entry | Usage |
+|---|---|
+| Write from a brief, change the brief, ask for a change, rewrite a section (content screen of a page or of a catalogue item) | `theliacms.page_generation` |
+| Write this language from another, write it again (stale translation) | `theliacms.page_translation` |
+| Prototype a component from a page (add-a-section drawer, panel of a prototype); New component, ask a change (CMS > Components) | `theliacms.component` |
+| Write from a brief beside a rich-text field (hook `wysiwyg.js`, `TextBriefHook`) | `theliacms.text` |
+
+- **Not hidden.** The routes: none depends on the hiding. Called by a stale
+  tab or a script while the AI is off, each answers with its own refusal
+  (`GatewayFailures`, "The generator is turned off, or no AI connection and
+  model is set up for it", a 503 for the text route), never a 500. The skills
+  and the settings of the generator stay: they are configuration, and the
+  screens that describe what the generator reads. The **Generator** card of
+  CMS > Settings (and only it) carries one line for an administrator when a
+  usage is unavailable: why (turned off for the whole shop, turned off for the
+  usage, no connection or model, unreadable key, jurisdiction) and which usages.
+  The core has no back-office screen of the AI settings to link to: the line
+  names them.
+- **Limit.** The monthly cap and the budget left are not looked at. An
+  entry stays when the cap is reached, and the call says so
+  (`AiBudgetExceededException`); a screen that hid its buttons at the ceiling
+  would hide them for a reason that goes away by itself.
+
 ## What the model is told
 
 The system prompt is the same for every call of the site, written in a stable
