@@ -70,9 +70,18 @@ final readonly class SvgColoring
         return $this->usesMain() && $this->softenOthers;
     }
 
-    /** True when a white of the drawing may follow the text, so the editor says whether it does. */
+    /**
+     * True when a white of the drawing may follow the text, so the editor says whether it does.
+     *
+     * A white chosen as the main color follows the text whatever the answer:
+     * the question would change nothing.
+     */
     public function asksAboutWhite(): bool
     {
+        if ($this->softens() && SvgColor::WHITE === $this->main) {
+            return false;
+        }
+
         return SvgColorPreset::Monochrome === $this->preset || $this->softens();
     }
 

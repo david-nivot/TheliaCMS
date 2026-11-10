@@ -53,6 +53,16 @@ final class SvgColoringTest extends TestCase
         self::assertMatchesRegularExpression('/^[a-z0-9-]+$/', (new SvgColoring(SvgColorPreset::Main, true, '#22a06b80', true))->key());
     }
 
+    public function testAWhiteChosenAsTheMainColorIsNoQuestion(): void
+    {
+        $whiteMain = new SvgColoring(SvgColorPreset::Main, keepWhite: true, main: '#ffffff', softenOthers: true);
+
+        self::assertFalse($whiteMain->asksAboutWhite(), 'The main color follows the text whatever the answer.');
+        self::assertSame(['colors' => 'main', 'others' => 'soft', 'main' => '#ffffff'], $whiteMain->values());
+        self::assertTrue((new SvgColoring(SvgColorPreset::Main, main: '#ff4422', softenOthers: true))->asksAboutWhite());
+        self::assertTrue((new SvgColoring(SvgColorPreset::Monochrome, main: '#ffffff'))->asksAboutWhite(), 'In monochrome, the white may still stay white.');
+    }
+
     public function testTheMainColorCarriedToTheNextFilesIsTheirOwn(): void
     {
         $palette = (new SvgPaletteReader())->read(SvgPaletteReaderTest::ICON);

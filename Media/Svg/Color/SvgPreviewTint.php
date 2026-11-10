@@ -32,7 +32,7 @@ enum SvgPreviewTint: string
     /** Light text on a dark ground. */
     case Dark = 'dark';
 
-    /** A colored text, such as a link. */
+    /** A colored text, such as a link: the primary color of the back office theme ($primary of default-twig). */
     case Accent = 'accent';
 
     public function color(): string
@@ -40,7 +40,7 @@ enum SvgPreviewTint: string
         return match ($this) {
             self::Light => '#212529',
             self::Dark => '#f8f9fa',
-            self::Accent => '#0d6efd',
+            self::Accent => '#f26041',
         };
     }
 
