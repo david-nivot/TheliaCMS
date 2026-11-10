@@ -99,6 +99,32 @@ final class SectionFormItemsTest extends TestCase
         self::assertSame('Only one help.', $form->get('alt')->getConfig()->getOption('help'), 'Without one, the help of the prop.');
     }
 
+    public function testAnEmbedFieldShowsTheAddressBuiltFromWhatWasKept(): void
+    {
+        $video = Prop::embed('video', 'Presentation video');
+        $clips = Prop::items('clips', 'clips', [Prop::embed('clip', 'Clip')], 0, 6);
+        $form = $this->builder()->build($this->definition($video, $clips), new Section('band', 'Site:Band', ['video' => 'youtube:dQw4w9WgXcQ', 'clips' => [['clip' => 'vimeo:76979871'], ['clip' => 'javascript:alert(1)']]]), '/save');
+
+        self::assertSame('https://www.youtube.com/watch?v=dQw4w9WgXcQ', $form->get('video')->getData());
+        self::assertSame('https://vimeo.com/76979871', $form->get('clips')->get('0')->get('clip')->getData());
+        self::assertSame('', $form->get('clips')->get('1')->get('clip')->getData(), 'What was stored that is no video is not shown.');
+        self::assertStringContainsString('YouTube, Vimeo or Dailymotion', (string) $form->get('video')->getConfig()->getOption('help'), 'The field says what it takes.');
+        self::assertSame('url', $form->get('video')->getConfig()->getOption('attr')['inputmode']);
+    }
+
+    public function testAnAddressTypedInAnEmbedFieldGoesToTheSchemaAsTyped(): void
+    {
+        $video = Prop::embed('video', 'Presentation video');
+        $builder = $this->builder();
+        $form = $builder->build($this->definition($video), new Section('band', 'Site:Band', []), '/save');
+        $form->submit(['video' => 'https://youtu.be/dQw4w9WgXcQ?t=4']);
+
+        $props = $builder->propsFrom($form->getData(), [$video]);
+
+        self::assertSame(['video' => 'https://youtu.be/dQw4w9WgXcQ?t=4'], $props);
+        self::assertSame(['video' => 'youtube:dQw4w9WgXcQ'], (new PropSchema([$video]))->normalize($props));
+    }
+
     private function builder(): SectionFormBuilder
     {
         return new SectionFormBuilder(
@@ -107,8 +133,16 @@ final class SectionFormItemsTest extends TestCase
             (new \ReflectionClass(CmsMediaWriter::class))->newInstanceWithoutConstructor(),
             (new \ReflectionClass(SecurityContext::class))->newInstanceWithoutConstructor(),
             $this->createStub(UrlGeneratorInterface::class),
-            $this->createStub(TranslatorInterface::class),
+            $this->translator(),
         );
+    }
+
+    private function translator(): TranslatorInterface
+    {
+        $translator = $this->createStub(TranslatorInterface::class);
+        $translator->method('trans')->willReturnArgument(0);
+
+        return $translator;
     }
 
     /**

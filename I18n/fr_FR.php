@@ -1953,4 +1953,5 @@ return [
     'Play the video: %title%' => 'Lire la vidéo : %title%',
     'Playing it loads %platform%.' => 'La lecture charge %platform%.',
     'Watch the video on %platform%' => 'Voir la vidéo sur %platform%',
+    'The address of a YouTube, Vimeo or Dailymotion video, from its page or its share button. It plays when the visitor clicks it, and nothing is loaded from the platform before.' => 'L’adresse d’une vidéo YouTube, Vimeo ou Dailymotion, copiée depuis sa page ou son bouton de partage. Elle se lance au clic du visiteur, et rien n’est chargé depuis la plateforme avant.',
 ];

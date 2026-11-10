@@ -1953,4 +1953,5 @@ return [
     'Play the video: %title%' => 'Play the video: %title%',
     'Playing it loads %platform%.' => 'Playing it loads %platform%.',
     'Watch the video on %platform%' => 'Watch the video on %platform%',
+    'The address of a YouTube, Vimeo or Dailymotion video, from its page or its share button. It plays when the visitor clicks it, and nothing is loaded from the platform before.' => 'The address of a YouTube, Vimeo or Dailymotion video, from its page or its share button. It plays when the visitor clicks it, and nothing is loaded from the platform before.',
 ];
