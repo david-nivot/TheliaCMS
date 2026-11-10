@@ -1,0 +1,48 @@
+{
+  "case": "quote-dark",
+  "round": "round-0",
+  "run": 2,
+  "prompt_sha256": "a70819c82ebefb0055891017fe2ef8c62b155eaf17410bd52d36bf019e449f3b",
+  "answers": [
+    "{\"outcome\":\"copy\",\"existing\":\"Site:Quote\",\"reason\":\"La variante place la citation sur un fond sombre, avec un texte clair, et met en avant la photo de la personne citée.\",\"code\":\"\",\"label\":\"\",\"description\":\"\",\"props\":\"\",\"sample\":\"\",\"template\":\"\",\"css\":\"\"}",
+    "{\"outcome\":\"component\",\"existing\":\"\",\"reason\":\"\",\"code\":\"DarkQuote\",\"label\":\"Quote on dark background\",\"description\":\"A quote set on a dark band, with a large photo of the person quoted beside it, their name and role. Use it for a testimonial or a line from an interview the page wants to stand out.\",\"props\":\"[{\\\"name\\\":\\\"quote\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Quote\\\",\\\"required\\\":true,\\\"max\\\":400},{\\\"name\\\":\\\"author\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Person quoted\\\",\\\"required\\\":true,\\\"max\\\":80},{\\\"name\\\":\\\"role\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Role\\\",\\\"max\\\":120},{\\\"name\\\":\\\"portrait\\\",\\\"type\\\":\\\"image\\\",\\\"label\\\":\\\"Photo of the person\\\"},{\\\"name\\\":\\\"portrait_alt\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Description of the photo\\\",\\\"help\\\":\\\"One sentence saying what the photo shows. The name of the person is used when left empty.\\\",\\\"max\\\":200}]\",\"sample\":\"{\\\"quote\\\":\\\"Nous avons gagné une heure par jour dès la première semaine, et nos clientes l’ont tout de suite remarqué.\\\",\\\"author\\\":\\\"Claire Martin\\\",\\\"role\\\":\\\"Directrice de l’atelier Fil & Cie\\\",\\\"portrait\\\":null,\\\"portrait_alt\\\":\\\"Claire Martin souriante dans son atelier de couture.\\\"}\",\"template\":\"<section class=\\\"quote-dark\\\"><figure class=\\\"quote-dark__figure{% if props.portrait %} quote-dark__figure--portrait{% endif %}\\\">{% if props.portrait %}<div class=\\\"quote-dark__media\\\" data-cms-sizes=\\\"(min-width: 48rem) 14rem, 8rem\\\"><img class=\\\"quote-dark__portrait\\\" src=\\\"{{ props.portrait }}\\\" alt=\\\"{{ props.portrait_alt|default(props.author) }}\\\"></div>{% endif %}<blockquote class=\\\"quote-dark__text\\\"><p>{{ props.quote }}</p></blockquote><figcaption class=\\\"quote-dark__caption\\\"><span class=\\\"quote-dark__author\\\">{{ props.author }}</span>{% if props.role is not empty %}<span class=\\\"quote-dark__role\\\">{{ props.role }}</span>{% endif %}</figcaption></figure></section>\",\"css\":\".quote-dark__figure { margin: 0; display: grid; gap: 1.5rem; padding: 2.5rem 1.5rem; border-radius: 0.5rem; background: var(--cms-color-text); color: var(--cms-color-on-dark); }\\n.quote-dark__media { justify-self: start; }\\n.quote-dark__portrait { display: block; width: 8rem; height: 8rem; border-radius: 50%; object-fit: cover; border: 3px solid var(--cms-color-accent); }\\n.quote-dark__text { margin: 0; padding-left: 1rem; border-left: 4px solid var(--cms-color-accent); font-size: 1.375rem; line-height: 1.45; color: var(--cms-color-on-dark); }\\n.quote-dark__text p { margin: 0; }\\n.quote-dark__caption { display: flex; flex-direction: column; gap: 0.25rem; }\\n.quote-dark__author { font-weight: 700; color: var(--cms-color-on-dark); }\\n.quote-dark__role { color: var(--cms-color-on-dark); opacity: 0.8; }\\n@media (min-width: 48rem) { .quote-dark__figure { padding: 3.5rem; column-gap: 3rem; } .quote-dark__figure--portrait { grid-template-columns: 14rem 1fr; } .quote-dark__figure--portrait .quote-dark__media { grid-row: span 2; align-self: center; } .quote-dark__figure--portrait .quote-dark__text { align-self: end; } .quote-dark__figure--portrait .quote-dark__caption { align-self: start; } .quote-dark__portrait { width: 14rem; height: 14rem; } .quote-dark__text { font-size: 1.75rem; } }\"}"
+  ],
+  "outcome": "component",
+  "existing": null,
+  "based_on": "Site:Quote",
+  "browser": {
+    "375": {
+      "scroll": false,
+      "axe": [
+        {
+          "id": "color-contrast",
+          "impact": "serious"
+        }
+      ]
+    },
+    "1440": {
+      "scroll": false,
+      "axe": [
+        {
+          "id": "color-contrast",
+          "impact": "serious"
+        }
+      ]
+    }
+  },
+  "verdict": {
+    "pass": false,
+    "checks": {
+      "outcome": true,
+      "target": true,
+      "valid": true,
+      "props": true,
+      "markup": true,
+      "css": true,
+      "no_h1": true,
+      "img_alt": true,
+      "reduced_motion": true,
+      "browser": false
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "id": "reuse-legal-text",
+  "family": "reuse",
+  "locale": "fr_FR",
+  "request": "Le texte de nos mentions légales : des titres, des paragraphes et quelques listes.",
+  "oracle": {
+    "outcome": [
+      "existing"
+    ],
+    "target": [
+      "cms:richtext"
+    ],
+    "props": [],
+    "markup": {
+      "require": [],
+      "forbid": []
+    },
+    "css": {
+      "require": [],
+      "forbid": []
+    }
+  }
+}

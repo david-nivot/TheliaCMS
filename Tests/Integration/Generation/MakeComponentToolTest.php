@@ -45,6 +45,7 @@ use TheliaCMS\Model\CmsComponentQuery;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Model\CmsPageGenerationQuery;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
+use TheliaCMS\Tests\Support\ComponentOutcome;
 use TheliaCMS\Tests\Support\FakeAiGateway;
 use TheliaCMS\Tests\Unit\Content\Site\PriceTable;
 
@@ -145,6 +146,31 @@ final class MakeComponentToolTest extends CmsIntegrationTestCase
         self::assertSame($componentId, (int) $componentRow?->getTargetId(), 'The nested call is filed under the component.');
         self::assertSame(77, $componentRow?->getLogId());
         self::assertSame('done', CmsPageGenerationQuery::create()->findPk($result->logId)?->getStatus());
+    }
+
+    public function testAComponentTheSiteAlreadyHasIsHandedBackToUseInsteadOfMakingOne(): void
+    {
+        $this->makingOn();
+        $page = $this->createPage('Nos formules', published: false);
+        $this->getService(SiteComponentRepository::class)->save((new \TheliaCMS\Content\Site\SiteComponentValidator())->validate(PriceTable::component()), SiteComponentRepository::STATUS_READY);
+        $this->getService(SectionCatalog::class)->reset();
+
+        $this->api
+            ->answer(FakeAiGateway::response(toolCalls: [new AiToolCall('toolu_1', MakeComponentTool::NAME, ['request' => 'Un tableau de tarifs.'])]))
+            ->answer(ComponentOutcome::existing('Site:PriceTable', 'Site:PriceTable already shows plans with their prices.'))
+            ->answer(FakeAiGateway::response(self::document([
+                ['id' => 'plans', 'component' => 'Site:PriceTable', 'props' => ['title' => 'Trois formules', 'plans' => [['name' => 'Studio', 'price' => '9 €'], ['name' => 'Pro', 'price' => '29 €']]]],
+            ])));
+
+        $result = $this->generator()->generate(GenerationRequest::fromBrief($this->target($page), $this->locale(), new Brief('Nos formules, en tableau.'))->withComponentMaking(true));
+
+        $toolResult = $this->api->requests[2]->messages[2]->content;
+        self::assertStringStartsWith('No component is made: `Site:PriceTable` already does what is asked (Site:PriceTable already shows plans with their prices.)', $toolResult);
+        self::assertStringContainsString('Use it like any other component of the catalogue', $toolResult);
+        self::assertStringContainsString('tone', $toolResult, 'Its sheet is handed back.');
+        self::assertSame(['Site:PriceTable'], array_map(static fn ($section) => $section->component, $result->document->sections));
+        self::assertSame(1, CmsComponentQuery::create()->count(), 'Nothing new is kept.');
+        self::assertSame([], $this->getService(MakeComponentTool::class)->made(), 'The component was not made: the schema gets no new name.');
     }
 
     public function testAComponentTheSiteRefusesIsSaidToTheModelAndTheDocumentGoesOnWithout(): void

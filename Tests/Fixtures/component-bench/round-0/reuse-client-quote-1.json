@@ -1,0 +1,20 @@
+{
+  "case": "reuse-client-quote",
+  "round": "round-0",
+  "run": 1,
+  "prompt_sha256": "c5bfaba663379f57e9ff9ced48a3a7a0b5ea97b7eff54f57422949028416c9ec",
+  "answers": [
+    "{\"outcome\":\"existing\",\"existing\":\"Site:Quote\",\"reason\":\"Le composant Citation affiche déjà une citation avec le nom et le rôle (le métier) de la personne citée, et un portrait facultatif, pour un témoignage client.\",\"code\":\"\",\"label\":\"\",\"description\":\"\",\"props\":\"\",\"sample\":\"\",\"template\":\"\",\"css\":\"\"}"
+  ],
+  "outcome": "existing",
+  "existing": "Site:Quote",
+  "based_on": null,
+  "browser": null,
+  "verdict": {
+    "pass": true,
+    "checks": {
+      "outcome": true,
+      "target": true
+    }
+  }
+}

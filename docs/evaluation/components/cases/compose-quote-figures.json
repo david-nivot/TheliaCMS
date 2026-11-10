@@ -1,0 +1,32 @@
+{
+  "id": "compose-quote-figures",
+  "family": "composition",
+  "locale": "fr_FR",
+  "request": "Une citation du directeur, et juste en dessous trois chiffres clés de l'année.",
+  "oracle": {
+    "outcome": [
+      "component"
+    ],
+    "target": [
+      "Site:Quote",
+      "Site:KeyFigures"
+    ],
+    "props": [
+      {
+        "type": "text|html",
+        "min": 3
+      }
+    ],
+    "markup": {
+      "require": [
+        "<blockquote"
+      ],
+      "forbid": []
+    },
+    "css": {
+      "require": [],
+      "forbid": []
+    }
+  },
+  "gap": "N71"
+}

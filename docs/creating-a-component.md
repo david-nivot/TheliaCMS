@@ -424,6 +424,14 @@ twice at most. The same validator runs on a section edited by hand and on an
 import, so a rule written in the schema holds whoever wrote the document. How
 the prompt is built and what the model may read: [generator.md](generator.md).
 
+A request for a *new* component made to the generator of components (not a
+document of a page) may also end without one: the model answers `existing`
+when a component of the catalogue already does what is asked, and `copy` when
+it is a variant of a component of the site, whose source it is then sent to
+write the variant under a new code. So write the `description` of a component
+for that choice too: it is what the generator reads to tell "the site has it"
+from "a variant of it" from "something new".
+
 ## Testing it
 
 Without a shop, a unit test exercises the schema and the validator alone, the

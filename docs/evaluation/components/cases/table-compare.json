@@ -1,0 +1,31 @@
+{
+  "id": "table-compare",
+  "family": "table",
+  "locale": "fr_FR",
+  "request": "Un tableau qui compare nos trois offres ligne à ligne (prix, durée, support), avec une coche quand c'est inclus.",
+  "oracle": {
+    "outcome": [
+      "component"
+    ],
+    "target": [],
+    "props": [
+      {
+        "type": "items",
+        "min": 1
+      }
+    ],
+    "markup": {
+      "require": [
+        "<table",
+        "<th"
+      ],
+      "forbid": []
+    },
+    "css": {
+      "require": [],
+      "forbid": [
+        "display\\s*:\\s*none"
+      ]
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "id": "reuse-photo-carousel",
+  "family": "reuse",
+  "locale": "fr_FR",
+  "request": "Un carrousel de photos à faire défiler au doigt.",
+  "oracle": {
+    "outcome": [
+      "existing"
+    ],
+    "target": [
+      "Site:Carousel"
+    ],
+    "props": [],
+    "markup": {
+      "require": [],
+      "forbid": []
+    },
+    "css": {
+      "require": [],
+      "forbid": []
+    }
+  }
+}

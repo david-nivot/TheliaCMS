@@ -1,0 +1,32 @@
+{
+  "id": "figures-bars",
+  "family": "reuse",
+  "locale": "fr_FR",
+  "request": "Mes chiffres clés, mais chacun avec une barre de progression sous le nombre.",
+  "oracle": {
+    "outcome": [
+      "copy",
+      "component"
+    ],
+    "target": [
+      "Site:KeyFigures"
+    ],
+    "props": [
+      {
+        "type": "items",
+        "min": 1,
+        "with": [
+          "text"
+        ]
+      }
+    ],
+    "markup": {
+      "require": [],
+      "forbid": []
+    },
+    "css": {
+      "require": [],
+      "forbid": []
+    }
+  }
+}

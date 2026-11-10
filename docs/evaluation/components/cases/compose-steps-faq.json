@@ -1,0 +1,30 @@
+{
+  "id": "compose-steps-faq",
+  "family": "composition",
+  "locale": "fr_FR",
+  "request": "Les étapes d'une commande, suivies de la FAQ sur la livraison, dans un seul bloc.",
+  "oracle": {
+    "outcome": [
+      "component"
+    ],
+    "target": [
+      "Site:Steps",
+      "Site:Faq"
+    ],
+    "props": [
+      {
+        "type": "items",
+        "min": 2
+      }
+    ],
+    "markup": {
+      "require": [],
+      "forbid": []
+    },
+    "css": {
+      "require": [],
+      "forbid": []
+    }
+  },
+  "gap": "N71"
+}

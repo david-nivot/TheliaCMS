@@ -38,6 +38,7 @@ use TheliaCMS\Model\CmsPageGenerationQuery;
 use TheliaCMS\Page\Admin\EditLanguage;
 use TheliaCMS\Security\CmsResources;
 use TheliaCMS\Tests\Integration\Security\AdminScreenTestCase;
+use TheliaCMS\Tests\Support\ComponentOutcome;
 use TheliaCMS\Tests\Support\FakeAiGateway;
 use TheliaCMS\Tests\Support\MinimalPdf;
 use TheliaCMS\Tests\Unit\Content\Site\PriceTable;
@@ -86,6 +87,46 @@ final class ComponentPrototypeScreenTest extends AdminScreenTestCase
 
         self::assertNull(CmsComponentQuery::create()->findOneByCode('PriceTable'), 'Nothing is kept before the editor says so.');
         self::assertSame(1, CmsPageContentQuery::create()->filterByPageId($page->getId())->count(), 'The draft is as it was.');
+    }
+
+    public function testAnExistingComponentIsSaidInThePanelWithoutACandidateToKeep(): void
+    {
+        $page = $this->createPage('Nos formules', published: false);
+        $this->getService(SiteComponentRepository::class)->save(PriceTable::component(), SiteComponentRepository::STATUS_READY);
+        $this->getService(SectionCatalog::class)->reset();
+        $this->api->answer(ComponentOutcome::existing('Site:PriceTable', 'it already shows plans with their prices.'));
+
+        $screen = $this->screen($this->ask($page, 'Un tableau de tarifs.'));
+
+        $panel = $screen->filter('[data-testid="cms-content-prototype"]');
+        $existing = $panel->filter('[data-testid="cms-content-prototype-existing"]');
+        self::assertSame(1, $existing->count());
+        self::assertStringContainsString('Site:PriceTable', $existing->text());
+        self::assertStringContainsString('it already shows plans with their prices.', $existing->text());
+        self::assertSame('/admin/cms/components/site/PriceTable', $existing->filter('a')->attr('href'));
+        self::assertSame(0, $panel->filter('[data-testid="cms-content-prototype-keep"]')->count(), 'No candidate to keep.');
+        self::assertSame(1, $panel->filter('[data-testid="cms-content-prototype-again"]')->count());
+        self::assertSame(1, CmsComponentQuery::create()->count(), 'Nothing is made.');
+    }
+
+    public function testACopyIsAnOrdinaryCandidateThatSaysWhatItIsBasedOn(): void
+    {
+        $page = $this->createPage('Nos formules', published: false);
+        $this->getService(SiteComponentRepository::class)->save(PriceTable::component(), SiteComponentRepository::STATUS_READY);
+        $this->getService(SectionCatalog::class)->reset();
+        $variant = PriceTable::component();
+        $variant = new \TheliaCMS\Content\Site\SiteComponent('PriceGrid', $variant->label, $variant->description, $variant->props, $variant->sample, $variant->template);
+        $this->api
+            ->answer(ComponentOutcome::copy('Site:PriceTable', 'a darker look.'))
+            ->answer(FakeAiGateway::response(ComponentPrompt::json($variant)));
+
+        $panel = $this->screen($this->ask($page, 'Le tableau de prix, en sombre.'))->filter('[data-testid="cms-content-prototype"]');
+
+        self::assertSame(1, $panel->filter('[data-testid="cms-content-prototype-keep"]')->count());
+        self::assertStringContainsString('Site:PriceGrid', $panel->text());
+        $basedOn = $panel->filter('[data-testid="cms-content-prototype-based-on"]');
+        self::assertStringContainsString('Site:PriceTable', $basedOn->text());
+        self::assertStringContainsString('a darker look.', $basedOn->text());
     }
 
     public function testKeepingTheCandidateMakesAPrototypeAddedToTheDraftAndOfferedToNobodyElse(): void
@@ -162,6 +203,22 @@ final class ComponentPrototypeScreenTest extends AdminScreenTestCase
         self::assertMatchesRegularExpression('#/content\?.*component=\d+$#', $last['data']['redirect']);
         self::assertNotSame(self::idOf($first), self::idOf($last['data']['redirect']), 'The change is a candidate of its own.');
         self::assertStringContainsString('"code": "PriceTable"', $this->api->requests[1]->messages[0]->content, 'The change starts from the candidate.');
+    }
+
+    public function testTheScriptOfTheScreenIsToldTheSiteAlreadyHasTheComponent(): void
+    {
+        $page = $this->createPage('Nos formules', published: false);
+        $this->getService(SiteComponentRepository::class)->save(PriceTable::component(), SiteComponentRepository::STATUS_READY);
+        $this->getService(SectionCatalog::class)->reset();
+        $this->api->answer(ComponentOutcome::existing('Site:PriceTable', 'it already shows plans.'));
+        $token = $this->tokenOfTheForm($this->screen($this->url($page)), $this->generateUrl($page));
+
+        $this->client->request('POST', $this->generateUrl($page), ['_token' => $token, 'request' => 'Un tableau de tarifs.'], [], [...self::XHR, 'HTTP_ACCEPT' => 'text/event-stream']);
+        $events = array_values(array_filter(self::events((string) $this->client->getInternalResponse()->getContent()), static fn (array $event): bool => 'delta' !== $event['event']));
+
+        self::assertSame(['start', 'turn', 'done'], array_column($events, 'event'));
+        self::assertStringContainsString('already has a component', $events[2]['data']['message']);
+        self::assertMatchesRegularExpression('#/content\?.*component=\d+$#', $events[2]['data']['redirect']);
     }
 
     public function testACallThatFailsIsShownOnTheScreenWithWhatWentWrong(): void

@@ -1,0 +1,23 @@
+{
+  "id": "reuse-client-quote",
+  "family": "reuse",
+  "locale": "fr_FR",
+  "request": "Une citation d'un client satisfait, avec son nom et son métier.",
+  "oracle": {
+    "outcome": [
+      "existing"
+    ],
+    "target": [
+      "Site:Quote"
+    ],
+    "props": [],
+    "markup": {
+      "require": [],
+      "forbid": []
+    },
+    "css": {
+      "require": [],
+      "forbid": []
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "case": "text-two-columns",
+  "round": "round-0",
+  "run": 2,
+  "prompt_sha256": "39057d023020aa0983445852f690876ae7770a54ae51dc5b95a1fc9232595d79",
+  "answers": [
+    "{\"outcome\":\"component\",\"existing\":\"\",\"reason\":\"\",\"code\":\"MagazineArticle\",\"label\":\"Two-column article\",\"description\":\"A long article text, with an optional heading and lead, that reads in one column on a phone and in two columns on a wide screen, like a magazine. Use it for a long story, an interview or an editorial; use free text for a legal page or text that should stay in one column.\",\"props\":\"[{\\\"name\\\": \\\"title\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Heading\\\", \\\"max\\\": 160}, {\\\"name\\\": \\\"lead\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Lead paragraph\\\", \\\"help\\\": \\\"A short introduction shown across the full width, above the columns.\\\", \\\"max\\\": 500}, {\\\"name\\\": \\\"body\\\", \\\"type\\\": \\\"html\\\", \\\"label\\\": \\\"Article text\\\", \\\"help\\\": \\\"Paragraphs, subheadings (level 3) and lists. The text flows over two columns on wide screens.\\\", \\\"required\\\": true}, {\\\"name\\\": \\\"rule\\\", \\\"type\\\": \\\"boolean\\\", \\\"label\\\": \\\"Line between the columns\\\", \\\"default\\\": true}, {\\\"name\\\": \\\"dropcap\\\", \\\"type\\\": \\\"boolean\\\", \\\"label\\\": \\\"Large first letter\\\", \\\"default\\\": false}]\",\"sample\":\"{\\\"title\\\": \\\"Dans l’atelier, là où naissent nos carnets\\\", \\\"lead\\\": \\\"Depuis trente ans, une petite équipe relie à la main chacun de nos carnets. Nous avons passé une journée avec elle, du premier pli à la dernière couture.\\\", \\\"body\\\": \\\"<p>Il est sept heures quand Martine ouvre les volets de l’atelier. Les piles de papier attendent sur les tables, rangées par grammage et par couleur. Avant toute chose, elle vérifie l’humidité de la pièce : un papier trop sec casse au pliage, un papier trop humide gondole.</p><p>Chaque carnet commence par des cahiers de seize pages. On les plie à l’os, un outil en corne qui marque le pli sans abîmer la fibre. Un geste simple, répété des centaines de fois par jour.</p><h3>La couture, cœur du métier</h3><p>Les cahiers sont ensuite cousus un à un sur un métier en bois. Le fil de lin passe dans cinq trous percés à la main. Cette couture permet au carnet de s’ouvrir bien à plat, sans forcer le dos.</p><p>« Une bonne couture ne se voit pas, elle se sent », explique Karim, arrivé il y a douze ans comme apprenti. Il forme aujourd’hui les nouveaux venus.</p><h3>Des matériaux choisis</h3><p>Le papier vient d’un moulin des Vosges, le cuir d’une tannerie du Tarn qui travaille au tanin végétal. Nous privilégions les fournisseurs proches, que nous connaissons par leur nom.</p><ul><li>Papier ivoire de 90 grammes, sans acide</li><li>Fil de lin ciré</li><li>Couverture en cuir pleine fleur</li></ul><p>En fin de journée, une quarantaine de carnets sont prêts. Ils sèchent sous presse toute la nuit avant de partir vers vous.</p>\\\", \\\"rule\\\": true, \\\"dropcap\\\": true}\",\"template\":\"<section class=\\\"article\\\">{% if props.title is not empty %}<h2 class=\\\"article__title\\\">{{ props.title }}</h2>{% endif %}{% if props.lead is not empty %}<p class=\\\"article__lead\\\">{{ props.lead }}</p>{% endif %}{% if props.body is not empty %}<div class=\\\"article__body{% if props.rule %} article__body--rule{% endif %}{% if props.dropcap %} article__body--dropcap{% endif %}\\\">{{ props.body }}</div>{% endif %}</section>\",\"css\":\":scope { color: var(--cms-color-text); }\\n.article__title { margin: 0 0 1rem; }\\n.article__lead { margin: 0 0 1.5rem; font-size: 1.2em; line-height: 1.5; color: var(--cms-color-text-muted); }\\n.article__body { line-height: 1.7; }\\n.article__body > :first-child { margin-top: 0; }\\n.article__body p { margin: 0 0 1em; }\\n.article__body h3 { margin: 1.5em 0 0.5em; break-after: avoid; }\\n.article__body ul, .article__body ol, .article__body blockquote, .article__body img, .article__body figure { break-inside: avoid; }\\n.article__body img { max-width: 100%; height: auto; }\\n.article__body a { color: var(--cms-color-accent-strong); }\\n.article__body--dropcap > p:first-child::first-letter { float: left; font-size: 3.4em; line-height: 0.85; margin: 0.08em 0.12em 0 0; font-weight: 700; color: var(--cms-color-accent); }\\n@media (min-width: 48rem) { .article__body { column-count: 2; column-gap: 3rem; } .article__body--rule { column-rule: 1px solid var(--cms-color-border); } .article__lead { max-width: 48rem; } }\"}"
+  ],
+  "outcome": "component",
+  "existing": null,
+  "based_on": null,
+  "browser": {
+    "375": {
+      "scroll": false,
+      "axe": []
+    },
+    "1440": {
+      "scroll": false,
+      "axe": []
+    }
+  },
+  "verdict": {
+    "pass": true,
+    "checks": {
+      "outcome": true,
+      "valid": true,
+      "props": true,
+      "markup": true,
+      "css": true,
+      "no_h1": true,
+      "img_alt": true,
+      "reduced_motion": true,
+      "browser": true
+    }
+  }
+}
