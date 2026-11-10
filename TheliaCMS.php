@@ -409,6 +409,8 @@ class TheliaCMS extends BaseModule
                 __DIR__.'/Catalogue/Admin/ItemContentRow.php',
                 __DIR__.'/Content/PropSchema.php',
                 __DIR__.'/Content/PropType.php',
+                __DIR__.'/Content/EmbedPlatform.php',
+                __DIR__.'/Content/EmbedAddress.php',
                 __DIR__.'/Content/InvalidDocumentException.php',
                 __DIR__.'/Content/UnknownSectionException.php',
                 // Built by their providers, one per partial or per component

@@ -122,6 +122,7 @@ final readonly class CatalogSheet
             PropType::Image => 'image id from search_media, an https address the brief gives, or null',
             PropType::Video => 'always null: the video is chosen by the editor',
             PropType::Url => 'url',
+            PropType::Embed => 'https address of a YouTube, Vimeo or Dailymotion video, or empty',
             PropType::Items => $prop->scalarItems ? self::scalarListOf($prop) : \sprintf('list of %d to %d items', $prop->minItems ?? 0, $prop->maxItems ?? 12),
             PropType::Reference => 'id from the search tools',
             PropType::Json => 'JSON string',

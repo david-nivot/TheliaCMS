@@ -271,6 +271,39 @@ final class PublishedContentSanitizerTest extends TestCase
         self::assertStringContainsString('<iframe', (string) $this->sanitizer->html($html, allowCustomCode: true));
     }
 
+    public function testKeepsTheFacadeOfAnEmbeddedVideoAndStillDropsTheIframe(): void
+    {
+        $facade = (string) (new \TheliaCMS\Content\EmbedFacade())->markup('youtube:dQw4w9WgXcQ', 'Video', 'en_US');
+        $kept = (string) $this->sanitizer->html($facade);
+
+        self::assertStringContainsString('<button type="button" class="cms-embed__play" aria-label="Play the video: Video (YouTube)">', $kept);
+        self::assertStringContainsString('data-cms-embed-platform="youtube"', $kept);
+        self::assertStringContainsString('data-cms-embed-id="dQw4w9WgXcQ"', $kept);
+        self::assertStringContainsString('data-cms-embed-title="Video (YouTube)"', $kept);
+        self::assertStringContainsString('class="cms-embed__link"', $kept);
+
+        self::assertStringNotContainsString('<iframe', (string) $this->sanitizer->html($facade.'<iframe src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"></iframe>'));
+    }
+
+    #[DataProvider('forgedFacades')]
+    public function testAFacadeWrittenByHandNamesNoOtherHostThanTheList(string $attributes): void
+    {
+        $kept = (string) $this->sanitizer->html('<div class="cms-embed"'.$attributes.'><button type="button" class="cms-embed__play">Play</button></div>');
+
+        self::assertStringNotContainsString('data-cms-embed-', $kept);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function forgedFacades(): iterable
+    {
+        yield 'a platform out of the list' => [' data-cms-embed-platform="evil.tld"'];
+        yield 'an identifier that is an address' => [' data-cms-embed-id="https://evil.tld/x"'];
+        yield 'an identifier with a quote' => [' data-cms-embed-id="abc&quot; onload=&quot;x"'];
+        yield 'a title that is far too long' => [' data-cms-embed-title="'.str_repeat('a', 400).'"'];
+    }
+
     public function testKeepsALongPageWhole(): void
     {
         $html = str_repeat('<p class="wysiwyg">Les conditions générales de vente.</p>', 2_000).'<p>La fin de la page.</p>';
