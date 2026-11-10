@@ -83,6 +83,26 @@ function saveJpeg(GdImage $image, string $directory, array &$media, string $file
     $media[] = ['file' => $file, 'kind' => 'image', 'title' => $title, 'alt' => $alt, 'width' => imagesx($image), 'height' => imagesy($image)];
 }
 
+// The order of the manifest is the order of the import, and the generator offers
+// the 12 most recent pictures: the two pictures no case needs come first, the
+// ones it may leave out when the library holds more than 12.
+
+// Square 1000x1000
+$image = canvas(1000, 1000, 'f7d6e0', 'a23b72');
+for ($i = 0; $i < 6; ++$i) {
+    fillShape($image, 'ellipse', [500, 500, 900 - $i * 150, 900 - $i * 150], 0 === $i % 2 ? 'f4a6c0' : '7a2956');
+}
+fillShape($image, 'rect', [350, 350, 650, 650], 'fff0f5');
+label($image, 'CARRE', 500, 470, 8, '7a2956');
+saveJpeg($image, $directory, $media, 'square-pattern.jpg', 'Motif carré', 'Motif de cercles roses concentriques autour d\'un carré');
+
+// Banner 1920x640
+$image = canvas(1920, 640, '0b3d5c', '2a9d8f');
+fillShape($image, 'poly', [0, 640, 0, 380, 500, 520, 900, 300, 1400, 500, 1920, 340, 1920, 640], '12263a');
+fillShape($image, 'ellipse', [1500, 150, 170, 170], 'ffd166');
+label($image, 'BANNIERE', 960, 200, 14, 'ffffff');
+saveJpeg($image, $directory, $media, 'banner-wide.jpg', 'Bannière', 'Bannière panoramique : montagnes bleues et soleil jaune');
+
 // Workshop landscape 1600x900
 $image = canvas(1600, 900, 'f2e3c6', 'b98a55');
 fillShape($image, 'rect', [0, 620, 1599, 899], '6b4423');
@@ -107,22 +127,6 @@ fillShape($image, 'ellipse', [460, 410, 30, 30], '2a2a2a');
 fillShape($image, 'rect', [370, 490, 430, 500], '9c4a3c');
 label($image, 'PORTRAIT', 400, 880, 8, 'ffffff');
 saveJpeg($image, $directory, $media, 'person-portrait.jpg', 'Portrait', 'Portrait d\'une personne souriante sur fond bleu');
-
-// Square 1000x1000
-$image = canvas(1000, 1000, 'f7d6e0', 'a23b72');
-for ($i = 0; $i < 6; ++$i) {
-    fillShape($image, 'ellipse', [500, 500, 900 - $i * 150, 900 - $i * 150], 0 === $i % 2 ? 'f4a6c0' : '7a2956');
-}
-fillShape($image, 'rect', [350, 350, 650, 650], 'fff0f5');
-label($image, 'CARRE', 500, 470, 8, '7a2956');
-saveJpeg($image, $directory, $media, 'square-pattern.jpg', 'Motif carré', 'Motif de cercles roses concentriques autour d\'un carré');
-
-// Banner 1920x640
-$image = canvas(1920, 640, '0b3d5c', '2a9d8f');
-fillShape($image, 'poly', [0, 640, 0, 380, 500, 520, 900, 300, 1400, 500, 1920, 340, 1920, 640], '12263a');
-fillShape($image, 'ellipse', [1500, 150, 170, 170], 'ffd166');
-label($image, 'BANNIERE', 960, 200, 14, 'ffffff');
-saveJpeg($image, $directory, $media, 'banner-wide.jpg', 'Bannière', 'Bannière panoramique : montagnes bleues et soleil jaune');
 
 // Logos 400x200, PNG with transparent background
 foreach ([

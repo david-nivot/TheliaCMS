@@ -19,6 +19,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use TheliaCMS\Generation\Component\SampleMedia;
 
 /**
  * Fills the media library with the pictures and videos of the bench, so the
@@ -73,6 +74,19 @@ final class ComponentBenchMediaCommand extends Command
         }
 
         $output->writeln(\sprintf('%d %s, %d already in the library.', $imported, $dryRun ? 'to import' : 'imported', \count($report) - $imported));
+
+        $pictures = array_values(array_filter($this->importer->manifest((string) $input->getOption('dir')), static fn (array $entry): bool => 'image' === $entry['kind']));
+        $unseen = \array_slice($pictures, 0, max(0, \count($pictures) - SampleMedia::MAX_IMAGES));
+
+        if ([] !== $unseen) {
+            // The library offers the most recent pictures: the first of the
+            // manifest, imported first, are the ones left out.
+            $output->writeln(\sprintf(
+                '<comment>The generator offers the %d most recent pictures: imported in this order, %s will not be offered.</comment>',
+                SampleMedia::MAX_IMAGES,
+                implode(', ', array_column($unseen, 'file')),
+            ));
+        }
 
         return Command::SUCCESS;
     }

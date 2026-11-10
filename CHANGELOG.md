@@ -15,14 +15,16 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   now takes the id of one of them for its `image` and `video` props instead of
   being left empty. `thelia_cms:component-bench:media` imports the pictures of
   `docs/evaluation/components/media/` into the library before a round, once
-  each (`--dir`, `--dry-run`).
+  each (`--dir`, `--dry-run`), and names the pictures the generator will not
+  be offered when the manifest holds more than 12.
 - **A bench for the generator of components.** `thelia_cms:component-bench:run`
   plays the cases of `docs/evaluation/components/cases/` against the real
   generator (N runs per case, a budget in USD that stops the round, a file per
   run that is not played again on a second launch, nothing kept but the
   ledger line); `thelia_cms:component-bench:check` applies the contract of each
   case to those files (outcome, target, props, markup, stylesheet, no `h1`,
-  alternative texts, reduced motion, the browser measures when there are some),
+  alternative texts, except for the pictures of a block hidden from assistive
+  technologies, reduced motion, the browser measures when there are some),
   writes the verdict into each file and prints the table. It calls no API.
 - **The generator of components answers "the site already has it" or "a
   variant of it".** Asked for a new component, the model now says whether a

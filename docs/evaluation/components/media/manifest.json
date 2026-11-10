@@ -1,22 +1,6 @@
 {
     "media": [
         {
-            "file": "workshop-landscape.jpg",
-            "kind": "image",
-            "title": "Atelier",
-            "alt": "Établi d'atelier avec des outils de maroquinerie",
-            "width": 1600,
-            "height": 900
-        },
-        {
-            "file": "person-portrait.jpg",
-            "kind": "image",
-            "title": "Portrait",
-            "alt": "Portrait d'une personne souriante sur fond bleu",
-            "width": 800,
-            "height": 1000
-        },
-        {
             "file": "square-pattern.jpg",
             "kind": "image",
             "title": "Motif carré",
@@ -31,6 +15,22 @@
             "alt": "Bannière panoramique : montagnes bleues et soleil jaune",
             "width": 1920,
             "height": 640
+        },
+        {
+            "file": "workshop-landscape.jpg",
+            "kind": "image",
+            "title": "Atelier",
+            "alt": "Établi d'atelier avec des outils de maroquinerie",
+            "width": 1600,
+            "height": 900
+        },
+        {
+            "file": "person-portrait.jpg",
+            "kind": "image",
+            "title": "Portrait",
+            "alt": "Portrait d'une personne souriante sur fond bleu",
+            "width": 800,
+            "height": 1000
         },
         {
             "file": "logo-north.png",

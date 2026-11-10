@@ -18,6 +18,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Tester\CommandTester;
 use Symfony\Component\Filesystem\Filesystem;
 use TheliaCMS\Evaluation\ComponentBench\ComponentBenchMediaCommand;
+use TheliaCMS\Generation\Component\SampleMedia;
 use TheliaCMS\Media\CmsMediaLibrary;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
 use TheliaLibrary\Model\LibraryImage;
@@ -150,6 +151,30 @@ final class ComponentBenchMediaCommandTest extends CmsIntegrationTestCase
         [, $output] = $this->play(['--dir' => $this->directory, '--dry-run' => true]);
 
         self::assertStringContainsString('0 to import, 2 already in the library.', $output);
+    }
+
+    public function testAManifestOfMorePicturesThanTheSampleIsOfferedNamesThoseItWillNotSee(): void
+    {
+        $manifest = json_decode((string) file_get_contents($this->directory.'/manifest.json'), true, 8, \JSON_THROW_ON_ERROR);
+
+        for ($index = 1; \count($manifest['media']) <= SampleMedia::MAX_IMAGES; ++$index) {
+            copy($this->directory.'/logo-north.png', $this->directory.'/extra-'.$index.'.png');
+            $manifest['media'][] = ['file' => 'extra-'.$index.'.png', 'kind' => 'image', 'title' => 'Extra '.$index, 'alt' => 'Extra '.$index];
+        }
+
+        file_put_contents($this->directory.'/manifest.json', json_encode($manifest, \JSON_THROW_ON_ERROR));
+
+        [$status, $output] = $this->play(['--dir' => $this->directory, '--dry-run' => true]);
+
+        self::assertSame(Command::SUCCESS, $status);
+        self::assertStringContainsString(\sprintf('The generator offers the %d most recent pictures: imported in this order, workshop-landscape.png will not be offered.', SampleMedia::MAX_IMAGES), $output);
+    }
+
+    public function testAManifestThatFitsSaysNothingOfIt(): void
+    {
+        [, $output] = $this->play(['--dir' => $this->directory, '--dry-run' => true]);
+
+        self::assertStringNotContainsString('will not be offered', $output);
     }
 
     public function testAFileThatTheManifestNamesAndTheFolderLacksStopsBeforeAnyImport(): void
