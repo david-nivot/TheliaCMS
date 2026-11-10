@@ -45,7 +45,8 @@
                         <p class="text-muted small">{{ component.description }}</p>
                         {% if may_make %}
                             {% if kept_code and pages > 0 %}
-                                <p class="small">{{ 'Used by %count% page(s): keeping this version draws their drafts again with it; published pages change at their next publication.'|trans({ '%count%': pages }, 'theliacms') }}</p>
+                                <p class="small">{{ 'Used by %count% page(s): keeping this version draws their drafts again with it; published pages change at their next publication.'|trans({ '%count%': pages }, 'theliacms') }}
+                                {% include '@TheliaCMSModule/backOffice/default-twig/linked-pages/_trigger.html.twig' with { kind: 'component', key: 'Site:' ~ kept_code, count: pages, text: 'See the pages'|trans({}, 'theliacms'), subject: 'Site:' ~ kept_code, testid: 'cms-site-candidate-pages-open' } only %}</p>
                             {% endif %}
                             <form method="post" action="{{ path('admin.cms.components.site.keep', { id: candidate.logId }) }}" data-testid="cms-site-component-keep">
                                 <input type="hidden" name="_token" value="{{ assignToken() }}">
