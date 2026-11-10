@@ -167,3 +167,24 @@ One file per case, `docs/evaluation/components/cases/<id>.json`:
 6. **Replay**: recordings of round 0 under `Tests/Fixtures/component-bench/`,
    an integration test that replays them.
 7. Docs and changelog; PR.
+8. **Media of the sample** (decided by the maintainer on 2026-11-10, after
+   round 0 was started). Until now the prompt says an image of the sample is
+   null unless the request gives an `https` address, and the generator does
+   not know the media library: a sample never draws a picture, so neither the
+   preview of the editor nor the bench sees one.
+   - The user message of the generator of components lists a few media of the
+     library for the sample: id, image or video, its text (alt or title),
+     width × height. The most recent ones, a dozen pictures and a few videos
+     at most; nothing when the library is empty. The rule of the sample
+     becomes: an `image` or `video` prop of the sample takes the id of one of
+     them chosen for what it shows, or null when none fits.
+   - The bench fills the library before a round: pictures made by GD
+     (deterministic: a landscape, a portrait, a square, four logos, a few
+     scenes, each with its alt), committed under
+     `docs/evaluation/components/media/` and imported by a command of the
+     bench; a short MP4 if one can be made on the host without a tool the
+     host lacks (ffmpeg is not there), otherwise the video case stays without
+     a `<video>` requirement and the report says so.
+   - The image cases ask again for `<img` in the rendered sample.
+   - Round 1: the cases with an image or a video prop only, 3 runs each,
+     3 USD at most (granted on 2026-11-10), played after round 0.
