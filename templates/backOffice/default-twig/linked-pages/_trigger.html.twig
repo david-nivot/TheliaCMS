@@ -1,0 +1,18 @@
+{# The number of pages of an element, as the button that opens the list of
+   them in a drawer (assets/linked-pages.js, served by LinkedPagesController).
+
+   Expects kind (component, tag, page-type or media), key (the name, id or code
+   of the element), text (the number as it reads, already translated), subject
+   (what the drawer is about, for its title) and testid. Without the script the
+   number stays a plain figure on the screen. #}
+<button type="button" class="btn btn-link p-0 align-baseline"
+        data-cms-linked-pages
+        data-url="{{ path('admin.cms.linked_pages', { kind: kind, key: key }) }}"
+        data-title="{{ 'Pages of %name%'|trans({ '%name%': subject }, 'theliacms') }}"
+        data-close="{{ 'Close'|trans({}, 'theliacms') }}"
+        data-loading="{{ 'Loading…'|trans({}, 'theliacms') }}"
+        data-failed="{{ 'The list could not be loaded. Try again.'|trans({}, 'theliacms') }}"
+        aria-haspopup="dialog"
+        aria-label="{{ 'Show the pages of %name%: %count%'|trans({ '%name%': subject, '%count%': count }, 'theliacms') }}"
+        {% if testid|default('') %}data-testid="{{ testid }}"{% endif %}>{{ text }}</button>
+<script src="{{ cms_asset('assets/linked-pages.js') }}?v={{ cms_asset_version('assets/linked-pages.js') }}" defer></script>

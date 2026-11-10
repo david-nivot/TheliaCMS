@@ -404,6 +404,9 @@ class TheliaCMS extends BaseModule
                 // Built per call by ContentTargets, around the page or the item they serve.
                 __DIR__.'/Page/Admin/PageContentTarget.php',
                 __DIR__.'/Page/Admin/PageContentRow.php',
+                // Built by LinkedPagesFinder for the drawer of the pages of an element.
+                __DIR__.'/Page/Admin/LinkedPage.php',
+                __DIR__.'/Page/Admin/LinkedPages.php',
                 __DIR__.'/Zone/ZoneContentTarget.php',
                 __DIR__.'/Catalogue/Admin/ItemContentTarget.php',
                 __DIR__.'/Catalogue/Admin/ItemContentRow.php',

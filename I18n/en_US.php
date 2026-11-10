@@ -1968,4 +1968,12 @@ return [
     'No tag yet. Tags are added from a media sheet of the library.' => 'No tag yet. Tags are added from a media sheet of the library.',
     'This field takes an image.' => 'This field takes an image.',
     'This field takes a video.' => 'This field takes a video.',
+    'Pages of %name%' => 'Pages of %name%',
+    'Show the pages of %name%: %count%' => 'Show the pages of %name%: %count%',
+    'The list could not be loaded. Try again.' => 'The list could not be loaded. Try again.',
+    'No page.' => 'No page.',
+    'In the bin' => 'In the bin',
+    'See the pages' => 'See the pages',
+    'See them in the list of pages' => 'See them in the list of pages',
+    'The list leaves out the pages in the bin.' => 'The list leaves out the pages in the bin.',
 ];

@@ -1968,4 +1968,12 @@ return [
     'No tag yet. Tags are added from a media sheet of the library.' => 'Aucune étiquette pour l’instant. Elles se posent depuis la fiche d’un média de la médiathèque.',
     'This field takes an image.' => 'Ce champ prend une image.',
     'This field takes a video.' => 'Ce champ prend une vidéo.',
+    'Pages of %name%' => 'Pages de %name%',
+    'Show the pages of %name%: %count%' => 'Afficher les pages de %name% : %count%',
+    'The list could not be loaded. Try again.' => 'La liste n’a pas pu être chargée. Réessayez.',
+    'No page.' => 'Aucune page.',
+    'In the bin' => 'À la corbeille',
+    'See the pages' => 'Voir les pages',
+    'See them in the list of pages' => 'Les voir dans la liste des pages',
+    'The list leaves out the pages in the bin.' => 'La liste des pages ne montre pas celles de la corbeille.',
 ];

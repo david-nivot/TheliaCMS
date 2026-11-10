@@ -46,7 +46,7 @@
             </p>
             <p class="small">
                 {% if item.usageCount > 0 %}
-                    {{ 'Used by %count% page(s) or item(s)'|trans({ '%count%': item.usageCount }, 'theliacms') }}
+                    {% include '@TheliaCMSModule/backOffice/default-twig/linked-pages/_trigger.html.twig' with { kind: 'media', key: item.id, count: item.usageCount, text: 'Used by %count% page(s) or item(s)'|trans({ '%count%': item.usageCount }, 'theliacms'), subject: item.title, testid: 'cms-media-usage-open-' ~ item.id } only %}
                 {% else %}
                     {{ 'Not used yet'|trans({}, 'theliacms') }}
                 {% endif %}
