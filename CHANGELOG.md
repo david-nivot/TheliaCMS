@@ -35,6 +35,13 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   sent the source of that component and writes the variant under a new code,
   and the candidate says it is based on it. A change of a component is still
   always a component.
+- **The media library can show only the images or only the videos.** A **Type**
+  select (*Images and videos*, *Images only*, *Videos only*, `?kind=image|video`
+  in the address) combines with the search, the tag, the sort, the pages, the
+  view and the bulk actions, and the counts of the header follow it. The media
+  picker of the editor has the same type and tag filters: it opens on the type
+  its field takes (a `video` prop opens on the videos), and lists the other kind
+  greyed out, to be found but not chosen.
 
 ### Changed
 
@@ -42,6 +49,9 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   of the prompt said an image of the sample is null unless the request gives an
   address; it now says to take a media of the list the message gives, and null
   only when none fits or the library is empty.
+- **The tag filter of the media library is always shown.** With no tag yet, it
+  is disabled and says that a tag is added from a media sheet or with the bulk
+  action **Add a tag**, instead of hiding the means to narrow the list.
 
 ## [2.25.0] - 2026-11-10
 
