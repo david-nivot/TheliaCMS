@@ -18,6 +18,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 use TheliaCMS\Content\Prop;
 use TheliaCMS\Content\PropSchema;
 use TheliaCMS\Content\SectionDefinitionInterface;
+use TheliaCMS\Partial\DescribedPartialInterface;
 use TheliaCMS\Partial\PartialDefinitionInterface;
 use TheliaCMS\Partial\PartialProp;
 use TheliaCMS\Partial\PartialPropType;
@@ -59,6 +60,14 @@ final readonly class PartialSection implements SectionDefinitionInterface
 
     public function description(): string
     {
+        if ($this->partial instanceof DescribedPartialInterface) {
+            $description = trim($this->partial->description());
+
+            if ('' !== $description) {
+                return $description;
+            }
+        }
+
         return $this->translator->trans(
             'Live content, rendered on every visit: %label%. The page stores its settings only.',
             ['%label%' => $this->partial->label()],

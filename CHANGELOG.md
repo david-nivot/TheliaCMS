@@ -7,6 +7,14 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **A block of live content can say what it does.** A partial that also
+  implements `DescribedPartialInterface` gives its own description, shown in
+  the section picker and on the components screen in place of the generic
+  "Live content, rendered on every visit" sentence, which stays for a partial
+  that does not. The form and the list of pages of the module describe themselves.
+
 ## [2.23.0] - 2026-11-09
 
 ### Added
