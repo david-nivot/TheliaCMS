@@ -21,7 +21,9 @@
       }
     ],
     "markup": {
-      "require": [],
+      "require": [
+        "<img"
+      ],
       "forbid": []
     },
     "css": {

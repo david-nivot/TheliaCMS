@@ -101,11 +101,13 @@ ddev exec php Thelia thelia_cms:component-bench:media
 
 `media` takes `--dir` (default: `media/` of this folder) and `--dry-run`, calls
 no API, and imports each file once: a media of the library with the same title
-is left alone, so the command can be run before every round. A sample is drawn
-with a picture only when the library holds some, so a case that asks for `<img`
-or `<video` in the markup is meaningful after this command only. A video file
-is imported when the manifest lists one (`"kind": "video"`); without it, the
-video cases keep no `<video>` requirement.
+is left alone, so the command can be run before every round. The cases with an
+`image` prop (author-box, carousel-autoplay, compose-text-carousel,
+gallery-grid, image-before-after, image-hover-caption, logos-partners) require
+an `<img` in the rendered sample: it holds one only when the library holds
+pictures to draw, so run this command before a round, or those cases fail. No
+case requires a `<video`: the bench has no video file. One would be imported
+when the manifest listed it (`"kind": "video"`).
 
 `run` options: `--round` (required), `--cases` (default: `cases/` of this
 folder), `--case` (repeatable, a filter), `--runs` (default 3), `--out`
