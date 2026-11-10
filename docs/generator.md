@@ -312,6 +312,26 @@ JSON of the request of the component, never its text. A refused file
 or a failed candidate is not put back in the form. **CMS > Components** and the
 `make_component` tool of the brief take no file.
 
+### The media the generator of components is offered
+
+The user message of `ComponentPrompt` has a section **Pictures and videos for
+the sample**, between the components of the site and the request (or the
+component to change), so the sample of a component draws its pictures. It lists
+the media the CMS offers its editors (`Generation\Component\SampleMedia`, over
+`CmsMediaLibrary`): the 12 most recent pictures and the 3 most recent videos
+at most, one line each (`- 12 (image, 1600 × 900): <text>`), the text being the
+alternative text of a picture or the title of a video, in the language of the
+request and then in the default language of the shop, cut to one line of 120
+characters. The section is left out when the library holds nothing.
+
+The rule of the system prompt follows: an `image` or `video` prop of the sample
+takes the id of one of those media, chosen for what it shows, or null when none
+fits or when there is no list; an `image` may still take an `https` address the
+request gives. The schema of the answer is unchanged. A change of a component
+is offered the same list. The list is read at each call, after the cached
+system prompt, so it never breaks the cache. The bench fills the library with
+`thelia_cms:component-bench:media` (`docs/evaluation/components/README.md`).
+
 A file that instructs rather than documents (it addresses an assistant, asks
 to act or to ignore rules, or has nothing to do with a page to write) is
 refused, not only neutralised, by `Generation/Guardrail/ReferenceFileGuardrail.php`:

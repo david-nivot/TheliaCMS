@@ -46,9 +46,10 @@ the plan.
    Expected: `components: 6 created`. The import checks each component like
    one the model wrote, so a seed that no longer validates is reported as a
    warning ("left out"). The command has no dry-run option.
-2. Play a round (real calls, N runs per case): `thelia_cms:component-bench:run`.
-3. Apply the oracles to the round, no API call: `thelia_cms:component-bench:check`.
-4. Run the browser script on the candidates (375 and 1440 px, scroll, axe-core,
+2. Fill the media library: `thelia_cms:component-bench:media` (below).
+3. Play a round (real calls, N runs per case): `thelia_cms:component-bench:run`.
+4. Apply the oracles to the round, no API call: `thelia_cms:component-bench:check`.
+5. Run the browser script on the candidates (375 and 1440 px, scroll, axe-core,
    captures).
 
 No model judges the results: a judge varies as much as what it judges.
@@ -88,9 +89,23 @@ the `browser` block of each run file, which `check` reads. A run already looked
 at is skipped unless `FORCE=1`.
 
 The media library of a fresh shop is empty, and the generator of components
-cannot search it: the sample of a component draws its pictures and videos only
-when the model gives an address of elsewhere. The cases therefore ask for an
-`image` or `video` prop, never for an `<img>` or a `<video>` in the markup.
+offers its sample the media the library holds (the 12 most recent pictures and
+the 3 most recent videos: `docs/generator.md`). Fill it before a round:
+
+```bash
+# What would be imported, nothing written
+ddev exec php Thelia thelia_cms:component-bench:media --dry-run
+# Imports the pictures of media/ (manifest.json) with their title and alt, says the ids
+ddev exec php Thelia thelia_cms:component-bench:media
+```
+
+`media` takes `--dir` (default: `media/` of this folder) and `--dry-run`, calls
+no API, and imports each file once: a media of the library with the same title
+is left alone, so the command can be run before every round. A sample is drawn
+with a picture only when the library holds some, so a case that asks for `<img`
+or `<video` in the markup is meaningful after this command only. A video file
+is imported when the manifest lists one (`"kind": "video"`); without it, the
+video cases keep no `<video>` requirement.
 
 `run` options: `--round` (required), `--cases` (default: `cases/` of this
 folder), `--case` (repeatable, a filter), `--runs` (default 3), `--out`

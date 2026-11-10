@@ -55,6 +55,7 @@ final readonly class ComponentPrompt
         private SectionCatalog $catalog,
         private ShopContext $shop,
         private BlockStyles $blocks,
+        private ?SampleMedia $media = null,
     ) {
     }
 
@@ -109,6 +110,7 @@ final readonly class ComponentPrompt
         }
 
         $lines[] = '';
+        array_push($lines, ...$this->mediaLines($request->locale));
 
         if (null !== $request->current) {
             $lines[] = '# The component to change';
@@ -139,6 +141,30 @@ final readonly class ComponentPrompt
         }
 
         return implode("\n", $lines);
+    }
+
+    /**
+     * The media of the library the sample may show, one line each, with the
+     * heading; nothing when the library holds none.
+     *
+     * @return list<string>
+     */
+    private function mediaLines(string $locale): array
+    {
+        $items = $this->media?->offered($locale) ?? [];
+
+        if ([] === $items) {
+            return [];
+        }
+
+        return [
+            '# Pictures and videos for the sample',
+            '',
+            'The media library of the site holds these, the most recent first: the number is the id, followed by the kind, the size and what it shows. The sample takes the id of one of them for an `image` or `video` prop, chosen for what it shows, and null when none fits.',
+            '',
+            ...array_map(static fn (SampleMediaItem $item): string => $item->line(), $items),
+            '',
+        ];
     }
 
     /**
@@ -273,7 +299,7 @@ final readonly class ComponentPrompt
             '',
             '# Sample',
             '',
-            'The props of the example: what the toolkit shows and what the generator of pages sees. Fill every prop with realistic text in the language of the site, as many items as a real page would hold. An image is null unless the request gives the `https` address of a picture.',
+            'The props of the example: what the toolkit shows and what the generator of pages sees. Fill every prop with realistic text in the language of the site, as many items as a real page would hold. An `image` or `video` prop of the sample takes the id of one of the pictures and videos the user message lists under "Pictures and videos for the sample", chosen for what it shows (an id is written as a number, never as an address), or null when none of them fits or when the message lists none; with no list, every `image` and `video` of the sample is null. An `image` may also take the `https` address of a picture when the request gives one.',
             '',
             // Each skill opens with its own heading.
             ...array_map(static fn (string $skill): string => trim($skill)."\n", array_filter([$accessibility, $motion])),

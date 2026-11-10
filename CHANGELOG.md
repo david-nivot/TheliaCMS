@@ -9,6 +9,13 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Added
 
+- **Pictures and videos for the sample of a component.** The generator of
+  components is told of the most recent media of the library (12 pictures and 3
+  videos at most, with their id, text and size), and the sample of a component
+  now takes the id of one of them for its `image` and `video` props instead of
+  being left empty. `thelia_cms:component-bench:media` imports the pictures of
+  `docs/evaluation/components/media/` into the library before a round, once
+  each (`--dir`, `--dry-run`).
 - **A bench for the generator of components.** `thelia_cms:component-bench:run`
   plays the cases of `docs/evaluation/components/cases/` against the real
   generator (N runs per case, a budget in USD that stops the round, a file per
@@ -73,6 +80,10 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Changed
 
+- **The sample of a generated component no longer has empty pictures.** The rule
+  of the prompt said an image of the sample is null unless the request gives an
+  address; it now says to take a media of the list the message gives, and null
+  only when none fits or the library is empty.
 - **A branch of the tree opens and closes in place.** The arrow of a page and
   **Close every branch** no longer load the screen again: the tree is replaced
   where it stands, the row clicked stays at its place and keeps the focus, and

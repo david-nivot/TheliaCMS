@@ -168,7 +168,11 @@ One file per case, `docs/evaluation/components/cases/<id>.json`:
    an integration test that replays them.
 7. Docs and changelog; PR.
 8. **Media of the sample** (decided by the maintainer on 2026-11-10, after
-   round 0 was started). Until now the prompt says an image of the sample is
+   round 0 was started). Code written on `feat/component-bench-media`: the
+   list in the prompt (`SampleMedia`) and the command
+   `thelia_cms:component-bench:media` with their tests, not run yet; the
+   pictures and the manifest, the `<img` requirement of the cases and round 1
+   remain. Until now the prompt says an image of the sample is
    null unless the request gives an `https` address, and the generator does
    not know the media library: a sample never draws a picture, so neither the
    preview of the editor nor the bench sees one.
