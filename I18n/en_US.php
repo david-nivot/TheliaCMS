@@ -1954,4 +1954,13 @@ return [
     'Playing it loads %platform%.' => 'Playing it loads %platform%.',
     'Watch the video on %platform%' => 'Watch the video on %platform%',
     'The address of a YouTube, Vimeo or Dailymotion video, from its page or its share button. It plays when the visitor clicks it, and nothing is loaded from the platform before.' => 'The address of a YouTube, Vimeo or Dailymotion video, from its page or its share button. It plays when the visitor clicks it, and nothing is loaded from the platform before.',
+    'Images and videos' => 'Images and videos',
+    'Images only' => 'Images only',
+    'Videos only' => 'Videos only',
+    'No tag yet. Add one from a media sheet or with “Add a tag” below.' => 'No tag yet. Add one from a media sheet or with “Add a tag” below.',
+    '%count% file(s)' => '%count% file(s)',
+    'No file matches.' => 'No file matches.',
+    'No tag yet. Tags are added from a media sheet of the library.' => 'No tag yet. Tags are added from a media sheet of the library.',
+    'This field takes an image.' => 'This field takes an image.',
+    'This field takes a video.' => 'This field takes a video.',
 ];

@@ -7,6 +7,22 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **The media library can show only the images or only the videos.** A **Type**
+  select (*Images and videos*, *Images only*, *Videos only*, `?kind=image|video`
+  in the address) combines with the search, the tag, the sort, the pages, the
+  view and the bulk actions, and the counts of the header follow it. The media
+  picker of the editor has the same type and tag filters: it opens on the type
+  its field takes (a `video` prop opens on the videos), and lists the other kind
+  greyed out, to be found but not chosen.
+
+### Changed
+
+- **The tag filter of the media library is always shown.** With no tag yet, it
+  is disabled and says that a tag is added from a media sheet or with the bulk
+  action **Add a tag**, instead of hiding the means to narrow the list.
+
 ## [2.25.0] - 2026-11-10
 
 ### Added

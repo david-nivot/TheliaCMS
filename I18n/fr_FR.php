@@ -1954,4 +1954,13 @@ return [
     'Playing it loads %platform%.' => 'La lecture charge %platform%.',
     'Watch the video on %platform%' => 'Voir la vidéo sur %platform%',
     'The address of a YouTube, Vimeo or Dailymotion video, from its page or its share button. It plays when the visitor clicks it, and nothing is loaded from the platform before.' => 'L’adresse d’une vidéo YouTube, Vimeo ou Dailymotion, copiée depuis sa page ou son bouton de partage. Elle se lance au clic du visiteur, et rien n’est chargé depuis la plateforme avant.',
+    'Images and videos' => 'Images et vidéos',
+    'Images only' => 'Images seulement',
+    'Videos only' => 'Vidéos seulement',
+    'No tag yet. Add one from a media sheet or with “Add a tag” below.' => 'Aucune étiquette pour l’instant. Posez-en une depuis la fiche d’un média ou avec « Ajouter une étiquette » ci-dessous.',
+    '%count% file(s)' => '%count% fichier(s)',
+    'No file matches.' => 'Aucun fichier ne correspond.',
+    'No tag yet. Tags are added from a media sheet of the library.' => 'Aucune étiquette pour l’instant. Elles se posent depuis la fiche d’un média de la médiathèque.',
+    'This field takes an image.' => 'Ce champ prend une image.',
+    'This field takes a video.' => 'Ce champ prend une vidéo.',
 ];
