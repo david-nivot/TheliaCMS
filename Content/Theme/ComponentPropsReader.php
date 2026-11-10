@@ -36,6 +36,7 @@ use Twig\Environment;
  * rendered page, and a prop may name what the site holds: `image`
  * for a picture of the media library, handed to the component as its address,
  * `video` for a video of the library, handed to it as the address of its file,
+ * `icon` for the name of an icon (`cms:<name>` or one of the theme), printed with `ux_icon()`,
  * `product`, `category`, `folder`, `form` or `menu` for one record picked by
  * its id, and `product[]` or `category[]` for several, in the order they were
  * picked. The component receives the ids, as it would from a template of the
@@ -386,6 +387,10 @@ final readonly class ComponentPropsReader
             return Prop::video($name, $name, $required, $description);
         }
 
+        if (\in_array('icon', $kinds, true)) {
+            return Prop::icon($name, $name, $required, $description);
+        }
+
         foreach ($kinds as $kind) {
             if (isset(self::SOURCES[$kind])) {
                 return $this->reference($name, $kind, $required, $description);
@@ -494,6 +499,10 @@ final readonly class ComponentPropsReader
 
         if (\in_array('video', $kinds, true)) {
             return Prop::video($name, $name, $required, $help);
+        }
+
+        if (\in_array('icon', $kinds, true)) {
+            return Prop::icon($name, $name, $required, $help);
         }
 
         if ([] !== $choices) {

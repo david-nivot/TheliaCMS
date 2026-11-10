@@ -353,4 +353,55 @@ final class PropSchemaTest extends TestCase
         self::assertSame(['label', 'image'], $properties['items']['items']['required']);
         self::assertSame(['integer', 'string'], ((array) $properties['items']['items']['properties'])['image']['type']);
     }
+
+    public function testAnIconIsTheNameOfAnIconOfTheLibraryOrOfTheTheme(): void
+    {
+        $schema = new PropSchema([Prop::icon('icon', 'Icon')]);
+
+        self::assertSame('cms:ok', $schema->normalize(['icon' => 'cms:ok'])['icon']);
+        self::assertSame('not-found', $schema->normalize(['icon' => ' not-found '])['icon'], 'The name of an icon of the theme, trimmed.');
+        self::assertSame('', $schema->normalize([])['icon'], 'An optional icon left out is empty.');
+        self::assertSame('', $schema->normalize(['icon' => null])['icon']);
+        self::assertSame('', $schema->normalize(['icon' => ''])['icon']);
+    }
+
+    /**
+     * @return iterable<string, array{mixed}>
+     */
+    public static function wrongIcons(): iterable
+    {
+        yield 'not a name' => ['Pas Valide'];
+        yield 'prefix alone' => ['cms:'];
+        yield 'a number' => [12];
+        yield 'a list' => [['cms:ok']];
+    }
+
+    #[DataProvider('wrongIcons')]
+    public function testAnIconThatIsNotShapedLikeANameIsRefused(mixed $value): void
+    {
+        $this->expectException(InvalidDocumentException::class);
+
+        (new PropSchema([Prop::icon('icon', 'Icon')]))->normalize(['icon' => $value]);
+    }
+
+    public function testAnotherSetOfIconsIsAcceptedBecauseOnlyTheShapeIsChecked(): void
+    {
+        self::assertSame('lucide:home', (new PropSchema([Prop::icon('icon', 'Icon')]))->normalize(['icon' => 'lucide:home'])['icon']);
+    }
+
+    public function testARequiredIconIsNotLeftEmpty(): void
+    {
+        $this->expectException(InvalidDocumentException::class);
+
+        (new PropSchema([Prop::icon('icon', 'Icon', required: true)]))->normalize(['icon' => '']);
+    }
+
+    public function testAnIconIsAStringInTheJsonSchema(): void
+    {
+        $schema = (new PropSchema([Prop::icon('icon', 'Icon', help: 'Before the title')]))->toJsonSchema();
+        $icon = ((array) $schema['properties'])['icon'];
+
+        self::assertSame(['string', 128], [$icon['type'], $icon['maxLength']]);
+        self::assertStringEndsWith('Empty when not needed.', $icon['description']);
+    }
 }

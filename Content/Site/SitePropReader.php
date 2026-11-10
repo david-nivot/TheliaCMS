@@ -32,11 +32,15 @@ use TheliaCMS\Content\PropType;
  */
 final readonly class SitePropReader
 {
-    /** @var list<string> */
-    public const array TYPES = ['text', 'html', 'integer', 'boolean', 'choice', 'image', 'video', 'embed', 'url', 'items'];
+    /**
+     * The types the component generator is told about.
+     *
+     * @var list<string>
+     */
+    public const array TYPES = ['text', 'html', 'integer', 'boolean', 'choice', 'image', 'video', 'embed', 'url', 'icon', 'items'];
 
     /** @var list<string> */
-    private const array ITEM_TYPES = ['text', 'html', 'integer', 'boolean', 'choice', 'image', 'video', 'embed', 'url'];
+    private const array ITEM_TYPES = ['text', 'html', 'integer', 'boolean', 'choice', 'image', 'video', 'embed', 'url', 'icon'];
 
     private const int MAX_PROPS = 20;
 
@@ -152,6 +156,7 @@ final readonly class SitePropReader
                 PropType::Video => Prop::video($name, $label, $required, $help),
                 PropType::Embed => Prop::embed($name, $label, $required, $help),
                 PropType::Url => Prop::url($name, $label, \is_string($default) ? $default : '', $required, $help),
+                PropType::Icon => Prop::icon($name, $label, $required, $help),
                 PropType::Items => $this->items($spec, $name, $label, $help, $where, $problems),
                 default => null,
             };

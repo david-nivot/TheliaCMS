@@ -52,6 +52,13 @@ enum PropType: string
     /** The id of an item of the shop or of the site: a page, a menu, a form, a product. */
     case Reference = 'reference';
 
+    /**
+     * The name of an icon, as `ux_icon()` reads it: `cms:<name>` for an icon of
+     * the media library, or the name of an icon of the theme. A text that is
+     * not words: it is never translated.
+     */
+    case Icon = 'icon';
+
     /** A value kept as the component documents it: a list or an object the section does not describe further. */
     case Json = 'json';
 }

@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Content;
 
+use TheliaCMS\Media\Icon\IconName;
+
 /**
  * One prop of a section: its name, its type, and what a value of it may be.
  *
@@ -204,6 +206,11 @@ final readonly class Prop
         return new self($name, PropType::Embed, $label, '', $required, $help, max: 2048);
     }
 
+    public static function icon(string $name, string $label, bool $required = false, ?string $help = null): self
+    {
+        return new self($name, PropType::Icon, $label, '', $required, $help, max: IconName::MAXIMUM_REFERENCE_LENGTH);
+    }
+
     public static function url(string $name, string $label, string $default = '', bool $required = false, ?string $help = null): self
     {
         return new self($name, PropType::Url, $label, $default, $required, $help, max: 2048);
@@ -247,7 +254,7 @@ final readonly class Prop
         if (!$this->required) {
             $description .= match ($this->type) {
                 PropType::Image, PropType::Video, PropType::Reference => ' 0 when there is none.',
-                PropType::Text, PropType::Html, PropType::Url, PropType::Embed, PropType::Json => ' Empty when not needed.',
+                PropType::Text, PropType::Html, PropType::Url, PropType::Embed, PropType::Icon, PropType::Json => ' Empty when not needed.',
                 PropType::Items => ' An empty list when not needed.',
                 default => '',
             };
@@ -265,6 +272,7 @@ final readonly class Prop
             PropType::Video => ['type' => $this->required ? 'integer' : ['integer', 'null']],
             PropType::Url => ['type' => 'string', 'maxLength' => $this->max ?? 2048],
             PropType::Embed => ['type' => 'string', 'maxLength' => $this->max ?? 2048],
+            PropType::Icon => ['type' => 'string', 'maxLength' => IconName::MAXIMUM_REFERENCE_LENGTH],
             PropType::Items => [
                 'type' => 'array',
                 'minItems' => $this->minItems ?? 0,

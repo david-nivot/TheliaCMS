@@ -343,4 +343,23 @@ final class ComponentPropsReaderTest extends TestCase
 
         return new ComponentPropsReader(new Environment(new ArrayLoader()), $urls);
     }
+
+    public function testAnIconIsReadAtTheTopAndInTheRowsOfAList(): void
+    {
+        $read = $this->reader()->readSource(<<<'TWIG'
+            {# @prop title string The heading #}
+            {# @prop icon icon The icon before the heading #}
+            {# @prop badge icon|null An icon, when there is one #}
+            {# @prop features list<{label: string, icon: icon|null}> The features #}
+            {% props title, icon, badge = null, features = [] %}
+            TWIG);
+        $props = $this->byName($read);
+
+        self::assertSame(PropType::Icon, $props['icon']->type);
+        self::assertTrue($props['icon']->required);
+        self::assertSame(PropType::Icon, $props['badge']->type);
+        self::assertFalse($props['badge']->required, 'icon|null is optional.');
+        self::assertSame([PropType::Text, PropType::Icon], array_map(static fn (Prop $field): PropType => $field->type, $props['features']->items));
+        self::assertFalse($props['features']->items[1]->required);
+    }
 }

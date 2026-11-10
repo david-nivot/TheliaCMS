@@ -78,4 +78,21 @@ final class SitePropReaderTest extends TestCase
 
         (new SitePropReader())->read([]);
     }
+
+    public function testAnIconIsReadAtTheTopAndInTheRowsOfAList(): void
+    {
+        $schema = (new SitePropReader())->read([
+            ['name' => 'mark', 'type' => 'icon', 'label' => 'Mark', 'required' => true],
+            ['name' => 'steps', 'type' => 'items', 'label' => 'Steps', 'items' => [['name' => 'icon', 'type' => 'icon', 'label' => 'Icon']]],
+        ]);
+
+        self::assertSame(PropType::Icon, $schema->props[0]->type);
+        self::assertTrue($schema->props[0]->required);
+        self::assertSame(PropType::Icon, $schema->props[1]->items[0]->type);
+    }
+
+    public function testTheGeneratorIsToldAboutTheIcon(): void
+    {
+        self::assertContains('icon', SitePropReader::TYPES, 'The sandbox draws an icon with cms_icon().');
+    }
 }

@@ -2339,6 +2339,7 @@
                     window.CmsMediaPicker.bind(row);
                 }
 
+                bindIconPickers(row);
                 row.dispatchEvent(new CustomEvent("cms-item-added", { bubbles: true }));
 
                 if (window.CmsImageCrop) {
@@ -2503,6 +2504,212 @@
             }
         });
 
+        bindIconPickers(root);
+    }
+
+    /* ---- Icon picker ----------------------------------------------- */
+
+    // The icons of a source, read once: every field of the screen asks the
+    // same address.
+    var iconLists = {};
+
+    function iconList(source) {
+        if (!iconLists[source]) {
+            iconLists[source] = fetch(source, { credentials: "same-origin", headers: { "X-Requested-With": "XMLHttpRequest" } })
+                .then(function (response) {
+                    if (!response.ok) {
+                        throw new Error("icons");
+                    }
+
+                    return response.json();
+                })
+                .catch(function (error) {
+                    delete iconLists[source];
+                    throw error;
+                });
+        }
+
+        return iconLists[source];
+    }
+
+    // A grid of previews with a search box, beside the text field that holds
+    // the name: the field stays what the form sends and what is typed in when
+    // the list cannot be read. The preview is the `data:` address of the SVG
+    // shown in an <img>, which runs nothing; no markup of the list is injected.
+    function bindIconPickers(root) {
+        root.querySelectorAll("input[data-cms-icon-picker]").forEach(function (input) {
+            if (input.dataset.cmsIconBound) {
+                return;
+            }
+
+            input.dataset.cmsIconBound = "1";
+
+            var source = input.getAttribute("data-cms-icon-picker");
+            var holder = document.createElement("div");
+            holder.className = "cms-icons";
+            input.insertAdjacentElement("afterend", holder);
+
+            var toggle = document.createElement("button");
+            toggle.type = "button";
+            toggle.className = "btn btn-outline-secondary btn-sm cms-icons__toggle";
+            toggle.textContent = labels.iconChoose || "Choose an icon";
+            toggle.setAttribute("aria-expanded", "false");
+            holder.appendChild(toggle);
+
+            var panel = document.createElement("div");
+            panel.className = "cms-icons__panel";
+            panel.hidden = true;
+            holder.appendChild(panel);
+
+            var search = document.createElement("input");
+            search.type = "search";
+            search.className = "form-control form-control-sm";
+            search.setAttribute("aria-label", labels.iconSearch || "Search an icon");
+            search.placeholder = labels.iconSearch || "Search an icon";
+            panel.appendChild(search);
+
+            var results = document.createElement("div");
+            results.className = "cms-icons__results";
+            panel.appendChild(results);
+
+            var rows = [];
+            var groups = [["theme", labels.iconTheme || "Theme"], ["cms", labels.iconCms || "CMS"]];
+
+            function pick(name) {
+                input.value = name;
+                input.dispatchEvent(new Event("input", { bubbles: true }));
+                input.dispatchEvent(new Event("change", { bubbles: true }));
+                close();
+                input.focus();
+            }
+
+            function previewImage(preview) {
+                var image = document.createElement("img");
+                image.alt = "";
+                image.src = preview;
+                image.className = "cms-icons__image";
+
+                return image;
+            }
+
+            function tile(name, label, preview) {
+                var button = document.createElement("button");
+                button.type = "button";
+                button.className = "cms-icons__tile";
+                button.title = name;
+
+                if (name === input.value) {
+                    button.setAttribute("aria-pressed", "true");
+                }
+
+                var picture = document.createElement("span");
+                picture.className = "cms-icons__picture";
+
+                if (preview.indexOf("data:image/svg+xml;base64,") === 0) {
+                    picture.appendChild(previewImage(preview));
+                }
+
+                var caption = document.createElement("span");
+                caption.className = "cms-icons__name";
+                caption.textContent = label;
+                button.appendChild(picture);
+                button.appendChild(caption);
+                button.addEventListener("click", function () { pick(name); });
+
+                return button;
+            }
+
+            function draw() {
+                var needle = search.value.trim().toLowerCase();
+                results.replaceChildren();
+
+                if (!input.required) {
+                    results.appendChild(tile("", labels.iconNone || "No icon", ""));
+                }
+
+                var shown = 0;
+
+                // The icons of the theme come by sub-directory (`set`), those at
+                // its root first, as in the icons story of the toolkit.
+                var sections = [];
+                groups.forEach(function (group) {
+                    var sets = [];
+                    rows.forEach(function (row) {
+                        var set = row.set || "";
+
+                        if (row.group === group[0] && sets.indexOf(set) === -1) {
+                            sets.push(set);
+                        }
+                    });
+                    sets.sort();
+                    sets.forEach(function (set) {
+                        sections.push([group[0], set, set === "" ? group[1] : group[1] + " · " + set]);
+                    });
+                });
+
+                sections.forEach(function (section) {
+                    var found = rows.filter(function (row) {
+                        return row.group === section[0] && (row.set || "") === section[1]
+                            && (needle === "" || row.name.toLowerCase().indexOf(needle) !== -1 || String(row.label).toLowerCase().indexOf(needle) !== -1);
+                    });
+
+                    if (found.length === 0) {
+                        return;
+                    }
+
+                    var title = document.createElement("p");
+                    title.className = "cms-icons__group";
+                    title.textContent = section[2];
+                    results.appendChild(title);
+                    var grid = document.createElement("div");
+                    grid.className = "cms-icons__grid";
+                    found.forEach(function (row) { grid.appendChild(tile(row.name, row.label, row.preview || "")); });
+                    results.appendChild(grid);
+                    shown += found.length;
+                });
+
+                if (shown === 0) {
+                    var empty = document.createElement("p");
+                    empty.className = "cms-icons__empty text-muted";
+                    empty.textContent = labels.iconEmpty || "No icon matches.";
+                    results.appendChild(empty);
+                }
+            }
+
+            function close() {
+                panel.hidden = true;
+                toggle.setAttribute("aria-expanded", "false");
+            }
+
+            toggle.addEventListener("click", function () {
+                if (!panel.hidden) {
+                    close();
+
+                    return;
+                }
+
+                iconList(source).then(function (list) {
+                    rows = Array.isArray(list) ? list : [];
+                    search.value = "";
+                    draw();
+                    panel.hidden = false;
+                    toggle.setAttribute("aria-expanded", "true");
+                    search.focus();
+                }).catch(function () {
+                    // The list cannot be read: the field stays a text field.
+                    holder.remove();
+                });
+            });
+
+            search.addEventListener("input", draw);
+            holder.addEventListener("keydown", function (event) {
+                if (event.key === "Escape" && !panel.hidden) {
+                    event.stopPropagation();
+                    close();
+                    toggle.focus();
+                }
+            });
+        });
     }
 
     enhance(first);

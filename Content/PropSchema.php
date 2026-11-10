@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace TheliaCMS\Content;
 
 use TheliaCMS\Locale\TranslatableText;
+use TheliaCMS\Media\Icon\IconName;
 
 /**
  * The props of a section, and what to do with the values it is handed.
@@ -115,9 +116,34 @@ final readonly class PropSchema
             PropType::Video => $this->video($prop, $value),
             PropType::Url => $this->url($prop, $value),
             PropType::Embed => $this->embed($prop, $value),
+            PropType::Icon => $this->icon($prop, $value),
             PropType::Items => $this->items($prop, $value),
             PropType::Json => $this->json($prop, $value),
         };
+    }
+
+    /**
+     * The name of an icon, `cms:<name>` or an icon of the theme. Only its shape
+     * is checked: documents are validated again when they are read, and a page
+     * must keep its icon when the icon is taken away.
+     */
+    private function icon(Prop $prop, mixed $value): string
+    {
+        $name = \is_string($value) ? trim($value) : null;
+
+        if (null !== $name && '' === $name) {
+            if ($prop->required) {
+                throw InvalidDocumentException::because([TranslatableText::of('"%s" is required.', $prop->name)]);
+            }
+
+            return '';
+        }
+
+        if (null === $name || !IconName::isReference($name)) {
+            throw InvalidDocumentException::because([TranslatableText::of('"%s" must be the name of an icon, in lowercase letters, digits and hyphens, such as "cms:arrow" or "arrow".', $prop->name)]);
+        }
+
+        return $name;
     }
 
     private function json(Prop $prop, mixed $value): mixed
