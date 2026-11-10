@@ -283,6 +283,8 @@ return [
     'Create a page here' => 'Créer une page ici',
     'Inside "%title%"' => 'Dans « %title% »',
     'No page inside this one yet.' => 'Aucune page dans celle-ci pour l’instant.',
+    'No picture chosen yet' => 'Aucune image choisie pour l’instant',
+    'Nothing to show yet' => 'Rien à afficher pour l’instant',
     'Pages inside “%title%”' => 'Pages dans « %title% »',
     'See the pages inside %title%' => 'Voir les pages dans « %title% »',
     '1 page' => '1 page',

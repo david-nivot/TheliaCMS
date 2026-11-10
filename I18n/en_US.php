@@ -283,6 +283,8 @@ return [
     'Create a page here' => 'Create a page here',
     'Inside "%title%"' => 'Inside "%title%"',
     'No page inside this one yet.' => 'No page inside this one yet.',
+    'No picture chosen yet' => 'No picture chosen yet',
+    'Nothing to show yet' => 'Nothing to show yet',
     'Pages inside “%title%”' => 'Pages inside “%title%”',
     'See the pages inside %title%' => 'See the pages inside %title%',
     '1 page' => '1 page',
