@@ -32,6 +32,7 @@ use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Model\CmsPageContentQuery;
 use TheliaCMS\Page\Admin\CmsPageWriter;
 use TheliaCMS\Tests\Integration\Security\AdminScreenTestCase;
+use TheliaCMS\Tests\Support\ComponentOutcome;
 use TheliaCMS\Tests\Support\FakeAiGateway;
 use TheliaCMS\Tests\Unit\Content\Site\PriceTable;
 
@@ -201,6 +202,28 @@ final class AiDegradedModeScreenTest extends AdminScreenTestCase
 
         self::assertSame(0, $panel->filter('[data-testid="cms-content-prototype-change"]')->count(), 'Asking a change is gone.');
         self::assertSame(1, $panel->filter('[data-testid="cms-content-prototype-keep"]')->count(), 'Keeping what was made stays.');
+    }
+
+    public function testAPrototypeTheCatalogueAlreadyHasStillSaysSoButOffersNoNewAskWhenTheAiIsOff(): void
+    {
+        $api = new FakeAiGateway();
+        static::getContainer()->set(AiGatewayInterface::class, $api);
+        $page = $this->createPage('Nos photos', published: false);
+        $api->answer(ComponentOutcome::existing('cms:image', 'cms:image already shows one picture and its caption.'));
+        $generate = \sprintf('/admin/cms/pages/%d/content/component/generate', $page->getId());
+        $token = $this->tokenOfTheForm($this->screen($this->contentUrl($page)), $generate);
+        self::assertSame(302, $this->send('POST', $generate, ['_token' => $token, 'request' => 'Une photo seule.']));
+        $candidate = (string) $this->client->getResponse()->headers->get('Location');
+
+        $panel = $this->screen($candidate)->filter('[data-testid="cms-content-prototype"]');
+        self::assertSame(1, $panel->filter('[data-testid="cms-content-prototype-existing"]')->count());
+        self::assertSame(1, $panel->filter('[data-testid="cms-content-prototype-again"]')->count());
+
+        $this->ai->turnOff(AiUnavailability::NoModel, ComponentGenerator::USAGE);
+        $panel = $this->screen($candidate)->filter('[data-testid="cms-content-prototype"]');
+
+        self::assertSame(1, $panel->filter('[data-testid="cms-content-prototype-existing"]')->count(), 'The component that does it is still named.');
+        self::assertSame(0, $panel->filter('[data-testid="cms-content-prototype-again"]')->count(), 'Asking again is gone.');
     }
 
     public function testTheComponentsListOffersNewComponentOnlyWhileTheAiIsAvailable(): void
