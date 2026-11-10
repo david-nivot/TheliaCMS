@@ -174,7 +174,7 @@ final readonly class LinkedPagesFinder
 
         foreach (\array_slice($itemRefs, 0, max(0, self::SHOWN - \count($rows))) as $ref) {
             $type = CatalogueItemType::tryFrom($ref['type']);
-            $title = null === $type ? '' : ($this->items->find($type, $ref['id'], $locale)?->title ?? '');
+            $title = null === $type ? '' : ($this->items->find($type, $ref['id'], $locale)->title ?? '');
             $rows[] = new LinkedPage($ref['type'], $ref['id'], '' === $title ? '#'.$ref['id'] : $title, null, false);
         }
 
