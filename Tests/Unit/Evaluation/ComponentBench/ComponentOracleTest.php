@@ -165,6 +165,23 @@ final class ComponentOracleTest extends TestCase
         self::assertFalse($emptyAtRender['checks']['img_alt'], 'A print that comes out empty.');
     }
 
+    public function testAnImageCopiedInsideAHiddenBlockMayHaveAnEmptyAlt(): void
+    {
+        // A carousel that loops draws its pictures twice; the copy is hidden from
+        // assistive technologies and its pictures are decorative there.
+        $loop = '<section><ul>{% for fact in props.facts %}<li><img src="{{ fact.photo }}" alt="{{ fact.label }}"></li>{% endfor %}</ul>'
+            .'<ul aria-hidden="true">{% for fact in props.facts %}<li><img src="{{ fact.photo }}" alt=""></li>{% endfor %}</ul>'
+            .'<blockquote>{{ props.quote }}</blockquote></section>';
+        $verdict = $this->judge(self::case(), self::trial(['template' => $loop]));
+        self::assertTrue($verdict['checks']['img_alt'], implode(' ', $verdict['problems']));
+
+        $afterTheBlock = $this->judge(self::case(), self::trial(['template' => '<section><div aria-hidden="true"><span></span></div><img src="{{ props.portrait }}" alt=""></section>']));
+        self::assertFalse($afterTheBlock['checks']['img_alt'], 'The block closed before the picture.');
+
+        $notHidden = $this->judge(self::case(), self::trial(['template' => '<section><div aria-hidden="false"><img src="{{ props.portrait }}" alt=""></div></section>']));
+        self::assertFalse($notHidden['checks']['img_alt'], 'aria-hidden="false" hides nothing.');
+    }
+
     public function testAnAnimationMustBeGuardedByReducedMotion(): void
     {
         $animation = '@keyframes pulse { from { opacity: 0; } to { opacity: 1; } }';

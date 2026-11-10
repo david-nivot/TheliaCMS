@@ -40,7 +40,10 @@ final readonly class ComponentOracle
     /** Impacts of axe-core the browser check refuses. */
     private const array BLOCKING_IMPACTS = ['serious', 'critical'];
 
-    private const string TAG = '/<([a-z][a-z0-9-]*)((?:[^>"\']|"[^"]*"|\'[^\']*\')*)>/i';
+    private const string TAG = '/<(\/?)([a-z][a-z0-9-]*)((?:[^>"\']|"[^"]*"|\'[^\']*\')*)>/i';
+
+    /** Elements that never close: they hold nothing. */
+    private const array VOID = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr'];
 
     public function __construct(
         private SiteComponentValidator $validator = new SiteComponentValidator(),
@@ -271,13 +274,47 @@ final readonly class ComponentOracle
     }
 
     /**
+     * The `<img>` tags assistive technologies see: a picture inside an element
+     * marked `aria-hidden="true"` (the copy of a carousel that loops) is
+     * decorative there, and its empty alt is right.
+     *
      * @return list<string> the `<img>` tags
      */
     private static function images(string $markup): array
     {
         preg_match_all(self::TAG, $markup, $tags, \PREG_SET_ORDER);
 
-        return array_values(array_map(static fn (array $tag): string => $tag[0], array_filter($tags, static fn (array $tag): bool => 'img' === strtolower($tag[1]))));
+        $images = [];
+        /** @var list<array{0: string, 1: bool}> $open name and hidden, from the outermost */
+        $open = [];
+
+        foreach ($tags as $tag) {
+            $name = strtolower($tag[2]);
+            $hidden = [] !== $open && $open[array_key_last($open)][1];
+
+            if ('/' === $tag[1]) {
+                for ($index = \count($open) - 1; $index >= 0; --$index) {
+                    if ($open[$index][0] === $name) {
+                        $open = \array_slice($open, 0, $index);
+                        break;
+                    }
+                }
+
+                continue;
+            }
+
+            if ('img' === $name && !$hidden) {
+                $images[] = $tag[0];
+            }
+
+            if (\in_array($name, self::VOID, true) || str_ends_with(rtrim($tag[3]), '/')) {
+                continue;
+            }
+
+            $open[] = [$name, $hidden || 1 === preg_match('/\saria-hidden\s*=\s*(?:"true"|\'true\'|true\b)/i', $tag[3])];
+        }
+
+        return $images;
     }
 
     private static function alt(string $tag): ?string
