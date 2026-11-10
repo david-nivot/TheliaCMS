@@ -1,0 +1,38 @@
+{
+  "case": "carousel-autoplay",
+  "round": "round-0",
+  "run": 3,
+  "prompt_sha256": "4840d102900f6dfcf3b6fb52a0edfa83c8bb19a1f7c2aec5ea697cac56706637",
+  "answers": [
+    "{\"outcome\":\"copy\",\"existing\":\"Site:Carousel\",\"reason\":\"La variante fait défiler les photos toute seule en boucle continue, s'arrête au survol et au focus clavier, et reste immobile pour les visiteurs qui demandent moins de mouvement.\",\"code\":\"\",\"label\":\"\",\"description\":\"\",\"props\":\"\",\"sample\":\"\",\"template\":\"\",\"css\":\"\"}",
+    "{\"outcome\":\"component\",\"existing\":\"\",\"reason\":\"\",\"code\":\"AutoScrollGallery\",\"label\":\"Scrolling gallery\",\"description\":\"A row of pictures, each with an optional caption, that scrolls sideways on its own in a seamless loop and stops under the pointer and on keyboard focus, with no script. Use it to show a portfolio of work or projects; visitors who ask for less motion get a still row they scroll by hand.\",\"props\":\"[{\\\"name\\\":\\\"title\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Heading\\\",\\\"max\\\":120},{\\\"name\\\":\\\"speed\\\",\\\"type\\\":\\\"choice\\\",\\\"label\\\":\\\"Speed\\\",\\\"choices\\\":{\\\"slow\\\":\\\"Slow\\\",\\\"normal\\\":\\\"Normal\\\",\\\"fast\\\":\\\"Fast\\\"},\\\"default\\\":\\\"normal\\\"},{\\\"name\\\":\\\"direction\\\",\\\"type\\\":\\\"choice\\\",\\\"label\\\":\\\"Direction\\\",\\\"choices\\\":{\\\"left\\\":\\\"Towards the left\\\",\\\"right\\\":\\\"Towards the right\\\"},\\\"default\\\":\\\"left\\\"},{\\\"name\\\":\\\"slides\\\",\\\"type\\\":\\\"items\\\",\\\"label\\\":\\\"Pictures\\\",\\\"min\\\":2,\\\"max\\\":12,\\\"items\\\":[{\\\"name\\\":\\\"image\\\",\\\"type\\\":\\\"image\\\",\\\"label\\\":\\\"Picture\\\"},{\\\"name\\\":\\\"alt\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Alternative text\\\",\\\"help\\\":\\\"One sentence saying what the picture shows.\\\",\\\"required\\\":true,\\\"max\\\":160},{\\\"name\\\":\\\"caption\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Caption\\\",\\\"max\\\":160}]}]\",\"sample\":\"{\\\"title\\\":\\\"Nos réalisations\\\",\\\"speed\\\":\\\"normal\\\",\\\"direction\\\":\\\"left\\\",\\\"slides\\\":[{\\\"image\\\":null,\\\"alt\\\":\\\"Cuisine en chêne massif avec un îlot central et un plan de travail en pierre\\\",\\\"caption\\\":\\\"Cuisine sur mesure à Lyon\\\"},{\\\"image\\\":null,\\\"alt\\\":\\\"Bibliothèque blanche qui couvre tout un mur de salon autour d’une fenêtre\\\",\\\"caption\\\":\\\"Bibliothèque intégrée à Annecy\\\"},{\\\"image\\\":null,\\\"alt\\\":\\\"Escalier en bois clair aux marches suspendues le long d’un mur en béton\\\",\\\"caption\\\":\\\"Escalier suspendu à Grenoble\\\"},{\\\"image\\\":null,\\\"alt\\\":\\\"Dressing en noyer avec des portes coulissantes et un éclairage intégré\\\",\\\"caption\\\":\\\"Dressing en noyer à Chambéry\\\"},{\\\"image\\\":null,\\\"alt\\\":\\\"Terrasse en bois exotique autour d’une piscine, bordée de plantes\\\",\\\"caption\\\":\\\"Terrasse en ipé à Valence\\\"},{\\\"image\\\":null,\\\"alt\\\":\\\"Bureau d’angle en frêne sous une fenêtre de toit, avec des étagères murales\\\",\\\"caption\\\":\\\"Coin bureau sous les combles à Lyon\\\"}]}\",\"template\":\"<section class=\\\"marquee marquee--{{ props.speed|default('normal') }} marquee--{{ props.direction|default('left') }}\\\">{% if props.title is not empty %}<h2 class=\\\"marquee__title\\\">{{ props.title }}</h2>{% endif %}<div class=\\\"marquee__frame\\\" tabindex=\\\"0\\\" role=\\\"region\\\"{% if props.title is not empty %} aria-label=\\\"{{ props.title }}\\\"{% endif %} data-cms-sizes=\\\"(min-width: 48rem) 22rem, 16rem\\\"><div class=\\\"marquee__track\\\"><ul class=\\\"marquee__group\\\">{% for slide in props.slides %}<li class=\\\"marquee__slide\\\">{% if slide.image %}<img class=\\\"marquee__image\\\" src=\\\"{{ slide.image }}\\\" alt=\\\"{{ slide.alt }}\\\">{% endif %}{% if slide.caption is not empty %}<p class=\\\"marquee__caption\\\">{{ slide.caption }}</p>{% endif %}</li>{% endfor %}</ul><ul class=\\\"marquee__group marquee__group--copy\\\" aria-hidden=\\\"true\\\">{% for slide in props.slides %}<li class=\\\"marquee__slide\\\">{% if slide.image %}<img class=\\\"marquee__image\\\" src=\\\"{{ slide.image }}\\\" alt=\\\"\\\">{% endif %}{% if slide.caption is not empty %}<p class=\\\"marquee__caption\\\">{{ slide.caption }}</p>{% endif %}</li>{% endfor %}</ul></div></div></section>\",\"css\":\".marquee__title { margin: 0 0 1rem; color: var(--cms-color-text); }\\n.marquee__frame { overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; padding-bottom: 0.5rem; border-radius: 0.5rem; }\\n.marquee__frame:focus-visible { outline: 2px solid var(--cms-color-accent); outline-offset: 4px; }\\n.marquee__track { display: flex; width: max-content; }\\n.marquee__group { display: flex; gap: 1rem; margin: 0; padding: 0 1rem 0 0; list-style: none; }\\n.marquee__group--copy { display: none; }\\n.marquee__slide { flex: 0 0 16rem; scroll-snap-align: start; }\\n.marquee__image { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 0.5rem; background: var(--cms-color-accent-surface); }\\n.marquee__caption { margin: 0.5rem 0 0; color: var(--cms-color-text-muted); }\\n@media (min-width: 48rem) { .marquee__slide { flex-basis: 22rem; } }\\n@keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }\\n@media (prefers-reduced-motion: no-preference) { .marquee__frame { overflow: hidden; scroll-snap-type: none; } .marquee__group--copy { display: flex; } .marquee__track { animation: scroll 40s linear infinite; } .marquee--slow .marquee__track { animation-duration: 60s; } .marquee--fast .marquee__track { animation-duration: 25s; } .marquee--right .marquee__track { animation-direction: reverse; } .marquee__frame:hover .marquee__track { animation-play-state: paused; } .marquee__frame:focus-within .marquee__track { animation-play-state: paused; } }\"}"
+  ],
+  "outcome": "component",
+  "existing": null,
+  "based_on": "Site:Carousel",
+  "browser": {
+    "375": {
+      "scroll": false,
+      "axe": []
+    },
+    "1440": {
+      "scroll": false,
+      "axe": []
+    }
+  },
+  "verdict": {
+    "pass": false,
+    "checks": {
+      "outcome": true,
+      "target": true,
+      "valid": true,
+      "props": true,
+      "markup": false,
+      "css": true,
+      "no_h1": true,
+      "img_alt": true,
+      "reduced_motion": true,
+      "browser": true
+    }
+  }
+}

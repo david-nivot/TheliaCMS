@@ -36,38 +36,61 @@ final readonly class SectionUsageFinder
      */
     public function pageCounts(): array
     {
+        return array_map(\count(...), $this->usersByComponent());
+    }
+
+    /**
+     * The pages, then the catalogue items, that hold a component: the very
+     * rows pageCounts() counts, so the list of a component is never longer or
+     * shorter than the number shown next to it.
+     *
+     * @return list<array{type: string, id: int}> `page` or the type of the catalogue item; pages first, by id
+     */
+    public function usersOf(string $component): array
+    {
+        return array_values($this->usersByComponent()[$component] ?? []);
+    }
+
+    /**
+     * @return array<string, array<string, array{type: string, id: int}>> the pages and items holding each component, by component name
+     */
+    private function usersByComponent(): array
+    {
         $rows = CmsPageContentQuery::create()
             ->useCmsPageQuery()
                 ->filterByDeletedAt(null, Criteria::ISNULL)
             ->endUse()
             ->select(['PageId', 'DraftDocument', 'PublishedDocument'])
+            ->orderByPageId()
             ->find()
             ->toArray();
 
-        $pagesByComponent = [];
+        $usersByComponent = [];
 
         foreach ($rows as $row) {
             foreach ([$row['DraftDocument'], $row['PublishedDocument']] as $json) {
                 foreach (self::components((string) $json) as $component) {
-                    $pagesByComponent[$component]['page-'.$row['PageId']] = true;
+                    $usersByComponent[$component]['page-'.$row['PageId']] = ['type' => 'page', 'id' => (int) $row['PageId']];
                 }
             }
         }
 
         $items = CmsItemContentQuery::create()
             ->select(['ItemType', 'ItemId', 'DraftDocument', 'PublishedDocument'])
+            ->orderByItemType()
+            ->orderByItemId()
             ->find()
             ->toArray();
 
         foreach ($items as $row) {
             foreach ([$row['DraftDocument'], $row['PublishedDocument']] as $json) {
                 foreach (self::components((string) $json) as $component) {
-                    $pagesByComponent[$component][$row['ItemType'].'-'.$row['ItemId']] = true;
+                    $usersByComponent[$component][$row['ItemType'].'-'.$row['ItemId']] = ['type' => (string) $row['ItemType'], 'id' => (int) $row['ItemId']];
                 }
             }
         }
 
-        return array_map(\count(...), $pagesByComponent);
+        return $usersByComponent;
     }
 
     /**

@@ -1,0 +1,34 @@
+{
+  "id": "logos-partners",
+  "family": "logos",
+  "locale": "fr_FR",
+  "request": "Une bande avec les logos de nos partenaires, en niveaux de gris.",
+  "oracle": {
+    "outcome": [
+      "existing",
+      "component"
+    ],
+    "target": [
+      "cms:columns"
+    ],
+    "props": [
+      {
+        "type": "items",
+        "min": 1,
+        "with": [
+          "image"
+        ]
+      }
+    ],
+    "markup": {
+      "require": [
+        "<img"
+      ],
+      "forbid": []
+    },
+    "css": {
+      "require": [],
+      "forbid": []
+    }
+  }
+}

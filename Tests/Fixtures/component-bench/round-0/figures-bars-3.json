@@ -1,0 +1,49 @@
+{
+  "case": "figures-bars",
+  "round": "round-0",
+  "run": 3,
+  "prompt_sha256": "41ca4337c9ca5b445a85dbf6362a213e00dff9cfc5ca9f0d2778f8eb00041c89",
+  "answers": [
+    "{\"outcome\":\"copy\",\"existing\":\"Site:KeyFigures\",\"reason\":\"La variante ajoute sous chaque nombre une barre de progression, avec une valeur en pourcentage par chiffre pour en régler le remplissage.\",\"code\":\"\",\"label\":\"\",\"description\":\"\",\"props\":\"\",\"sample\":\"\",\"template\":\"\",\"css\":\"\"}",
+    "{\"outcome\":\"component\",\"existing\":\"\",\"reason\":\"\",\"code\":\"KeyFiguresProgress\",\"label\":\"Key figures with bars\",\"description\":\"A row of key figures, each a big number with a progress bar under it showing a percentage, a short label and an optional note. Use it for results measured against a goal or a whole: rates, objectives reached, shares of a total.\",\"props\":\"[{\\\"name\\\":\\\"title\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Heading\\\",\\\"max\\\":120},{\\\"name\\\":\\\"figures\\\",\\\"type\\\":\\\"items\\\",\\\"label\\\":\\\"Figures\\\",\\\"min\\\":2,\\\"max\\\":6,\\\"items\\\":[{\\\"name\\\":\\\"value\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Value\\\",\\\"required\\\":true,\\\"max\\\":20},{\\\"name\\\":\\\"percent\\\",\\\"type\\\":\\\"integer\\\",\\\"label\\\":\\\"Bar fill (%)\\\",\\\"help\\\":\\\"How full the bar under the number is, from 0 to 100. It is drawn in steps of 5.\\\",\\\"min\\\":0,\\\"max\\\":100,\\\"default\\\":0},{\\\"name\\\":\\\"label\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Label\\\",\\\"required\\\":true,\\\"max\\\":80},{\\\"name\\\":\\\"note\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Note\\\",\\\"max\\\":120}]}]\",\"sample\":\"{\\\"title\\\":\\\"L’atelier en chiffres\\\",\\\"figures\\\":[{\\\"value\\\":\\\"98 %\\\",\\\"percent\\\":98,\\\"label\\\":\\\"clients satisfaits\\\",\\\"note\\\":\\\"enquête 2025\\\"},{\\\"value\\\":\\\"4 500\\\",\\\"percent\\\":75,\\\"label\\\":\\\"sacs livrés cette année\\\",\\\"note\\\":\\\"objectif annuel : 6 000\\\"},{\\\"value\\\":\\\"85 %\\\",\\\"percent\\\":85,\\\"label\\\":\\\"cuir d’origine française\\\",\\\"note\\\":\\\"le reste vient d’Italie\\\"}]}\",\"template\":\"<section class=\\\"figures\\\">{% if props.title is not empty %}<h2 class=\\\"figures__title\\\">{{ props.title }}</h2>{% endif %}<ul class=\\\"figures__list\\\">{% for figure in props.figures %}{% set percent = max(0, min(100, figure.percent|default(0))) %}{% set step = (percent // 5) * 5 %}<li class=\\\"figure\\\"><span class=\\\"figure__value\\\">{{ figure.value }}</span><span class=\\\"figure__bar\\\" role=\\\"meter\\\" aria-valuenow=\\\"{{ percent }}\\\" aria-valuemin=\\\"0\\\" aria-valuemax=\\\"100\\\" aria-label=\\\"{{ figure.label }}\\\"><span class=\\\"figure__fill figure__fill--{{ step }}\\\"></span></span><span class=\\\"figure__label\\\">{{ figure.label }}</span>{% if figure.note is not empty %}<span class=\\\"figure__note\\\">{{ figure.note }}</span>{% endif %}</li>{% endfor %}</ul></section>\",\"css\":\".figures__title { margin: 0 0 1.5rem; color: var(--cms-color-text); }\\n.figures__list { display: grid; gap: 1.5rem; margin: 0; padding: 0; list-style: none; }\\n.figure { display: flex; flex-direction: column; gap: 0.25rem; }\\n.figure__value { font-size: 2.5rem; font-weight: 700; line-height: 1; color: var(--cms-color-accent); }\\n.figure__bar { display: block; height: 0.5rem; margin: 0.5rem 0 0.25rem; border-radius: 0.25rem; overflow: hidden; background: var(--cms-color-accent-surface); border: 1px solid var(--cms-color-border); }\\n.figure__fill { display: block; width: 0; height: 100%; background: var(--cms-color-accent); }\\n.figure__fill--5 { width: 5%; }\\n.figure__fill--10 { width: 10%; }\\n.figure__fill--15 { width: 15%; }\\n.figure__fill--20 { width: 20%; }\\n.figure__fill--25 { width: 25%; }\\n.figure__fill--30 { width: 30%; }\\n.figure__fill--35 { width: 35%; }\\n.figure__fill--40 { width: 40%; }\\n.figure__fill--45 { width: 45%; }\\n.figure__fill--50 { width: 50%; }\\n.figure__fill--55 { width: 55%; }\\n.figure__fill--60 { width: 60%; }\\n.figure__fill--65 { width: 65%; }\\n.figure__fill--70 { width: 70%; }\\n.figure__fill--75 { width: 75%; }\\n.figure__fill--80 { width: 80%; }\\n.figure__fill--85 { width: 85%; }\\n.figure__fill--90 { width: 90%; }\\n.figure__fill--95 { width: 95%; }\\n.figure__fill--100 { width: 100%; }\\n.figure__label { font-weight: 700; color: var(--cms-color-text); }\\n.figure__note { color: var(--cms-color-text-muted); }\\n@media (min-width: 48rem) { .figures__list { grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 2rem; } }\"}",
+    "{\"outcome\":\"component\",\"existing\":\"\",\"reason\":\"\",\"code\":\"KeyFiguresProgress\",\"label\":\"Key figures with bars\",\"description\":\"A row of key figures, each a big number with a progress bar under it showing a percentage, a short label and an optional note. Use it for results measured against a goal or a whole (rates, objectives reached, shares of a total), the value or the note stating in words what the bar shows.\",\"props\":\"[{\\\"name\\\":\\\"title\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Heading\\\",\\\"max\\\":120},{\\\"name\\\":\\\"figures\\\",\\\"type\\\":\\\"items\\\",\\\"label\\\":\\\"Figures\\\",\\\"min\\\":2,\\\"max\\\":6,\\\"items\\\":[{\\\"name\\\":\\\"value\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Value\\\",\\\"required\\\":true,\\\"max\\\":20},{\\\"name\\\":\\\"percent\\\",\\\"type\\\":\\\"integer\\\",\\\"label\\\":\\\"Bar fill (%)\\\",\\\"help\\\":\\\"How full the bar under the number is, from 0 to 100, drawn in steps of 5. The bar is only visual: say the same thing in the value or the note.\\\",\\\"min\\\":0,\\\"max\\\":100,\\\"default\\\":0},{\\\"name\\\":\\\"label\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Label\\\",\\\"required\\\":true,\\\"max\\\":80},{\\\"name\\\":\\\"note\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Note\\\",\\\"max\\\":120}]}]\",\"sample\":\"{\\\"title\\\":\\\"L’atelier en chiffres\\\",\\\"figures\\\":[{\\\"value\\\":\\\"98 %\\\",\\\"percent\\\":98,\\\"label\\\":\\\"clients satisfaits\\\",\\\"note\\\":\\\"enquête 2025\\\"},{\\\"value\\\":\\\"4 500\\\",\\\"percent\\\":75,\\\"label\\\":\\\"sacs livrés cette année\\\",\\\"note\\\":\\\"75 % de l’objectif annuel de 6 000\\\"},{\\\"value\\\":\\\"85 %\\\",\\\"percent\\\":85,\\\"label\\\":\\\"cuir d’origine française\\\",\\\"note\\\":\\\"le reste vient d’Italie\\\"}]}\",\"template\":\"<section class=\\\"figures\\\">{% if props.title is not empty %}<h2 class=\\\"figures__title\\\">{{ props.title }}</h2>{% endif %}<ul class=\\\"figures__list\\\">{% for figure in props.figures %}{% set percent = max(0, min(100, figure.percent|default(0))) %}{% set step = (percent // 5) * 5 %}<li class=\\\"figure\\\"><span class=\\\"figure__value\\\">{{ figure.value }}</span><span class=\\\"figure__bar\\\" aria-hidden=\\\"true\\\"><span class=\\\"figure__fill figure__fill--{{ step }}\\\"></span></span><span class=\\\"figure__label\\\">{{ figure.label }}</span>{% if figure.note is not empty %}<span class=\\\"figure__note\\\">{{ figure.note }}</span>{% endif %}</li>{% endfor %}</ul></section>\",\"css\":\".figures__title { margin: 0 0 1.5rem; color: var(--cms-color-text); }\\n.figures__list { display: grid; gap: 1.5rem; margin: 0; padding: 0; list-style: none; }\\n.figure { display: flex; flex-direction: column; gap: 0.25rem; }\\n.figure__value { font-size: 2.5rem; font-weight: 700; line-height: 1; color: var(--cms-color-accent); }\\n.figure__bar { display: block; height: 0.5rem; margin: 0.5rem 0 0.25rem; border-radius: 0.25rem; overflow: hidden; background: var(--cms-color-accent-surface); border: 1px solid var(--cms-color-border); }\\n.figure__fill { display: block; width: 0; height: 100%; background: var(--cms-color-accent); }\\n.figure__fill--5 { width: 5%; }\\n.figure__fill--10 { width: 10%; }\\n.figure__fill--15 { width: 15%; }\\n.figure__fill--20 { width: 20%; }\\n.figure__fill--25 { width: 25%; }\\n.figure__fill--30 { width: 30%; }\\n.figure__fill--35 { width: 35%; }\\n.figure__fill--40 { width: 40%; }\\n.figure__fill--45 { width: 45%; }\\n.figure__fill--50 { width: 50%; }\\n.figure__fill--55 { width: 55%; }\\n.figure__fill--60 { width: 60%; }\\n.figure__fill--65 { width: 65%; }\\n.figure__fill--70 { width: 70%; }\\n.figure__fill--75 { width: 75%; }\\n.figure__fill--80 { width: 80%; }\\n.figure__fill--85 { width: 85%; }\\n.figure__fill--90 { width: 90%; }\\n.figure__fill--95 { width: 95%; }\\n.figure__fill--100 { width: 100%; }\\n.figure__label { font-weight: 700; color: var(--cms-color-text); }\\n.figure__note { color: var(--cms-color-text-muted); }\\n@media (min-width: 48rem) { .figures__list { grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 2rem; } }\"}"
+  ],
+  "outcome": "component",
+  "existing": null,
+  "based_on": "Site:KeyFigures",
+  "browser": {
+    "375": {
+      "scroll": false,
+      "axe": [
+        {
+          "id": "color-contrast",
+          "impact": "serious"
+        }
+      ]
+    },
+    "1440": {
+      "scroll": false,
+      "axe": [
+        {
+          "id": "color-contrast",
+          "impact": "serious"
+        }
+      ]
+    }
+  },
+  "verdict": {
+    "pass": false,
+    "checks": {
+      "outcome": true,
+      "target": true,
+      "valid": true,
+      "props": true,
+      "markup": true,
+      "css": true,
+      "no_h1": true,
+      "img_alt": true,
+      "reduced_motion": true,
+      "browser": false
+    }
+  }
+}

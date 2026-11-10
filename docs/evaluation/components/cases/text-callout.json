@@ -1,0 +1,26 @@
+{
+  "id": "text-callout",
+  "family": "text",
+  "locale": "fr_FR",
+  "request": "Un encadré pour mettre en avant une information importante (une fermeture exceptionnelle, un délai), avec un titre et un texte court.",
+  "oracle": {
+    "outcome": [
+      "component"
+    ],
+    "target": [],
+    "props": [
+      {
+        "type": "text|html",
+        "min": 2
+      }
+    ],
+    "markup": {
+      "require": [],
+      "forbid": []
+    },
+    "css": {
+      "require": [],
+      "forbid": []
+    }
+  }
+}

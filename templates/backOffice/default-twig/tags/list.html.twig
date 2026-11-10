@@ -40,7 +40,7 @@
                                 {% endif %}
                             </td>
                             <td><span class="badge {{ row.badge }}"{% if row.badge_style %} style="{{ row.badge_style }}"{% endif %} data-testid="cms-tag-badge-{{ row.id }}"><i class="bi bi-tag me-1" aria-hidden="true"></i>{{ row.name }}</span></td>
-                            <td data-testid="cms-tag-pages-{{ row.id }}">{{ row.pages }}</td>
+                            <td data-testid="cms-tag-pages-{{ row.id }}">{% if row.pages > 0 %}{% include '@TheliaCMSModule/backOffice/default-twig/linked-pages/_trigger.html.twig' with { kind: 'tag', key: row.id, count: row.pages, text: row.pages, subject: row.name, testid: 'cms-tag-pages-open-' ~ row.id } only %}{% else %}{{ row.pages }}{% endif %}</td>
                             <td class="text-end">
                                 {% if may_delete %}
                                     <form method="post"

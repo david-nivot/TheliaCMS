@@ -73,6 +73,20 @@ final class BackOfficeAssetExtensionTest extends TestCase
         self::assertSame([basename($served)], $this->files());
     }
 
+    /**
+     * Sabotage: make the function return a constant: the two assertions on the
+     * source of the module and on the missing file differ no more.
+     */
+    public function testTheVersionOfAnAssetFollowsItsSource(): void
+    {
+        $version = (new BackOfficeAssetExtension())->getFunctions()[1]->getCallable();
+
+        self::assertIsCallable($version);
+        self::assertMatchesRegularExpression('/^[0-9a-f]{12}$/', $version('assets/linked-pages.js'));
+        self::assertSame($version('assets/linked-pages.js'), $version('assets/linked-pages.js'));
+        self::assertNotSame($version('assets/linked-pages.js'), $version('assets/missing-asset.js'), 'A file that is not there has no date to hash.');
+    }
+
     private function file(string $name, string $content, string $date): string
     {
         $path = $this->directory.'/'.$name;

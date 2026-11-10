@@ -1,0 +1,32 @@
+{
+  "id": "cta-banner",
+  "family": "cta",
+  "locale": "fr_FR",
+  "request": "Un bandeau d'appel à l'action : un titre accrocheur, une phrase et deux boutons, « Demander un devis » et « Nous appeler ».",
+  "oracle": {
+    "outcome": [
+      "component"
+    ],
+    "target": [],
+    "props": [
+      {
+        "type": "text",
+        "min": 2
+      },
+      {
+        "type": "url",
+        "min": 2
+      }
+    ],
+    "markup": {
+      "require": [
+        "<a "
+      ],
+      "forbid": []
+    },
+    "css": {
+      "require": [],
+      "forbid": []
+    }
+  }
+}

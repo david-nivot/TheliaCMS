@@ -1,0 +1,41 @@
+{
+  "case": "steps-timeline",
+  "round": "round-0",
+  "run": 3,
+  "prompt_sha256": "276b416d0818e4b27eabe5ef3d153d47765f275899f4b589121ddf5d8ec69e76",
+  "answers": [
+    "{\"outcome\":\"component\",\"existing\":\"\",\"reason\":\"\",\"code\":\"CompanyTimeline\",\"label\":\"Company timeline\",\"description\":\"The history of a company as a vertical timeline, each milestone a date, a title and a short text joined by a line. Use it on an about page or a story page to tell how the company grew year by year.\",\"props\":\"[{\\\"name\\\": \\\"title\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Heading\\\", \\\"max\\\": 120}, {\\\"name\\\": \\\"intro\\\", \\\"type\\\": \\\"html\\\", \\\"label\\\": \\\"Introduction\\\", \\\"help\\\": \\\"A short text shown under the heading, before the timeline.\\\"}, {\\\"name\\\": \\\"events\\\", \\\"type\\\": \\\"items\\\", \\\"label\\\": \\\"Milestones\\\", \\\"min\\\": 2, \\\"max\\\": 24, \\\"items\\\": [{\\\"name\\\": \\\"date\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Date\\\", \\\"help\\\": \\\"A year, a month or a period, as it should be read.\\\", \\\"required\\\": true, \\\"max\\\": 40}, {\\\"name\\\": \\\"title\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Title\\\", \\\"required\\\": true, \\\"max\\\": 120}, {\\\"name\\\": \\\"text\\\", \\\"type\\\": \\\"html\\\", \\\"label\\\": \\\"Text\\\"}]}]\",\"sample\":\"{\\\"title\\\": \\\"Notre histoire\\\", \\\"intro\\\": \\\"<p>De l’atelier familial à la boutique en ligne, voici les grandes étapes de notre aventure.</p>\\\", \\\"events\\\": [{\\\"date\\\": \\\"1987\\\", \\\"title\\\": \\\"L’ouverture de l’atelier\\\", \\\"text\\\": \\\"<p>Marie et Jean Lefèvre ouvrent un petit atelier de reliure à Lyon. Ils travaillent à deux.</p>\\\"}, {\\\"date\\\": \\\"1995\\\", \\\"title\\\": \\\"La première boutique\\\", \\\"text\\\": \\\"<p>L’atelier devient une boutique sur les pentes de la Croix-Rousse. Les premiers carnets sur mesure voient le jour.</p>\\\"}, {\\\"date\\\": \\\"2008\\\", \\\"title\\\": \\\"Le lancement du site\\\", \\\"text\\\": \\\"<p>Nos carnets se vendent en ligne dans toute la France. L’équipe compte désormais huit personnes.</p>\\\"}, {\\\"date\\\": \\\"2016\\\", \\\"title\\\": \\\"Un nouvel atelier\\\", \\\"text\\\": \\\"<p>Nous nous installons dans un atelier plus grand, alimenté en énergie renouvelable.</p>\\\"}, {\\\"date\\\": \\\"2023\\\", \\\"title\\\": \\\"L’ouverture à l’Europe\\\", \\\"text\\\": \\\"<p>Nous livrons maintenant dans douze pays d’Europe, toujours depuis Lyon.</p>\\\"}]}\",\"template\":\"<section class=\\\"timeline\\\">{% if props.title is not empty %}<h2 class=\\\"timeline__title\\\">{{ props.title }}</h2>{% endif %}{% if props.intro is not empty %}<div class=\\\"timeline__intro\\\">{{ props.intro }}</div>{% endif %}<ol class=\\\"timeline__list\\\">{% for event in props.events %}<li class=\\\"timeline__event\\\"><p class=\\\"timeline__date\\\">{{ event.date }}</p>{% if props.title is not empty %}<h3 class=\\\"timeline__event-title\\\">{{ event.title }}</h3>{% else %}<h2 class=\\\"timeline__event-title\\\">{{ event.title }}</h2>{% endif %}{% if event.text is not empty %}<div class=\\\"timeline__text\\\">{{ event.text }}</div>{% endif %}</li>{% endfor %}</ol></section>\",\"css\":\".timeline__title { margin: 0 0 1rem; }\\n.timeline__intro { margin-bottom: 2rem; color: var(--cms-color-text-muted); }\\n.timeline__list { position: relative; margin: 0; padding: 0 0 0 1.75rem; list-style: none; }\\n.timeline__list::before { content: \\\"\\\"; position: absolute; top: 0.5rem; bottom: 0.5rem; left: 0.4375rem; width: 2px; background: var(--cms-color-border); }\\n.timeline__event { position: relative; padding-bottom: 2rem; }\\n.timeline__event:last-child { padding-bottom: 0; }\\n.timeline__event::before { content: \\\"\\\"; position: absolute; top: 0.3rem; left: -1.75rem; box-sizing: border-box; width: 1rem; height: 1rem; border: 3px solid var(--cms-color-accent); border-radius: 50%; background: var(--cms-color-surface); }\\n.timeline__date { margin: 0 0 0.25rem; font-weight: 700; color: var(--cms-color-accent-strong); }\\n.timeline__event-title { margin: 0 0 0.5rem; font-size: 1.25rem; color: var(--cms-color-text); }\\n.timeline__text { color: var(--cms-color-text-muted); }\\n.timeline__text > :first-child { margin-top: 0; }\\n.timeline__text > :last-child { margin-bottom: 0; }\\n@media (min-width: 48rem) { .timeline__list { padding-left: 10rem; } .timeline__list::before { left: 8.6875rem; } .timeline__date { position: absolute; top: 0.1rem; left: -10rem; width: 7.25rem; margin: 0; text-align: right; } }\"}"
+  ],
+  "outcome": "component",
+  "existing": null,
+  "based_on": null,
+  "browser": {
+    "375": {
+      "scroll": false,
+      "axe": [
+        {
+          "id": "color-contrast",
+          "impact": "serious"
+        }
+      ]
+    },
+    "1440": {
+      "scroll": false,
+      "axe": []
+    }
+  },
+  "verdict": {
+    "pass": false,
+    "checks": {
+      "outcome": true,
+      "valid": true,
+      "props": true,
+      "markup": true,
+      "css": true,
+      "no_h1": true,
+      "img_alt": true,
+      "reduced_motion": true,
+      "browser": false
+    }
+  }
+}

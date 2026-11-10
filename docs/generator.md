@@ -359,6 +359,26 @@ JSON of the request of the component, never its text. A refused file
 or a failed candidate is not put back in the form. **CMS > Components** and the
 `make_component` tool of the brief take no file.
 
+### The media the generator of components is offered
+
+The user message of `ComponentPrompt` has a section **Pictures and videos for
+the sample**, between the components of the site and the request (or the
+component to change), so the sample of a component draws its pictures. It lists
+the media the CMS offers its editors (`Generation\Component\SampleMedia`, over
+`CmsMediaLibrary`): the 12 most recent pictures and the 3 most recent videos
+at most, one line each (`- 12 (image, 1600 × 900): <text>`), the text being the
+alternative text of a picture or the title of a video, in the language of the
+request and then in the default language of the shop, cut to one line of 120
+characters. The section is left out when the library holds nothing.
+
+The rule of the system prompt follows: an `image` or `video` prop of the sample
+takes the id of one of those media, chosen for what it shows, or null when none
+fits or when there is no list; an `image` may still take an `https` address the
+request gives. The schema of the answer is unchanged. A change of a component
+is offered the same list. The list is read at each call, after the cached
+system prompt, so it never breaks the cache. The bench fills the library with
+`thelia_cms:component-bench:media` (`docs/evaluation/components/README.md`).
+
 A file that instructs rather than documents (it addresses an assistant, asks
 to act or to ignore rules, or has nothing to do with a page to write) is
 refused, not only neutralised, by `Generation/Guardrail/ReferenceFileGuardrail.php`:
@@ -650,10 +670,42 @@ choice labels of each prop) are asked in the default language of the shop,
 whatever the language of the request; the sample stays in the language of the
 request. This holds for a component asked from the back office and for one
 the generator of pages makes from a brief or a page prototypes. The answer is constrained to a schema
-of seven strings (`code`, `label`, `description`, `props` and `sample` as JSON
-written as a string, `template`, `css`). A component the validator refuses,
-a new one whose code is taken, a change that renames its component or that
-breaks the pages using it goes back with every problem listed, twice at most.
+of ten strings: the `outcome` (an enum), `existing` and `reason`, then the
+seven of the component (`code`, `label`, `description`, `props` and `sample`
+as JSON written as a string, `template`, `css`). A component the validator
+refuses, a new one whose code is taken, a change that renames its component or
+that breaks the pages using it goes back with every problem listed, twice at
+most.
+
+The `outcome` says what the model made of the request, and with `existing` or
+`copy` every field of the component is empty:
+
+- `component`: a new component (or the change asked). The default when an
+  answer, written before the outcomes, has none.
+- `existing`: a component of the catalogue already does what is asked, the
+  request differing by its wording or its example. `existing` holds its name,
+  checked against `SectionCatalog::all()`, and `reason` says in a sentence what
+  it already does. The result has no component (`ComponentResult::$component`
+  is null, `outcome` is `existing`, `existing` is the name); the screens say
+  that the component does it already, with a link when it is a `Site:` one, and
+  show no candidate; the tool of the page generator answers with its sheet and
+  tells the model to use it. Every `reason` is kept in the ledger.
+- `copy`: the request is a variant of a component named `Site:…` (another
+  look, a prop more or less). `existing` holds its name, found in
+  `SiteComponentRepository`. The generator then sends its source
+  (`ComponentPrompt::copy()`, the JSON of `ComponentPrompt::json()`) in the same
+  conversation and asks for the variant under a new code; that second answer
+  must be a `component`. The result carries `basedOn`, the screens show the
+  candidate as usual with "Based on `Site:…`", and the row of the ledger keeps
+  `based_on` and `reason` in its `document`.
+
+A name the catalogue does not hold, a `copy` of a component that is not a
+`Site:` one, an `existing` or a `copy` for a change (`ComponentRequest::$current`
+set: only `component` is accepted) or after a copy, is sent back like any
+refused component. The call that follows a `copy` is a turn, not a correction.
+A row of the ledger whose `document` says `existing` is never a candidate
+(`ComponentCandidates::componentOf()` gives null), so no screen offers to keep
+it. `make_component` counts an answer `existing` among its two uses per page.
 
 Its calls are in the ledger with the pages, under `target_type` `component`:
 `target_id` is the row of the component, 0 for one not kept yet, and the

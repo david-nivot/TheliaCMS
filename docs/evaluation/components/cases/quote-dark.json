@@ -1,0 +1,37 @@
+{
+  "id": "quote-dark",
+  "family": "reuse",
+  "locale": "fr_FR",
+  "request": "Une citation sur fond sombre, avec la photo de la personne citée.",
+  "oracle": {
+    "outcome": [
+      "copy",
+      "component"
+    ],
+    "target": [
+      "Site:Quote"
+    ],
+    "props": [
+      {
+        "type": "image",
+        "min": 1
+      },
+      {
+        "type": "text|html",
+        "min": 2
+      }
+    ],
+    "markup": {
+      "require": [
+        "<blockquote"
+      ],
+      "forbid": [
+        "<video"
+      ]
+    },
+    "css": {
+      "require": [],
+      "forbid": []
+    }
+  }
+}

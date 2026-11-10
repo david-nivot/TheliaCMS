@@ -1,0 +1,20 @@
+{
+  "case": "reuse-latest-articles",
+  "round": "round-0",
+  "run": 1,
+  "prompt_sha256": "840d389690aba5d9792ac0522bdf8fcfbb21b1b35f692d6776f09c29bbe6f17a",
+  "answers": [
+    "{\"outcome\":\"existing\",\"existing\":\"Partial:cms-page-list\",\"reason\":\"Cette section affiche à chaque visite les pages d’un type, comme les articles du blog, ce qui garde la liste des derniers articles à jour sans la réécrire à la main.\",\"code\":\"\",\"label\":\"\",\"description\":\"\",\"props\":\"\",\"sample\":\"\",\"template\":\"\",\"css\":\"\"}"
+  ],
+  "outcome": "existing",
+  "existing": "Partial:cms-page-list",
+  "based_on": null,
+  "browser": null,
+  "verdict": {
+    "pass": true,
+    "checks": {
+      "outcome": true,
+      "target": true
+    }
+  }
+}

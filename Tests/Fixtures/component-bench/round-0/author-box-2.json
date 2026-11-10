@@ -1,0 +1,46 @@
+{
+  "case": "author-box",
+  "round": "round-0",
+  "run": 2,
+  "prompt_sha256": "a3739e7efcd9aca1c4b65713f319f2fad32f7b5964f4fe7f7f06dc484f08531a",
+  "answers": [
+    "{\"outcome\":\"component\",\"existing\":\"\",\"reason\":\"\",\"code\":\"AuthorBio\",\"label\":\"About the author\",\"description\":\"A small box presenting the author of an article: a round photo, the name, an optional role, a short biography and an optional link to their other articles. Use it at the end of a blog post or an article.\",\"props\":\"[{\\\"name\\\": \\\"heading\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Heading\\\", \\\"help\\\": \\\"Optional, such as 'About the author'.\\\", \\\"max\\\": 80}, {\\\"name\\\": \\\"photo\\\", \\\"type\\\": \\\"image\\\", \\\"label\\\": \\\"Photo of the author\\\"}, {\\\"name\\\": \\\"photo_alt\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Alternative text of the photo\\\", \\\"help\\\": \\\"What the photo shows, in one sentence. The name is used when left empty.\\\", \\\"max\\\": 160}, {\\\"name\\\": \\\"name\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Name\\\", \\\"required\\\": true, \\\"max\\\": 80}, {\\\"name\\\": \\\"role\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Role\\\", \\\"help\\\": \\\"Optional, such as the job or the specialty of the author.\\\", \\\"max\\\": 120}, {\\\"name\\\": \\\"bio\\\", \\\"type\\\": \\\"html\\\", \\\"label\\\": \\\"Short biography\\\"}, {\\\"name\\\": \\\"link_label\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Link text\\\", \\\"help\\\": \\\"Says where the link leads, such as 'Read all the articles by this author'.\\\", \\\"max\\\": 80}, {\\\"name\\\": \\\"link_url\\\", \\\"type\\\": \\\"url\\\", \\\"label\\\": \\\"Link address\\\"}]\",\"sample\":\"{\\\"heading\\\": \\\"À propos de l’auteur\\\", \\\"photo\\\": null, \\\"photo_alt\\\": \\\"Claire Martin souriante, debout dans l’atelier de la boutique.\\\", \\\"name\\\": \\\"Claire Martin\\\", \\\"role\\\": \\\"Fondatrice et créatrice de bijoux\\\", \\\"bio\\\": \\\"<p>Claire crée des bijoux en argent recyclé depuis plus de dix ans. Elle partage ici ses conseils d’entretien et les coulisses de l’atelier.</p>\\\", \\\"link_label\\\": \\\"Lire tous les articles de Claire Martin\\\", \\\"link_url\\\": \\\"/blog/auteurs/claire-martin\\\"}\",\"template\":\"<section class=\\\"author\\\">{% if props.heading is not empty %}<h2 class=\\\"author__heading\\\">{{ props.heading }}</h2>{% endif %}<div class=\\\"author__body\\\">{% if props.photo %}<div class=\\\"author__photo\\\" data-cms-sizes=\\\"(min-width: 48rem) 6rem, 4.5rem\\\"><img class=\\\"author__img\\\" src=\\\"{{ props.photo }}\\\" alt=\\\"{{ props.photo_alt|default(props.name) }}\\\" loading=\\\"lazy\\\" width=\\\"96\\\" height=\\\"96\\\"></div>{% endif %}<div class=\\\"author__text\\\">{% if props.heading is not empty %}<h3 class=\\\"author__name\\\">{{ props.name }}</h3>{% else %}<h2 class=\\\"author__name\\\">{{ props.name }}</h2>{% endif %}{% if props.role is not empty %}<p class=\\\"author__role\\\">{{ props.role }}</p>{% endif %}{% if props.bio is not empty %}<div class=\\\"author__bio\\\">{{ props.bio }}</div>{% endif %}{% if props.link_url is not empty and props.link_label is not empty %}<p class=\\\"author__link\\\"><a href=\\\"{{ props.link_url }}\\\">{{ props.link_label }}</a></p>{% endif %}</div></div></section>\",\"css\":\".author { padding: 1.25rem; border: 1px solid var(--cms-color-border); border-radius: 0.75rem; background: var(--cms-color-surface); color: var(--cms-color-text); }\\n.author__heading { margin: 0 0 1rem; font-size: 0.85rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--cms-color-text-subtle); }\\n.author__body { display: flex; gap: 1rem; align-items: flex-start; }\\n.author__photo { flex: 0 0 4.5rem; }\\n.author__img { display: block; width: 4.5rem; height: 4.5rem; border-radius: 50%; object-fit: cover; }\\n.author__text { flex: 1 1 auto; min-width: 0; }\\n.author__name { margin: 0; font-size: 1.15rem; }\\n.author__role { margin: 0.25rem 0 0; font-size: 0.9rem; color: var(--cms-color-text-muted); }\\n.author__bio { margin-top: 0.75rem; color: var(--cms-color-text-muted); }\\n.author__bio > :first-child { margin-top: 0; }\\n.author__bio > :last-child { margin-bottom: 0; }\\n.author__link { margin: 0.75rem 0 0; }\\n.author__link a { color: var(--cms-color-accent-strong); font-weight: 600; text-underline-offset: 0.2em; transition: color 0.2s ease; }\\n.author__link a:hover, .author__link a:focus-visible { color: var(--cms-color-accent); }\\n@media (min-width: 48rem) { .author { padding: 1.75rem; } .author__body { gap: 1.5rem; } .author__photo { flex-basis: 6rem; } .author__img { width: 6rem; height: 6rem; } }\"}"
+  ],
+  "outcome": "component",
+  "existing": null,
+  "based_on": null,
+  "browser": {
+    "375": {
+      "scroll": false,
+      "axe": [
+        {
+          "id": "color-contrast",
+          "impact": "serious"
+        }
+      ]
+    },
+    "1440": {
+      "scroll": false,
+      "axe": [
+        {
+          "id": "color-contrast",
+          "impact": "serious"
+        }
+      ]
+    }
+  },
+  "verdict": {
+    "pass": false,
+    "checks": {
+      "outcome": true,
+      "valid": true,
+      "props": true,
+      "markup": false,
+      "css": true,
+      "no_h1": true,
+      "img_alt": true,
+      "reduced_motion": true,
+      "browser": false
+    }
+  }
+}

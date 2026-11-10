@@ -1,6 +1,6 @@
 {% extends '@BackOfficeDefaultTwig/base.html.twig' %}
 
-{% set title = component ? component.label : 'Component not made'|trans({}, 'theliacms') %}
+{% set title = component ? component.label : (candidate.existing ? 'Component already there'|trans({}, 'theliacms') : 'Component not made'|trans({}, 'theliacms')) %}
 {% block title %}{{ title }}{% endblock %}
 {% block body_testid %}cms-site-component-candidate{% endblock %}
 
@@ -31,7 +31,20 @@
         {% if failed %}
             <div class="mt-2">{{ 'The generator could not make a component the site can keep:'|trans({}, 'theliacms') }} {{ candidate.error }}</div>
         {% endif %}
+        {% if candidate.basedOn %}
+            <div class="mt-2" data-testid="cms-site-component-based-on">
+                {{ 'Based on'|trans({}, 'theliacms') }}
+                {% if based_on_code %}<a href="{{ path('admin.cms.components.site.show', { component: based_on_code }) }}"><code>{{ candidate.basedOn }}</code></a>{% else %}<code>{{ candidate.basedOn }}</code>{% endif %}{% if candidate.reason %}: {{ candidate.reason }}{% endif %}
+            </div>
+        {% endif %}
     </div>
+
+    {% if candidate.existing %}
+        <div class="alert alert-info" role="status" data-testid="cms-site-component-existing">
+            {% set existing_name %}{% if existing_code %}<a href="{{ path('admin.cms.components.site.show', { component: existing_code }) }}"><code>{{ candidate.existing }}</code></a>{% else %}<code>{{ candidate.existing }}</code>{% endif %}{% endset %}
+            {{ 'The component %name% already does what you ask:'|trans({ '%name%': existing_name }, 'theliacms')|raw }} {{ candidate.reason }}
+        </div>
+    {% endif %}
 
     {% if component %}
         <div class="row g-3">
@@ -45,7 +58,8 @@
                         <p class="text-muted small">{{ component.description }}</p>
                         {% if may_make %}
                             {% if kept_code and pages > 0 %}
-                                <p class="small">{{ 'Used by %count% page(s): keeping this version draws their drafts again with it; published pages change at their next publication.'|trans({ '%count%': pages }, 'theliacms') }}</p>
+                                <p class="small">{{ 'Used by %count% page(s): keeping this version draws their drafts again with it; published pages change at their next publication.'|trans({ '%count%': pages }, 'theliacms') }}
+                                {% include '@TheliaCMSModule/backOffice/default-twig/linked-pages/_trigger.html.twig' with { kind: 'component', key: 'Site:' ~ kept_code, count: pages, text: 'See the pages'|trans({}, 'theliacms'), subject: 'Site:' ~ kept_code, testid: 'cms-site-candidate-pages-open' } only %}</p>
                             {% endif %}
                             <form method="post" action="{{ path('admin.cms.components.site.keep', { id: candidate.logId }) }}" data-testid="cms-site-component-keep">
                                 <input type="hidden" name="_token" value="{{ assignToken() }}">
@@ -80,7 +94,7 @@
                     testid: 'cms-site-component-request',
                     hidden: kept_code ? { component: kept_code } : {},
                     label: 'Ask again'|trans({}, 'theliacms'),
-                    help: 'Reword the request, or say more about what the component shows.'|trans({}, 'theliacms'),
+                    help: (candidate.existing ? 'If it is not the same thing, say what differs.' : 'Reword the request, or say more about what the component shows.')|trans({}, 'theliacms'),
                     button: 'Make the component'|trans({}, 'theliacms'),
                 }) }}
             </div>

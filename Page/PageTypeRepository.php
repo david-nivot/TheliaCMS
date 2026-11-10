@@ -73,6 +73,17 @@ final readonly class PageTypeRepository
     }
 
     /**
+     * The pages of the type, the binned ones included and the models left
+     * out: the rows countPagesOfType() and pageCountsByType() count.
+     *
+     * @return list<CmsPage>
+     */
+    public function pagesOfType(string $code): array
+    {
+        return iterator_to_array(CmsPageQuery::create()->filterByPageType($code)->filterByModel(0)->orderById()->find(), false);
+    }
+
+    /**
      * The same count for every type at once, the binned pages included and
      * the models left out.
      *

@@ -18,7 +18,7 @@
 
     <p class="text-muted">
         <code>Site:{{ component.code }}</code> &middot; {{ component.description }}
-        &middot; {% if pages > 0 %}{{ '%count% page(s)'|trans({ '%count%': pages }, 'theliacms') }}{% else %}{{ 'Unused'|trans({}, 'theliacms') }}{% endif %}
+        &middot; {% if pages > 0 %}{% include '@TheliaCMSModule/backOffice/default-twig/linked-pages/_trigger.html.twig' with { kind: 'component', key: 'Site:' ~ component.code, count: pages, text: '%count% page(s)'|trans({ '%count%': pages }, 'theliacms'), subject: 'Site:' ~ component.code, testid: 'cms-site-component-pages-open' } only %}{% else %}{{ 'Unused'|trans({}, 'theliacms') }}{% endif %}
         &middot; {% if prototype %}{{ 'Prototype: shown on the pages that hold it, offered to nobody else'|trans({}, 'theliacms') }}{% else %}{{ offered ? 'Offered to the generator'|trans({}, 'theliacms') : 'Not offered to the generator'|trans({}, 'theliacms') }}{% endif %}
     </p>
 
@@ -82,7 +82,8 @@
                 <div class="card mb-3">
                     <div class="card-body">
                         {% if pages > 0 %}
-                            <p class="text-muted small mb-0" data-testid="cms-site-component-in-use">{{ 'Used by %count% page(s): it can be deleted once no page holds it.'|trans({ '%count%': pages }, 'theliacms') }}</p>
+                            <p class="text-muted small mb-0" data-testid="cms-site-component-in-use">{{ 'Used by %count% page(s): it can be deleted once no page holds it.'|trans({ '%count%': pages }, 'theliacms') }}
+                                {% include '@TheliaCMSModule/backOffice/default-twig/linked-pages/_trigger.html.twig' with { kind: 'component', key: 'Site:' ~ component.code, count: pages, text: 'See the pages'|trans({}, 'theliacms'), subject: 'Site:' ~ component.code, testid: 'cms-site-component-in-use-open' } only %}</p>
                         {% else %}
                             <form method="post" action="{{ path('admin.cms.components.site.delete', { component: component.code }) }}" data-testid="cms-site-component-delete"
                                   onsubmit="return confirm('{{ 'Delete this component? It cannot be undone.'|trans({}, 'theliacms')|e('js') }}')">

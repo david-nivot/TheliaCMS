@@ -1,0 +1,43 @@
+{# The body of the drawer: the pages behind a number. Rendered alone, loaded
+   into the drawer by assets/linked-pages.js. The total is the one the screen
+   shows; the rows are what it counts. #}
+<div data-testid="cms-linked-pages" data-kind="{{ linked.kind.value }}" data-total="{{ linked.total }}">
+    <p class="text-body-secondary small px-3 pt-3 mb-2" data-testid="cms-linked-pages-total">
+        {% if linked.total == 0 %}
+            {{ 'No page.'|trans({}, 'theliacms') }}
+        {% else %}
+            {{ '%count% page(s)'|trans({ '%count%': linked.total }, 'theliacms') }}
+        {% endif %}
+    </p>
+
+    {% if linked.shown is not empty %}
+        <ul class="list-group list-group-flush">
+            {% for row in linked.shown %}
+                <li class="list-group-item" data-testid="cms-linked-page" data-type="{{ row.type }}" data-id="{{ row.id }}">
+                    {% if row.isPage and row.binned %}
+                        {# A page in the bin has no screen of its own: the bin gives it back. #}
+                        <a href="{{ path('admin.cms.pages.trash', { edit_language_id: edit_language_id }) }}">{{ row.title }}</a>
+                        <span class="badge text-bg-secondary ms-1" data-testid="cms-linked-page-state">{{ 'In the bin'|trans({}, 'theliacms') }}</span>
+                    {% elseif row.isPage %}
+                        <a href="{{ path('admin.cms.pages.edit', { id: row.id, edit_language_id: edit_language_id }) }}">{{ row.title }}</a>
+                        <span class="badge {{ row.status.badgeClass }} ms-1" data-testid="cms-linked-page-state">{{ row.status.label|trans({}, 'theliacms') }}</span>
+                    {% else %}
+                        <a href="{{ path('admin.cms.catalogue.content.edit', { type: row.type, id: row.id, edit_language_id: edit_language_id }) }}">{{ row.title }}</a>
+                        <span class="text-body-secondary small ms-1">({{ row.type|trans({}, 'theliacms') }})</span>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% if linked.more > 0 %}
+        <p class="px-3 pt-2 mb-0" data-testid="cms-linked-pages-more">{{ 'And %count% more.'|trans({ '%count%': linked.more }, 'theliacms') }}</p>
+    {% endif %}
+
+    {% if linked.listUrl %}
+        <p class="px-3 py-3 mb-0">
+            <a class="btn btn-sm btn-outline-secondary" href="{{ linked.listUrl }}" data-testid="cms-linked-pages-list">{{ 'See them in the list of pages'|trans({}, 'theliacms') }}</a>
+            <span class="d-block text-body-secondary small mt-1">{{ 'The list leaves out the pages in the bin.'|trans({}, 'theliacms') }}</span>
+        </p>
+    {% endif %}
+</div>

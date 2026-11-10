@@ -68,7 +68,7 @@
                         </td>
                         <td class="text-nowrap text-end">
                             {% if item.usageCount > 0 %}
-                                <span title="{{ 'Used by %count% page(s) or item(s)'|trans({ '%count%': item.usageCount }, 'theliacms') }}">{{ item.usageCount }}</span>
+                                {% include '@TheliaCMSModule/backOffice/default-twig/linked-pages/_trigger.html.twig' with { kind: 'media', key: item.id, count: item.usageCount, text: item.usageCount, subject: item.title, testid: 'cms-media-usage-open-' ~ item.id } only %}
                             {% else %}
                                 <span class="text-body-secondary">{{ 'Not used yet'|trans({}, 'theliacms') }}</span>
                             {% endif %}
