@@ -80,9 +80,25 @@ final readonly class ComponentPrompt
             '',
             '# The components the site already has',
             '',
-            'Do not make one of these again; make what none of them does.',
-            '',
         ];
+
+        if (null === $request->current) {
+            array_push(
+                $lines,
+                'Look at these before you make anything. Answer with an `outcome`:',
+                '',
+                '- `existing`: a component of this list already does what is asked, the request differing by its wording or its example only. Put its name, as written between backticks, in `existing`; say in `reason`, in one sentence in the language of the request, what it already does; leave every other field empty.',
+                '- `copy`: what is asked is a variant of a component named `Site:…` in this list (another look, one prop more or less). Put its name in `existing`; say in `reason` what the variant changes; leave every other field empty. You are sent its source, and write the variant under a new code.',
+                '- `component`: any other request, which none of these does. `existing` and `reason` stay empty.',
+                '',
+            );
+        } else {
+            array_push(
+                $lines,
+                'The request is a change of a component, so the `outcome` is always `component`, with `existing` and `reason` empty.',
+                '',
+            );
+        }
 
         foreach ($this->catalog->all() as $name => $definition) {
             if (null !== $request->current && $name === $request->current->name()) {
@@ -136,6 +152,20 @@ final readonly class ComponentPrompt
     }
 
     /**
+     * The message that sends the source of a component to copy: the variant
+     * is asked under a new code, in the same conversation.
+     */
+    public static function copy(SiteComponent $source, string $name): string
+    {
+        return \sprintf(
+            "Here is the source of `%s`, the component to start from.\n\n```json\n%s\n```\n\nWrite the variant asked as a whole component, under a new code (the code `%s` is taken). Answer with the `outcome` `component`, `existing` and `reason` empty.",
+            $name,
+            self::json($source),
+            $source->code,
+        );
+    }
+
+    /**
      * The component as the answer writes it: props and sample as JSON strings.
      */
     public static function json(SiteComponent $component): string
@@ -163,8 +193,11 @@ final readonly class ComponentPrompt
         return [
             'type' => 'object',
             'additionalProperties' => false,
-            'required' => ['code', 'label', 'description', 'props', 'sample', 'template', 'css'],
+            'required' => ['outcome', 'existing', 'reason', 'code', 'label', 'description', 'props', 'sample', 'template', 'css'],
             'properties' => [
+                'outcome' => ['type' => 'string', 'enum' => ComponentResult::OUTCOMES_ASKED, 'description' => '`component` for a new component; `existing` when a component of the list already does what is asked; `copy` when what is asked is a variant of a component `Site:…` of the list. With `existing` or `copy`, every other field is empty.'],
+                'existing' => $string('The name of the component of the list, with `existing` or `copy`; empty for `component`.'),
+                'reason' => $string('With `existing`: what that component already does. With `copy`: what the variant changes. One sentence in the language of the request; empty for `component`.'),
                 'code' => $string('PascalCase, 2 to 40 letters and digits, saying what the component is: "PriceTable".'),
                 'label' => $string('The name of the component in a list, in the default language of the shop: two to four words, such as "Price table". What it does goes in the description.'),
                 'description' => $string('One or two sentences, in English, on what the component is for and when a page uses it: what the generator of pages reads to pick it.'),

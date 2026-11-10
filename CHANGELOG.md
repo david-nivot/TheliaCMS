@@ -9,6 +9,15 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Added
 
+- **The generator of components answers "the site already has it" or "a
+  variant of it".** Asked for a new component, the model now says whether a
+  component of the catalogue already does what is asked (the screen says which
+  one and why, with a link to it when it belongs to the site, and offers no
+  candidate; a page being written is told to use it instead of making another)
+  or whether the request is a variant of a component of the site: it is then
+  sent the source of that component and writes the variant under a new code,
+  and the candidate says it is based on it. A change of a component is still
+  always a component.
 - **A skill to rebuild an existing page as it is.** `content-migration`, read
   on demand, tells the generator how to transpose a page from another site or
   from material given as a file: every heading, paragraph and list item word

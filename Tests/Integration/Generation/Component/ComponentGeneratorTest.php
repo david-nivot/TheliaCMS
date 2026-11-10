@@ -47,6 +47,7 @@ use TheliaCMS\Model\CmsComponentQuery;
 use TheliaCMS\Model\CmsPageGenerationQuery;
 use TheliaCMS\Skill\SkillRepository;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
+use TheliaCMS\Tests\Support\ComponentOutcome;
 use TheliaCMS\Tests\Support\FakeAiGateway;
 use TheliaCMS\Tests\Unit\Content\Site\PriceTable;
 
@@ -312,6 +313,138 @@ final class ComponentGeneratorTest extends CmsIntegrationTestCase
         self::assertSame(['theliacms.component', 'admin', 'advanced', 'generative'], [$usage->id, $usage->audience->value, $usage->tier->value, $usage->transparency->value]);
     }
 
+    public function testTheModelIsToldToAnswerExistingOrCopyAndTheSchemaAsksForTheOutcome(): void
+    {
+        $this->api->answer(self::answer(PriceTable::component()));
+        $this->generator()->generate(new ComponentRequest('Un tableau de prix.', $this->locale()));
+
+        $message = $this->api->requests[0]->messages[0]->content;
+        self::assertStringContainsString('`existing`', $message);
+        self::assertStringContainsString('`copy`', $message);
+        self::assertStringNotContainsString('Do not make one of these again', $message, 'The list is no longer only a ban.');
+
+        $schema = ComponentPrompt::schema();
+        self::assertSame(['outcome', 'existing', 'reason'], \array_slice($schema['required'], 0, 3));
+        self::assertSame(['component', 'existing', 'copy'], $schema['properties']['outcome']['enum']);
+
+        $this->api->answer(self::answer(PriceTable::component()));
+        $this->generator()->generate(new ComponentRequest('Mets la formule en valeur.', $this->locale(), PriceTable::component(), 1));
+        self::assertStringNotContainsString('`copy`', $this->api->requests[1]->messages[0]->content, 'A change is only ever a component.');
+        self::assertStringContainsString('always `component`', $this->api->requests[1]->messages[0]->content);
+    }
+
+    public function testAnAnswerThatTheSiteAlreadyHasTheComponentEndsWithoutAComponentAndIsNoCandidate(): void
+    {
+        $this->keepPriceTable();
+        $this->api->answer(ComponentOutcome::existing('Site:PriceTable', 'Site:PriceTable already shows plans with their prices.'));
+
+        $result = $this->generator()->generate(new ComponentRequest('Un tableau de tarifs.', $this->locale()));
+
+        self::assertNull($result->component);
+        self::assertSame(['existing', 'Site:PriceTable', null, 'Site:PriceTable already shows plans with their prices.', 1], [$result->outcome, $result->existing, $result->basedOn, $result->reason, $result->turns]);
+
+        $row = CmsPageGenerationQuery::create()->findPk($result->logId);
+        self::assertSame('done', $row?->getStatus());
+        $candidate = (new ComponentCandidates())->find($result->logId);
+        self::assertNotNull($candidate);
+        self::assertTrue($candidate->isExisting());
+        self::assertNull($candidate->component, 'A row that found the component the site has holds no candidate.');
+        self::assertSame(['Site:PriceTable', 'Site:PriceTable already shows plans with their prices.'], [$candidate->existing, $candidate->reason]);
+        self::assertNull(ComponentCandidates::componentOf('{"outcome": "existing", "code": "PriceTable", "existing": "Site:PriceTable"}'), 'Whatever the document carries, an existing outcome is no component.');
+    }
+
+    public function testAnExistingNameTheCatalogueDoesNotHoldIsSentBackLikeAnyRefusal(): void
+    {
+        $this->api
+            ->answer(ComponentOutcome::existing('Site:Nowhere', 'It exists.'))
+            ->answer(self::answer(PriceTable::component()));
+
+        $result = $this->generator()->generate(new ComponentRequest('Un tableau de prix.', $this->locale()));
+
+        self::assertSame(2, $result->turns);
+        self::assertSame('component', $result->outcome);
+        self::assertStringContainsString('"Site:Nowhere" is not a component of the list', $this->api->requests[1]->messages[2]->content);
+    }
+
+    public function testACopyGetsTheSourceInTheSameConversationAndTheVariantRecordsWhatItIsBasedOn(): void
+    {
+        $this->keepPriceTable();
+        $variant = PriceTable::component();
+        $variant = new SiteComponent('PriceGrid', $variant->label, $variant->description, $variant->props, $variant->sample, $variant->template);
+        $this->api
+            ->answer(ComponentOutcome::copy('Site:PriceTable', 'A darker look of Site:PriceTable.'))
+            ->answer(self::answer($variant));
+
+        $result = $this->generator()->generate(new ComponentRequest('Le tableau de prix, en sombre.', $this->locale()));
+
+        self::assertSame(2, $result->turns);
+        self::assertSame(['component', 'PriceGrid', 'Site:PriceTable', 'A darker look of Site:PriceTable.'], [$result->outcome, $result->component?->code, $result->basedOn, $result->reason]);
+        $messages = $this->api->requests[1]->messages;
+        self::assertCount(3, $messages, 'The request, the answer, the source: one conversation.');
+        self::assertSame(AiMessageRole::Assistant, $messages[1]->role);
+        self::assertStringContainsString('`Site:PriceTable`', $messages[2]->content);
+        self::assertStringContainsString('"code": "PriceTable"', $messages[2]->content, 'The source of the component is sent.');
+        self::assertStringContainsString('under a new code', $messages[2]->content);
+
+        $candidate = (new ComponentCandidates())->find($result->logId);
+        self::assertSame('PriceGrid', $candidate?->component?->code);
+        self::assertSame(['Site:PriceTable', 'A darker look of Site:PriceTable.'], [$candidate->basedOn, $candidate->reason], 'Read back from the ledger, the candidate says what it is based on.');
+        self::assertFalse($candidate->isExisting());
+    }
+
+    public function testACopyOfAComponentThatIsNotOfTheSiteIsSentBack(): void
+    {
+        $this->api
+            ->answer(ComponentOutcome::copy('cms:richtext', 'A variant of the text.'))
+            ->answer(self::answer(PriceTable::component()));
+
+        $result = $this->generator()->generate(new ComponentRequest('Un texte sur fond sombre.', $this->locale()));
+
+        self::assertSame(2, $result->turns);
+        self::assertNull($result->basedOn);
+        self::assertStringContainsString('"cms:richtext" is not a component of the site', $this->api->requests[1]->messages[2]->content);
+    }
+
+    public function testTheAnswerAfterACopyMustBeAComponent(): void
+    {
+        $this->keepPriceTable();
+        $variant = PriceTable::component();
+        $variant = new SiteComponent('PriceGrid', $variant->label, $variant->description, $variant->props, $variant->sample, $variant->template);
+        $this->api
+            ->answer(ComponentOutcome::copy('Site:PriceTable', 'A darker look.'))
+            ->answer(ComponentOutcome::existing('Site:PriceTable', 'Already there.'))
+            ->answer(self::answer($variant));
+
+        $result = $this->generator()->generate(new ComponentRequest('Le tableau de prix, en sombre.', $this->locale()));
+
+        self::assertSame(3, $result->turns);
+        self::assertSame('Site:PriceTable', $result->basedOn, 'The copy stays the base through the correction.');
+        self::assertStringContainsString('answer with the outcome "component"', $this->api->requests[2]->messages[4]->content);
+    }
+
+    public function testAChangeAnsweredWithExistingIsSentBack(): void
+    {
+        $this->keepPriceTable();
+        $current = $this->getService(SiteComponentRepository::class)->find('PriceTable');
+        self::assertNotNull($current);
+        $id = (int) CmsComponentQuery::create()->findOneByCode('PriceTable')?->getId();
+        $this->api
+            ->answer(ComponentOutcome::existing('Site:PriceTable', 'It already does.'))
+            ->answer(self::answer(PriceTable::component(css: '.plan { padding: 1rem; }')));
+
+        $result = $this->generator()->generate(new ComponentRequest('Mets la formule en valeur.', $this->locale(), $current, $id));
+
+        self::assertSame(2, $result->turns);
+        self::assertSame('component', $result->outcome);
+        self::assertStringContainsString('A change of a component is answered with the outcome "component"', $this->api->requests[1]->messages[2]->content);
+    }
+
+    private function keepPriceTable(): void
+    {
+        $this->getService(SiteComponentRepository::class)->save((new SiteComponentValidator())->validate(PriceTable::component()), SiteComponentRepository::STATUS_READY);
+        $this->getService(SectionCatalog::class)->reset();
+    }
+
     private static function answer(SiteComponent $component): \Thelia\Domain\Ai\AiResponse
     {
         return FakeAiGateway::response(ComponentPrompt::json($component));
@@ -329,6 +462,7 @@ final class ComponentGeneratorTest extends CmsIntegrationTestCase
             new NullLogger(),
             new GatewayFailures($this->getService(TranslatorInterface::class)),
             new SiteComponentUsage(),
+            $this->getService(SectionCatalog::class),
         );
     }
 }
