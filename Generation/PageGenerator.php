@@ -41,8 +41,8 @@ use TheliaCMS\Generation\Ai\SentBackAnswer;
 use TheliaCMS\Generation\Ai\StreamCutException;
 use TheliaCMS\Generation\Guardrail\ReferenceFileGuardrail;
 use TheliaCMS\Generation\Tool\GeneratorTools;
-use TheliaCMS\Generation\Tool\MakeComponentTool;
 use TheliaCMS\Generation\Tool\ImportImageTool;
+use TheliaCMS\Generation\Tool\MakeComponentTool;
 use TheliaCMS\Generation\Tool\ReadUrlTool;
 use TheliaCMS\Page\Field\FieldDefinitions;
 use TheliaCMS\Page\Field\InvalidFieldsException;
@@ -163,9 +163,9 @@ final readonly class PageGenerator
         // Offered when the brief cites a picture and the site allowed the
         // reading of the web: the picture is copied into the library, and the
         // page holds its id.
-        $pictures = null === $this->imageImporter ? [] : $this->prompts->importableAddresses($request);
+        $pictures = [];
 
-        if ([] !== $pictures && null !== $this->imageImporter) {
+        if ($this->imageImporter instanceof ImportImageTool && [] !== $pictures = $this->prompts->importableAddresses($request)) {
             $tools[] = $this->imageImporter->definition();
         }
 
