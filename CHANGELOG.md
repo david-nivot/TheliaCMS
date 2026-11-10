@@ -7,6 +7,8 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+## [2.26.0] - 2026-11-10
+
 ### Added
 
 - **A picture the brief cites is imported into the media library.** A brief
@@ -101,6 +103,12 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Fixed
 
+- **A section that draws nothing still shows in the preview of the editor.** An
+  image section added before its picture is chosen left nothing at its place,
+  so the list of sections could not number it, light it up or scroll to it. The
+  preview now shows a placeholder there with the label of the section ("No
+  picture chosen yet", "Nothing to show yet"); the stored draft and the
+  published page are unchanged.
 - **The video of a component opens from its preview.** The frame of the
   preview (candidate, kept component, component prototyped from a page) ran no
   script, so the play button of an `embed` prop did nothing there while it
@@ -3220,7 +3228,8 @@ the published pages.
 - The breadcrumb of a page filed under a draft one offered a link to that page,
   which answers 404, both to the reader and in the `BreadcrumbList`.
 
-[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.25.0...HEAD
+[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.26.0...HEAD
+[2.26.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.26.0
 [2.25.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.25.0
 [2.24.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.24.0
 [2.23.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.23.0
