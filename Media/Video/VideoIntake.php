@@ -19,7 +19,7 @@ use TheliaLibrary\Service\LibraryImageFileNamer;
 
 /**
  * What the media library takes as a video, which depends on the server: with
- * ffmpeg (and a TheliaLibrary that stores MOV and WebM files), any phone video
+ * ffmpeg (and TheliaLibrary 2.7.0, which stores MOV and WebM files), any phone video
  * up to the raw ceiling, converted in the background; without, MP4 up to 50 MB
  * as it has always been.
  */

@@ -727,8 +727,8 @@ What the server needs:
    above them is dropped whole before the module sees it. The media screen
    states the size the server really takes and asks to raise the limits when
    they are below the ceiling.
-4. **A TheliaLibrary that stores QuickTime and WebM files** (it converts
-   nothing itself). With an older one the screens behave as without ffmpeg.
+4. **TheliaLibrary 2.7.0 or later**, which stores QuickTime and WebM files (it
+   converts nothing itself); `composer.json` requires it.
 
 The conversion is H.264 at constant quality (`-crf 26`, bounded at 4 Mb/s): a
 minute of phone video is a few megabytes. `Config/update/2.26.0.sql` creates

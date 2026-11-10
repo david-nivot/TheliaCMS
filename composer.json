@@ -11,7 +11,7 @@
         "symfony/clock": "^7.4|^8.0",
         "symfony/html-sanitizer": "^7.4",
         "symfony/process": "^7.4|^8.0",
-        "thelia/thelia-library-module": "^2.4",
+        "thelia/thelia-library-module": "^2.7",
         "mathiasreker/php-svg-optimizer": "^10.0"
     },
     "suggest": {

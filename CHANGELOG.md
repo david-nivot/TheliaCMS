@@ -23,8 +23,8 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   `THELIA_CMS_FFMPEG_PATH` (`ffmpeg` in the PATH by default). Without ffmpeg
   nothing changes (MP4 only, 50 MB) and a MOV or a WebM is refused with a
   message that names it. The screen states the size the server really takes
-  when the PHP upload limits are below 100 MB. Needs the TheliaLibrary that
-  stores QuickTime and WebM files; `Config/update/2.26.0.sql` adds
+  when the PHP upload limits are below 100 MB. Needs TheliaLibrary 2.7.0,
+  which stores QuickTime and WebM files; `Config/update/2.26.0.sql` adds
   `cms_video_conversion`. See the README and ADR 13.
 
 ## [2.25.0] - 2026-11-10

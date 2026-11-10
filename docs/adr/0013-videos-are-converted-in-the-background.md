@@ -42,8 +42,9 @@ converts the file must not change that address.
 
 ## Consequences
 
-- The module needs the TheliaLibrary that stores QuickTime and WebM; with an
-  older one the screens behave as before (`VideoIntake::converts()` is false).
+- The module needs TheliaLibrary 2.7.0, which stores QuickTime and WebM
+  (`composer.json` requires it); on an older one the screens would behave as
+  before (`VideoIntake::converts()` is false).
 - A job killed in the middle (worker stopped, memory) leaves its row
   `processing`; replacing the file of the video starts it again.
 - The PHP limits (`upload_max_filesize`, `post_max_size`) must exceed the raw

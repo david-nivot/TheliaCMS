@@ -35,7 +35,7 @@ final class VideoIntakeTest extends TestCase
     public function testWithFfmpegAPhoneVideoUpToOneHundredMegabytesIsTaken(): void
     {
         if (!QuickTimeVideos::libraryStoresThem()) {
-            self::markTestSkipped('The TheliaLibrary installed stores MP4 only: it takes the branch that stores QuickTime and WebM.');
+            self::markTestSkipped('The TheliaLibrary installed stores MP4 only: QuickTime and WebM need TheliaLibrary 2.7.0.');
         }
 
         $intake = new VideoIntake(new FfmpegBinary(new FakeProcessExecutor()));

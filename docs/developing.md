@@ -217,8 +217,8 @@ The tests of the video conversion (`Tests/Integration/Media/Video`,
 answers `-version` and writes the file a conversion or a poster would have
 written, at the last argument of the command, so the handler goes through its
 real path. The commands themselves are pinned by `FfmpegBinaryTest`. The tests
-that store a MOV skip, with their reason, on a TheliaLibrary that stores MP4
-only (`QuickTimeVideos::libraryStoresThem()`). The real encoder is checked by
+that store a MOV skip, with their reason, on a host still on a TheliaLibrary
+older than 2.7.0, which stores MP4 only (`QuickTimeVideos::libraryStoresThem()`). The real encoder is checked by
 hand on a phone video (README, "Videos from a phone").
 
 ## Browser checks
