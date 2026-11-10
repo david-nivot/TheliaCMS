@@ -117,6 +117,11 @@ final class CmsMenuItemType extends AbstractType
             ->add('openNewTab', CheckboxType::class, [
                 'label' => 'Open in a new tab',
                 'required' => false,
+            ])
+            ->add('visible', CheckboxType::class, [
+                'label' => 'Visible on the site',
+                'required' => false,
+                'help' => 'Untick to keep the entry here without showing it, with the entries under it. Tick it again to bring it back.',
             ]);
 
         // The fields that do not apply to the chosen type are hidden, so they

@@ -29,6 +29,7 @@ final readonly class MenuItemData
         public ?string $label,
         public int $parent,
         public bool $openNewTab,
+        public bool $visible = true,
     ) {
     }
 }

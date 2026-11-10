@@ -28,6 +28,10 @@ use TheliaCMS\Model\CmsMenuQuery;
  * out — a visitor must never be offered a link that answers 404. An entry that
  * cannot be linked but still has children and a label survives as a heading,
  * because dropping it would quietly reshape the menu around it.
+ *
+ * A menu that is not visible renders nothing, and an entry that is not visible
+ * is left out with everything under it. That is decided here, where the menu
+ * is read for the site, so no theme has to check it.
  */
 final readonly class CmsMenuProvider
 {
@@ -69,6 +73,9 @@ final readonly class CmsMenuProvider
      * something else then would show links nobody chose. The menu asked about
      * is the one the language reads: its own when it was detached, even
      * emptied, the shared one otherwise.
+     *
+     * A menu hidden on purpose counts as filled, even with no entry: hiding it
+     * is the merchant taking that part of the site over too.
      */
     public function hasEntries(string $code, ?string $locale = null): bool
     {
@@ -77,7 +84,13 @@ final readonly class CmsMenuProvider
         return $this->cache->storedEntryCount($code, $locale, static function () use ($code, $locale): int {
             $menu = CmsMenuQuery::findServed($code, $locale);
 
-            return null === $menu ? 0 : CmsMenuItemQuery::create()->filterByMenuId($menu->getId())->count();
+            if (null === $menu) {
+                return 0;
+            }
+
+            $stored = CmsMenuItemQuery::create()->filterByMenuId($menu->getId())->count();
+
+            return 1 === (int) $menu->getVisible() ? $stored : max(1, $stored);
         }) > 0;
     }
 
@@ -92,7 +105,7 @@ final readonly class CmsMenuProvider
     {
         $menu = CmsMenuQuery::findServed($code, $locale);
 
-        if (null === $menu) {
+        if (null === $menu || 1 !== (int) $menu->getVisible()) {
             return [];
         }
 
@@ -126,7 +139,8 @@ final readonly class CmsMenuProvider
         foreach ($this->tree->children($placements, $parent) as $id) {
             $item = $byId[$id] ?? null;
 
-            if (null === $item) {
+            // Before the children are read: they go with it.
+            if (null === $item || 1 !== (int) $item->getVisible()) {
                 continue;
             }
 

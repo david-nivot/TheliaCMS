@@ -90,7 +90,7 @@ final readonly class CmsMenuAdminController
         $this->denyUnless(AccessManager::CREATE);
 
         $lang = $this->languages->resolve($request);
-        $form = $this->forms->create(CmsMenuType::class, ['code' => null, 'title' => null], [
+        $form = $this->forms->create(CmsMenuType::class, ['code' => null, 'title' => null, 'visible' => true], [
             'action' => $this->urls->generate('admin.cms.menus.create', [EditLanguage::PARAMETER => $lang->getId()]),
         ]);
         $form->handleRequest($request);
@@ -400,6 +400,7 @@ final readonly class CmsMenuAdminController
         return $this->forms->create(CmsMenuType::class, [
             'code' => $menu->getCode(),
             'title' => $menu->setLocale($lang->getLocale())->getTitle(),
+            'visible' => 1 === (int) $menu->getVisible(),
         ], [
             'code_locked' => CmsMenuQuery::SHARED !== $menu->getMenuLocale(),
             // Explicit, because this form is also rendered on the screen that
@@ -458,6 +459,7 @@ final readonly class CmsMenuAdminController
             'label' => null === $item ? null : $item->setLocale($locale)->getLabel(),
             'parent' => (int) $item?->getParent(),
             'openNewTab' => 1 === $item?->getOpenNewTab(),
+            'visible' => null === $item || 1 === (int) $item->getVisible(),
         ], [
             'page_choices' => $this->choices->pages($locale),
             'content_choices' => $this->choices->contents($locale),
@@ -496,6 +498,7 @@ final readonly class CmsMenuAdminController
             label: '' === $label ? null : $label,
             parent: (int) $data['parent'],
             openNewTab: (bool) $data['openNewTab'],
+            visible: (bool) $data['visible'],
         );
     }
 
@@ -506,7 +509,7 @@ final readonly class CmsMenuAdminController
         $data = $form->getData();
 
         try {
-            $this->writer->saveMenu($menu, $lang->getLocale(), (string) $data['code'], (string) $data['title']);
+            $this->writer->saveMenu($menu, $lang->getLocale(), (string) $data['code'], (string) $data['title'], (bool) $data['visible']);
         } catch (\DomainException $exception) {
             $form->get('code')->addError(new FormError($this->support->translate($exception->getMessage())));
 

@@ -40,6 +40,12 @@
                                     <a href="{{ path('admin.cms.menus.edit', { id: menu.id, edit_language_id: edit_language_id }) }}">
                                         {{ menu.title|default('#' ~ menu.id) }}
                                     </a>
+                                    {% if menu.visible != 1 %}
+                                        <span class="badge text-bg-secondary ms-1" data-testid="cms-menu-hidden-{{ menu.id }}"
+                                              title="{{ 'Nothing of this menu is shown on the site.'|trans({}, 'theliacms') }}">
+                                            <i class="bi bi-eye-slash" aria-hidden="true"></i> {{ 'Hidden'|trans({}, 'theliacms') }}
+                                        </span>
+                                    {% endif %}
                                 </td>
                                 <td>
                                     <code>{{ menu.code }}</code>

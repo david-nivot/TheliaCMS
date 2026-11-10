@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace TheliaCMS\Menu\Admin;
 
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -54,6 +55,11 @@ final class CmsMenuType extends AbstractType
                     new Length(max: 50),
                     new Regex(pattern: '/^[a-z0-9][a-z0-9-]*$/', message: $this->translate('Use lowercase letters, digits and dashes only.')),
                 ],
+            ])
+            ->add('visible', CheckboxType::class, [
+                'label' => 'Visible on the site',
+                'required' => false,
+                'help' => 'Untick to show nothing of this menu on the site. Its entries are kept.',
             ]);
     }
 

@@ -298,6 +298,7 @@ final readonly class SiteExporter
                 // '' for the shared menu of the code, the locale for a
                 // language that has a menu of its own.
                 'locale' => (string) $menu->getMenuLocale(),
+                'visible' => 1 === (int) $menu->getVisible(),
                 'translations' => $this->translationsOf($menu, $locales, ['title' => 'getTitle']),
                 'items' => $this->menuItems($menu, $locales),
             ];
@@ -340,6 +341,7 @@ final readonly class SiteExporter
                 'target_id' => 'page' === $item->getTargetType() ? null : $targetId,
                 'url' => $item->getUrl(),
                 'open_new_tab' => 1 === $item->getOpenNewTab(),
+                'visible' => 1 === (int) $item->getVisible(),
                 'translations' => $this->translationsOf($item, $locales, ['label' => 'getLabel']),
             ];
         }

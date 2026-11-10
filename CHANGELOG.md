@@ -9,6 +9,15 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Added
 
+- **A menu and each of its entries can be hidden.** A **Visible on the site**
+  box on the menu and on every entry keeps what is unticked off the site
+  without deleting it: a hidden menu renders nothing, a hidden entry is left out
+  with everything under it, whatever the theme. The menu screens list them
+  greyed out and badged **Hidden**, and ticking the box again brings them back.
+  Everything that exists stays visible, a language's own menu starts with the
+  visibility of the shared one, and the JSON export carries a `visible` key on
+  menus and entries (a file without it imports as visible). Migration
+  `2.24.0.sql` adds the two columns.
 - **A block of live content can say what it does.** A partial that also
   implements `DescribedPartialInterface` gives its own description, shown in
   the section picker and on the components screen in place of the generic

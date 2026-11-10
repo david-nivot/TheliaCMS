@@ -31,6 +31,10 @@ final readonly class MenuItemRow
         public ResolvedTarget $target,
         public bool $canMoveUp,
         public bool $canMoveDown,
+        /** Whether the entry is left out of the site, by itself or because an entry above it is. */
+        public bool $hidden = false,
+        /** Whether it is only because of an entry above it. */
+        public bool $hiddenByParent = false,
     ) {
     }
 
