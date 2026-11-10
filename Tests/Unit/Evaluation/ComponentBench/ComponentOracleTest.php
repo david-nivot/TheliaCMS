@@ -199,6 +199,11 @@ final class ComponentOracleTest extends TestCase
         }
 
         self::assertArrayNotHasKey('browser', $this->judge(self::case(), self::trial())['checks'], 'No browser block, no browser check.');
+
+        $unmeasured = $this->judge(self::case(), ['browser' => ['375' => ['error' => 'the component is drawn without height', 'scroll' => false, 'axe' => []]] + $clean] + self::trial());
+        self::assertFalse($unmeasured['checks']['browser'], 'A width the script could not measure proves nothing.');
+        self::assertFalse($unmeasured['pass']);
+        self::assertContains('Browser, 375 px: the component is drawn without height.', $unmeasured['problems']);
     }
 
     public function testEveryCaseOfTheCorpusLoadsAndItsPatternsCompile(): void

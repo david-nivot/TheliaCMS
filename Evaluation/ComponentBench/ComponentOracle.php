@@ -290,7 +290,7 @@ final readonly class ComponentOracle
     }
 
     /**
-     * @param array<mixed> $browser `{"375": {"scroll": false, "axe": []}, "1440": {…}}`
+     * @param array<mixed> $browser `{"375": {"scroll": false, "axe": [], "error": "…"}, "1440": {…}}`, `error` being optional
      *
      * @return array{0: bool, 1: list<string>}
      */
@@ -301,6 +301,12 @@ final readonly class ComponentOracle
         foreach ($browser as $width => $measure) {
             if (!\is_array($measure)) {
                 continue;
+            }
+
+            // The script could not measure the component (drawn without height):
+            // nothing is proven at that width, which is no pass.
+            if (\is_string($measure['error'] ?? null) && '' !== $measure['error']) {
+                $problems[] = \sprintf('Browser, %s px: %s.', $width, $measure['error']);
             }
 
             if (true === ($measure['scroll'] ?? false)) {
