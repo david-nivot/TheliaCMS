@@ -14,6 +14,26 @@ is step 3 of that plan, the browser script is step 4.
 - Runs are written to `var/eval/components/<round>/<case>/<n>.json`, out of
   the repository.
 
+## Media of the sample
+
+`media/` holds the pictures the sample of a component can draw: a workshop
+landscape (1600x900), a portrait (800x1000), a square (1000x1000), a wide
+banner (1920x640), four transparent PNG logos (400x200), four scenes (sea,
+forest, city, desert; 1200x800) for galleries and carousels, and a "before"
+and an "after" picture of the same size. Each one carries a word in the
+picture and its own colours, so a capture tells them apart. `media/manifest.json`
+gives the file, title, alt (French), kind and exact size of each. There is no
+video: nothing on the host or in the container can encode an H.264 MP4.
+
+Rebuild them (the same bytes every time, GD only):
+
+```bash
+ddev exec php local/modules/TheliaCMS/docs/evaluation/components/media/make-media.php
+```
+
+The command that imports them into the media library arrives with step 8 of
+the plan.
+
 ## Procedure
 
 1. Start from a site with no component of its own (`cms_component` empty)

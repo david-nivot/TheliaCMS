@@ -1,0 +1,116 @@
+{
+    "media": [
+        {
+            "file": "workshop-landscape.jpg",
+            "kind": "image",
+            "title": "Atelier",
+            "alt": "Établi d'atelier avec des outils de maroquinerie",
+            "width": 1600,
+            "height": 900
+        },
+        {
+            "file": "person-portrait.jpg",
+            "kind": "image",
+            "title": "Portrait",
+            "alt": "Portrait d'une personne souriante sur fond bleu",
+            "width": 800,
+            "height": 1000
+        },
+        {
+            "file": "square-pattern.jpg",
+            "kind": "image",
+            "title": "Motif carré",
+            "alt": "Motif de cercles roses concentriques autour d'un carré",
+            "width": 1000,
+            "height": 1000
+        },
+        {
+            "file": "banner-wide.jpg",
+            "kind": "image",
+            "title": "Bannière",
+            "alt": "Bannière panoramique : montagnes bleues et soleil jaune",
+            "width": 1920,
+            "height": 640
+        },
+        {
+            "file": "logo-north.png",
+            "kind": "image",
+            "title": "Logo Nord",
+            "alt": "Logo de la marque Nord",
+            "width": 400,
+            "height": 200
+        },
+        {
+            "file": "logo-south.png",
+            "kind": "image",
+            "title": "Logo Sud",
+            "alt": "Logo de la marque Sud",
+            "width": 400,
+            "height": 200
+        },
+        {
+            "file": "logo-east.png",
+            "kind": "image",
+            "title": "Logo Est",
+            "alt": "Logo de la marque Est",
+            "width": 400,
+            "height": 200
+        },
+        {
+            "file": "logo-west.png",
+            "kind": "image",
+            "title": "Logo Ouest",
+            "alt": "Logo de la marque Ouest",
+            "width": 400,
+            "height": 200
+        },
+        {
+            "file": "scene-sea.jpg",
+            "kind": "image",
+            "title": "Scène mer",
+            "alt": "Plage et mer calme sous un ciel clair",
+            "width": 1200,
+            "height": 800
+        },
+        {
+            "file": "scene-forest.jpg",
+            "kind": "image",
+            "title": "Scène forêt",
+            "alt": "Sapins verts dans une forêt",
+            "width": 1200,
+            "height": 800
+        },
+        {
+            "file": "scene-city.jpg",
+            "kind": "image",
+            "title": "Scène ville",
+            "alt": "Immeubles d'une ville au crépuscule",
+            "width": 1200,
+            "height": 800
+        },
+        {
+            "file": "scene-desert.jpg",
+            "kind": "image",
+            "title": "Scène désert",
+            "alt": "Dunes de sable sous un soleil orange",
+            "width": 1200,
+            "height": 800
+        },
+        {
+            "file": "before-room.jpg",
+            "kind": "image",
+            "title": "Avant",
+            "alt": "Pièce vide aux murs gris avant travaux",
+            "width": 1200,
+            "height": 800
+        },
+        {
+            "file": "after-room.jpg",
+            "kind": "image",
+            "title": "Après",
+            "alt": "La même pièce après travaux, aux murs colorés et lumineux",
+            "width": 1200,
+            "height": 800
+        }
+    ]
+}
