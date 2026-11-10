@@ -40,6 +40,9 @@ enum PropType: string
     /** The id of a video of the media library, which the template receives as the address of the file. */
     case Video = 'video';
 
+    /** A video of YouTube, Vimeo or Dailymotion, kept as `platform:id` and drawn by the module as a facade the visitor clicks to load the player. */
+    case Embed = 'embed';
+
     /** An address: absolute, or a path of the site. */
     case Url = 'url';
 

@@ -18,6 +18,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
+use TheliaCMS\Content\EmbedFacade;
 use TheliaCMS\Content\Site\InvalidSiteComponentException;
 use TheliaCMS\Content\Site\SiteComponent;
 use TheliaCMS\Content\Site\SiteComponentRepository;
@@ -48,6 +49,7 @@ final readonly class ComponentPreviewController
         private SiteTemplateRenderer $renderer,
         private SiteComponentStyles $styles,
         private CmsPageRenderer $pages,
+        private EmbedFacade $facade,
     ) {
     }
 
@@ -75,7 +77,7 @@ final readonly class ComponentPreviewController
             throw new NotFoundHttpException();
         }
 
-        $section = new SiteComponentSection($component, $schema, $this->renderer);
+        $section = new SiteComponentSection($component, $schema, $this->renderer, facade: $this->facade);
         // Inline, a `<` could close the element: the validator refuses one,
         // and an older row is escaped all the same.
         $css = str_replace('<', '\\3c ', $this->styles->scoped($component));

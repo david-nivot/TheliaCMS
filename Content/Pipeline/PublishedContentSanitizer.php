@@ -17,6 +17,7 @@ namespace TheliaCMS\Content\Pipeline;
 use Symfony\Component\HtmlSanitizer\HtmlSanitizer;
 use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
 use TheliaCMS\Content\DocumentRenderer;
+use TheliaCMS\Content\EmbedFacade;
 use TheliaCMS\Content\ImageFrame;
 use TheliaCMS\Content\ImageSlot;
 use TheliaCMS\Content\Theme\ThemeComponentSections;
@@ -234,6 +235,12 @@ final readonly class PublishedContentSanitizer
             // Controls a script reveals start hidden; without the attribute
             // they show, and do nothing, until it runs.
             ->allowAttribute('hidden', '*')
+            // The facade of a video (`embed` prop): the platform and the
+            // identifier the script builds the player from, held to the
+            // closed list and the patterns by EmbedAttributeSanitizer.
+            ->allowAttribute(EmbedFacade::PLATFORM_ATTRIBUTE, ['div'])
+            ->allowAttribute(EmbedFacade::ID_ATTRIBUTE, ['div'])
+            ->allowAttribute(EmbedFacade::TITLE_ATTRIBUTE, ['div'])
             ->allowLinkSchemes(['https', 'http', 'mailto', 'tel'])
             // No data: URI — an SVG smuggled into one carries script.
             ->allowMediaSchemes(['https', 'http'])
@@ -268,7 +275,7 @@ final readonly class PublishedContentSanitizer
         // picture from wherever it is told to.
         $config = $config->dropElement('image');
 
-        $config = $config->withAttributeSanitizer(new SvgAttributeSanitizer());
+        $config = $config->withAttributeSanitizer(new SvgAttributeSanitizer())->withAttributeSanitizer(new EmbedAttributeSanitizer());
 
         foreach (self::EMBED_ELEMENTS as $element) {
             $config = $allowCustomCode

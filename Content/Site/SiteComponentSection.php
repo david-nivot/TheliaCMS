@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace TheliaCMS\Content\Site;
 
 use Psr\Log\LoggerInterface;
+use TheliaCMS\Content\EmbedFacade;
 use TheliaCMS\Content\ImageFraming;
 use TheliaCMS\Content\Pipeline\PublishedContentSanitizer;
 use TheliaCMS\Content\Prop;
@@ -45,6 +46,7 @@ final readonly class SiteComponentSection implements SectionDefinitionInterface
         private ?LoggerInterface $logger = null,
         private PublishedContentSanitizer $sanitizer = new PublishedContentSanitizer(),
         public bool $prototype = false,
+        private EmbedFacade $facade = new EmbedFacade(),
     ) {
     }
 
@@ -84,7 +86,7 @@ final readonly class SiteComponentSection implements SectionDefinitionInterface
     public function render(array $props, string $locale): string
     {
         try {
-            $html = $this->renderer->render($this->component->template, self::forTemplate($this->schema->props, $props));
+            $html = $this->renderer->render($this->component->template, self::forTemplate($this->schema->props, $props, $this->facade, $locale));
         } catch (Error $exception) {
             $this->logger?->error('TheliaCMS: the component {name} of the site cannot be drawn: {message}', ['name' => $this->name(), 'message' => $exception->getMessage()]);
 
@@ -105,15 +107,16 @@ final readonly class SiteComponentSection implements SectionDefinitionInterface
 
     /**
      * The props as the template reads them: markup marked safe to print as it
-     * is, an image turned into its address (the part its editor keeps of it), a video into the address of its file, the rest as stored.
+     * is, an image turned into its address (the part its editor keeps of it), a video into the address of its file, an embedded video into the markup of its facade, the rest as stored.
      *
      * @param list<Prop>           $schema
      * @param array<string, mixed> $props
      *
      * @return array<string, mixed>
      */
-    public static function forTemplate(array $schema, array $props): array
+    public static function forTemplate(array $schema, array $props, ?EmbedFacade $facade = null, string $locale = 'en_US'): array
     {
+        $facade ??= new EmbedFacade();
         $values = [];
 
         foreach ($schema as $prop) {
@@ -128,8 +131,9 @@ final readonly class SiteComponentSection implements SectionDefinitionInterface
                 PropType::Html => new Markup((string) $value, 'UTF-8'),
                 PropType::Image => ImageFraming::source($value, $prop->name, $props),
                 PropType::Video => VideoSource::of($value),
+                PropType::Embed => $facade->markup($value, $prop->label, $locale),
                 PropType::Items => array_map(
-                    static fn (mixed $item): array => self::forTemplate($prop->items, \is_array($item) ? $item : []),
+                    static fn (mixed $item): array => self::forTemplate($prop->items, \is_array($item) ? $item : [], $facade, $locale),
                     \is_array($value) ? array_values($value) : [],
                 ),
                 default => $value,
