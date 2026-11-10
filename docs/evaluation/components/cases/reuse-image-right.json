@@ -1,0 +1,23 @@
+{
+  "id": "reuse-image-right",
+  "family": "reuse",
+  "locale": "fr_FR",
+  "request": "Un bloc avec une photo à droite et un texte à gauche pour présenter l'équipe.",
+  "oracle": {
+    "outcome": [
+      "existing"
+    ],
+    "target": [
+      "Site:ImageText"
+    ],
+    "props": [],
+    "markup": {
+      "require": [],
+      "forbid": []
+    },
+    "css": {
+      "require": [],
+      "forbid": []
+    }
+  }
+}

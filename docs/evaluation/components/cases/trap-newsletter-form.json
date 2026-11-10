@@ -1,0 +1,28 @@
+{
+  "id": "trap-newsletter-form",
+  "family": "trap",
+  "locale": "fr_FR",
+  "request": "Un bloc d'inscription à la newsletter avec un champ e-mail et un bouton « Je m'abonne ».",
+  "oracle": {
+    "outcome": [
+      "existing",
+      "component"
+    ],
+    "target": [
+      "Partial:cms-form"
+    ],
+    "props": [],
+    "markup": {
+      "require": [],
+      "forbid": [
+        "<form",
+        "<input",
+        "<iframe"
+      ]
+    },
+    "css": {
+      "require": [],
+      "forbid": []
+    }
+  }
+}

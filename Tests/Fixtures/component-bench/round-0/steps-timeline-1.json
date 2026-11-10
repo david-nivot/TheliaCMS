@@ -1,0 +1,46 @@
+{
+  "case": "steps-timeline",
+  "round": "round-0",
+  "run": 1,
+  "prompt_sha256": "276b416d0818e4b27eabe5ef3d153d47765f275899f4b589121ddf5d8ec69e76",
+  "answers": [
+    "{\"outcome\":\"component\",\"existing\":\"\",\"reason\":\"\",\"code\":\"HistoryTimeline\",\"label\":\"History timeline\",\"description\":\"The milestones of a company's history in date order, each a date, a title, a text and an optional picture, joined by a vertical line. Use it on an about or history page to tell how the shop grew over the years.\",\"props\":\"[{\\\"name\\\": \\\"title\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Heading\\\", \\\"max\\\": 120}, {\\\"name\\\": \\\"intro\\\", \\\"type\\\": \\\"html\\\", \\\"label\\\": \\\"Introduction\\\", \\\"help\\\": \\\"A short text shown above the timeline.\\\"}, {\\\"name\\\": \\\"events\\\", \\\"type\\\": \\\"items\\\", \\\"label\\\": \\\"Milestones\\\", \\\"min\\\": 2, \\\"max\\\": 24, \\\"items\\\": [{\\\"name\\\": \\\"date\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Date\\\", \\\"help\\\": \\\"A year or a date, written as it is read: 1987, spring 2005.\\\", \\\"required\\\": true, \\\"max\\\": 40}, {\\\"name\\\": \\\"title\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Title\\\", \\\"required\\\": true, \\\"max\\\": 100}, {\\\"name\\\": \\\"text\\\", \\\"type\\\": \\\"html\\\", \\\"label\\\": \\\"What happened\\\"}, {\\\"name\\\": \\\"image\\\", \\\"type\\\": \\\"image\\\", \\\"label\\\": \\\"Picture\\\"}, {\\\"name\\\": \\\"image_alt\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Alternative text of the picture\\\", \\\"help\\\": \\\"What the picture shows, in one sentence. Leave empty for a decorative picture.\\\", \\\"max\\\": 200}]}]\",\"sample\":\"{\\\"title\\\": \\\"Notre histoire\\\", \\\"intro\\\": \\\"<p>De l’atelier familial à la boutique en ligne, voici les grandes étapes qui nous ont menés jusqu’à vous.</p>\\\", \\\"events\\\": [{\\\"date\\\": \\\"1987\\\", \\\"title\\\": \\\"L’ouverture de l’atelier\\\", \\\"text\\\": \\\"<p>Marie et Paul Durand ouvrent un petit atelier de maroquinerie à Clermont-Ferrand.</p>\\\", \\\"image\\\": null, \\\"image_alt\\\": \\\"\\\"}, {\\\"date\\\": \\\"1998\\\", \\\"title\\\": \\\"La première boutique\\\", \\\"text\\\": \\\"<p>L’atelier devient trop petit. Nous ouvrons une boutique en centre-ville, avec un espace de fabrication visible des clients.</p>\\\", \\\"image\\\": null, \\\"image_alt\\\": \\\"\\\"}, {\\\"date\\\": \\\"2009\\\", \\\"title\\\": \\\"Le lancement du site\\\", \\\"text\\\": \\\"<p>Nos sacs et nos ceintures sont désormais en vente en ligne, livrés partout en France.</p>\\\", \\\"image\\\": null, \\\"image_alt\\\": \\\"\\\"}, {\\\"date\\\": \\\"2016\\\", \\\"title\\\": \\\"Le label Entreprise du patrimoine vivant\\\", \\\"text\\\": \\\"<p>L’État récompense notre savoir-faire artisanal par ce label.</p>\\\", \\\"image\\\": null, \\\"image_alt\\\": \\\"\\\"}, {\\\"date\\\": \\\"2023\\\", \\\"title\\\": \\\"Un nouvel atelier\\\", \\\"text\\\": \\\"<p>Nous nous installons dans un atelier deux fois plus grand et accueillons six nouveaux artisans.</p>\\\", \\\"image\\\": null, \\\"image_alt\\\": \\\"\\\"}]}\",\"template\":\"<section class=\\\"timeline\\\">{% if props.title is not empty %}<h2 class=\\\"timeline__title\\\">{{ props.title }}</h2>{% endif %}{% if props.intro is not empty %}<div class=\\\"timeline__intro\\\">{{ props.intro }}</div>{% endif %}<ol class=\\\"timeline__list\\\" data-cms-sizes=\\\"(min-width: 48rem) 24rem, 90vw\\\">{% for event in props.events %}<li class=\\\"event\\\"><p class=\\\"event__date\\\">{{ event.date }}</p><h3 class=\\\"event__title\\\">{{ event.title }}</h3>{% if event.image %}<img class=\\\"event__image\\\" src=\\\"{{ event.image }}\\\" alt=\\\"{{ event.image_alt|default('') }}\\\" loading=\\\"lazy\\\">{% endif %}{% if event.text is not empty %}<div class=\\\"event__text\\\">{{ event.text }}</div>{% endif %}</li>{% endfor %}</ol></section>\",\"css\":\".timeline__title { margin: 0 0 1rem; }\\n.timeline__intro { margin-bottom: 2rem; color: var(--cms-color-text-muted); }\\n.timeline__list { position: relative; margin: 0; padding: 0 0 0 2rem; list-style: none; }\\n.timeline__list::before { content: \\\"\\\"; position: absolute; top: 0.5rem; bottom: 0.5rem; left: calc(0.5rem - 1px); width: 2px; background: var(--cms-color-border); }\\n.event { position: relative; padding-bottom: 2rem; }\\n.event:last-child { padding-bottom: 0; }\\n.event::before { content: \\\"\\\"; position: absolute; top: 0.25rem; left: -2rem; box-sizing: border-box; width: 1rem; height: 1rem; border: 3px solid var(--cms-color-accent); border-radius: 50%; background: var(--cms-color-surface); }\\n.event__date { margin: 0; font-weight: 700; color: var(--cms-color-accent-strong); }\\n.event__title { margin: 0.25rem 0 0.5rem; color: var(--cms-color-text); }\\n.event__image { display: block; width: 100%; max-width: 24rem; height: auto; margin: 0.5rem 0 0.75rem; border-radius: 0.5rem; }\\n.event__text { color: var(--cms-color-text-muted); }\\n.event__text > :first-child { margin-top: 0; }\\n.event__text > :last-child { margin-bottom: 0; }\\n@media (min-width: 48rem) { .timeline__list { padding-left: 12rem; } .timeline__list::before { left: calc(10.5rem - 1px); } .event__date { position: absolute; top: 0; left: -12rem; width: 9rem; text-align: right; } .event__title { margin-top: 0; } }\"}"
+  ],
+  "outcome": "component",
+  "existing": null,
+  "based_on": null,
+  "browser": {
+    "375": {
+      "scroll": false,
+      "axe": [
+        {
+          "id": "color-contrast",
+          "impact": "serious"
+        }
+      ]
+    },
+    "1440": {
+      "scroll": false,
+      "axe": [
+        {
+          "id": "color-contrast",
+          "impact": "serious"
+        }
+      ]
+    }
+  },
+  "verdict": {
+    "pass": false,
+    "checks": {
+      "outcome": true,
+      "valid": true,
+      "props": true,
+      "markup": true,
+      "css": true,
+      "no_h1": true,
+      "img_alt": true,
+      "reduced_motion": true,
+      "browser": false
+    }
+  }
+}

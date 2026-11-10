@@ -1,0 +1,20 @@
+{
+  "case": "reuse-photo-carousel",
+  "round": "round-0",
+  "run": 3,
+  "prompt_sha256": "12df5cce8ff8e7753651789db67de870d2d7297a5b461c601c8683d576550289",
+  "answers": [
+    "{\"outcome\":\"existing\",\"existing\":\"Site:Carousel\",\"reason\":\"Le composant Carrousel affiche déjà une rangée de photos, chacune avec une légende facultative, que l’on fait défiler au doigt et qui s’arrête sur chaque photo, sans script.\",\"code\":\"\",\"label\":\"\",\"description\":\"\",\"props\":\"\",\"sample\":\"\",\"template\":\"\",\"css\":\"\"}"
+  ],
+  "outcome": "existing",
+  "existing": "Site:Carousel",
+  "based_on": null,
+  "browser": null,
+  "verdict": {
+    "pass": true,
+    "checks": {
+      "outcome": true,
+      "target": true
+    }
+  }
+}

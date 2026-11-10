@@ -1,0 +1,20 @@
+{
+  "case": "trap-newsletter-form",
+  "round": "round-0",
+  "run": 2,
+  "prompt_sha256": "c6caefc6144c06564e3443c000664bcbe3c7a4d0a65ba41f66bbc109ed6678b8",
+  "answers": [
+    "{\"outcome\":\"existing\",\"existing\":\"Partial:cms-form\",\"reason\":\"Le composant Formulaire affiche déjà un formulaire du site, comme celui d'inscription à la newsletter avec son champ e-mail et son bouton, ce qu'un composant sans script ne peut pas dessiner puisque les champs de saisie sont retirés de la page.\",\"code\":\"\",\"label\":\"\",\"description\":\"\",\"props\":\"\",\"sample\":\"\",\"template\":\"\",\"css\":\"\"}"
+  ],
+  "outcome": "existing",
+  "existing": "Partial:cms-form",
+  "based_on": null,
+  "browser": null,
+  "verdict": {
+    "pass": true,
+    "checks": {
+      "outcome": true,
+      "target": true
+    }
+  }
+}

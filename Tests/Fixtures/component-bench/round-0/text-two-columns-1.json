@@ -1,0 +1,36 @@
+{
+  "case": "text-two-columns",
+  "round": "round-0",
+  "run": 1,
+  "prompt_sha256": "39057d023020aa0983445852f690876ae7770a54ae51dc5b95a1fc9232595d79",
+  "answers": [
+    "{\"outcome\":\"component\",\"existing\":\"\",\"reason\":\"\",\"code\":\"MagazineArticle\",\"label\":\"Magazine article\",\"description\":\"A long article text, with an optional heading and lead, that flows into two columns on wide screens like a magazine page and stays in one column on a phone. Use it for an editorial, a story or a long read that should feel like print.\",\"props\":\"[{\\\"name\\\": \\\"title\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Heading\\\", \\\"max\\\": 160}, {\\\"name\\\": \\\"intro\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Lead paragraph\\\", \\\"help\\\": \\\"A short introduction shown above the columns, across the full width.\\\", \\\"max\\\": 600}, {\\\"name\\\": \\\"body\\\", \\\"type\\\": \\\"html\\\", \\\"label\\\": \\\"Article text\\\", \\\"help\\\": \\\"Paragraphs, subheadings (level 3), lists and quotes. The text flows into two columns on wide screens.\\\", \\\"required\\\": true}, {\\\"name\\\": \\\"column_rule\\\", \\\"type\\\": \\\"boolean\\\", \\\"label\\\": \\\"Line between the columns\\\", \\\"default\\\": true}, {\\\"name\\\": \\\"drop_cap\\\", \\\"type\\\": \\\"boolean\\\", \\\"label\\\": \\\"Large first letter\\\", \\\"help\\\": \\\"Draws the first letter of the first paragraph larger, as in a magazine.\\\", \\\"default\\\": false}]\",\"sample\":\"{\\\"title\\\": \\\"Le retour du fait-main dans nos ateliers\\\", \\\"intro\\\": \\\"Depuis trois ans, nos artisans fabriquent à nouveau chaque pièce à la main. Voici comment ce choix a changé notre façon de travailler, et ce qu’il change pour vous.\\\", \\\"body\\\": \\\"<p>Tout a commencé par une question simple : pourquoi nos clients gardaient-ils plus longtemps les objets fabriqués à l’atelier que ceux produits en série ? La réponse tenait en un mot, le soin. Une pièce faite à la main porte la trace du geste qui l’a façonnée.</p><p>Nous avons donc réorganisé l’atelier autour de petites équipes. Chacune suit une pièce du début à la fin, du choix de la matière à la finition. Le travail prend plus de temps, mais chaque artisan connaît l’objet qu’il signe.</p><h3>Des matières choisies près de chez nous</h3><p>Le bois vient de forêts gérées à moins de deux cents kilomètres. Le cuir est tanné de manière végétale dans une tannerie familiale du Tarn. Ce choix réduit les transports et nous permet de rencontrer ceux qui nous fournissent.</p><ul><li>Bois de chêne et de noyer issu de forêts certifiées</li><li>Cuir à tannage végétal, sans chrome</li><li>Finitions à l’huile et à la cire naturelles</li></ul><h3>Ce que cela change pour vous</h3><p>Chaque pièce est unique : les veines du bois et le grain du cuir varient d’un objet à l’autre. Les délais sont un peu plus longs, de deux à trois semaines selon les modèles. En échange, nous réparons gratuitement toute pièce pendant dix ans.</p><blockquote><p>« On ne fabrique pas plus vite, on fabrique pour plus longtemps. » — Claire, responsable de l’atelier</p></blockquote><p>Vous pouvez venir voir nos artisans au travail chaque premier samedi du mois. L’atelier ouvre ses portes de 10 h à 17 h, sans réservation.</p>\\\", \\\"column_rule\\\": true, \\\"drop_cap\\\": true}\",\"template\":\"<section class=\\\"article{% if props.column_rule %} article--rule{% endif %}{% if props.drop_cap %} article--dropcap{% endif %}\\\">{% if props.title is not empty %}<h2 class=\\\"article__title\\\">{{ props.title }}</h2>{% endif %}{% if props.intro is not empty %}<p class=\\\"article__intro\\\">{{ props.intro }}</p>{% endif %}{% if props.body is not empty %}<div class=\\\"article__body\\\">{{ props.body }}</div>{% endif %}</section>\",\"css\":\".article { max-width: 72rem; margin: 0 auto; }\\n.article__title { margin: 0 0 1rem; line-height: 1.2; color: var(--cms-color-text); }\\n.article__intro { margin: 0 0 2rem; font-size: 1.2em; line-height: 1.5; color: var(--cms-color-text-muted); }\\n.article__body { line-height: 1.7; color: var(--cms-color-text); }\\n.article__body > :first-child { margin-top: 0; }\\n.article__body p { margin: 0 0 1em; }\\n.article__body h3, .article__body h4 { margin: 1.5em 0 0.5em; line-height: 1.3; break-after: avoid; }\\n.article__body ul, .article__body ol { margin: 0 0 1em; padding-left: 1.25em; }\\n.article__body li { margin-bottom: 0.35em; }\\n.article__body blockquote { margin: 1.5em 0; padding: 0.5em 0 0.5em 1rem; border-left: 3px solid var(--cms-color-accent); color: var(--cms-color-text-muted); font-style: italic; break-inside: avoid; }\\n.article__body img, .article__body figure, .article__body table { max-width: 100%; height: auto; break-inside: avoid; }\\n.article__body a { color: var(--cms-color-accent-strong); }\\n.article--dropcap .article__body > p:first-child::first-letter { float: left; margin: 0.05em 0.1em 0 0; font-size: 3.6em; line-height: 0.85; font-weight: 700; color: var(--cms-color-accent); }\\n@media (min-width: 48rem) { .article__body { column-count: 2; column-gap: 3rem; } .article--rule .article__body { column-rule: 1px solid var(--cms-color-border); } .article__body h3, .article__body h4 { break-inside: avoid; } .article__body h3:first-child, .article__body h4:first-child { margin-top: 0; } }\"}"
+  ],
+  "outcome": "component",
+  "existing": null,
+  "based_on": null,
+  "browser": {
+    "375": {
+      "scroll": false,
+      "axe": []
+    },
+    "1440": {
+      "scroll": false,
+      "axe": []
+    }
+  },
+  "verdict": {
+    "pass": true,
+    "checks": {
+      "outcome": true,
+      "valid": true,
+      "props": true,
+      "markup": true,
+      "css": true,
+      "no_h1": true,
+      "img_alt": true,
+      "reduced_motion": true,
+      "browser": true
+    }
+  }
+}

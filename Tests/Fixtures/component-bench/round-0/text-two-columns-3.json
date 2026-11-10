@@ -1,0 +1,36 @@
+{
+  "case": "text-two-columns",
+  "round": "round-0",
+  "run": 3,
+  "prompt_sha256": "39057d023020aa0983445852f690876ae7770a54ae51dc5b95a1fc9232595d79",
+  "answers": [
+    "{\"outcome\":\"component\",\"existing\":\"\",\"reason\":\"\",\"code\":\"MagazineArticle\",\"label\":\"Magazine article\",\"description\":\"A long article text with an optional heading and lead, laid out in two (or three) newspaper-style columns on wide screens and in a single column on phones. Use it for an editorial, a story or a long read that should look like a magazine page.\",\"props\":\"[{\\\"name\\\": \\\"title\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Heading\\\", \\\"max\\\": 160}, {\\\"name\\\": \\\"lead\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Lead paragraph\\\", \\\"help\\\": \\\"An introduction shown above the columns, across the full width.\\\", \\\"max\\\": 600}, {\\\"name\\\": \\\"body\\\", \\\"type\\\": \\\"html\\\", \\\"label\\\": \\\"Article text\\\", \\\"help\\\": \\\"Paragraphs, subheadings (level 3) and lists. The text flows from one column to the next.\\\", \\\"required\\\": true}, {\\\"name\\\": \\\"columns\\\", \\\"type\\\": \\\"choice\\\", \\\"label\\\": \\\"Columns on wide screens\\\", \\\"choices\\\": {\\\"two\\\": \\\"Two columns\\\", \\\"three\\\": \\\"Three columns\\\"}, \\\"default\\\": \\\"two\\\"}, {\\\"name\\\": \\\"rule\\\", \\\"type\\\": \\\"boolean\\\", \\\"label\\\": \\\"Line between columns\\\", \\\"default\\\": true}, {\\\"name\\\": \\\"drop_cap\\\", \\\"type\\\": \\\"boolean\\\", \\\"label\\\": \\\"Large first letter\\\", \\\"default\\\": true}]\",\"sample\":\"{\\\"title\\\": \\\"L’art de la torréfaction, de la plantation à la tasse\\\", \\\"lead\\\": \\\"Derrière chaque café se cache un long voyage. Nous avons suivi nos grains, des collines d’Éthiopie jusqu’à notre atelier, pour comprendre ce qui fait leur goût.\\\", \\\"body\\\": \\\"<p>Tout commence sur les hauts plateaux, à plus de 1 800 mètres d’altitude. Les cerises de café y mûrissent lentement, à l’abri de la chaleur. Cette lenteur leur donne des arômes fins, souvent fruités, parfois floraux.</p><p>La récolte se fait à la main. Les cueilleurs passent plusieurs fois sur chaque arbre, car les cerises ne mûrissent pas toutes en même temps. Seules les plus rouges sont gardées.</p><h3>Le séchage, une étape décisive</h3><p>Une fois cueillies, les cerises sèchent au soleil sur de grandes tables surélevées. Elles sont retournées chaque jour pendant trois semaines. Un séchage trop rapide abîme le grain ; un séchage trop lent le fait fermenter.</p><p>Les grains voyagent ensuite en sacs de jute jusqu’au port, puis jusqu’à notre atelier. À leur arrivée, ils sont verts, durs et presque sans odeur.</p><h3>Dans l’atelier</h3><p>C’est la torréfaction qui révèle leur caractère. Pendant douze à quinze minutes, les grains tournent dans un tambour chauffé. Notre torréfacteur écoute le premier craquement, surveille la couleur et goûte chaque lot.</p><p>Une torréfaction claire garde l’acidité et les notes de fruits. Une torréfaction plus foncée apporte du corps et des notes de chocolat. Il n’y a pas de bonne réponse : tout dépend de l’origine du grain et de la façon dont vous préparez votre café.</p><p>Nous torréfions chaque semaine, en petites quantités. Ainsi, le café que vous recevez a été préparé il y a moins de sept jours.</p>\\\", \\\"columns\\\": \\\"two\\\", \\\"rule\\\": true, \\\"drop_cap\\\": true}\",\"template\":\"<section class=\\\"article\\\">{% if props.title is not empty or props.lead is not empty %}<header class=\\\"article__header\\\">{% if props.title is not empty %}<h2 class=\\\"article__title\\\">{{ props.title }}</h2>{% endif %}{% if props.lead is not empty %}<p class=\\\"article__lead\\\">{{ props.lead }}</p>{% endif %}</header>{% endif %}{% if props.body is not empty %}<div class=\\\"article__body article__body--{{ props.columns|default('two') }}{% if props.rule %} article__body--rule{% endif %}{% if props.drop_cap %} article__body--dropcap{% endif %}\\\">{{ props.body }}</div>{% endif %}</section>\",\"css\":\".article { display: grid; gap: 1.5rem; }\\n.article__header { display: grid; gap: 0.75rem; max-width: 48rem; }\\n.article__title { margin: 0; color: var(--cms-color-text); line-height: 1.2; }\\n.article__lead { margin: 0; font-size: 1.2em; line-height: 1.5; color: var(--cms-color-text-muted); }\\n.article__body { color: var(--cms-color-text); line-height: 1.65; hyphens: auto; overflow-wrap: break-word; }\\n.article__body > :first-child { margin-top: 0; }\\n.article__body p { margin: 0 0 1em; }\\n.article__body h3, .article__body h4 { margin: 1.25em 0 0.5em; line-height: 1.3; break-after: avoid; }\\n.article__body ul, .article__body ol { margin: 0 0 1em; padding-left: 1.25em; }\\n.article__body img, .article__body figure, .article__body blockquote, .article__body table { max-width: 100%; break-inside: avoid; }\\n.article__body blockquote { margin: 1em 0; padding-left: 1em; border-left: 3px solid var(--cms-color-accent); color: var(--cms-color-text-muted); font-style: italic; }\\n.article__body a { color: var(--cms-color-accent-strong); }\\n.article__body--dropcap > p:first-child::first-letter { float: left; margin: 0.05em 0.12em 0 0; font-size: 3.4em; line-height: 0.85; font-weight: 700; color: var(--cms-color-accent); }\\n@media (min-width: 48rem) { .article__body { column-count: 2; column-gap: 2.5rem; text-align: justify; } .article__body h3, .article__body h4 { text-align: left; } .article__body--rule { column-rule: 1px solid var(--cms-color-border); } }\\n@media (min-width: 64rem) { .article__body--three { column-count: 3; column-gap: 2rem; } }\"}"
+  ],
+  "outcome": "component",
+  "existing": null,
+  "based_on": null,
+  "browser": {
+    "375": {
+      "scroll": false,
+      "axe": []
+    },
+    "1440": {
+      "scroll": false,
+      "axe": []
+    }
+  },
+  "verdict": {
+    "pass": true,
+    "checks": {
+      "outcome": true,
+      "valid": true,
+      "props": true,
+      "markup": true,
+      "css": true,
+      "no_h1": true,
+      "img_alt": true,
+      "reduced_motion": true,
+      "browser": true
+    }
+  }
+}

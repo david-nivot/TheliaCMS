@@ -1,0 +1,34 @@
+{
+  "id": "image-hover-caption",
+  "family": "image",
+  "locale": "fr_FR",
+  "request": "Une photo avec une légende qui apparaît quand on passe la souris dessus.",
+  "oracle": {
+    "outcome": [
+      "component"
+    ],
+    "target": [],
+    "props": [
+      {
+        "type": "image",
+        "min": 1
+      },
+      {
+        "type": "text|html",
+        "min": 1
+      }
+    ],
+    "markup": {
+      "require": [
+        "<img"
+      ],
+      "forbid": []
+    },
+    "css": {
+      "require": [
+        ":hover|:focus"
+      ],
+      "forbid": []
+    }
+  }
+}

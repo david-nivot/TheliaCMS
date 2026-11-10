@@ -1,0 +1,37 @@
+{
+  "case": "compose-quote-figures",
+  "round": "round-0",
+  "run": 2,
+  "prompt_sha256": "bc6f1749ecd76afc406ef78a4f7907ea11c685f8f2cfe2f68f6df146a8e507bf",
+  "answers": [
+    "{\"outcome\":\"copy\",\"existing\":\"Site:Quote\",\"reason\":\"La variante ajoute, juste sous la citation et le nom de la personne citée, une rangée de chiffres clés : trois par défaut, chacun un grand nombre et un court libellé, avec un titre facultatif pour l'année.\",\"code\":\"\",\"label\":\"\",\"description\":\"\",\"props\":\"\",\"sample\":\"\",\"template\":\"\",\"css\":\"\"}",
+    "{\"outcome\":\"component\",\"existing\":\"\",\"reason\":\"\",\"code\":\"QuoteKeyFigures\",\"label\":\"Quote with key figures\",\"description\":\"A quote with the name, the role and an optional portrait of the person quoted, followed just below by a row of key figures, each a big number with a short label and an optional note. Use it for a word from the director or a manager backed by the figures of the year.\",\"props\":\"[{\\\"name\\\":\\\"quote\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Quote\\\",\\\"required\\\":true,\\\"max\\\":400},{\\\"name\\\":\\\"author\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Author\\\",\\\"required\\\":true,\\\"max\\\":80},{\\\"name\\\":\\\"role\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Role\\\",\\\"max\\\":120},{\\\"name\\\":\\\"portrait\\\",\\\"type\\\":\\\"image\\\",\\\"label\\\":\\\"Portrait\\\"},{\\\"name\\\":\\\"figures_title\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Heading of the figures\\\",\\\"help\\\":\\\"For instance the year the figures cover.\\\",\\\"max\\\":120},{\\\"name\\\":\\\"figures\\\",\\\"type\\\":\\\"items\\\",\\\"label\\\":\\\"Key figures\\\",\\\"min\\\":1,\\\"max\\\":6,\\\"items\\\":[{\\\"name\\\":\\\"value\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Figure\\\",\\\"required\\\":true,\\\"max\\\":20},{\\\"name\\\":\\\"label\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"What it counts\\\",\\\"required\\\":true,\\\"max\\\":80},{\\\"name\\\":\\\"note\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Note\\\",\\\"max\\\":160}]}]\",\"sample\":\"{\\\"quote\\\":\\\"Cette année, vous avez été plus nombreux que jamais à nous faire confiance, et nous avons tenu chacune de nos promesses.\\\",\\\"author\\\":\\\"Julien Moreau\\\",\\\"role\\\":\\\"Directeur général\\\",\\\"portrait\\\":null,\\\"figures_title\\\":\\\"Notre année 2024 en chiffres\\\",\\\"figures\\\":[{\\\"value\\\":\\\"12 400\\\",\\\"label\\\":\\\"commandes expédiées\\\",\\\"note\\\":\\\"Soit 30 % de plus qu’en 2023.\\\"},{\\\"value\\\":\\\"98 %\\\",\\\"label\\\":\\\"de clients satisfaits\\\",\\\"note\\\":\\\"D’après les avis laissés après livraison.\\\"},{\\\"value\\\":\\\"35\\\",\\\"label\\\":\\\"nouveaux produits\\\",\\\"note\\\":\\\"Tous fabriqués en France.\\\"}]}\",\"template\":\"<section class=\\\"quote-figures\\\"><figure class=\\\"quote\\\"><blockquote class=\\\"quote__text\\\"><p>{{ props.quote }}</p></blockquote><figcaption class=\\\"quote__caption\\\" data-cms-sizes=\\\"3rem\\\">{% if props.portrait %}<img class=\\\"quote__portrait\\\" src=\\\"{{ props.portrait }}\\\" alt=\\\"{{ props.author }}\\\">{% endif %}<span class=\\\"quote__author\\\">{{ props.author }}</span>{% if props.role is not empty %}<span class=\\\"quote__role\\\">{{ props.role }}</span>{% endif %}</figcaption></figure>{% if props.figures is not empty %}<div class=\\\"figures\\\">{% if props.figures_title is not empty %}<h2 class=\\\"figures__title\\\">{{ props.figures_title }}</h2>{% endif %}<ul class=\\\"figures__list\\\">{% for figure in props.figures %}<li class=\\\"keyfigure\\\"><span class=\\\"keyfigure__value\\\">{{ figure.value }}</span><span class=\\\"keyfigure__label\\\">{{ figure.label }}</span>{% if figure.note is not empty %}<span class=\\\"keyfigure__note\\\">{{ figure.note }}</span>{% endif %}</li>{% endfor %}</ul></div>{% endif %}</section>\",\"css\":\".quote { margin: 0; padding: 2rem 1.5rem; border-radius: 0.5rem; background: var(--cms-color-surface); }\\n.quote__text { margin: 0 0 1rem; font-size: 1.375rem; line-height: 1.4; color: var(--cms-color-text); }\\n.quote__text p { margin: 0; }\\n.quote__caption { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem; }\\n.quote__portrait { width: 3rem; height: 3rem; border-radius: 50%; object-fit: cover; }\\n.quote__author { font-weight: 700; color: var(--cms-color-text); }\\n.quote__role { color: var(--cms-color-text-muted); }\\n.figures { margin-top: 1.5rem; }\\n.figures__title { margin: 0 0 1rem; font-size: 1.25rem; color: var(--cms-color-text); }\\n.figures__list { display: grid; gap: 1rem; margin: 0; padding: 0; list-style: none; }\\n.keyfigure { display: flex; flex-direction: column; gap: 0.25rem; padding-top: 1rem; border-top: 2px solid var(--cms-color-accent); }\\n.keyfigure__value { font-size: 2.25rem; font-weight: 700; line-height: 1.1; color: var(--cms-color-accent-strong); }\\n.keyfigure__label { font-weight: 600; color: var(--cms-color-text); }\\n.keyfigure__note { font-size: 0.875rem; color: var(--cms-color-text-muted); }\\n@media (min-width: 48rem) { .quote { padding: 3rem; } .quote__text { font-size: 1.75rem; } .figures { margin-top: 2rem; } .figures__list { grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 2rem; } .keyfigure__value { font-size: 2.75rem; } }\"}"
+  ],
+  "outcome": "component",
+  "existing": null,
+  "based_on": "Site:Quote",
+  "browser": {
+    "375": {
+      "scroll": false,
+      "axe": []
+    },
+    "1440": {
+      "scroll": false,
+      "axe": []
+    }
+  },
+  "verdict": {
+    "pass": true,
+    "checks": {
+      "outcome": true,
+      "valid": true,
+      "props": true,
+      "markup": true,
+      "css": true,
+      "no_h1": true,
+      "img_alt": true,
+      "reduced_motion": true,
+      "browser": true
+    }
+  }
+}

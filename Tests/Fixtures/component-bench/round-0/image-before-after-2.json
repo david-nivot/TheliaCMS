@@ -1,0 +1,19 @@
+{
+  "case": "image-before-after",
+  "round": "round-0",
+  "run": 2,
+  "prompt_sha256": "97171f05b0bdaab32c859edb1b49a6bd8406821eee72226877cd4a34b30fd193",
+  "answers": [
+    "{\"outcome\":\"existing\",\"existing\":\"cms:columns\",\"reason\":\"Le composant Colonnes affiche déjà deux colonnes côte à côte, chacune avec une photo, un titre facultatif (« Avant », « Après ») et un court texte dessous, ce qui suffit pour un avant / après de rénovation.\",\"code\":\"\",\"label\":\"\",\"description\":\"\",\"props\":\"\",\"sample\":\"\",\"template\":\"\",\"css\":\"\"}"
+  ],
+  "outcome": "existing",
+  "existing": "cms:columns",
+  "based_on": null,
+  "browser": null,
+  "verdict": {
+    "pass": false,
+    "checks": {
+      "outcome": false
+    }
+  }
+}

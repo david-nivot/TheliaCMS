@@ -1,0 +1,32 @@
+{
+  "id": "author-box",
+  "family": "author",
+  "locale": "fr_FR",
+  "request": "À la fin de chaque article, un petit bloc « à propos de l'auteur » avec sa photo, son nom et une courte bio.",
+  "oracle": {
+    "outcome": [
+      "component"
+    ],
+    "target": [],
+    "props": [
+      {
+        "type": "image",
+        "min": 1
+      },
+      {
+        "type": "text|html",
+        "min": 2
+      }
+    ],
+    "markup": {
+      "require": [
+        "<img"
+      ],
+      "forbid": []
+    },
+    "css": {
+      "require": [],
+      "forbid": []
+    }
+  }
+}

@@ -492,6 +492,7 @@ final class GenerationRunTrackingTest extends CmsIntegrationTestCase
             $this->logger,
             $this->failures(),
             new SiteComponentUsage(),
+            $this->getService(SectionCatalog::class),
         );
     }
 }
