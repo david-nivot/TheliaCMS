@@ -29,6 +29,11 @@
 {% endblock %}
 
 {% block body %}
+    {# What the AI of the shop cannot serve is not offered: the screen stays
+       a screen to write by hand. The routes keep their own refusal. #}
+    {% set ai_page = cms_ai_available('theliacms.page_generation') %}
+    {% set ai_translation = cms_ai_available('theliacms.page_translation') %}
+    {% set ai_component = cms_ai_available('theliacms.component') %}
     <div class="cms-content" data-cms-content
          data-cms-content-labels="{{ {
              working: 'Writing…'|trans({}, 'theliacms'),
@@ -52,6 +57,8 @@
              kept: 'Centre %x% % / %y% %, zoom %zoom% %'|trans({}, 'theliacms'),
              keptCentre: 'Centre %x% % / %y% %'|trans({}, 'theliacms'),
              framing: 'Kept part of the picture'|trans({}, 'theliacms'),
+             emptyImage: 'No picture chosen yet'|trans({}, 'theliacms'),
+             emptySection: 'Nothing to show yet'|trans({}, 'theliacms'),
          }|json_encode }}">
         <header class="cms-content__bar">
             <a class="btn btn-sm btn-outline-secondary" href="{{ subject.backUrl }}" data-testid="cms-content-back">
@@ -231,7 +238,7 @@
                                 <span class="d-block mt-2 text-muted">{{ 'The draft of the %language% version is compared, not the one that is online.'|trans({ '%language%': translation.label }, 'theliacms') }}</span>
                             </div>
                             <div class="d-flex flex-wrap gap-2">
-                                {% if translation.retranslate_form %}
+                                {% if translation.retranslate_form and ai_translation %}
                                     <div data-testid="cms-content-retranslate">
                                         {% form_theme translation.retranslate_form with bo_form_themes only %}
                                         {{ form_start(translation.retranslate_form, { attr: { 'data-cms-generate': '', novalidate: 'novalidate', 'data-cms-confirm': 'Write this language again from the %language% version? The current draft is kept with the previous drafts.'|trans({ '%language%': translation.label }, 'theliacms') } }) }}
@@ -314,6 +321,7 @@
                    writing it from a brief is a button away, never the first
                    thing shown. Without content nor brief, the form is the first
                    thing to fill. #}
+                {% if ai_page or last_brief %}
                 <section class="cms-content__section" data-testid="cms-content-brief">
                     {% if last_brief or subject.hasContent %}
                         {% if last_brief %}
@@ -326,14 +334,17 @@
                                     {% if last_brief_reference %}<span data-testid="cms-content-brief-reference-recall">{{ 'With the file %name% (%length% characters), not kept: join it again to write from it again.'|trans({ '%name%': last_brief_reference.name, '%length%': last_brief_reference.length|number_format(0, '.', ' ') }, 'theliacms') }}</span>{% endif %}
                                 </p>
                             {% endif %}
+                            {% if ai_page %}
                             <button type="button" class="btn btn-sm btn-outline-primary" command="show-modal" commandfor="cms-content-brief-dialog" data-cms-dialog-open data-testid="cms-content-brief-open">
                                 <i class="bi bi-pencil" aria-hidden="true"></i> {{ 'Change the brief'|trans({}, 'theliacms') }}
                             </button>
-                        {% else %}
+                            {% endif %}
+                        {% elseif ai_page %}
                             <button type="button" class="btn btn-sm btn-outline-primary" command="show-modal" commandfor="cms-content-brief-dialog" data-cms-dialog-open data-testid="cms-content-brief-open">
                                 <i class="bi bi-stars" aria-hidden="true"></i> {{ brief_heading }}
                             </button>
                         {% endif %}
+                        {% if ai_page %}
                         <dialog class="cms-content__edit" id="cms-content-brief-dialog" aria-labelledby="cms-content-brief-title" data-testid="cms-content-brief-dialog">
                             <div class="cms-content__add-head">
                                 <h2 class="cms-content__heading mb-0" id="cms-content-brief-title">{{ brief_heading }}</h2>
@@ -343,14 +354,16 @@
                             </div>
                             {{ brief_body }}
                         </dialog>
+                        {% endif %}
                     {% else %}
                         <h2 class="cms-content__heading">{{ brief_heading }}</h2>
                         {{ brief_body }}
                     {% endif %}
                 </section>
+                {% endif %}
 
                 {% if sections is not empty %}
-                    {% if may_generate %}
+                    {% if may_generate and ai_page %}
                         <section class="cms-content__section" data-testid="cms-content-change">
                             <h2 class="cms-content__heading">{{ 'Ask for a change'|trans({}, 'theliacms') }}</h2>
                             <p class="text-muted small">{{ 'On the whole draft: the sections the change does not concern are kept as they are.'|trans({}, 'theliacms') }}</p>
@@ -453,7 +466,7 @@
                                             {{ include('@TheliaCMSModule/backOffice/default-twig/content/_section_form.html.twig', { form: section.edit }) }}
                                         </dialog>
                                     {% endif %}
-                                    {% if may_generate %}
+                                    {% if may_generate and ai_page %}
                                         <button type="button" class="cms-content__edit-open" command="show-modal" commandfor="cms-section-rewrite-{{ section.id }}" data-cms-dialog-open data-testid="cms-section-rewrite-open-{{ section.id }}">
                                             {{ 'Rewrite this section'|trans({}, 'theliacms') }}
                                         </button>
@@ -603,12 +616,12 @@
                 {% if showing_prototype %}
                     <iframe class="cms-content__frame" src="{{ prototype.preview_url }}"
                             title="{{ 'The component prototyped, as the theme shows it'|trans({}, 'theliacms') }}"
-                            data-testid="cms-content-frame" data-cms-frame data-cms-frame-prototype sandbox="allow-same-origin"></iframe>
+                            data-testid="cms-content-frame" data-cms-frame data-cms-frame-prototype sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"></iframe>
                 {% elseif subject.hasContent %}
                     <iframe class="cms-content__frame" src="{{ draft_page_url ?: subject.draftPreviewUrl }}"
                             title="{{ 'The draft, as the theme shows it'|trans({}, 'theliacms') }}"
                             data-testid="cms-content-frame" data-cms-frame></iframe>
-                {% elseif translate_form is not null %}
+                {% elseif translate_form is not null and ai_translation %}
                     <div class="cms-content__empty" data-testid="cms-content-translate">
                         <p class="cms-content__empty-title">{{ 'This page is written in %languages%, not in this language yet'|trans({ '%languages%': subject.translationSources|map(source => source.label)|join(', ') }, 'theliacms') }}</p>
                         <p class="cms-content__empty-hint">{{ 'The generator can write this language from one of them: the same sections, their texts written for the new reader. Or write it from a brief of its own on the left.'|trans({}, 'theliacms') }}</p>
@@ -630,7 +643,11 @@
                 {% else %}
                     <div class="cms-content__empty" data-testid="cms-content-empty">
                         <p class="cms-content__empty-title">{{ 'This page has no content yet'|trans({}, 'theliacms') }}</p>
-                        <p class="cms-content__empty-hint">{{ 'Say what it should hold in the brief on the left, and the generator writes a first draft from the components of the theme. Nothing goes online until you publish it.'|trans({}, 'theliacms') }}</p>
+                        {% if ai_page %}
+                            <p class="cms-content__empty-hint">{{ 'Say what it should hold in the brief on the left, and the generator writes a first draft from the components of the theme. Nothing goes online until you publish it.'|trans({}, 'theliacms') }}</p>
+                        {% else %}
+                            <p class="cms-content__empty-hint">{{ 'Add the sections one by one and write them by hand.'|trans({}, 'theliacms') }}</p>
+                        {% endif %}
                         {% if addable is not empty %}
                             <button type="button" class="btn btn-outline-primary mt-3" data-cms-add-open data-testid="cms-content-add-open">
                                 <i class="bi bi-plus-lg" aria-hidden="true"></i> {{ 'Or add a section by hand'|trans({}, 'theliacms') }}
@@ -672,7 +689,7 @@
                                 {% endfor %}
                             </ul>
                         {% endfor %}
-                        {% if may_prototype %}
+                        {% if may_prototype and ai_component %}
                             {# A component none of the above draws: asked in a prompt, drawn
                                in the preview, kept as a prototype of the site and added to
                                the draft from the panel on the left. #}

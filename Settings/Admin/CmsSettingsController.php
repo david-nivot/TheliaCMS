@@ -56,6 +56,7 @@ final readonly class CmsSettingsController
         private CachePurger $httpCache,
         private GeneratorSettings $generator,
         private ContentSecurityPolicySettings $contentSecurityPolicy,
+        private AiAvailabilityNotice $aiNotice,
     ) {
     }
 
@@ -101,6 +102,7 @@ final readonly class CmsSettingsController
             'editor_profile_exists' => $this->editorProfile->exists(),
             'client_ip' => $request->getClientIp(),
             'retry_after' => CmsSettings::RETRY_AFTER,
+            'ai_unavailable' => $this->aiNotice->reasons(),
         ]));
     }
 

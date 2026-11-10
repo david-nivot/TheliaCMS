@@ -1,0 +1,46 @@
+{
+  "case": "cta-banner",
+  "round": "round-0",
+  "run": 2,
+  "prompt_sha256": "e1d341791bfe8679c91b5124c4fb0b8b28c4cc3d876f7507cafdb782822e6055",
+  "answers": [
+    "{\"outcome\":\"component\",\"existing\":\"\",\"reason\":\"\",\"code\":\"CallToActionBand\",\"label\":\"Call to action band\",\"description\":\"A coloured band with a catchy heading, one sentence and up to two buttons, a main one and a secondary one, such as asking for a quote and calling the shop. Use it to close a page or a section by inviting the visitor to act.\",\"props\":\"[{\\\"name\\\": \\\"title\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Heading\\\", \\\"required\\\": true, \\\"max\\\": 120}, {\\\"name\\\": \\\"text\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Sentence\\\", \\\"help\\\": \\\"One short sentence under the heading.\\\", \\\"max\\\": 300}, {\\\"name\\\": \\\"primary_label\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Main button text\\\", \\\"max\\\": 60}, {\\\"name\\\": \\\"primary_url\\\", \\\"type\\\": \\\"url\\\", \\\"label\\\": \\\"Main button link\\\"}, {\\\"name\\\": \\\"secondary_label\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Second button text\\\", \\\"max\\\": 60}, {\\\"name\\\": \\\"secondary_url\\\", \\\"type\\\": \\\"url\\\", \\\"label\\\": \\\"Second button link\\\", \\\"help\\\": \\\"A page of the site, an address, or a phone number written as tel:+33123456789.\\\"}, {\\\"name\\\": \\\"tone\\\", \\\"type\\\": \\\"choice\\\", \\\"label\\\": \\\"Colour\\\", \\\"choices\\\": {\\\"accent\\\": \\\"Accent colour\\\", \\\"light\\\": \\\"Light tint\\\"}, \\\"default\\\": \\\"accent\\\"}]\",\"sample\":\"{\\\"title\\\": \\\"Un projet en tête ? Parlons-en.\\\", \\\"text\\\": \\\"Recevez une proposition chiffrée sous 48 heures, sans engagement.\\\", \\\"primary_label\\\": \\\"Demander un devis\\\", \\\"primary_url\\\": \\\"/devis\\\", \\\"secondary_label\\\": \\\"Nous appeler\\\", \\\"secondary_url\\\": \\\"tel:+33240000000\\\", \\\"tone\\\": \\\"accent\\\"}\",\"template\":\"<section class=\\\"cta cta--{{ props.tone|default('accent') }}\\\"><h2 class=\\\"cta__title\\\">{{ props.title }}</h2>{% if props.text is not empty %}<p class=\\\"cta__text\\\">{{ props.text }}</p>{% endif %}{% set has_primary = props.primary_label is not empty and props.primary_url is not empty %}{% set has_secondary = props.secondary_label is not empty and props.secondary_url is not empty %}{% if has_primary or has_secondary %}<div class=\\\"cta__actions\\\">{% if has_primary %}<a class=\\\"cta__button cta__button--primary\\\" href=\\\"{{ props.primary_url }}\\\">{{ props.primary_label }}</a>{% endif %}{% if has_secondary %}<a class=\\\"cta__button cta__button--secondary\\\" href=\\\"{{ props.secondary_url }}\\\">{{ props.secondary_label }}</a>{% endif %}</div>{% endif %}</section>\",\"css\":\".cta { padding: 2.5rem 1.5rem; border-radius: 0.75rem; text-align: center; }\\n.cta--accent { background: var(--cms-color-accent); color: var(--cms-color-on-accent); }\\n.cta--light { background: var(--cms-color-accent-surface); color: var(--cms-color-text); }\\n.cta__title { margin: 0 0 0.75rem; font-size: clamp(1.5rem, 4vw, 2.25rem); line-height: 1.2; }\\n.cta__text { margin: 0 auto 1.5rem; max-width: 40rem; }\\n.cta--light .cta__text { color: var(--cms-color-text-muted); }\\n.cta__actions { display: flex; flex-direction: column; align-items: stretch; gap: 0.75rem; }\\n.cta__button { display: inline-block; padding: 0.8rem 1.5rem; border: 2px solid transparent; border-radius: 999px; font-weight: 600; text-decoration: none; transition: background-color 0.2s, color 0.2s, border-color 0.2s; }\\n.cta__button:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }\\n.cta--accent .cta__button--primary { background: var(--cms-color-surface); color: var(--cms-color-accent-strong); }\\n.cta--accent .cta__button--primary:hover, .cta--accent .cta__button--primary:focus-visible { background: var(--cms-color-accent-surface); }\\n.cta--accent .cta__button--secondary { border-color: var(--cms-color-on-accent); color: var(--cms-color-on-accent); }\\n.cta--accent .cta__button--secondary:hover, .cta--accent .cta__button--secondary:focus-visible { background: var(--cms-color-on-accent); color: var(--cms-color-accent-strong); }\\n.cta--light .cta__button--primary { background: var(--cms-color-accent); color: var(--cms-color-on-accent); }\\n.cta--light .cta__button--primary:hover, .cta--light .cta__button--primary:focus-visible { background: var(--cms-color-accent-strong); }\\n.cta--light .cta__button--secondary { border-color: var(--cms-color-accent); color: var(--cms-color-accent-strong); }\\n.cta--light .cta__button--secondary:hover, .cta--light .cta__button--secondary:focus-visible { background: var(--cms-color-accent); color: var(--cms-color-on-accent); }\\n@media (min-width: 48rem) { .cta { padding: 3.5rem 3rem; } .cta__actions { flex-direction: row; justify-content: center; } }\"}"
+  ],
+  "outcome": "component",
+  "existing": null,
+  "based_on": null,
+  "browser": {
+    "375": {
+      "scroll": false,
+      "axe": [
+        {
+          "id": "color-contrast",
+          "impact": "serious"
+        }
+      ]
+    },
+    "1440": {
+      "scroll": false,
+      "axe": [
+        {
+          "id": "color-contrast",
+          "impact": "serious"
+        }
+      ]
+    }
+  },
+  "verdict": {
+    "pass": false,
+    "checks": {
+      "outcome": true,
+      "valid": true,
+      "props": true,
+      "markup": true,
+      "css": true,
+      "no_h1": true,
+      "img_alt": true,
+      "reduced_motion": true,
+      "browser": false
+    }
+  }
+}

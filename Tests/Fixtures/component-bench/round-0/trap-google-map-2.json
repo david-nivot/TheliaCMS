@@ -1,0 +1,36 @@
+{
+  "case": "trap-google-map",
+  "round": "round-0",
+  "run": 2,
+  "prompt_sha256": "b9c48c727b3a7c35f7bf97aa1b161b6d781191479ed3602637f3838bebd3f0e3",
+  "answers": [
+    "{\"outcome\":\"component\",\"existing\":\"\",\"reason\":\"\",\"code\":\"StoreLocation\",\"label\":\"Store location\",\"description\":\"The address of the shop with a picture of the map and a link that opens it in Google Maps, where the visitor can zoom and get directions. Use it for a contact or a visit page. A live Google Maps map cannot be embedded because components run no iframe or script, so this component shows a still map and a link out.\",\"props\":\"[{\\\"name\\\": \\\"title\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Heading\\\", \\\"max\\\": 120}, {\\\"name\\\": \\\"address\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Address\\\", \\\"help\\\": \\\"One line per line of the address.\\\", \\\"required\\\": true, \\\"max\\\": 500}, {\\\"name\\\": \\\"details\\\", \\\"type\\\": \\\"html\\\", \\\"label\\\": \\\"Opening hours and access\\\", \\\"help\\\": \\\"Opening hours, public transport, parking.\\\"}, {\\\"name\\\": \\\"map_image\\\", \\\"type\\\": \\\"image\\\", \\\"label\\\": \\\"Map picture\\\", \\\"help\\\": \\\"A screenshot or a drawing of the map around the shop.\\\"}, {\\\"name\\\": \\\"map_alt\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Description of the map\\\", \\\"help\\\": \\\"What the map shows, in one sentence, for visitors who cannot see it.\\\", \\\"max\\\": 200}, {\\\"name\\\": \\\"map_url\\\", \\\"type\\\": \\\"url\\\", \\\"label\\\": \\\"Link to the map\\\", \\\"help\\\": \\\"The Google Maps address of the shop, where visitors can zoom.\\\"}, {\\\"name\\\": \\\"map_link_label\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Text of the link\\\", \\\"help\\\": \\\"Says where the link leads, for example: open the map in Google Maps.\\\", \\\"max\\\": 120}, {\\\"name\\\": \\\"layout\\\", \\\"type\\\": \\\"choice\\\", \\\"label\\\": \\\"Position of the map\\\", \\\"choices\\\": {\\\"map-right\\\": \\\"Map on the right\\\", \\\"map-left\\\": \\\"Map on the left\\\"}, \\\"default\\\": \\\"map-right\\\"}]\",\"sample\":\"{\\\"title\\\": \\\"Nous trouver\\\", \\\"address\\\": \\\"Boutique Thelia\\\\n12 rue de la République\\\\n69002 Lyon\\\", \\\"details\\\": \\\"<p>Ouvert du mardi au samedi, de 10 h à 19 h.</p><p>Métro A, station Cordeliers, à deux minutes à pied.</p>\\\", \\\"map_image\\\": null, \\\"map_alt\\\": \\\"Plan du centre de Lyon avec la boutique rue de la République, près de la station Cordeliers.\\\", \\\"map_url\\\": \\\"https://www.google.com/maps/search/?api=1&query=12+rue+de+la+R%C3%A9publique+69002+Lyon\\\", \\\"map_link_label\\\": \\\"Ouvrir le plan de la boutique dans Google Maps\\\", \\\"layout\\\": \\\"map-right\\\"}\",\"template\":\"<section class=\\\"location location--{{ props.layout|default('map-right') }}\\\"><div class=\\\"location__body\\\">{% if props.title is not empty %}<h2 class=\\\"location__title\\\">{{ props.title }}</h2>{% endif %}{% if props.address is not empty %}<address class=\\\"location__address\\\">{{ props.address|nl2br }}</address>{% endif %}{% if props.details is not empty %}<div class=\\\"location__details\\\">{{ props.details }}</div>{% endif %}{% if props.map_url is not empty and props.map_link_label is not empty %}<p class=\\\"location__action\\\"><a class=\\\"location__link\\\" href=\\\"{{ props.map_url }}\\\">{{ props.map_link_label }}</a></p>{% endif %}</div>{% if props.map_image %}<figure class=\\\"location__map\\\" data-cms-sizes=\\\"(min-width: 48rem) 50vw, 100vw\\\"><img class=\\\"location__image\\\" src=\\\"{{ props.map_image }}\\\" alt=\\\"{{ props.map_alt|default('') }}\\\"></figure>{% endif %}</section>\",\"css\":\".location { display: grid; gap: 1.5rem; align-items: center; }\\n.location__title { margin: 0 0 1rem; color: var(--cms-color-text); }\\n.location__address { font-style: normal; font-size: 1.125rem; line-height: 1.5; color: var(--cms-color-text); margin-bottom: 1rem; }\\n.location__details { color: var(--cms-color-text-muted); }\\n.location__action { margin: 1.5rem 0 0; }\\n.location__link { display: inline-block; padding: 0.75rem 1.25rem; border-radius: 0.375rem; background: var(--cms-color-accent); color: var(--cms-color-on-accent); text-decoration: none; font-weight: 600; transition: background-color 0.2s ease; }\\n.location__link:hover { background: var(--cms-color-accent-strong); }\\n.location__link:focus-visible { background: var(--cms-color-accent-strong); outline: 2px solid var(--cms-color-accent-strong); outline-offset: 3px; }\\n.location__map { margin: 0; border: 1px solid var(--cms-color-border); border-radius: 0.5rem; overflow: hidden; background: var(--cms-color-surface); }\\n.location__image { display: block; width: 100%; height: auto; }\\n@media (min-width: 48rem) { .location { grid-template-columns: 1fr 1fr; gap: 2.5rem; } .location--map-left .location__map { order: -1; } }\"}"
+  ],
+  "outcome": "component",
+  "existing": null,
+  "based_on": null,
+  "browser": {
+    "375": {
+      "scroll": false,
+      "axe": []
+    },
+    "1440": {
+      "scroll": false,
+      "axe": []
+    }
+  },
+  "verdict": {
+    "pass": true,
+    "checks": {
+      "outcome": true,
+      "valid": true,
+      "props": true,
+      "markup": true,
+      "css": true,
+      "no_h1": true,
+      "img_alt": true,
+      "reduced_motion": true,
+      "browser": true
+    }
+  }
+}

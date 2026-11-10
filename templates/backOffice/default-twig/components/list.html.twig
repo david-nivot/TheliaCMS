@@ -6,7 +6,7 @@
 {% block content %}
     {% embed '@BackOfficeDefaultTwig/_page_header.html.twig' with { title: 'Components'|trans({}, 'theliacms') } %}
         {% block actions %}
-            {% if may_ask %}
+            {% if may_ask and cms_ai_available('theliacms.component') %}
                 <a class="btn btn-sm btn-primary me-1" href="{{ path('admin.cms.components.site.new') }}" data-testid="cms-components-new">
                     <i class="bi bi-stars me-1" aria-hidden="true"></i>{{ 'New component'|trans({}, 'theliacms') }}
                 </a>
@@ -65,7 +65,7 @@
                             </td>
                             <td class="text-end" data-testid="cms-component-pages-{{ component.name }}" data-pages="{{ component.pages }}">
                                 {% if component.pages > 0 %}
-                                    {{ '%count% page(s)'|trans({ '%count%': component.pages }, 'theliacms') }}
+                                    {% include '@TheliaCMSModule/backOffice/default-twig/linked-pages/_trigger.html.twig' with { kind: 'component', key: component.name, count: component.pages, text: '%count% page(s)'|trans({ '%count%': component.pages }, 'theliacms'), subject: component.label, testid: 'cms-component-pages-open-' ~ component.name } only %}
                                 {% else %}
                                     <span class="text-muted">{{ 'Unused'|trans({}, 'theliacms') }}</span>
                                 {% endif %}

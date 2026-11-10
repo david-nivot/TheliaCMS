@@ -14,7 +14,8 @@
         {% endblock %}
     {% endembed %}
 
-    <p class="text-muted">{{ 'Carried by %count% page(s), the bin included. Renaming or recoloring it changes the label on each of them.'|trans({ '%count%': tag.pages }, 'theliacms') }}</p>
+    <p class="text-muted">{{ 'Carried by %count% page(s), the bin included. Renaming or recoloring it changes the label on each of them.'|trans({ '%count%': tag.pages }, 'theliacms') }}
+        {% if tag.pages > 0 %}{% include '@TheliaCMSModule/backOffice/default-twig/linked-pages/_trigger.html.twig' with { kind: 'tag', key: tag.id, count: tag.pages, text: 'See the pages'|trans({}, 'theliacms'), subject: tag.name, testid: 'cms-tag-pages-open' } only %}{% endif %}</p>
 
     <div class="card">
         <div class="card-body">

@@ -30,6 +30,7 @@
     <p class="text-muted">
         {{ 'Pages of this type are displayed with %template%, are written from the brief below before their own, following the writing instructions, and carry the fields listed here. A new page of the type starts as a copy of its model.'|trans({ '%template%': template.name }, 'theliacms') }}
         {{ '%count% page(s) of this type, the bin included.'|trans({ '%count%': pages }, 'theliacms') }}
+        {% if pages > 0 %}{% include '@TheliaCMSModule/backOffice/default-twig/linked-pages/_trigger.html.twig' with { kind: 'page-type', key: type.code, count: pages, text: 'See the pages'|trans({}, 'theliacms'), subject: type_title|default(type.code), testid: 'cms-page-type-pages-open' } only %}{% endif %}
     </p>
 
     <div class="row g-3">

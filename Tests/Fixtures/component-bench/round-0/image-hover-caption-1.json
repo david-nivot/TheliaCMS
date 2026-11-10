@@ -1,0 +1,39 @@
+{
+  "case": "image-hover-caption",
+  "round": "round-0",
+  "run": 1,
+  "prompt_sha256": "303fda4ded1eec79a193162b0002e34c5a2fbd04a5491913d819dedfa8420e9c",
+  "answers": [
+    "{\"outcome\":\"component\",\"existing\":\"\",\"reason\":\"\",\"code\":\"HoverCaptionPhoto\",\"label\":\"Photo with hover caption\",\"description\":\"One photo whose caption slides over its lower edge when the pointer rests on it or the keyboard focuses it. On touch screens the caption shows under the photo. Use it for a photo whose caption is a short extra, not essential text.\",\"props\":\"[{\\\"name\\\": \\\"image\\\", \\\"type\\\": \\\"image\\\", \\\"label\\\": \\\"Photo\\\", \\\"required\\\": true}, {\\\"name\\\": \\\"alt\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Alternative text\\\", \\\"help\\\": \\\"One sentence saying what the photo shows. Leave empty if it is purely decorative.\\\", \\\"max\\\": 200}, {\\\"name\\\": \\\"caption\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Caption\\\", \\\"help\\\": \\\"Shown over the photo on hover or keyboard focus, and under it on touch screens.\\\", \\\"max\\\": 300}, {\\\"name\\\": \\\"width\\\", \\\"type\\\": \\\"choice\\\", \\\"label\\\": \\\"Width\\\", \\\"choices\\\": {\\\"narrow\\\": \\\"Narrow\\\", \\\"wide\\\": \\\"Wide\\\", \\\"full\\\": \\\"Full width\\\"}, \\\"default\\\": \\\"wide\\\"}]\",\"sample\":\"{\\\"image\\\": null, \\\"alt\\\": \\\"Un artisan ponce le plateau d’une table en chêne dans l’atelier.\\\", \\\"caption\\\": \\\"Chaque table est poncée à la main dans notre atelier de Clermont-Ferrand.\\\", \\\"width\\\": \\\"wide\\\"}\",\"template\":\"{% set width = props.width|default('wide') %}{% if width == 'narrow' %}{% set sizes = '(min-width: 40rem) 36rem, 100vw' %}{% elseif width == 'full' %}{% set sizes = '100vw' %}{% else %}{% set sizes = '(min-width: 68rem) 64rem, 100vw' %}{% endif %}<div class=\\\"photo photo--{{ width }}\\\">{% if props.image %}<figure class=\\\"photo__figure{% if props.caption is not empty %} photo__figure--caption{% endif %}\\\"{% if props.caption is not empty %} tabindex=\\\"0\\\"{% endif %} data-cms-sizes=\\\"{{ sizes }}\\\"><img class=\\\"photo__img\\\" src=\\\"{{ props.image }}\\\" alt=\\\"{{ props.alt|default('') }}\\\">{% if props.caption is not empty %}<figcaption class=\\\"photo__caption\\\">{{ props.caption }}</figcaption>{% endif %}</figure>{% endif %}</div>\",\"css\":\".photo__figure { position: relative; margin: 0 auto; overflow: hidden; }\\n.photo--narrow .photo__figure { max-width: 36rem; }\\n.photo--wide .photo__figure { max-width: 64rem; }\\n.photo--full .photo__figure { max-width: none; }\\n.photo__img { display: block; width: 100%; height: auto; }\\n.photo__caption { padding: 0.75rem 1rem; color: var(--cms-color-text-muted); background: var(--cms-color-surface); border-top: 1px solid var(--cms-color-border); }\\n.photo__figure:focus-visible { outline: 2px solid var(--cms-color-accent); outline-offset: 3px; }\\n@media (hover: hover) { .photo__caption { position: absolute; left: 0; right: 0; bottom: 0; color: var(--cms-color-on-dark); background: var(--cms-color-text); border-top: 0; opacity: 0; transform: translateY(100%); } .photo__figure:hover .photo__caption { opacity: 1; transform: translateY(0); } .photo__figure:focus-visible .photo__caption { opacity: 1; transform: translateY(0); } .photo__figure:focus-within .photo__caption { opacity: 1; transform: translateY(0); } }\\n@media (hover: hover) and (prefers-reduced-motion: no-preference) { .photo__caption { transition: opacity 0.25s ease, transform 0.25s ease; } }\\n@media (min-width: 48rem) { .photo__caption { padding: 1rem 1.5rem; } }\"}",
+    "{\"outcome\":\"component\",\"existing\":\"\",\"reason\":\"\",\"code\":\"HoverCaptionPhoto\",\"label\":\"Photo with hover caption\",\"description\":\"One photo whose caption slides over its lower edge when the pointer rests on it or the keyboard focuses it. On touch screens the caption shows under the photo. Use it for a photo whose caption is a short extra, not essential text.\",\"props\":\"[{\\\"name\\\": \\\"image\\\", \\\"type\\\": \\\"image\\\", \\\"label\\\": \\\"Photo\\\", \\\"help\\\": \\\"Without a photo, nothing is shown.\\\"}, {\\\"name\\\": \\\"alt\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Alternative text\\\", \\\"help\\\": \\\"One sentence saying what the photo shows. Leave empty if it is purely decorative.\\\", \\\"max\\\": 200}, {\\\"name\\\": \\\"caption\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Caption\\\", \\\"help\\\": \\\"Shown over the photo on hover or keyboard focus, and under it on touch screens.\\\", \\\"max\\\": 300}, {\\\"name\\\": \\\"width\\\", \\\"type\\\": \\\"choice\\\", \\\"label\\\": \\\"Width\\\", \\\"choices\\\": {\\\"narrow\\\": \\\"Narrow\\\", \\\"wide\\\": \\\"Wide\\\", \\\"full\\\": \\\"Full width\\\"}, \\\"default\\\": \\\"wide\\\"}]\",\"sample\":\"{\\\"image\\\": null, \\\"alt\\\": \\\"Un artisan ponce le plateau d’une table en chêne dans l’atelier.\\\", \\\"caption\\\": \\\"Chaque table est poncée à la main dans notre atelier de Clermont-Ferrand.\\\", \\\"width\\\": \\\"wide\\\"}\",\"template\":\"{% set width = props.width|default('wide') %}{% if width == 'narrow' %}{% set sizes = '(min-width: 40rem) 36rem, 100vw' %}{% elseif width == 'full' %}{% set sizes = '100vw' %}{% else %}{% set sizes = '(min-width: 68rem) 64rem, 100vw' %}{% endif %}<div class=\\\"photo photo--{{ width }}\\\">{% if props.image %}<figure class=\\\"photo__figure{% if props.caption is not empty %} photo__figure--caption{% endif %}\\\"{% if props.caption is not empty %} tabindex=\\\"0\\\"{% endif %} data-cms-sizes=\\\"{{ sizes }}\\\"><img class=\\\"photo__img\\\" src=\\\"{{ props.image }}\\\" alt=\\\"{{ props.alt|default('') }}\\\">{% if props.caption is not empty %}<figcaption class=\\\"photo__caption\\\">{{ props.caption }}</figcaption>{% endif %}</figure>{% endif %}</div>\",\"css\":\".photo__figure { position: relative; margin: 0 auto; overflow: hidden; }\\n.photo--narrow .photo__figure { max-width: 36rem; }\\n.photo--wide .photo__figure { max-width: 64rem; }\\n.photo--full .photo__figure { max-width: none; }\\n.photo__img { display: block; width: 100%; height: auto; }\\n.photo__caption { padding: 0.75rem 1rem; color: var(--cms-color-text-muted); background: var(--cms-color-surface); border-top: 1px solid var(--cms-color-border); }\\n.photo__figure:focus-visible { outline: 2px solid var(--cms-color-accent); outline-offset: 3px; }\\n@media (hover: hover) { .photo__caption { position: absolute; left: 0; right: 0; bottom: 0; color: var(--cms-color-on-dark); background: var(--cms-color-text); border-top: 0; opacity: 0; transform: translateY(100%); } .photo__figure:hover .photo__caption { opacity: 1; transform: translateY(0); } .photo__figure:focus-visible .photo__caption { opacity: 1; transform: translateY(0); } .photo__figure:focus-within .photo__caption { opacity: 1; transform: translateY(0); } }\\n@media (hover: hover) and (prefers-reduced-motion: no-preference) { .photo__caption { transition: opacity 0.25s ease, transform 0.25s ease; } }\\n@media (min-width: 48rem) { .photo__caption { padding: 1rem 1.5rem; } }\"}"
+  ],
+  "outcome": "component",
+  "existing": null,
+  "based_on": null,
+  "browser": {
+    "375": {
+      "scroll": false,
+      "axe": [],
+      "error": "the component is drawn without height"
+    },
+    "1440": {
+      "scroll": false,
+      "axe": [],
+      "error": "the component is drawn without height"
+    }
+  },
+  "verdict": {
+    "pass": false,
+    "checks": {
+      "outcome": true,
+      "valid": true,
+      "props": true,
+      "markup": false,
+      "css": true,
+      "no_h1": true,
+      "img_alt": true,
+      "reduced_motion": true,
+      "browser": false
+    }
+  }
+}

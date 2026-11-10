@@ -56,4 +56,12 @@ final class BriefTest extends TestCase
 
         self::assertSame($file, (new Brief('Nos services.', null, null, $file))->reference);
     }
+
+    public function testTheAddressesOfThePicturesAreTheOnesImportedAndNeverThePages(): void
+    {
+        $brief = new Brief('Import this image: https://example.com/a/banner.JPG, and read https://example.com/about. Again https://example.com/a/banner.JPG.');
+
+        self::assertSame(['https://example.com/a/banner.JPG'], $brief->pictureAddresses());
+        self::assertSame(['https://example.com/about'], $brief->addresses());
+    }
 }

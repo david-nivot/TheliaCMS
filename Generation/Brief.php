@@ -52,4 +52,21 @@ final readonly class Brief
 
         return array_values(array_unique($pages));
     }
+
+    /**
+     * The addresses of the pictures the brief cites ("import this image:
+     * https://…/banner.jpg"), in the order it cites them: the model may import
+     * them into the media library, and only them.
+     *
+     * @return list<string>
+     */
+    public function pictureAddresses(): array
+    {
+        preg_match_all('~https?://[^\s<>"\'`]+~i', $this->text, $matches);
+
+        $addresses = array_map(static fn (string $address): string => rtrim($address, '.,;:!?)]}'), $matches[0]);
+        $pictures = array_filter($addresses, static fn (string $address): bool => 1 === preg_match(self::PICTURE, (string) parse_url($address, \PHP_URL_PATH)));
+
+        return array_values(array_unique($pictures));
+    }
 }

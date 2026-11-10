@@ -83,6 +83,7 @@ final readonly class CmsMediaAdminController
             'tally' => $tally,
             'query' => $query,
             'filters' => MediaFilter::cases(),
+            'kinds' => MediaKind::cases(),
             'orders' => MediaOrder::cases(),
             'views' => MediaView::cases(),
             'tags' => $this->library->tagCounts(),
@@ -112,16 +113,18 @@ final readonly class CmsMediaAdminController
     /**
      * The files a picker shows, a page of the library read as the list reads
      * it, or the one file `id` names: what a section or a page holds, drawn
-     * before anything is picked. The `kind` asked for is `image`, or `video`
-     * for the picker of a video prop; any other value is an image. A file of
-     * the other kind is neither listed nor answered by its id.
+     * before anything is picked. The `kind` asked for is `video` for the
+     * picker of a video prop, `all` for both kinds (the picker lets the editor
+     * narrow its list); any other value is an image. A file of the other kind
+     * is neither listed nor answered by its id.
      */
     #[Route('/picker', name: 'picker', methods: ['GET'])]
     public function picker(Request $request): JsonResponse
     {
         $locale = $this->editLang($request)->getLocale();
         $id = $request->query->getInt('id');
-        $kind = MediaKind::Video->value === $request->query->getString('kind') ? MediaKind::Video : MediaKind::Image;
+        $asked = $request->query->getString('kind');
+        $kind = 'all' === $asked ? null : (MediaKind::Video->value === $asked ? MediaKind::Video : MediaKind::Image);
 
         if ($id > 0) {
             $image = $this->library->ownedImage($id, $kind);
@@ -130,7 +133,8 @@ final readonly class CmsMediaAdminController
             return new JsonResponse(['items' => null === $item ? [] : [self::picked($item)]], null === $item ? Response::HTTP_NOT_FOUND : Response::HTTP_OK);
         }
 
-        $grid = $this->catalog->browse(MediaQuery::fromRequest($request)->ofKind($kind), $locale, withUsage: false);
+        $query = MediaQuery::fromRequest($request);
+        $grid = $this->catalog->browse(null === $kind ? $query : $query->ofKind($kind), $locale, withUsage: false);
 
         return new JsonResponse([
             // A video that is still converting, or whose conversion failed, is

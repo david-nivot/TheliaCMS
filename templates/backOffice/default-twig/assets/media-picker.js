@@ -118,15 +118,32 @@
             option.value = pair[0];
             filter.appendChild(option);
         });
+        // What to list: both kinds, or one. It opens on what the field takes.
+        var type = element('select', 'form-select');
+        type.setAttribute('aria-label', m.type);
+        type.setAttribute('data-cms-media-picker-kind', '');
+        [['all', m.kindAll], ['image', m.kindImage], ['video', m.kindVideo]].forEach(function (pair) {
+            var option = element('option', '', pair[1]);
+            option.value = pair[0];
+            type.appendChild(option);
+        });
         var tag = element('select', 'form-select');
         tag.setAttribute('aria-label', m.tag);
-        [[search, 'col-12 col-md'], [filter, 'col-6 col-md-3'], [tag, 'col-6 col-md-3']].forEach(function (pair) {
+        tag.setAttribute('data-cms-media-picker-tag', '');
+        // The tag filter is always there: with no tag in the library it is disabled and says how to give one.
+        var tagHint = element('div', 'form-text', m.noTags);
+        tagHint.hidden = true;
+        [[search, 'col-12 col-md'], [type, 'col-6 col-md-2'], [filter, 'col-6 col-md-2'], [tag, 'col-6 col-md-3']].forEach(function (pair) {
             var col = element('div', pair[1]);
             col.appendChild(pair[0]);
             tools.appendChild(col);
 
             if (pair[0] === filter) {
                 filterColumn = col;
+            }
+
+            if (pair[0] === tag) {
+                col.appendChild(tagHint);
             }
         });
 
@@ -232,11 +249,13 @@
             return state.kind === 'video';
         }
 
-        // The kind is asked of the server only for a video: an image is what it answers without one.
+        // What the list shows, the field's kind being only what can be chosen.
+        function shown() {
+            return type.value || state.kind;
+        }
+
         function asked(parameters) {
-            if (isVideo()) {
-                parameters.kind = 'video';
-            }
+            parameters.kind = shown();
 
             return parameters;
         }
@@ -244,7 +263,7 @@
 
         function load() {
             status.textContent = m.loading;
-            getJson(withParameters(state.endpoint, asked({ search: search.value.trim(), filter: isVideo() ? '' : filter.value, tag: tag.value, page: state.page })))
+            getJson(withParameters(state.endpoint, asked({ search: search.value.trim(), filter: shown() === 'video' ? '' : filter.value, tag: tag.value, page: state.page })))
                 .then(function (answer) {
                     if (!answer) {
                         status.textContent = m.failed;
@@ -254,7 +273,7 @@
 
                     state.page = answer.page;
                     state.pageCount = answer.pageCount;
-                    status.textContent = ((isVideo() ? m.videoCount : m.count) || '').replace('%count%', String(answer.total));
+                    status.textContent = ((shown() === 'video' ? m.videoCount : (shown() === 'all' ? m.fileCount : m.count)) || '').replace('%count%', String(answer.total));
                     position.textContent = (m.page || '').replace('%page%', String(answer.page)).replace('%pages%', String(answer.pageCount));
                     previous.disabled = answer.page <= 1;
                     next.disabled = answer.page >= answer.pageCount;
@@ -269,6 +288,8 @@
             var every = element('option', '', m.everyTag);
             every.value = '';
             tag.appendChild(every);
+            tag.disabled = Object.keys(tags).length === 0;
+            tagHint.hidden = !tag.disabled;
             Object.keys(tags).forEach(function (name) {
                 var option = element('option', '', name + ' (' + tags[name] + ')');
                 option.value = name;
@@ -281,7 +302,7 @@
             grid.replaceChildren();
 
             if (items.length === 0) {
-                grid.appendChild(element('p', 'text-body-secondary small', isVideo() ? m.videoNone : m.none));
+                grid.appendChild(element('p', 'text-body-secondary small', shown() === 'video' ? m.videoNone : (shown() === 'all' ? m.noFile : m.none)));
 
                 return;
             }
@@ -291,6 +312,13 @@
                 var tile = element('button', 'btn p-0 w-100 text-start border rounded overflow-hidden bg-body');
                 tile.type = 'button';
                 tile.setAttribute('data-cms-media-picker-item', String(item.id));
+
+                // A field takes one kind of file: the other is listed, to be found, and cannot be chosen.
+                if (Boolean(item.video) !== isVideo()) {
+                    tile.disabled = true;
+                    tile.classList.add('opacity-50');
+                    tile.title = isVideo() ? m.takesVideo : m.takesImage;
+                }
 
                 if (item.id === state.current) {
                     tile.classList.add('border-primary', 'border-2');
@@ -345,6 +373,14 @@
         search.addEventListener('input', function () {
             window.clearTimeout(typing);
             typing = window.setTimeout(function () { state.page = 1; load(); }, 250);
+        });
+        type.addEventListener('change', function () {
+            // Images are what the "Show" filter speaks of: a list of videos has no use for it.
+            filterColumn.hidden = shown() === 'video';
+            if (shown() === 'video') { filter.value = ''; }
+            tag.value = '';
+            state.page = 1;
+            load();
         });
         [filter, tag].forEach(function (select) {
             select.addEventListener('change', function () { state.page = 1; load(); });
@@ -413,11 +449,14 @@
                     tag.value = '';
                 }
 
+                // It opens on what the field takes, whatever the last list was narrowed to.
+                type.value = kind;
+
                 state.kind = kind;
                 title.textContent = isVideo() ? (m.videoTitle || m.title) : m.title;
                 uploadText.nodeValue = isVideo() ? (m.videoUpload || m.upload) : m.upload;
                 file.accept = isVideo() ? 'video/mp4' : 'image/jpeg,image/png,image/webp,image/svg+xml,.svg';
-                filterColumn.hidden = isVideo();
+                filterColumn.hidden = shown() === 'video';
                 state.endpoint = options.endpoint;
                 state.uploadUrl = options.uploadUrl;
                 state.current = options.current;

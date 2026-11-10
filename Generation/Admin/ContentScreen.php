@@ -30,6 +30,7 @@ use TheliaCMS\Content\SectionCatalog;
 use TheliaCMS\Content\Site\SiteComponentPermission;
 use TheliaCMS\Content\Site\SitePropRows;
 use TheliaCMS\Documentation\DocumentationLink;
+use TheliaCMS\Generation\Component\ComponentCandidate;
 use TheliaCMS\Generation\Component\ComponentCandidates;
 use TheliaCMS\Generation\GenerationLog;
 use TheliaCMS\Generation\GenerationRequest;
@@ -168,7 +169,7 @@ final readonly class ContentScreen
      * alone, as the draft is shown. A candidate that is a change of a kept
      * component belongs to the components screen, not here.
      *
-     * @return array{candidate: \TheliaCMS\Generation\Component\ComponentCandidate, component: \TheliaCMS\Content\Site\SiteComponent|null, props: list<array<string, mixed>>, preview_url: string|null, preview_content_url: string|null, failed: bool, figures: string}|null
+     * @return array{candidate: ComponentCandidate, existing_code: string|null, based_on_code: string|null, component: \TheliaCMS\Content\Site\SiteComponent|null, props: list<array<string, mixed>>, preview_url: string|null, preview_content_url: string|null, failed: bool, figures: string}|null
      */
     /**
      * The file field of a form that asks for a component, posted as
@@ -195,11 +196,15 @@ final readonly class ContentScreen
             return null;
         }
 
+        $existingCode = ComponentCandidate::siteCodeOf($candidate->existing);
+        $basedOnCode = ComponentCandidate::siteCodeOf($candidate->basedOn);
         $previewUrl = null === $candidate->component ? null : $this->componentPreviews->candidate($candidate->logId, $subject->locale);
 
         return [
             'candidate' => $candidate,
             'component' => $candidate->component,
+            'existing_code' => null !== $existingCode && null !== $this->catalog->find($candidate->existing) ? $existingCode : null,
+            'based_on_code' => null !== $basedOnCode && null !== $this->catalog->find($candidate->basedOn) ? $basedOnCode : null,
             'props' => null === $candidate->component ? [] : $this->propRows->of($candidate->component),
             'preview_url' => $previewUrl,
             'preview_content_url' => null === $previewUrl ? null : $previewUrl.'?'.PreviewLink::CONTENT_ONLY.'=1',

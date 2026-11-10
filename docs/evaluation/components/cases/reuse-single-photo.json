@@ -1,0 +1,23 @@
+{
+  "id": "reuse-single-photo",
+  "family": "reuse",
+  "locale": "fr_FR",
+  "request": "Une grande photo de la façade de la boutique avec sa légende.",
+  "oracle": {
+    "outcome": [
+      "existing"
+    ],
+    "target": [
+      "cms:image"
+    ],
+    "props": [],
+    "markup": {
+      "require": [],
+      "forbid": []
+    },
+    "css": {
+      "require": [],
+      "forbid": []
+    }
+  }
+}

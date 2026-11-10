@@ -91,7 +91,7 @@ final readonly class MediaCatalog
      */
     public function toDescribe(MediaQuery $query, string $locale, int $position): MediaGrid
     {
-        $imageIds = $this->library->selection($locale, $query->search, MediaFilter::ToDescribe, $query->tag, $query->images);
+        $imageIds = $this->library->selection($locale, $query->search, MediaFilter::ToDescribe, $query->tag, $query->images, $query->kind);
         $total = \count($imageIds);
         $position = max(0, min($position, $total - 1));
         $images = $this->library->sorted($imageIds, $query->order, $locale, $position, 1);

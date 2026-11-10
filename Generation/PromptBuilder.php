@@ -171,6 +171,18 @@ final readonly class PromptBuilder
             }
         }
 
+        if ([] !== $pictures = $this->importableAddresses($request)) {
+            $lines[] = '';
+            $lines[] = '# The pictures the brief cites';
+            $lines[] = '';
+            $lines[] = 'A picture of the web is imported into the media library with the `import_image` tool, which gives its library id: an image prop takes that id, never the external address. A picture that cannot be imported is left out, and the document says nothing it would have shown.';
+            $lines[] = '';
+
+            foreach ($pictures as $address) {
+                $lines[] = '- '.$address;
+            }
+        }
+
         if (null !== $request->brief->reference) {
             // A change asked, of the whole document or of one section, comes
             // with a file the same way a brief does. The name of the file is
@@ -392,6 +404,22 @@ final readonly class PromptBuilder
         }
 
         return $request->brief->addresses();
+    }
+
+    /**
+     * The addresses of pictures the brief cites that `import_image` may copy
+     * into the media library: the pictures cited, when the site allowed the
+     * reading of the web (the same switch as for the pages).
+     *
+     * @return list<string>
+     */
+    public function importableAddresses(GenerationRequest $request): array
+    {
+        if (!$this->settings->webFetch() || GenerationRequest::KIND_TRANSLATION === $request->kind) {
+            return [];
+        }
+
+        return $request->brief->pictureAddresses();
     }
 
     /**

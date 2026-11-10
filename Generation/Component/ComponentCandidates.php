@@ -77,14 +77,37 @@ final readonly class ComponentCandidates
     }
 
     /**
+     * What a call keeps in the `document` of its row: the component as the
+     * answer wrote it (ComponentPrompt::json), with the name it was copied
+     * from and why after a copy; for a call that found the component the
+     * site already has, its name and the reason, and no component.
+     */
+    public static function documentOf(?SiteComponent $component, ?string $existing = null, ?string $basedOn = null, string $reason = ''): string
+    {
+        $flags = \JSON_THROW_ON_ERROR | \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES | \JSON_PRETTY_PRINT;
+
+        if (null === $component) {
+            return json_encode(['outcome' => ComponentResult::EXISTING, 'existing' => $existing, 'reason' => $reason], $flags);
+        }
+
+        if (null === $basedOn) {
+            return ComponentPrompt::json($component);
+        }
+
+        return json_encode(['outcome' => ComponentResult::COMPONENT, 'based_on' => $basedOn, 'reason' => $reason] + json_decode(ComponentPrompt::json($component), true, 8, \JSON_THROW_ON_ERROR), $flags);
+    }
+
+    /**
      * The component as the answer wrote it (ComponentPrompt::json), or null
-     * when the row holds none.
+     * when the row holds none: a row that says `existing` never holds one,
+     * whatever else it carries. A row written before the outcomes has no
+     * `outcome` and is a component.
      */
     public static function componentOf(?string $json): ?SiteComponent
     {
         $answer = json_decode((string) $json, true);
 
-        if (!\is_array($answer) || !\is_string($answer['code'] ?? null)) {
+        if (!\is_array($answer) || !\is_string($answer['code'] ?? null) || ComponentResult::COMPONENT !== ($answer['outcome'] ?? ComponentResult::COMPONENT)) {
             return null;
         }
 
@@ -104,6 +127,10 @@ final readonly class ComponentCandidates
 
     private static function fromRow(CmsPageGeneration $row): ComponentCandidate
     {
+        $answer = json_decode((string) $row->getDocument(), true);
+        $answer = \is_array($answer) ? $answer : [];
+        $existing = ComponentResult::EXISTING === ($answer['outcome'] ?? null);
+
         return new ComponentCandidate(
             (int) $row->getId(),
             (string) $row->getKind(),
@@ -117,6 +144,10 @@ final readonly class ComponentCandidates
             (int) $row->getTurns(),
             (int) $row->getDurationMs(),
             $row->getCreatedAt(),
+            $existing && GenerationLog::STATUS_DONE === $row->getStatus() ? ComponentResult::EXISTING : ComponentResult::COMPONENT,
+            $existing && \is_string($answer['existing'] ?? null) ? $answer['existing'] : null,
+            \is_string($answer['based_on'] ?? null) ? $answer['based_on'] : null,
+            \is_string($answer['reason'] ?? null) ? $answer['reason'] : '',
         );
     }
 }

@@ -22,7 +22,9 @@ use Thelia\Core\Hook\BaseHook;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\SecurityContext;
 use Thelia\Core\Template\Parser\ParserResolver;
+use TheliaCMS\Generation\Ai\AiAvailability;
 use TheliaCMS\Generation\Text\TextField;
+use TheliaCMS\Generation\Text\TextGenerator;
 use TheliaCMS\Page\Admin\EditLanguage;
 use TheliaCMS\Security\CmsResources;
 use TheliaCMS\TheliaCMS;
@@ -66,6 +68,7 @@ class TextBriefHook extends BaseHook
         private readonly RequestStack $requests,
         private readonly EditLanguage $languages,
         private readonly Environment $twig,
+        private readonly AiAvailability $availability,
         ?EventDispatcherInterface $dispatcher = null,
         ?ParserResolver $parserResolver = null,
     ) {
@@ -86,6 +89,11 @@ class TextBriefHook extends BaseHook
         $screen = self::SCREENS[(string) $event->getArgument('location', '')] ?? null;
 
         if (null === $screen || !$this->securityContext->isGranted(['ADMIN'], [CmsResources::GENERATE], [], [AccessManager::UPDATE])) {
+            return;
+        }
+
+        // The button would only get the refusal of the AI layer: not drawn when it cannot serve the usage.
+        if (!$this->availability->isAvailable(TextGenerator::USAGE)) {
             return;
         }
 
