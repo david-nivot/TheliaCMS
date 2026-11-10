@@ -86,6 +86,8 @@ final class ComponentGeneratorTest extends CmsIntegrationTestCase
         foreach (SitePropReader::TYPES as $type) {
             self::assertStringContainsString('- `'.$type.'`:', (string) $request->system, \sprintf('The type "%s" the site reads is told to the model.', $type));
         }
+        self::assertStringContainsString('A YouTube, Vimeo or Dailymotion video is an `embed` prop, not an `iframe`.', (string) $request->system, 'The model is sent to the embed prop instead of an iframe.');
+        self::assertStringContainsString('`{{ props.video }}`', (string) $request->system);
         self::assertStringContainsString('# Movement and interaction without script', (string) $request->system, 'The skill on motion is read beside the one on accessibility.');
         self::assertStringContainsString('`cms:richtext`', $request->messages[0]->content, 'The model is told what the site already has.');
         self::assertStringContainsString('Un tableau de prix', $request->messages[0]->content);
