@@ -23,10 +23,12 @@ use Thelia\Model\ModuleConfigQuery;
 use Thelia\Test\FixtureFactory;
 use Thelia\Test\WebIntegrationTestCase;
 use TheliaCMS\Content\Document;
+use TheliaCMS\Generation\Ai\AiAvailability;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Page\Admin\CmsPageWriter;
 use TheliaCMS\Page\Admin\PageDraft;
 use TheliaCMS\Tests\Integration\BuildsItemTargets;
+use TheliaCMS\Tests\Support\FakeAiAvailability;
 
 /**
  * The screens of the CMS, requested over HTTP by a logged-in administrator.
@@ -49,6 +51,13 @@ abstract class AdminScreenTestCase extends WebIntegrationTestCase
 
     private AdminInSession $session;
 
+    /**
+     * The AI of the shop as the screens see it: available for every usage, the
+     * database of the tests having no connection nor model. A test that wants
+     * the AI off turns it off here, before the first screen it requests.
+     */
+    protected FakeAiAvailability $ai;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -56,6 +65,9 @@ abstract class AdminScreenTestCase extends WebIntegrationTestCase
         if ('default-twig' !== ConfigQuery::read('active-admin-template')) {
             self::markTestSkipped('The screens of the module are written for the default-twig back office, which this shop does not run.');
         }
+
+        $this->ai = FakeAiAvailability::everythingAvailable();
+        static::getContainer()->set(AiAvailability::class, $this->ai);
 
         $this->session = new AdminInSession();
         $this->dispatcher()->addSubscriber($this->session);
