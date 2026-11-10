@@ -83,7 +83,7 @@ final class ComponentBenchRunCommandTest extends CmsIntegrationTestCase
         self::assertNotNull($row);
 
         self::assertSame(['table-prices', 'round-t', 1, 'fr_FR', 'Un tableau de prix de deux à quatre formules.'], [$trial['case'], $trial['round'], $trial['run'], $trial['locale'], $trial['request']]);
-        self::assertSame('2.24.0', $trial['module'], 'The version of config/module.xml.');
+        self::assertSame((string) simplexml_load_file(\dirname(__DIR__, 3).'/Config/module.xml')->version, $trial['module'], 'The version of config/module.xml.');
         self::assertSame(['fake-model', 'high'], [$trial['model'], $trial['effort']]);
         self::assertSame((string) $sent->system, $trial['system']);
         self::assertSame($sent->messages[0]->content, $trial['user']);

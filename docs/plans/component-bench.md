@@ -1,7 +1,10 @@
 # Plan: a bench for the generator of components
 
-Status: started on 2026-11-10 on `feat/component-bench`. The design questions
-are settled (see "Decisions taken").
+Status: steps 1 to 8 done on 2026-11-10 on `feat/component-bench` (rounds 0
+and 1 played, results in `docs/evaluation/components/results.md`). A next
+round needs the agreement of the maintainer (paid) and a library imported in
+the order of the manifest. The design questions are settled (see "Decisions
+taken").
 
 ## What is asked
 
