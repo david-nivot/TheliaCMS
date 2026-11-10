@@ -27,7 +27,7 @@ use TheliaCMS\Content\EmbedPlatform;
  */
 final readonly class EmbedAttributeSanitizer implements AttributeSanitizerInterface
 {
-    public function getSupportedElements(): ?array
+    public function getSupportedElements(): array
     {
         return ['div'];
     }
