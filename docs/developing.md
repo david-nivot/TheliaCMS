@@ -216,6 +216,11 @@ shows how to test an update, outside a transaction.
   section through the writer before it asks for a screen leaves `app.request`
   null for the rest of the process: ask for any screen first
   (`SectionEditScreenTest::renderedOnce()`).
+- The master switch of the AI layer (`ai_enabled`) reads on when the setting is
+  missing, but the test database of Thelia 3.3.0 holds it off: a test that
+  expects an AI usage to be judged on its connection or its model writes the
+  switch on first (`AiAvailabilityTest::setUp()`), or the CI on 3.3.0 sees
+  every usage disabled.
 
 ## Browser checks
 
