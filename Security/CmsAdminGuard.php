@@ -26,6 +26,7 @@ use Thelia\Core\HttpFoundation\RequestPath;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\SecurityContext;
 use Thelia\Tools\TokenProvider;
+use TheliaCMS\Page\Admin\LinkedPageKind;
 
 /**
  * Guards every route under `/admin/cms`, including the ones imported from the
@@ -178,6 +179,12 @@ final readonly class CmsAdminGuard
         // building the forms does not open them.
         if ('forms' === $section && 'submissions' === ($segments[2] ?? null)) {
             return CmsResources::FORM_ANSWERS;
+        }
+
+        // The pages behind a number are asked of one route whatever the
+        // element: it answers to the resource of the screen showing the number.
+        if ('linked-pages' === $section) {
+            return LinkedPageKind::tryFrom($segments[1] ?? '')?->resource() ?? CmsResources::PAGE;
         }
 
         return self::SECTION_RESOURCES[$section] ?? CmsResources::PAGE;

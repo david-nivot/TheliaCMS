@@ -1954,4 +1954,12 @@ return [
     'Playing it loads %platform%.' => 'La lecture charge %platform%.',
     'Watch the video on %platform%' => 'Voir la vidéo sur %platform%',
     'The address of a YouTube, Vimeo or Dailymotion video, from its page or its share button. It plays when the visitor clicks it, and nothing is loaded from the platform before.' => 'L’adresse d’une vidéo YouTube, Vimeo ou Dailymotion, copiée depuis sa page ou son bouton de partage. Elle se lance au clic du visiteur, et rien n’est chargé depuis la plateforme avant.',
+    'Pages of %name%' => 'Pages de %name%',
+    'Show the pages of %name%: %count%' => 'Afficher les pages de %name% : %count%',
+    'The list could not be loaded. Try again.' => 'La liste n’a pas pu être chargée. Réessayez.',
+    'No page.' => 'Aucune page.',
+    'In the bin' => 'À la corbeille',
+    'See the pages' => 'Voir les pages',
+    'See them in the list of pages' => 'Les voir dans la liste des pages',
+    'The list leaves out the pages in the bin.' => 'La liste des pages ne montre pas celles de la corbeille.',
 ];

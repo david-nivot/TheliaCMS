@@ -41,6 +41,7 @@ final class BackOfficeAssetExtension extends AbstractExtension
     {
         return [
             new TwigFunction('cms_asset', $this->asset(...), ['needs_environment' => true]),
+            new TwigFunction('cms_asset_version', static fn (string $path): string => substr(hash('xxh3', (string) @filemtime(self::SOURCE.$path)), 0, 12)),
         ];
     }
 

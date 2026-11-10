@@ -1954,4 +1954,12 @@ return [
     'Playing it loads %platform%.' => 'Playing it loads %platform%.',
     'Watch the video on %platform%' => 'Watch the video on %platform%',
     'The address of a YouTube, Vimeo or Dailymotion video, from its page or its share button. It plays when the visitor clicks it, and nothing is loaded from the platform before.' => 'The address of a YouTube, Vimeo or Dailymotion video, from its page or its share button. It plays when the visitor clicks it, and nothing is loaded from the platform before.',
+    'Pages of %name%' => 'Pages of %name%',
+    'Show the pages of %name%: %count%' => 'Show the pages of %name%: %count%',
+    'The list could not be loaded. Try again.' => 'The list could not be loaded. Try again.',
+    'No page.' => 'No page.',
+    'In the bin' => 'In the bin',
+    'See the pages' => 'See the pages',
+    'See them in the list of pages' => 'See them in the list of pages',
+    'The list leaves out the pages in the bin.' => 'The list leaves out the pages in the bin.',
 ];

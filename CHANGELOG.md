@@ -7,6 +7,20 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **The pages behind a number open in a drawer.** Wherever a screen of the back
+  office says how many pages an element has (a component "used by N pages", a
+  tag, a page type, an image "used by N pages or items"), the number is a
+  button that opens the list of those pages on the right of the screen: title,
+  state, a link to the page, "and N more" past 25, and a link to the list of
+  pages filtered on the tag or the type. One route
+  (`admin.cms.linked_pages`, read only) serves every element and reads its rows
+  where the number is counted, so the list is never longer or shorter than the
+  figure. A page in the bin is listed when the number counts it (tags, types)
+  and left out when it does not (components, images). The route answers to the
+  right of the screen the number is on.
+
 ## [2.25.0] - 2026-11-10
 
 ### Added
