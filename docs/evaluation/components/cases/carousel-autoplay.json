@@ -1,0 +1,36 @@
+{
+  "id": "carousel-autoplay",
+  "family": "carousel",
+  "locale": "fr_FR",
+  "request": "Un carrousel qui fait défiler tout seul les photos de nos réalisations, et qui s'arrête quand on le survole.",
+  "oracle": {
+    "outcome": [
+      "copy",
+      "component"
+    ],
+    "target": [
+      "Site:Carousel"
+    ],
+    "props": [
+      {
+        "type": "items",
+        "min": 1,
+        "with": [
+          "image"
+        ]
+      }
+    ],
+    "markup": {
+      "require": [
+        "<img"
+      ],
+      "forbid": []
+    },
+    "css": {
+      "require": [
+        "animation|scroll-snap"
+      ],
+      "forbid": []
+    }
+  }
+}

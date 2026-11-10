@@ -1,0 +1,34 @@
+{
+  "id": "steps-timeline",
+  "family": "reuse",
+  "locale": "fr_FR",
+  "request": "Une frise chronologique de l'histoire de l'entreprise : une date, un titre et un texte par étape, reliées par une ligne verticale.",
+  "oracle": {
+    "outcome": [
+      "copy",
+      "component"
+    ],
+    "target": [
+      "Site:Steps"
+    ],
+    "props": [
+      {
+        "type": "items",
+        "min": 1,
+        "with": [
+          "text"
+        ]
+      }
+    ],
+    "markup": {
+      "require": [
+        "<ol|<ul"
+      ],
+      "forbid": []
+    },
+    "css": {
+      "require": [],
+      "forbid": []
+    }
+  }
+}

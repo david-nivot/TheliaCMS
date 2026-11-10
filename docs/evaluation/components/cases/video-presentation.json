@@ -1,0 +1,34 @@
+{
+  "id": "video-presentation",
+  "family": "video",
+  "locale": "fr_FR",
+  "request": "Une vidéo de présentation de l'entreprise, avec un titre au-dessus et une phrase en dessous.",
+  "oracle": {
+    "outcome": [
+      "component"
+    ],
+    "target": [],
+    "props": [
+      {
+        "type": "video",
+        "min": 1
+      },
+      {
+        "type": "text|html",
+        "min": 1
+      }
+    ],
+    "markup": {
+      "require": [
+        "<video"
+      ],
+      "forbid": [
+        "<iframe"
+      ]
+    },
+    "css": {
+      "require": [],
+      "forbid": []
+    }
+  }
+}

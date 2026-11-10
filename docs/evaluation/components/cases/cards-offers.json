@@ -1,0 +1,35 @@
+{
+  "id": "cards-offers",
+  "family": "cards",
+  "locale": "fr_FR",
+  "request": "Trois formules d'abonnement en cartes : un nom, un prix, une liste d'avantages et un bouton pour souscrire.",
+  "oracle": {
+    "outcome": [
+      "component"
+    ],
+    "target": [],
+    "props": [
+      {
+        "type": "items",
+        "min": 1,
+        "with": [
+          "text|html"
+        ]
+      },
+      {
+        "type": "url",
+        "min": 1
+      }
+    ],
+    "markup": {
+      "require": [
+        "<a "
+      ],
+      "forbid": []
+    },
+    "css": {
+      "require": [],
+      "forbid": []
+    }
+  }
+}
