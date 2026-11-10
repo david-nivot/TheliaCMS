@@ -62,6 +62,17 @@
                     {% endif %}
                 </div>
                 <ul class="list-group list-group-flush small">
+                    {% if item.video and item.conversion.value != 'ready' %}
+                        <li class="list-group-item" data-testid="cms-media-video-state" data-state="{{ item.conversion.value }}">
+                            {% if item.conversion.value == 'processing' %}
+                                <span class="badge text-bg-info">{{ 'Processing'|trans({}, 'theliacms') }}</span>
+                                {{ 'The video is being converted for the web. It cannot be used in a page until it is ready; the file shown here is the one that was sent.'|trans({}, 'theliacms') }}
+                            {% else %}
+                                <span class="badge text-bg-danger">{{ 'Failed'|trans({}, 'theliacms') }}</span>
+                                {{ (item.conversionProblem ?? 'The video could not be converted.')|trans({}, 'theliacms') }}
+                            {% endif %}
+                        </li>
+                    {% endif %}
                     {% if item.dimensions %}
                         <li class="list-group-item d-flex justify-content-between">
                             <span class="text-muted">{{ 'Dimensions'|trans({}, 'theliacms') }}</span>

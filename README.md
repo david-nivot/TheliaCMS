@@ -662,7 +662,8 @@ Images selected on the list take or lose a tag, are marked decorative or not,
 or are deleted when nothing uses them; the ones still used are kept and named.
 
 Uploads accept JPEG, PNG, WebP and SVG images (10 MB and 25 megapixels at
-most), and MP4 videos (50 MB at most). An SVG can carry script: it is cleaned
+most), and MP4 videos (50 MB at most; see [Videos from a phone](#videos-from-a-phone)
+for what a server with ffmpeg takes). An SVG can carry script: it is cleaned
 and optimized on its own screen, which shows the result, before it enters the
 library. Files are dropped on the list or chosen, sent one by one, and a
 refused file is named with why without costing the others. The describe queue
@@ -686,6 +687,52 @@ image replaced there is copied again as a new one.
 At publication every image becomes a `<picture>` with a WebP alternative, a
 `srcset` bounded by the file's real width and ending on the original, explicit
 `width` and `height`, and lazy loading on everything but the first image.
+
+### Videos from a phone
+
+With [ffmpeg](https://ffmpeg.org) on the server, the library takes a video as a
+phone records it: a `.mov` (HEVC or H.264), an MP4 or a WebM of up to 100 MB. The
+file is stored as sent and listed as **Processing**; a background job converts
+it to H.264 and AAC, 720 pixels at most on the long side (a portrait video stays
+portrait, nothing is enlarged), with the index at the start of the file so
+playback begins before the download ends, and the metadata of the phone, its
+position included, left out. The converted file takes the place of the upload
+under the same id, so `/video-library/<id>.mp4` never changes, and the video
+turns **Ready**. A frame taken about two seconds in becomes an image of the
+library, linked to the video: a component with a `poster` image prop the author
+left empty draws it.
+
+A video that is processing, or whose conversion failed (the card and the sheet
+say why), is not offered to the picker of a page. Deleting it, or replacing its
+file, starts again.
+
+What the server needs:
+
+1. **ffmpeg**, found as `ffmpeg` in the PATH, or at the path of the
+   `THELIA_CMS_FFMPEG_PATH` environment variable. Without it the library takes
+   MP4 only, 50 MB at most, and a MOV or a WebM is refused with a message that
+   names ffmpeg: nothing fails.
+2. **A worker** on the heavy queue of the core. The job goes to `async_heavy`,
+   which follows `MESSENGER_TRANSPORT_DSN`; with the variable empty the core
+   runs the job at once, inside the request that sent the video, which a long
+   video can outlast. With a queue, keep a worker running, or run one from a
+   cron:
+
+   ```bash
+   php Thelia messenger:consume async_heavy --time-limit=3600 --memory-limit=512M
+   ```
+
+3. **PHP limits above 100 MB**: `upload_max_filesize` and `post_max_size`
+   (and the limit of the web server, `client_max_body_size` on nginx). A body
+   above them is dropped whole before the module sees it. The media screen
+   states the size the server really takes and asks to raise the limits when
+   they are below the ceiling.
+4. **TheliaLibrary 2.7.0 or later**, which stores QuickTime and WebM files (it
+   converts nothing itself); `composer.json` requires it.
+
+The conversion is H.264 at constant quality (`-crf 26`, bounded at 4 Mb/s): a
+minute of phone video is a few megabytes. `Config/update/2.26.0.sql` creates
+the table that keeps the state of each video (`cms_video_conversion`).
 
 ### Size and framing of an Image section
 

@@ -34,6 +34,7 @@ use TheliaCMS\Media\MediaKind;
 use TheliaCMS\Media\MediaOrder;
 use TheliaCMS\Media\MediaView;
 use TheliaCMS\Media\Svg\SvgUpload;
+use TheliaCMS\Media\Video\VideoIntake;
 use TheliaCMS\Page\Admin\EditLanguage;
 use TheliaCMS\Security\CmsResources;
 use TheliaLibrary\Exception\UnreadableSvgException;
@@ -64,6 +65,7 @@ final readonly class CmsMediaAdminController
         private EditLanguage $languages,
         private CatalogueItems $items,
         private UrlGeneratorInterface $urls,
+        private VideoIntake $videoIntake,
     ) {
     }
 
@@ -73,6 +75,8 @@ final readonly class CmsMediaAdminController
         $lang = $this->editLang($request);
         $query = MediaQuery::fromRequest($request);
         $tally = $this->catalog->tally($lang->getLocale());
+        $phpLimit = (int) UploadedFile::getMaxFilesize();
+        $videoCeiling = $this->videoIntake->maxBytes();
 
         return new Response($this->twig->render(self::LIST_TEMPLATE, [
             'grid' => $this->catalog->browse($query, $lang->getLocale()),
@@ -84,17 +88,22 @@ final readonly class CmsMediaAdminController
             'views' => MediaView::cases(),
             'tags' => $this->library->tagCounts(),
             'has_library' => $tally->total > 0,
-            'accepted_mime_types' => implode(',', CmsMediaType::acceptedUploadMimeTypes()),
-            'accepted_video_mime_types' => implode(',', CmsMediaType::ACCEPTED_VIDEO_MIME_TYPES),
+            'accepted_mime_types' => implode(',', CmsMediaType::acceptedUploadMimeTypes($this->videoIntake->mimeTypes())),
+            'accepted_video_mime_types' => implode(',', $this->videoIntake->mimeTypes()),
+            'converts_videos' => $this->videoIntake->converts(),
+            // What the server really takes of a video, against the ceiling the
+            // module wants: the screen says so when PHP is the lower of the two.
+            'video_ceiling' => $videoCeiling,
+            'video_php_limits_too_low' => !$this->videoIntake->phpLimitsAllow($phpLimit),
             // The script puts the token of a prepared SVG where this one stands.
             'token_placeholder' => SvgPreparationController::TOKEN_PLACEHOLDER,
             'max_upload_size' => min(CmsMediaType::MAX_IMAGE_BYTES, (int) UploadedFile::getMaxFilesize()),
-            'max_video_upload_size' => min(CmsMediaType::MAX_VIDEO_BYTES, (int) UploadedFile::getMaxFilesize()),
+            'max_video_upload_size' => min($videoCeiling, $phpLimit),
             // The screen refuses a file above its ceiling before sending it, an
             // image and a video each against their own: it names the limit that
             // stops it, the ceiling of the module or PHP's.
             'max_upload_refusal' => (CmsMediaType::MAX_IMAGE_BYTES <= (int) UploadedFile::getMaxFilesize() ? MediaUploadRefusal::TooHeavy : MediaUploadRefusal::TooLarge)->message(),
-            'max_video_upload_refusal' => (CmsMediaType::MAX_VIDEO_BYTES <= (int) UploadedFile::getMaxFilesize() ? MediaUploadRefusal::VideoTooHeavy : MediaUploadRefusal::TooLarge)->message(),
+            'max_video_upload_refusal' => ($this->videoIntake->phpLimitsAllow($phpLimit) ? ($this->videoIntake->converts() ? MediaUploadRefusal::RawVideoTooHeavy : MediaUploadRefusal::VideoTooHeavy) : MediaUploadRefusal::TooLarge)->message(),
             'assets_version' => substr(hash('xxh3', (string) @filemtime(__DIR__.'/../../templates/backOffice/default-twig/assets/media-upload.js').(string) @filemtime(__DIR__.'/../../templates/backOffice/default-twig/assets/media-list.js')), 0, 12),
             'edit_locale' => $lang->getLocale(),
             'edit_language_id' => $lang->getId(),
@@ -128,7 +137,9 @@ final readonly class CmsMediaAdminController
         $grid = $this->catalog->browse(null === $kind ? $query : $query->ofKind($kind), $locale, withUsage: false);
 
         return new JsonResponse([
-            'items' => array_map(self::picked(...), $grid->items),
+            // A video that is still converting, or whose conversion failed, is
+            // not offered: the page would publish a file the browser may not play.
+            'items' => array_values(array_map(self::picked(...), array_filter($grid->items, static fn (MediaItem $item): bool => $item->conversion->isUsable()))),
             'total' => $grid->total,
             'page' => $grid->page,
             'pageCount' => $grid->pageCount(),
@@ -137,7 +148,7 @@ final readonly class CmsMediaAdminController
     }
 
     /**
-     * @return array{id: int, title: string, thumbnail: ?string, url: string, dimensions: ?string, width: ?int, height: ?int, alt: string, described: bool, decorative: bool, video: bool}
+     * @return array{id: int, title: string, thumbnail: ?string, url: string, dimensions: ?string, width: ?int, height: ?int, alt: string, described: bool, decorative: bool, video: bool, conversion: string}
      */
     private static function picked(MediaItem $item): array
     {
@@ -153,6 +164,7 @@ final readonly class CmsMediaAdminController
             'described' => $item->isDescribed(),
             'decorative' => $item->decorative,
             'video' => $item->video,
+            'conversion' => $item->conversion->value,
         ];
     }
 

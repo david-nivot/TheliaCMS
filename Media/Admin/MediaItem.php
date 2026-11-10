@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Media\Admin;
 
+use TheliaCMS\Media\Video\VideoConversionStatus;
+
 /**
  * An image, or a video, as the media screens show it.
  */
@@ -37,6 +39,8 @@ final readonly class MediaItem
         public array $tags,
         public int $usageCount,
         public bool $video = false,
+        public VideoConversionStatus $conversion = VideoConversionStatus::Ready,
+        public ?string $conversionProblem = null,
     ) {
     }
 

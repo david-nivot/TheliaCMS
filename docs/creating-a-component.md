@@ -119,7 +119,11 @@ from two places:
   component draws one element per video, so the page loads nothing until the
   visitor plays one when the theme sets only the address and
   `preload="none"` on it (a `preload` or a `poster` of its own is the theme's
-  to write; the module adds neither). The editor picks the video in the
+  to write; the module adds neither). A video converted by the library
+  (README, "Videos from a phone") has a poster image: a prop named `poster`
+  of type `image`, at the top of the component or in the row of a list that
+  has the `video` field, is given it when the author left it empty, and keeps
+  the image the author picked; a video with no poster leaves the prop empty. The editor picks the video in the
   library, filtered on the videos, or sends an MP4 from the field;
   `product`, `category`, `folder`, `form` or `menu` is one record,
   picked by its id with the same pickers the partials use (the generator

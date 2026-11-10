@@ -445,6 +445,9 @@ class TheliaCMS extends BaseModule
                 // Registered below, guarded: it implements an interface of the
                 // Flexy theme.
                 __DIR__.'/Content/Section/SectionStories.php',
+                // Value objects and messages of the video conversion, built by the code that sends them.
+                __DIR__.'/Media/Video/ConvertVideo.php',
+                __DIR__.'/Media/Video/ProcessOutcome.php',
                 __DIR__.'/Page/Document/PageDocument.php',
                 __DIR__.'/Page/Document/PageDocumentLink.php',
                 __DIR__.'/Page/Document/PageDocumentUpload.php',
