@@ -335,6 +335,9 @@
 
         <column name="title" size="255" type="VARCHAR"/>
 
+        <!-- A menu that is not visible renders nothing on the site. -->
+        <column defaultValue="1" name="visible" required="true" type="TINYINT" size="4"/>
+
         <unique name="unq_cms_menu_code_locale">
             <unique-column name="code"/>
             <unique-column name="menu_locale"/>
@@ -366,6 +369,9 @@
         <column name="target_id" type="INTEGER"/>
         <column name="url" size="2048" type="VARCHAR"/>
         <column defaultValue="0" name="open_new_tab" required="true" type="TINYINT" size="4"/>
+
+        <!-- An entry that is not visible is left out of the site with everything under it. -->
+        <column defaultValue="1" name="visible" required="true" type="TINYINT" size="4"/>
 
         <!-- Left empty, the label falls back to the title of the target. -->
         <column name="label" size="255" type="VARCHAR"/>
