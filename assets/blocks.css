@@ -886,4 +886,91 @@
   .cms-page-card__summary {
     color: var(--cms-color-text-muted);
   }
+
+  /* The facade of an embedded video (`embed` prop of a component of the site):
+     a dark frame with a play button, nothing loaded from the platform. The
+     script of the module swaps it for the player on a click. */
+  .cms-embed {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    width: 100%;
+    overflow: hidden;
+    background: var(--cms-color-accent-strong);
+    color: var(--cms-color-on-accent);
+  }
+
+  .cms-embed__play {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  .cms-embed__play:focus-visible {
+    outline: 3px solid var(--cms-color-on-accent);
+    outline-offset: -6px;
+  }
+
+  .cms-embed__icon {
+    display: block;
+    width: 4.5rem;
+    height: 4.5rem;
+    border-radius: 50%;
+    background: var(--cms-color-on-accent);
+    position: relative;
+  }
+
+  .cms-embed__icon::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 52%;
+    border-style: solid;
+    border-width: 0.9rem 0 0.9rem 1.5rem;
+    border-color: transparent transparent transparent var(--cms-color-accent-strong);
+    transform: translate(-50%, -50%);
+  }
+
+  .cms-embed__play:hover .cms-embed__icon {
+    transform: scale(1.06);
+  }
+
+  .cms-embed__notice {
+    position: absolute;
+    inset: auto 0 0;
+    margin: 0;
+    padding: 0.5rem 1rem;
+    background: rgb(0 0 0 / 0.6);
+    color: var(--cms-color-on-accent);
+    font-size: 0.8125rem;
+    pointer-events: none;
+  }
+
+  .cms-embed__link {
+    color: var(--cms-color-on-accent);
+    text-decoration: underline;
+    pointer-events: auto;
+  }
+
+  .cms-embed__frame {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .cms-embed__icon {
+      transition: transform 0.15s ease;
+    }
+  }
 }
