@@ -64,7 +64,7 @@ final class VideoConversionUploadTest extends CmsIntegrationTestCase
     {
         $this->requireTheLibraryBranch();
 
-        $upload = $this->writer(new FakeProcessExecutor())->add([QuickTimeVideos::small('IMG_4312.MOV')], $this->locale());
+        $upload = $this->mediaWriter(new FakeProcessExecutor())->add([QuickTimeVideos::small('IMG_4312.MOV')], $this->locale());
         $this->remember($upload->stored);
 
         self::assertSame([], $upload->refused);
@@ -89,7 +89,7 @@ final class VideoConversionUploadTest extends CmsIntegrationTestCase
     public function testARawVideoUpToOneHundredMegabytesIsTakenAndOneByteMoreIsRefusedWithItsOwnMessage(): void
     {
         $this->requireTheLibraryBranch();
-        $writer = $this->writer(new FakeProcessExecutor());
+        $writer = $this->mediaWriter(new FakeProcessExecutor());
 
         $refused = $writer->add([QuickTimeVideos::weighing(CmsMediaType::MAX_RAW_VIDEO_BYTES + 1)], $this->locale());
 
@@ -106,7 +106,7 @@ final class VideoConversionUploadTest extends CmsIntegrationTestCase
 
     public function testWithoutFfmpegAMovIsRefusedWithAClearMessageAndNothingIsStored(): void
     {
-        $writer = $this->writer(new FakeProcessExecutor(ffmpegPresent: false));
+        $writer = $this->mediaWriter(new FakeProcessExecutor(ffmpegPresent: false));
 
         $upload = $writer->add([QuickTimeVideos::small()], $this->locale());
 
@@ -118,7 +118,7 @@ final class VideoConversionUploadTest extends CmsIntegrationTestCase
 
     public function testWithoutFfmpegAnMp4StaysAcceptedUpToFiftyMegabytesAndIsNeverConverted(): void
     {
-        $writer = $this->writer(new FakeProcessExecutor(ffmpegPresent: false));
+        $writer = $this->mediaWriter(new FakeProcessExecutor(ffmpegPresent: false));
 
         $taken = $writer->add([Mp4Videos::small()], $this->locale());
         $this->remember($taken->stored);
@@ -138,7 +138,7 @@ final class VideoConversionUploadTest extends CmsIntegrationTestCase
         imagepng(imagecreatetruecolor(3, 2), $path);
 
         $rows = CmsVideoConversionQuery::create()->count();
-        $upload = $this->writer(new FakeProcessExecutor())->add([new UploadedFile($path, 'a.png', 'image/png', null, true)], $this->locale());
+        $upload = $this->mediaWriter(new FakeProcessExecutor())->add([new UploadedFile($path, 'a.png', 'image/png', null, true)], $this->locale());
         $this->remember($upload->stored);
 
         self::assertCount(1, $upload->stored);
@@ -149,7 +149,7 @@ final class VideoConversionUploadTest extends CmsIntegrationTestCase
     public function testReplacingAVideoByAMovKeepsItsIdAndQueuesTheConversion(): void
     {
         $this->requireTheLibraryBranch();
-        $writer = $this->writer(new FakeProcessExecutor());
+        $writer = $this->mediaWriter(new FakeProcessExecutor());
         $first = $writer->add([Mp4Videos::small()], $this->locale());
         $this->remember($first->stored);
         $video = $first->stored[0];
@@ -166,7 +166,7 @@ final class VideoConversionUploadTest extends CmsIntegrationTestCase
     public function testDeletingAVideoDeletesItsRow(): void
     {
         $this->requireTheLibraryBranch();
-        $writer = $this->writer(new FakeProcessExecutor());
+        $writer = $this->mediaWriter(new FakeProcessExecutor());
         $upload = $writer->add([QuickTimeVideos::small()], $this->locale());
         $this->remember($upload->stored);
         $id = (int) $upload->stored[0]->getId();
@@ -193,12 +193,12 @@ final class VideoConversionUploadTest extends CmsIntegrationTestCase
         }
     }
 
-    private function writer(FakeProcessExecutor $executor): CmsMediaWriter
+    private function mediaWriter(FakeProcessExecutor $executor): CmsMediaWriter
     {
         $this->dispatched = [];
         $bus = new class($this->dispatched) implements MessageBusInterface {
             /** @param list<Envelope> $dispatched */
-            public function __construct(private array &$dispatched)
+            public function __construct(public array &$dispatched)
             {
             }
 

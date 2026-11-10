@@ -57,6 +57,17 @@ final class QuickTimeVideos
     /** Whether the TheliaLibrary installed stores QuickTime files (the tests of the conversion need it). */
     public static function libraryStoresThem(): bool
     {
-        return \in_array('video/quicktime', LibraryImageFileNamer::VIDEO_MIME_TYPES, true);
+        return \in_array('video/quicktime', self::videoTypesOfTheLibrary(), true);
+    }
+
+    /**
+     * Read through a declared type: the constant differs from one release of
+     * TheliaLibrary to the next, and its value of the day is not the answer.
+     *
+     * @return list<string>
+     */
+    private static function videoTypesOfTheLibrary(): array
+    {
+        return LibraryImageFileNamer::VIDEO_MIME_TYPES;
     }
 }
