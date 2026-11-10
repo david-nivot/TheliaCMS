@@ -194,6 +194,16 @@ final readonly class Prop
         return new self($name, PropType::Video, $label, null, $required, $help);
     }
 
+    /**
+     * The address of a video of YouTube, Vimeo or Dailymotion. Only the platform
+     * and the identifier are kept (`youtube:dQw4w9WgXcQ`); the template receives
+     * the markup of a facade, which loads the player when it is clicked.
+     */
+    public static function embed(string $name, string $label, bool $required = false, ?string $help = null): self
+    {
+        return new self($name, PropType::Embed, $label, '', $required, $help, max: 2048);
+    }
+
     public static function url(string $name, string $label, string $default = '', bool $required = false, ?string $help = null): self
     {
         return new self($name, PropType::Url, $label, $default, $required, $help, max: 2048);
@@ -237,7 +247,7 @@ final readonly class Prop
         if (!$this->required) {
             $description .= match ($this->type) {
                 PropType::Image, PropType::Video, PropType::Reference => ' 0 when there is none.',
-                PropType::Text, PropType::Html, PropType::Url, PropType::Json => ' Empty when not needed.',
+                PropType::Text, PropType::Html, PropType::Url, PropType::Embed, PropType::Json => ' Empty when not needed.',
                 PropType::Items => ' An empty list when not needed.',
                 default => '',
             };
@@ -254,6 +264,7 @@ final readonly class Prop
             PropType::Image => ['type' => $this->required ? ['integer', 'string'] : ['integer', 'string', 'null']],
             PropType::Video => ['type' => $this->required ? 'integer' : ['integer', 'null']],
             PropType::Url => ['type' => 'string', 'maxLength' => $this->max ?? 2048],
+            PropType::Embed => ['type' => 'string', 'maxLength' => $this->max ?? 2048],
             PropType::Items => [
                 'type' => 'array',
                 'minItems' => $this->minItems ?? 0,

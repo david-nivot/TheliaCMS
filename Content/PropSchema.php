@@ -114,6 +114,7 @@ final readonly class PropSchema
             PropType::Image, PropType::Reference => $this->image($prop, $value),
             PropType::Video => $this->video($prop, $value),
             PropType::Url => $this->url($prop, $value),
+            PropType::Embed => $this->embed($prop, $value),
             PropType::Items => $this->items($prop, $value),
             PropType::Json => $this->json($prop, $value),
         };
@@ -322,6 +323,22 @@ final readonly class PropSchema
         return mb_strlen($value) <= 2048
             && 1 === preg_match('#^https://[^\s/?\#]+[^\s]*$#i', $value)
             && false !== filter_var($value, \FILTER_VALIDATE_URL);
+    }
+
+    /**
+     * The video an address names, kept as `platform:id`. What was typed is
+     * never kept, so it is never printed back either, in the page or in an
+     * error.
+     */
+    private function embed(Prop $prop, mixed $value): string
+    {
+        $video = \is_string($value) ? EmbedAddress::from($value) : null;
+
+        if (null === $video) {
+            throw InvalidDocumentException::because([TranslatableText::of('"%s" must be the https address of a video of YouTube (youtube.com, youtu.be, youtube-nocookie.com), Vimeo (vimeo.com) or Dailymotion (dailymotion.com, dai.ly): a watch, short or embed address.', $prop->name)]);
+        }
+
+        return $video->value();
     }
 
     private function url(Prop $prop, mixed $value): string

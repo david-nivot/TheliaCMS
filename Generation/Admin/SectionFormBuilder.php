@@ -32,6 +32,7 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\SecurityContext;
+use TheliaCMS\Content\EmbedAddress;
 use TheliaCMS\Content\Prop;
 use TheliaCMS\Content\PropSchema;
 use TheliaCMS\Content\PropType;
@@ -411,6 +412,12 @@ final readonly class SectionFormBuilder
             PropType::Url => $builder->add($prop->name, TextType::class, $common + [
                 'attr' => ['maxlength' => $prop->max ?? 2048, 'placeholder' => '/contact'],
             ]),
+            // The address of a video of YouTube, Vimeo or Dailymotion. What is
+            // typed is read by the schema, which keeps the platform and the
+            // identifier; the field is filled back from those two.
+            PropType::Embed => $builder->add($prop->name, TextType::class, [...$common, 'help' => $common['help'] ?? $this->translator->trans('The address of a YouTube, Vimeo or Dailymotion video, from its page or its share button. It plays when the visitor clicks it, and nothing is loaded from the platform before.', [], 'theliacms')] + [
+                'attr' => ['maxlength' => 2048, 'inputmode' => 'url', 'placeholder' => 'https://www.youtube.com/watch?v=', 'data-cms-wide' => ''],
+            ]),
             PropType::Integer => $builder->add($prop->name, IntegerType::class, $common + [
                 'attr' => ['min' => $prop->min, 'max' => $prop->max],
             ]),
@@ -603,6 +610,9 @@ final readonly class SectionFormBuilder
             }
 
             $data[$prop->name] = match ($prop->type) {
+                // Shown as the address of the page of the video, built from
+                // what was kept: whatever was stored that is no video shows empty.
+                PropType::Embed => \is_string($value) ? (EmbedAddress::from($value)?->pageUrl() ?? '') : '',
                 PropType::Image, PropType::Video => null === $value || 0 === (int) $value ? null : (int) $value,
                 PropType::Reference => null === $value ? null : (int) $value,
                 PropType::Choice => null === $value ? null : (string) $value,

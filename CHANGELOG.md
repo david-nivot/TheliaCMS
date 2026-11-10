@@ -35,6 +35,32 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   sent the source of that component and writes the variant under a new code,
   and the candidate says it is based on it. A change of a component is still
   always a component.
+
+### Changed
+
+- **The sample of a generated component no longer has empty pictures.** The rule
+  of the prompt said an image of the sample is null unless the request gives an
+  address; it now says to take a media of the list the message gives, and null
+  only when none fits or the library is empty.
+
+## [2.25.0] - 2026-11-10
+
+### Added
+
+- **An `embed` prop to show a YouTube, Vimeo or Dailymotion video in a
+  component of the site.** The generator declares it (in a row of a list too,
+  a video per card of a carousel) and the template prints it as it is
+  (`{{ props.video }}`): the module draws a facade, a play button named after
+  the prop and the platform with a link to the video under it, and a small
+  script it serves itself, linked on every theme, builds the player when the
+  visitor clicks. Nothing is requested from the platform before the click, no
+  thumbnail is loaded, and the click is the consent. The editor pastes the
+  address of the video (watch, short, embed or share form); only the platform
+  and the identifier are kept, from a closed list of hosts, and the address is
+  never printed back, not even in the message that refuses one. The rule that a
+  template holds no `iframe` stays, and its message now points to the prop.
+  MP4 files of the media library keep the `video` prop. A private Vimeo video
+  (its address carries a key) is not accepted.
 - **A skill to rebuild an existing page as it is.** `content-migration`, read
   on demand, tells the generator how to transpose a page from another site or
   from material given as a file: every heading, paragraph and list item word
@@ -82,10 +108,6 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Changed
 
-- **The sample of a generated component no longer has empty pictures.** The rule
-  of the prompt said an image of the sample is null unless the request gives an
-  address; it now says to take a media of the list the message gives, and null
-  only when none fits or the library is empty.
 - **A branch of the tree opens and closes in place.** The arrow of a page and
   **Close every branch** no longer load the screen again: the tree is replaced
   where it stands, the row clicked stays at its place and keeps the focus, and
@@ -3130,7 +3152,8 @@ the published pages.
 - The breadcrumb of a page filed under a draft one offered a link to that page,
   which answers 404, both to the reader and in the `BreadcrumbList`.
 
-[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.24.0...HEAD
+[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.25.0...HEAD
+[2.25.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.25.0
 [2.24.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.24.0
 [2.23.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.23.0
 [2.22.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.22.0

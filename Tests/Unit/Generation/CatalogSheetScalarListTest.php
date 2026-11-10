@@ -57,6 +57,26 @@ final class CatalogSheetScalarListTest extends TestCase
         self::assertStringNotContainsString('search_media', $sheet, 'No tool is offered to find a video.');
     }
 
+    /**
+     * The generator gives the address a brief names, never one it makes up.
+     */
+    public function testAnEmbedIsToldAsTheAddressOfAVideoOrEmpty(): void
+    {
+        $embed = Prop::embed('video', 'Presentation video', help: 'The address the brief gives.');
+        $sheet = (new \ReflectionClass(CatalogSheet::class))->newInstanceWithoutConstructor()->section(self::definitionOf(new PropSchema([
+            $embed,
+            Prop::items('gallery', 'gallery', [Prop::embed('clip', 'clip')], 0, 4),
+        ])));
+
+        self::assertStringContainsString('- `video` (https address of a YouTube, Vimeo or Dailymotion video, or empty', $sheet);
+        self::assertStringContainsString('`clip` (https address of a YouTube, Vimeo or Dailymotion video, or empty', $sheet);
+
+        $schema = $embed->toJsonSchema();
+
+        self::assertSame('string', $schema['type']);
+        self::assertStringContainsString('Empty when not needed.', $schema['description']);
+    }
+
     private static function definitionOf(PropSchema $schema): SectionDefinitionInterface
     {
         return new class($schema) implements SectionDefinitionInterface {
