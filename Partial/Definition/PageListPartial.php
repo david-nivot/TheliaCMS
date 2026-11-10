@@ -22,6 +22,7 @@ use TheliaCMS\Page\PageListQuery;
 use TheliaCMS\Page\PageTypeCode;
 use TheliaCMS\Page\PageTypeRepository;
 use TheliaCMS\Page\PublishedPageRepository;
+use TheliaCMS\Partial\DescribedPartialInterface;
 use TheliaCMS\Partial\PartialDefinitionInterface;
 use TheliaCMS\Partial\PartialProp;
 use TheliaCMS\TheliaCMS;
@@ -32,7 +33,7 @@ use TheliaCMS\TheliaCMS;
  * is read when the page is served, so a recipe published tomorrow appears
  * without anyone publishing the page that lists it.
  */
-final readonly class PageListPartial implements PartialDefinitionInterface
+final readonly class PageListPartial implements PartialDefinitionInterface, DescribedPartialInterface
 {
     public const string NAME = 'cms-page-list';
 
@@ -56,6 +57,11 @@ final readonly class PageListPartial implements PartialDefinitionInterface
     public function label(): string
     {
         return $this->trans('Pages of a type');
+    }
+
+    public function description(): string
+    {
+        return $this->trans('The pages of a type, listed as they are on every visit.');
     }
 
     public function themeTemplate(): string

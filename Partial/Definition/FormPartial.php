@@ -21,6 +21,7 @@ use TheliaCMS\Form\FormCatalog;
 use TheliaCMS\Form\FormDefinition;
 use TheliaCMS\Form\Front\SubmissionFlash;
 use TheliaCMS\Form\LeadEvent;
+use TheliaCMS\Partial\DescribedPartialInterface;
 use TheliaCMS\Partial\PartialDefinitionInterface;
 use TheliaCMS\Partial\PartialProp;
 use TheliaCMS\TheliaCMS;
@@ -33,7 +34,7 @@ use TheliaCMS\TheliaCMS;
  * page is served, so adding a field never means republishing the pages the form
  * sits on.
  */
-final readonly class FormPartial implements PartialDefinitionInterface
+final readonly class FormPartial implements PartialDefinitionInterface, DescribedPartialInterface
 {
     public const string NAME = 'cms-form';
 
@@ -54,6 +55,11 @@ final readonly class FormPartial implements PartialDefinitionInterface
     public function label(): string
     {
         return $this->trans('Form');
+    }
+
+    public function description(): string
+    {
+        return $this->trans('A form of the site, shown as it is on every visit.');
     }
 
     public function themeTemplate(): string
