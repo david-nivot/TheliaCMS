@@ -7,6 +7,17 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **A skill to rebuild an existing page as it is.** `content-migration`, read
+  on demand, tells the generator how to transpose a page from another site or
+  from material given as a file: every heading, paragraph and list item word
+  for word (mistakes of the source included), the heading levels of the
+  source, no section or text of its own, the images from the media library by
+  id with the alternative text of the source, links to the pages of this site
+  only, and the list of what it could not rebuild. The lead and the header
+  image stay settings of the page.
+
 ## [2.24.0] - 2026-11-10
 
 ### Added
