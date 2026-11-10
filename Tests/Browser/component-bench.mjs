@@ -9,7 +9,7 @@
 // file. `thelia_cms:component-bench:check` reads that block. Read-only on the
 // shop: it opens previews and nothing else.
 //
-// BENCH_ROUND_DIR=<host>/var/eval/components/<round> \
+// BENCH_ROUND_DIR=<host>/var/eval/components/<round> CMS_BASE_URL=https://<shop> \
 // NODE_PATH=<dir>/node_modules (playwright and axe-core) \
 // [CHROME_PATH=<chromium>] [FORCE=1] node Tests/Browser/component-bench.mjs
 import { createRequire } from 'node:module';
@@ -45,6 +45,12 @@ if (!roundDir || !existsSync(roundDir)) {
     fail('BENCH_ROUND_DIR names no directory');
 }
 
+// The command signs a path: the console does not know the address of the site.
+const baseUrl = process.env.CMS_BASE_URL;
+if (!baseUrl) {
+    fail('CMS_BASE_URL names no shop (https://<shop>)');
+}
+
 const force = '1' === process.env.FORCE;
 const widths = [375, 1440];
 const executablePath = process.env.CHROME_PATH || undefined;
@@ -69,7 +75,7 @@ for (const caseId of readdirSync(roundDir, { withFileTypes: true }).filter((entr
         const seen = { checked_at: new Date().toISOString() };
 
         for (const width of widths) {
-            seen[String(width)] = await look(run.preview_url, width, join(caseDir, file.replace('.json', `-${width}.png`)));
+            seen[String(width)] = await look(new URL(run.preview_url, baseUrl).href, width, join(caseDir, file.replace('.json', `-${width}.png`)));
         }
 
         run.browser = seen;
@@ -125,6 +131,14 @@ async function look(url, width, capture) {
 
             return result.violations.map((violation) => ({ id: violation.id, impact: violation.impact, nodes: violation.nodes.length }));
         });
+
+        // A component drawn without height (a picture alone, its sample
+        // without one) has nothing to capture: said, not waited for.
+        const box = await component.boundingBox();
+
+        if (!box || box.height < 1) {
+            return { error: 'the component is drawn without height', scroll: scrollWidth > clientWidth + 1, scroll_width: scrollWidth, client_width: clientWidth, axe: violations };
+        }
 
         await component.screenshot({ path: capture });
 
