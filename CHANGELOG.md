@@ -9,6 +9,20 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Added
 
+- **An `embed` prop to show a YouTube, Vimeo or Dailymotion video in a
+  component of the site.** The generator declares it (in a row of a list too,
+  a video per card of a carousel) and the template prints it as it is
+  (`{{ props.video }}`): the module draws a facade, a play button named after
+  the prop and the platform with a link to the video under it, and a small
+  script it serves itself, linked on every theme, builds the player when the
+  visitor clicks. Nothing is requested from the platform before the click, no
+  thumbnail is loaded, and the click is the consent. The editor pastes the
+  address of the video (watch, short, embed or share form); only the platform
+  and the identifier are kept, from a closed list of hosts, and the address is
+  never printed back, not even in the message that refuses one. The rule that a
+  template holds no `iframe` stays, and its message now points to the prop.
+  MP4 files of the media library keep the `video` prop. A private Vimeo video
+  (its address carries a key) is not accepted.
 - **A skill to rebuild an existing page as it is.** `content-migration`, read
   on demand, tells the generator how to transpose a page from another site or
   from material given as a file: every heading, paragraph and list item word
