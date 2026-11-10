@@ -7,6 +7,15 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Fixed
+
+- **A video plays in the preview of a component.** The frame of the preview
+  (candidate, kept component, component prototyped from a page) ran no script,
+  so the play button of an `embed` prop did nothing there while it worked on
+  the site. The frame now allows scripts but has no origin of its own
+  (`sandbox="allow-scripts"`, never `allow-same-origin`): the script of the
+  videos runs, and still reads nothing of the back office.
+
 ## [2.25.0] - 2026-11-10
 
 ### Added

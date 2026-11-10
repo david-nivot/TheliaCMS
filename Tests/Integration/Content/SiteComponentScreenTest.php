@@ -75,6 +75,7 @@ final class SiteComponentScreenTest extends AdminScreenTestCase
         $page = (string) $this->client->getResponse()->getContent();
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
         self::assertStringContainsString('class="cms-site cms-site--price-table"', $page, 'The sample is drawn in the theme.');
+        self::assertStringContainsString('/cms/embed.js', $page, 'The script of the videos is linked in the preview, as on the site, for the frame runs scripts.');
         self::assertStringContainsString('.cms-site--price-table .plan--featured', $page, 'Its stylesheet is printed scoped.');
         self::assertSame('noindex, nofollow', $this->client->getResponse()->headers->get('X-Robots-Tag'));
         self::assertSame('no-referrer', $this->client->getResponse()->headers->get('Referrer-Policy'), 'The signed address does not leak through the Referer.');
