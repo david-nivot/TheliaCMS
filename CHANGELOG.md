@@ -7,6 +7,8 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+## [2.25.0] - 2026-11-10
+
 ### Added
 
 - **An `embed` prop to show a YouTube, Vimeo or Dailymotion video in a
@@ -3114,7 +3116,8 @@ the published pages.
 - The breadcrumb of a page filed under a draft one offered a link to that page,
   which answers 404, both to the reader and in the `BreadcrumbList`.
 
-[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.24.0...HEAD
+[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.25.0...HEAD
+[2.25.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.25.0
 [2.24.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.24.0
 [2.23.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.23.0
 [2.22.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.22.0
