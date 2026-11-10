@@ -124,6 +124,46 @@ final class SectionVideoPickerTest extends AdminScreenTestCase
         self::assertSame(404, $this->client->getResponse()->getStatusCode(), 'And the picker of images the id of a video.');
     }
 
+    /**
+     * Sabotage expected to turn it red: read `all` as an image in
+     * `CmsMediaAdminController::picker()` (the picker can no longer list both).
+     */
+    public function testThePickerCanListBothKindsAndItsTagsFollowTheKindShown(): void
+    {
+        $library = $this->getService(CmsMediaLibrary::class);
+        $image = $this->image('Fauteuil');
+        $video = Mp4Videos::row($library, $this->locale(), 'Clip A');
+        $library->retag($video, ['Films']);
+        $ids = fn (string $query): array => array_column($this->picker($query)['items'], 'id');
+
+        self::assertEqualsCanonicalizing([(int) $image->getId(), (int) $video->getId()], $ids('?kind=all'));
+        self::assertSame(2, $this->picker('?kind=all')['total']);
+        self::assertSame([(int) $video->getId()], $ids('?kind=all&tag=Films'), 'A tag narrows both kinds.');
+        self::assertSame([], $ids('?kind=image&tag=Films'), 'And the images alone have no such video.');
+        self::assertSame(['Films' => 1], $this->picker('?kind=video')['tags']);
+        self::assertSame([], $this->picker('?kind=image')['tags'], 'The tags offered are those of the kind shown.');
+        self::assertSame(['Films' => 1], $this->picker('?kind=all')['tags']);
+    }
+
+    /**
+     * Sabotage expected to turn it red: take `data-cms-media-kind` off the
+     * video field in `SectionFormBuilder` (the picker would open on images),
+     * or drop the `type` words from `media/_picker.html.twig`.
+     */
+    public function testAVideoFieldOpensThePickerOnTheVideosAndThePickerSpeaksOfTheTypes(): void
+    {
+        $page = $this->pageWith(null);
+        $field = $this->dialog($page)->filter('input[name="'.self::FORM.'[clip]"]');
+
+        self::assertSame('video', $field->attr('data-cms-media-kind'));
+
+        $source = (string) $this->client->getResponse()->getContent();
+
+        foreach (['kindAll', 'kindImage', 'kindVideo', 'noTags'] as $word) {
+            self::assertStringContainsString('"'.$word.'"', $source, 'The words of the type filter ship with the picker.');
+        }
+    }
+
     public function testAVideoOfTheLibraryIsKeptAndAnImageOrAForeignFileIsNot(): void
     {
         $page = $this->pageWith(null);

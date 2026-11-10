@@ -9,6 +9,39 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Added
 
+- **Pictures and videos for the sample of a component.** The generator of
+  components is told of the most recent media of the library (12 pictures and 3
+  videos at most, with their id, text and size), and the sample of a component
+  now takes the id of one of them for its `image` and `video` props instead of
+  being left empty. `thelia_cms:component-bench:media` imports the pictures of
+  `docs/evaluation/components/media/` into the library before a round, once
+  each (`--dir`, `--dry-run`), and names the pictures the generator will not
+  be offered when the manifest holds more than 12.
+- **A bench for the generator of components.** `thelia_cms:component-bench:run`
+  plays the cases of `docs/evaluation/components/cases/` against the real
+  generator (N runs per case, a budget in USD that stops the round, a file per
+  run that is not played again on a second launch, nothing kept but the
+  ledger line); `thelia_cms:component-bench:check` applies the contract of each
+  case to those files (outcome, target, props, markup, stylesheet, no `h1`,
+  alternative texts, except for the pictures of a block hidden from assistive
+  technologies, reduced motion, the browser measures when there are some),
+  writes the verdict into each file and prints the table. It calls no API.
+- **The generator of components answers "the site already has it" or "a
+  variant of it".** Asked for a new component, the model now says whether a
+  component of the catalogue already does what is asked (the screen says which
+  one and why, with a link to it when it belongs to the site, and offers no
+  candidate; a page being written is told to use it instead of making another)
+  or whether the request is a variant of a component of the site: it is then
+  sent the source of that component and writes the variant under a new code,
+  and the candidate says it is based on it. A change of a component is still
+  always a component.
+- **The media library can show only the images or only the videos.** A **Type**
+  select (*Images and videos*, *Images only*, *Videos only*, `?kind=image|video`
+  in the address) combines with the search, the tag, the sort, the pages, the
+  view and the bulk actions, and the counts of the header follow it. The media
+  picker of the editor has the same type and tag filters: it opens on the type
+  its field takes (a `video` prop opens on the videos), and lists the other kind
+  greyed out, to be found but not chosen.
 - **The pages behind a number open in a drawer.** Wherever a screen of the back
   office says how many pages an element has (a component "used by N pages", a
   tag, a page type, an image "used by N pages or items"), the number is a
@@ -20,6 +53,28 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   figure. A page in the bin is listed when the number counts it (tags, types)
   and left out when it does not (components, images). The route answers to the
   right of the screen the number is on.
+
+### Changed
+
+- **The sample of a generated component no longer has empty pictures.** The rule
+  of the prompt said an image of the sample is null unless the request gives an
+  address; it now says to take a media of the list the message gives, and null
+  only when none fits or the library is empty.
+- **The tag filter of the media library is always shown.** With no tag yet, it
+  is disabled and says that a tag is added from a media sheet or with the bulk
+  action **Add a tag**, instead of hiding the means to narrow the list.
+
+### Fixed
+
+- **The video of a component opens from its preview.** The frame of the
+  preview (candidate, kept component, component prototyped from a page) ran no
+  script, so the play button of an `embed` prop did nothing there while it
+  worked on the site. The frame now runs scripts but has no origin of its own
+  (never `allow-same-origin`), so it still reads nothing of the back office. A
+  player would inherit that sandbox and not play: in the preview, the play
+  button and the link under it open the video on its platform, in a new tab
+  (`allow-popups allow-popups-to-escape-sandbox`). On the site, the player is
+  built in the page as before.
 
 ## [2.25.0] - 2026-11-10
 

@@ -1,0 +1,28 @@
+{
+  "id": "image-before-after",
+  "family": "image",
+  "locale": "fr_FR",
+  "request": "Avant / après d'une rénovation : deux photos côte à côte, avec un petit texte sous chacune.",
+  "oracle": {
+    "outcome": [
+      "component"
+    ],
+    "target": [],
+    "props": [
+      {
+        "type": "image",
+        "min": 2
+      }
+    ],
+    "markup": {
+      "require": [
+        "<img"
+      ],
+      "forbid": []
+    },
+    "css": {
+      "require": [],
+      "forbid": []
+    }
+  }
+}

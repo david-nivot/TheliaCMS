@@ -1,0 +1,36 @@
+{
+  "case": "logos-partners",
+  "round": "round-0",
+  "run": 3,
+  "prompt_sha256": "5538195e91c9db747cda00a3a9dad30a7171226bf4904e79e4dac4ff27e8ef87",
+  "answers": [
+    "{\"outcome\":\"component\",\"existing\":\"\",\"reason\":\"\",\"code\":\"PartnerLogoBand\",\"label\":\"Partner logo band\",\"description\":\"A band of partner or client logos in greyscale, optionally linked to their sites, under an optional heading. Use it to show the brands, partners or suppliers a shop works with.\",\"props\":\"[{\\\"name\\\": \\\"title\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Heading\\\", \\\"max\\\": 120}, {\\\"name\\\": \\\"intro\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Introduction\\\", \\\"help\\\": \\\"A short sentence under the heading.\\\", \\\"max\\\": 300}, {\\\"name\\\": \\\"colour\\\", \\\"type\\\": \\\"choice\\\", \\\"label\\\": \\\"Logo colours\\\", \\\"choices\\\": {\\\"hover\\\": \\\"Grey, in colour on hover or focus\\\", \\\"always\\\": \\\"Always grey\\\"}, \\\"default\\\": \\\"hover\\\"}, {\\\"name\\\": \\\"logos\\\", \\\"type\\\": \\\"items\\\", \\\"label\\\": \\\"Logos\\\", \\\"min\\\": 2, \\\"max\\\": 24, \\\"items\\\": [{\\\"name\\\": \\\"image\\\", \\\"type\\\": \\\"image\\\", \\\"label\\\": \\\"Logo\\\"}, {\\\"name\\\": \\\"name\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Name of the partner\\\", \\\"help\\\": \\\"Read by screen readers, and shown when there is no logo.\\\", \\\"required\\\": true, \\\"max\\\": 80}, {\\\"name\\\": \\\"url\\\", \\\"type\\\": \\\"url\\\", \\\"label\\\": \\\"Link to the partner\\\"}]}]\",\"sample\":\"{\\\"title\\\": \\\"Nos partenaires\\\", \\\"intro\\\": \\\"Des maisons et des artisans avec qui nous travaillons depuis des années.\\\", \\\"colour\\\": \\\"hover\\\", \\\"logos\\\": [{\\\"image\\\": null, \\\"name\\\": \\\"Atelier Lumière\\\", \\\"url\\\": \\\"https://www.atelier-lumiere.fr\\\"}, {\\\"image\\\": null, \\\"name\\\": \\\"Brasserie du Port\\\", \\\"url\\\": \\\"https://www.brasserieduport.fr\\\"}, {\\\"image\\\": null, \\\"name\\\": \\\"Coopérative Les Vergers\\\", \\\"url\\\": \\\"\\\"}, {\\\"image\\\": null, \\\"name\\\": \\\"Éditions Papillon\\\", \\\"url\\\": \\\"https://www.editions-papillon.fr\\\"}, {\\\"image\\\": null, \\\"name\\\": \\\"Maison Durand\\\", \\\"url\\\": \\\"\\\"}, {\\\"image\\\": null, \\\"name\\\": \\\"Studio Nord\\\", \\\"url\\\": \\\"https://www.studionord.fr\\\"}]}\",\"template\":\"<section class=\\\"logo-band logo-band--{{ props.colour|default('hover') }}\\\">{% if props.title is not empty %}<h2 class=\\\"logo-band__title\\\">{{ props.title }}</h2>{% endif %}{% if props.intro is not empty %}<p class=\\\"logo-band__intro\\\">{{ props.intro }}</p>{% endif %}<ul class=\\\"logo-band__list\\\" data-cms-sizes=\\\"(min-width: 48rem) 10rem, 40vw\\\" data-cms-height=\\\"4rem\\\">{% for logo in props.logos %}<li class=\\\"logo-band__item\\\">{% if logo.url is not empty %}<a class=\\\"logo-band__link\\\" href=\\\"{{ logo.url }}\\\">{% if logo.image %}<img class=\\\"logo-band__logo\\\" src=\\\"{{ logo.image }}\\\" alt=\\\"{{ logo.name }}\\\">{% else %}<span class=\\\"logo-band__name\\\">{{ logo.name }}</span>{% endif %}</a>{% else %}{% if logo.image %}<img class=\\\"logo-band__logo\\\" src=\\\"{{ logo.image }}\\\" alt=\\\"{{ logo.name }}\\\">{% else %}<span class=\\\"logo-band__name\\\">{{ logo.name }}</span>{% endif %}{% endif %}</li>{% endfor %}</ul></section>\",\"css\":\":scope { padding: 2rem 0; text-align: center; }\\n.logo-band__title { margin: 0 0 0.5rem; color: var(--cms-color-text); }\\n.logo-band__intro { margin: 0 auto 1.5rem; max-width: 40rem; color: var(--cms-color-text-muted); }\\n.logo-band__list { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 1.5rem 2rem; margin: 0; padding: 0; list-style: none; }\\n.logo-band__item { display: flex; align-items: center; justify-content: center; }\\n.logo-band__link { display: inline-flex; align-items: center; border-radius: 0.25rem; color: inherit; text-decoration: none; }\\n.logo-band__link:focus-visible { outline: 2px solid var(--cms-color-accent); outline-offset: 0.25rem; }\\n.logo-band__logo { display: block; height: 3rem; width: auto; max-width: 9rem; object-fit: contain; filter: grayscale(1); opacity: 0.75; }\\n.logo-band__name { display: inline-block; padding: 0.5rem 1rem; border: 1px solid var(--cms-color-border); border-radius: 0.25rem; color: var(--cms-color-text-muted); font-weight: 600; }\\n.logo-band--hover .logo-band__item:hover .logo-band__logo { filter: none; opacity: 1; }\\n.logo-band--hover .logo-band__link:focus-visible .logo-band__logo { filter: none; opacity: 1; }\\n.logo-band--hover .logo-band__item:hover .logo-band__name { color: var(--cms-color-text); border-color: var(--cms-color-accent); }\\n.logo-band--hover .logo-band__link:focus-visible .logo-band__name { color: var(--cms-color-text); border-color: var(--cms-color-accent); }\\n@media (prefers-reduced-motion: no-preference) { .logo-band__logo { transition: filter 0.3s ease, opacity 0.3s ease; } .logo-band__name { transition: color 0.3s ease, border-color 0.3s ease; } }\\n@media (min-width: 48rem) { :scope { padding: 3rem 0; } .logo-band__list { gap: 2rem 3rem; } .logo-band__logo { height: 4rem; max-width: 10rem; } }\"}"
+  ],
+  "outcome": "component",
+  "existing": null,
+  "based_on": null,
+  "browser": {
+    "375": {
+      "scroll": false,
+      "axe": []
+    },
+    "1440": {
+      "scroll": false,
+      "axe": []
+    }
+  },
+  "verdict": {
+    "pass": false,
+    "checks": {
+      "outcome": true,
+      "valid": true,
+      "props": true,
+      "markup": false,
+      "css": true,
+      "no_h1": true,
+      "img_alt": true,
+      "reduced_motion": true,
+      "browser": true
+    }
+  }
+}

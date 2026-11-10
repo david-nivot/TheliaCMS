@@ -1,0 +1,23 @@
+{
+  "id": "reuse-three-commitments",
+  "family": "reuse",
+  "locale": "fr_FR",
+  "request": "Trois colonnes pour nos engagements : une icône, un titre et deux lignes de texte pour chacun.",
+  "oracle": {
+    "outcome": [
+      "existing"
+    ],
+    "target": [
+      "cms:columns"
+    ],
+    "props": [],
+    "markup": {
+      "require": [],
+      "forbid": []
+    },
+    "css": {
+      "require": [],
+      "forbid": []
+    }
+  }
+}

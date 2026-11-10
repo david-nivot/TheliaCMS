@@ -40,6 +40,15 @@
         videoCount: '%count% video(s)'|trans({}, 'theliacms'),
         videoUpload: 'Send a video'|trans({}, 'theliacms'),
         videoNone: 'No video matches.'|trans({}, 'theliacms'),
+        type: 'Type'|trans({}, 'theliacms'),
+        kindAll: 'Images and videos'|trans({}, 'theliacms'),
+        kindImage: 'Images only'|trans({}, 'theliacms'),
+        kindVideo: 'Videos only'|trans({}, 'theliacms'),
+        fileCount: '%count% file(s)'|trans({}, 'theliacms'),
+        noFile: 'No file matches.'|trans({}, 'theliacms'),
+        noTags: 'No tag yet. Tags are added from a media sheet of the library.'|trans({}, 'theliacms'),
+        takesImage: 'This field takes an image.'|trans({}, 'theliacms'),
+        takesVideo: 'This field takes a video.'|trans({}, 'theliacms'),
         meanwhile: 'meanwhile the text of the section: “%alt%”'|trans({}, 'theliacms'),
     }|json_encode|raw }}</script>
 <script src="{{ cms_asset('assets/media-picker.js') }}?v={{ media_picker_version|default('') }}" defer></script>

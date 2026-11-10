@@ -297,6 +297,7 @@ final class GatewayRefusalsTest extends CmsIntegrationTestCase
             new NullLogger(),
             $this->failures(),
             new SiteComponentUsage(),
+            $this->getService(SectionCatalog::class),
         );
     }
 }

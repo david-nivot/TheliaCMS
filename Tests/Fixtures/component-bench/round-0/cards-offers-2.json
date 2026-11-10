@@ -1,0 +1,46 @@
+{
+  "case": "cards-offers",
+  "round": "round-0",
+  "run": 2,
+  "prompt_sha256": "c9ff3a33ccd1571e80ed7b858c59153995628eb9fe1234804f5edf7391bf4efd",
+  "answers": [
+    "{\"outcome\":\"component\",\"existing\":\"\",\"reason\":\"\",\"code\":\"PricingPlans\",\"label\":\"Pricing plans\",\"description\":\"Subscription plans side by side as cards, each with a name, a price, a list of benefits and a button to subscribe. One plan can be marked as recommended. Use it to compare two to four offers or subscriptions on a pricing page.\",\"props\":\"[{\\\"name\\\": \\\"title\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Heading\\\", \\\"max\\\": 120}, {\\\"name\\\": \\\"intro\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Introduction\\\", \\\"max\\\": 300}, {\\\"name\\\": \\\"period_label\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Billing period label\\\", \\\"help\\\": \\\"Shown after every price, such as per month.\\\", \\\"max\\\": 40}, {\\\"name\\\": \\\"featured_label\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Recommended plan badge\\\", \\\"help\\\": \\\"Shown on the plans marked as recommended.\\\", \\\"max\\\": 40}, {\\\"name\\\": \\\"plans\\\", \\\"type\\\": \\\"items\\\", \\\"label\\\": \\\"Plans\\\", \\\"min\\\": 2, \\\"max\\\": 4, \\\"items\\\": [{\\\"name\\\": \\\"name\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Plan name\\\", \\\"required\\\": true, \\\"max\\\": 60}, {\\\"name\\\": \\\"description\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Short description\\\", \\\"max\\\": 200}, {\\\"name\\\": \\\"price\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Price\\\", \\\"help\\\": \\\"With its currency, such as 9.90 €.\\\", \\\"required\\\": true, \\\"max\\\": 30}, {\\\"name\\\": \\\"features\\\", \\\"type\\\": \\\"html\\\", \\\"label\\\": \\\"Benefits\\\", \\\"help\\\": \\\"A bulleted list, one benefit per line.\\\"}, {\\\"name\\\": \\\"button_label\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Button text\\\", \\\"help\\\": \\\"Name the plan, such as Choose the Essential plan.\\\", \\\"max\\\": 60}, {\\\"name\\\": \\\"button_url\\\", \\\"type\\\": \\\"url\\\", \\\"label\\\": \\\"Button link\\\"}, {\\\"name\\\": \\\"featured\\\", \\\"type\\\": \\\"boolean\\\", \\\"label\\\": \\\"Recommended plan\\\", \\\"default\\\": false}]}]\",\"sample\":\"{\\\"title\\\": \\\"Nos formules d’abonnement\\\", \\\"intro\\\": \\\"Choisissez la formule qui vous convient. Vous pouvez changer ou résilier à tout moment.\\\", \\\"period_label\\\": \\\"par mois\\\", \\\"featured_label\\\": \\\"La plus choisie\\\", \\\"plans\\\": [{\\\"name\\\": \\\"Essentielle\\\", \\\"description\\\": \\\"Pour découvrir nos produits à votre rythme.\\\", \\\"price\\\": \\\"9,90 €\\\", \\\"features\\\": \\\"<ul><li>Une box par mois</li><li>Livraison offerte en point relais</li><li>Sans engagement</li></ul>\\\", \\\"button_label\\\": \\\"Souscrire à la formule Essentielle\\\", \\\"button_url\\\": \\\"/abonnement/essentielle\\\", \\\"featured\\\": false}, {\\\"name\\\": \\\"Gourmande\\\", \\\"description\\\": \\\"Notre formule la plus complète pour les habitués.\\\", \\\"price\\\": \\\"19,90 €\\\", \\\"features\\\": \\\"<ul><li>Une box par mois avec deux produits en plus</li><li>Livraison offerte à domicile</li><li>10 % de remise sur la boutique</li><li>Sans engagement</li></ul>\\\", \\\"button_label\\\": \\\"Souscrire à la formule Gourmande\\\", \\\"button_url\\\": \\\"/abonnement/gourmande\\\", \\\"featured\\\": true}, {\\\"name\\\": \\\"Famille\\\", \\\"description\\\": \\\"Des quantités pensées pour toute la maison.\\\", \\\"price\\\": \\\"29,90 €\\\", \\\"features\\\": \\\"<ul><li>Deux box par mois</li><li>Livraison offerte à domicile</li><li>15 % de remise sur la boutique</li><li>Un cadeau surprise chaque trimestre</li></ul>\\\", \\\"button_label\\\": \\\"Souscrire à la formule Famille\\\", \\\"button_url\\\": \\\"/abonnement/famille\\\", \\\"featured\\\": false}]}\",\"template\":\"<section class=\\\"plans\\\">{% if props.title is not empty %}<h2 class=\\\"plans__title\\\">{{ props.title }}</h2>{% endif %}{% if props.intro is not empty %}<p class=\\\"plans__intro\\\">{{ props.intro }}</p>{% endif %}<ul class=\\\"plans__list\\\">{% for plan in props.plans %}<li class=\\\"plan{% if plan.featured %} plan--featured{% endif %}\\\">{% if plan.featured and props.featured_label is not empty %}<p class=\\\"plan__badge\\\">{{ props.featured_label }}</p>{% endif %}<h3 class=\\\"plan__name\\\">{{ plan.name }}</h3>{% if plan.description is not empty %}<p class=\\\"plan__description\\\">{{ plan.description }}</p>{% endif %}<p class=\\\"plan__price\\\"><span class=\\\"plan__amount\\\">{{ plan.price }}</span>{% if props.period_label is not empty %} <span class=\\\"plan__period\\\">{{ props.period_label }}</span>{% endif %}</p>{% if plan.features is not empty %}<div class=\\\"plan__features\\\">{{ plan.features }}</div>{% endif %}{% if plan.button_url is not empty and plan.button_label is not empty %}<a class=\\\"plan__button\\\" href=\\\"{{ plan.button_url }}\\\">{{ plan.button_label }}</a>{% endif %}</li>{% endfor %}</ul></section>\",\"css\":\".plans__title { margin: 0 0 0.5rem; }\\n.plans__intro { margin: 0 0 2rem; color: var(--cms-color-text-muted); }\\n.plans__list { display: grid; gap: 1.5rem; margin: 0; padding: 0; list-style: none; }\\n.plan { display: flex; flex-direction: column; gap: 1rem; padding: 1.5rem; border: 1px solid var(--cms-color-border); border-radius: 0.75rem; background: var(--cms-color-surface); color: var(--cms-color-text); }\\n.plan--featured { border: 2px solid var(--cms-color-accent); }\\n.plan__badge { align-self: flex-start; margin: 0; padding: 0.25rem 0.75rem; border-radius: 999px; background: var(--cms-color-accent); color: var(--cms-color-on-accent); font-size: 0.875rem; font-weight: 600; }\\n.plan__name { margin: 0; }\\n.plan__description { margin: 0; color: var(--cms-color-text-muted); }\\n.plan__price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.5rem; margin: 0; }\\n.plan__amount { font-size: 2.25rem; font-weight: 700; line-height: 1.1; }\\n.plan__period { color: var(--cms-color-text-subtle); }\\n.plan__features { flex-grow: 1; }\\n.plan__features ul { display: grid; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }\\n.plan__features li { position: relative; padding-left: 1.5rem; }\\n.plan__features li::before { content: \\\"\\\"; position: absolute; left: 0.25rem; top: 0.55em; width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--cms-color-accent); }\\n.plan__button { display: block; padding: 0.75rem 1rem; border: 2px solid var(--cms-color-accent); border-radius: 0.5rem; color: var(--cms-color-accent); font-weight: 600; text-align: center; text-decoration: none; transition: background-color 0.2s, border-color 0.2s, color 0.2s; }\\n.plan--featured .plan__button { background: var(--cms-color-accent); color: var(--cms-color-on-accent); }\\n.plan__button:hover, .plan__button:focus-visible { background: var(--cms-color-accent-strong); border-color: var(--cms-color-accent-strong); color: var(--cms-color-on-accent); }\\n@media (min-width: 48rem) { .plans__list { grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); } }\"}"
+  ],
+  "outcome": "component",
+  "existing": null,
+  "based_on": null,
+  "browser": {
+    "375": {
+      "scroll": false,
+      "axe": [
+        {
+          "id": "color-contrast",
+          "impact": "serious"
+        }
+      ]
+    },
+    "1440": {
+      "scroll": false,
+      "axe": [
+        {
+          "id": "color-contrast",
+          "impact": "serious"
+        }
+      ]
+    }
+  },
+  "verdict": {
+    "pass": false,
+    "checks": {
+      "outcome": true,
+      "valid": true,
+      "props": true,
+      "markup": true,
+      "css": true,
+      "no_h1": true,
+      "img_alt": true,
+      "reduced_motion": true,
+      "browser": false
+    }
+  }
+}

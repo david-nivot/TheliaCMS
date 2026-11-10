@@ -1,0 +1,28 @@
+{
+  "id": "text-two-columns",
+  "family": "text",
+  "locale": "fr_FR",
+  "request": "Un long texte d'article qui se lit sur deux colonnes sur grand écran, comme dans un magazine.",
+  "oracle": {
+    "outcome": [
+      "component"
+    ],
+    "target": [],
+    "props": [
+      {
+        "type": "html",
+        "min": 1
+      }
+    ],
+    "markup": {
+      "require": [],
+      "forbid": []
+    },
+    "css": {
+      "require": [
+        "column-count|columns\\s*:|grid-template-columns"
+      ],
+      "forbid": []
+    }
+  }
+}

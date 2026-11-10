@@ -1,0 +1,37 @@
+{
+  "case": "compose-quote-figures",
+  "round": "round-0",
+  "run": 3,
+  "prompt_sha256": "bc6f1749ecd76afc406ef78a4f7907ea11c685f8f2cfe2f68f6df146a8e507bf",
+  "answers": [
+    "{\"outcome\":\"copy\",\"existing\":\"Site:Quote\",\"reason\":\"La variante ajoute, juste sous la citation et le nom du directeur, une rangée de chiffres clés de l'année (trois par défaut), chacun un grand nombre avec un court libellé.\",\"code\":\"\",\"label\":\"\",\"description\":\"\",\"props\":\"\",\"sample\":\"\",\"template\":\"\",\"css\":\"\"}",
+    "{\"outcome\":\"component\",\"existing\":\"\",\"reason\":\"\",\"code\":\"QuoteWithFigures\",\"label\":\"Quote and key figures\",\"description\":\"A quote with the name, the role and an optional portrait of the person quoted, followed just below by a row of key figures, each a big number with a short label. Use it for a word from the director or a manager backed by the numbers of the year.\",\"props\":\"[{\\\"name\\\":\\\"title\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Heading\\\",\\\"help\\\":\\\"Optional heading above the quote.\\\",\\\"max\\\":120},{\\\"name\\\":\\\"quote\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Quote\\\",\\\"required\\\":true,\\\"max\\\":400},{\\\"name\\\":\\\"author\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Author\\\",\\\"required\\\":true,\\\"max\\\":80},{\\\"name\\\":\\\"role\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Role\\\",\\\"max\\\":120},{\\\"name\\\":\\\"portrait\\\",\\\"type\\\":\\\"image\\\",\\\"label\\\":\\\"Portrait\\\"},{\\\"name\\\":\\\"figures\\\",\\\"type\\\":\\\"items\\\",\\\"label\\\":\\\"Key figures\\\",\\\"min\\\":1,\\\"max\\\":4,\\\"items\\\":[{\\\"name\\\":\\\"value\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Figure\\\",\\\"required\\\":true,\\\"max\\\":20},{\\\"name\\\":\\\"label\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"What it counts\\\",\\\"required\\\":true,\\\"max\\\":120}]}]\",\"sample\":\"{\\\"title\\\":\\\"Le mot du directeur\\\",\\\"quote\\\":\\\"Cette année, nous avons ouvert deux nouvelles boutiques sans jamais renoncer à la qualité de nos produits.\\\",\\\"author\\\":\\\"Julien Moreau\\\",\\\"role\\\":\\\"Directeur général\\\",\\\"portrait\\\":null,\\\"figures\\\":[{\\\"value\\\":\\\"12 500\\\",\\\"label\\\":\\\"commandes livrées en 2024\\\"},{\\\"value\\\":\\\"98 %\\\",\\\"label\\\":\\\"de clients satisfaits\\\"},{\\\"value\\\":\\\"2\\\",\\\"label\\\":\\\"nouvelles boutiques ouvertes\\\"}]}\",\"template\":\"<section class=\\\"quote-figures\\\">{% if props.title is not empty %}<h2 class=\\\"quote-figures__title\\\">{{ props.title }}</h2>{% endif %}<figure class=\\\"quote__figure\\\"><blockquote class=\\\"quote__text\\\"><p>{{ props.quote }}</p></blockquote><figcaption class=\\\"quote__caption\\\" data-cms-sizes=\\\"3rem\\\">{% if props.portrait %}<img class=\\\"quote__portrait\\\" src=\\\"{{ props.portrait }}\\\" alt=\\\"{{ props.author }}\\\">{% endif %}<span class=\\\"quote__author\\\">{{ props.author }}</span>{% if props.role is not empty %}<span class=\\\"quote__role\\\">{{ props.role }}</span>{% endif %}</figcaption></figure>{% if props.figures is not empty %}<ul class=\\\"figures\\\">{% for figure in props.figures %}<li class=\\\"figure\\\"><span class=\\\"figure__value\\\">{{ figure.value }}</span><span class=\\\"figure__label\\\">{{ figure.label }}</span></li>{% endfor %}</ul>{% endif %}</section>\",\"css\":\".quote-figures__title { margin: 0 0 1rem; color: var(--cms-color-text); }\\n.quote__figure { margin: 0; padding: 2rem 1.5rem; border-radius: 0.5rem; background: var(--cms-color-surface); }\\n.quote__text { margin: 0 0 1rem; font-size: 1.375rem; line-height: 1.4; color: var(--cms-color-text); }\\n.quote__text p { margin: 0; }\\n.quote__caption { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem; }\\n.quote__portrait { width: 3rem; height: 3rem; border-radius: 50%; object-fit: cover; }\\n.quote__author { font-weight: 700; color: var(--cms-color-text); }\\n.quote__role { color: var(--cms-color-text-muted); }\\n.figures { display: grid; gap: 1rem; margin: 1.5rem 0 0; padding: 0; list-style: none; }\\n.figure { display: flex; flex-direction: column; gap: 0.25rem; padding-top: 1rem; border-top: 2px solid var(--cms-color-accent); }\\n.figure__value { font-size: 2.25rem; font-weight: 700; line-height: 1.1; color: var(--cms-color-accent-strong); }\\n.figure__label { color: var(--cms-color-text-muted); }\\n@media (min-width: 48rem) { .quote__figure { padding: 3rem; } .quote__text { font-size: 1.75rem; } .figures { grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 2rem; } .figure__value { font-size: 2.75rem; } }\"}"
+  ],
+  "outcome": "component",
+  "existing": null,
+  "based_on": "Site:Quote",
+  "browser": {
+    "375": {
+      "scroll": false,
+      "axe": []
+    },
+    "1440": {
+      "scroll": false,
+      "axe": []
+    }
+  },
+  "verdict": {
+    "pass": true,
+    "checks": {
+      "outcome": true,
+      "valid": true,
+      "props": true,
+      "markup": true,
+      "css": true,
+      "no_h1": true,
+      "img_alt": true,
+      "reduced_motion": true,
+      "browser": true
+    }
+  }
+}

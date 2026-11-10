@@ -23,6 +23,7 @@ use TheliaCMS\Generation\CatalogSheet;
 use TheliaCMS\Generation\Component\ComponentCandidates;
 use TheliaCMS\Generation\Component\ComponentGenerator;
 use TheliaCMS\Generation\Component\ComponentRequest;
+use TheliaCMS\Generation\Component\ComponentResult;
 use TheliaCMS\Generation\GenerationException;
 use TheliaCMS\Generation\GenerationObserverInterface;
 use TheliaCMS\Generation\GenerationRequest;
@@ -53,6 +54,9 @@ final class MakeComponentTool implements ResetInterface
 
     /** @var list<string> */
     private array $made = [];
+
+    /** How many answers the generator gave in this generation, a component made or one found. */
+    private int $asked = 0;
 
     public function __construct(
         private readonly ComponentGenerator $generator,
@@ -93,7 +97,7 @@ final class MakeComponentTool implements ResetInterface
             return 'Say what the component shows and what varies.';
         }
 
-        if (\count($this->made) >= self::USES) {
+        if ($this->asked >= self::USES) {
             return \sprintf('No more than %d components are made for one page. Write the rest with the components of the catalogue.', self::USES);
         }
 
@@ -108,7 +112,14 @@ final class MakeComponentTool implements ResetInterface
             return \sprintf('The component could not be made: %s Write this part with the components of the catalogue, or leave it out and name it in left_out.', $exception->getMessage());
         }
 
+        // An answer counts, a component made or one found: each is a paid call.
+        ++$this->asked;
         $component = $result->component;
+
+        if (null === $component) {
+            return $this->alreadyThere($result);
+        }
+
         $this->components->save($component, SiteComponentRepository::STATUS_DRAFT);
         $this->candidates->attach([$result->logId], (int) CmsComponentQuery::create()->findOneByCode($component->code)?->getId());
 
@@ -122,7 +133,23 @@ final class MakeComponentTool implements ResetInterface
 
         $this->made[] = $component->name();
 
-        return \sprintf("The component `%s` is made and in the catalogue: use it like any other, with the props below.\n\n%s", $component->name(), $this->sheet->section($definition));
+        return \sprintf("The component `%s` is made%s and in the catalogue: use it like any other, with the props below.\n\n%s", $component->name(), null === $result->basedOn ? '' : \sprintf(' from `%s`', $result->basedOn), $this->sheet->section($definition));
+    }
+
+    /**
+     * The generator found that the catalogue already holds what is asked:
+     * nothing is made, and the page is written with that component.
+     */
+    private function alreadyThere(ComponentResult $result): string
+    {
+        $name = (string) $result->existing;
+        $definition = $this->catalog->find($name);
+
+        if (null === $definition) {
+            return \sprintf('The component `%s` already does what is asked, but the catalogue cannot read it. Write this part with the components of the catalogue.', $name);
+        }
+
+        return \sprintf("No component is made: `%s` already does what is asked (%s). Use it like any other component of the catalogue, with the props below.\n\n%s", $name, $result->reason, $this->sheet->section($definition));
     }
 
     /**
@@ -138,6 +165,7 @@ final class MakeComponentTool implements ResetInterface
     public function reset(): void
     {
         $this->made = [];
+        $this->asked = 0;
     }
 
     private static function forwardingTextOf(GenerationObserverInterface $observer): GenerationObserverInterface
