@@ -44,6 +44,12 @@
                 <input class="form-control" type="file" id="cms-media-files" name="files[]" multiple
                        accept="{{ accepted_mime_types }}" onchange="this.form.requestSubmit()">
                 <div class="form-text">{{ 'JPEG, PNG, WebP or SVG images, or MP4 videos. Several at once.'|trans({}, 'theliacms') }}</div>
+                {% if converts_videos %}
+                    <div class="form-text" data-testid="cms-media-video-conversion-hint">{{ 'Videos from a phone (MOV, MP4, WebM, %size% MB at most) are converted for the web in the background.'|trans({ '%size%': (video_ceiling / 1048576)|round }, 'theliacms') }}</div>
+                {% endif %}
+                {% if video_php_limits_too_low %}
+                    <div class="form-text text-warning-emphasis" data-testid="cms-media-video-php-limits">{{ 'The server accepts files of %size% MB at most (PHP upload_max_filesize and post_max_size): raise both above %ceiling% MB to send phone videos.'|trans({ '%size%': (max_video_upload_size / 1048576)|round(1), '%ceiling%': (video_ceiling / 1048576)|round }, 'theliacms') }}</div>
+                {% endif %}
             </div>
             <button type="submit" class="btn btn-primary text-nowrap" data-cms-media-upload-submit>
                 <i class="bi bi-upload me-1" aria-hidden="true"></i>{{ 'Add files'|trans({}, 'theliacms') }}
@@ -250,6 +256,11 @@
 
                             {% if item.video %}
                                 <span class="badge text-bg-light"><i class="bi bi-camera-video me-1" aria-hidden="true"></i>{{ 'Video'|trans({}, 'theliacms') }}</span>
+                                {% if item.conversion.value == 'processing' %}
+                                    <span class="badge text-bg-info" data-testid="cms-media-video-state" data-state="processing">{{ 'Processing'|trans({}, 'theliacms') }}</span>
+                                {% elseif item.conversion.value == 'failed' %}
+                                    <span class="badge text-bg-danger" data-testid="cms-media-video-state" data-state="failed" title="{{ (item.conversionProblem ?? 'The video could not be converted.')|trans({}, 'theliacms') }}">{{ 'Failed'|trans({}, 'theliacms') }}</span>
+                                {% endif %}
                             {% elseif not item.isDescribed %}
                                 <span class="badge text-bg-warning">
                                     <i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>

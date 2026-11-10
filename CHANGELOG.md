@@ -7,6 +7,26 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **Videos from a phone are accepted as they are and converted in the
+  background.** With ffmpeg on the server, the media library takes a `.mov`
+  (HEVC or H.264), an MP4 or a WebM of up to 100 MB. The file is listed as
+  *Processing*, converted by a job on the heavy queue of the core to H.264 and
+  AAC, 720 pixels at most on the long side, `faststart`, without the metadata
+  of the phone, then put back under the same id: `/video-library/<id>.mp4`
+  never changes. The list and the sheet show *Processing* and *Failed* (with
+  the reason), and a video that is not ready is not offered to the picker of a
+  page. A frame taken about two seconds in becomes a decorative image of the
+  library, linked to the video; a component with a `poster` image prop the
+  author left empty draws it, per row in a list. The path of ffmpeg is
+  `THELIA_CMS_FFMPEG_PATH` (`ffmpeg` in the PATH by default). Without ffmpeg
+  nothing changes (MP4 only, 50 MB) and a MOV or a WebM is refused with a
+  message that names it. The screen states the size the server really takes
+  when the PHP upload limits are below 100 MB. Needs the TheliaLibrary that
+  stores QuickTime and WebM files; `Config/update/2.26.0.sql` adds
+  `cms_video_conversion`. See the README and ADR 13.
+
 ## [2.25.0] - 2026-11-10
 
 ### Added

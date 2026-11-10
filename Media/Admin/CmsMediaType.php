@@ -32,6 +32,7 @@ use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use TheliaCMS\Media\Svg\SvgUpload;
+use TheliaCMS\Media\Video\VideoIntake;
 use TheliaCMS\TheliaCMS;
 
 final class CmsMediaType extends AbstractType
@@ -75,13 +76,30 @@ final class CmsMediaType extends AbstractType
     public const int MAX_VIDEO_BYTES = 50 * 1024 * 1024;
 
     /**
-     * Every type the library list takes in.
+     * The videos a server with ffmpeg takes besides MP4: what a phone records
+     * (QuickTime, `.mov`) and what a browser exports (WebM). They are converted
+     * to MP4 in the background.
+     */
+    public const array RAW_VIDEO_MIME_TYPES = ['video/quicktime', 'video/webm'];
+
+    /**
+     * The ceiling of a raw video sent to a server with ffmpeg, in bytes (100 MB,
+     * binary): the phone video of a minute, before its conversion shrinks it.
+     * The PHP upload limits of the server must stay above it.
+     */
+    public const int MAX_RAW_VIDEO_BYTES = 100 * 1024 * 1024;
+
+    /**
+     * Every type the library list takes in; `$videoTypes` are the video ones
+     * the server takes (`VideoIntake::mimeTypes()`).
+     *
+     * @param list<string> $videoTypes
      *
      * @return list<string>
      */
-    public static function acceptedUploadMimeTypes(): array
+    public static function acceptedUploadMimeTypes(array $videoTypes = self::ACCEPTED_VIDEO_MIME_TYPES): array
     {
-        return [...self::LIBRARY_ACCEPTED_TYPES, ...self::ACCEPTED_VIDEO_MIME_TYPES];
+        return [...self::LIBRARY_ACCEPTED_TYPES, ...$videoTypes];
     }
 
     /**
@@ -89,6 +107,7 @@ final class CmsMediaType extends AbstractType
      */
     public function __construct(
         private readonly ?TranslatorInterface $translator = null,
+        private readonly ?VideoIntake $videoIntake = null,
     ) {
     }
 
@@ -134,19 +153,22 @@ final class CmsMediaType extends AbstractType
 
     /**
      * The constraint of the file that replaces a video: an MP4 under the
-     * ceiling of a video. An image is never replaced by a video, nor the
-     * reverse: the pages that use the row would publish the wrong element.
+     * ceiling of a video, or a phone video under the raw ceiling where the
+     * server converts videos (`$intake`). An image is never replaced by a
+     * video, nor the reverse: the pages that use the row would publish the
+     * wrong element.
      */
-    public static function videoConstraint(?TranslatorInterface $translator = null): File
+    public static function videoConstraint(?TranslatorInterface $translator = null, ?VideoIntake $intake = null): File
     {
         $translate = static fn (string $message): string => null === $translator ? $message : $translator->trans($message, [], TheliaCMS::DOMAIN_NAME);
+        $converts = true === $intake?->converts();
 
         return new File(
-            maxSize: self::MAX_VIDEO_BYTES,
+            maxSize: $converts ? self::MAX_RAW_VIDEO_BYTES : self::MAX_VIDEO_BYTES,
             binaryFormat: true,
-            mimeTypes: self::ACCEPTED_VIDEO_MIME_TYPES,
+            mimeTypes: $converts ? [...self::ACCEPTED_VIDEO_MIME_TYPES, ...self::RAW_VIDEO_MIME_TYPES] : self::ACCEPTED_VIDEO_MIME_TYPES,
             maxSizeMessage: $translate('The video is too heavy ({{ size }} {{ suffix }}). It may weigh {{ limit }} {{ suffix }} at most.'),
-            mimeTypesMessage: $translate('A video can only be replaced by an MP4 video.'),
+            mimeTypesMessage: $translate($converts ? 'A video can only be replaced by an MP4, MOV or WebM video.' : 'A video can only be replaced by an MP4 video.'),
         );
     }
 
@@ -197,7 +219,7 @@ final class CmsMediaType extends AbstractType
             ->add('file', FileType::class, [
                 'label' => 'Replace the file',
                 'required' => false,
-                'constraints' => [$video ? self::videoConstraint($this->translator) : self::replacementConstraint($this->translator)],
+                'constraints' => [$video ? self::videoConstraint($this->translator, $this->videoIntake) : self::replacementConstraint($this->translator)],
                 'help' => $video ? 'The new file keeps the same address, so the pages using this video show it right away.' : 'The new file keeps the same address, so the pages using this image show it right away.',
             ]);
     }

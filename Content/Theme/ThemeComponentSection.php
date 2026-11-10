@@ -24,6 +24,7 @@ use TheliaCMS\Content\PropSchema;
 use TheliaCMS\Content\PropType;
 use TheliaCMS\Content\SectionDefinitionInterface;
 use TheliaCMS\Content\VideoSource;
+use TheliaCMS\Media\Video\VideoPoster;
 
 /**
  * A Twig component of the theme, as a section of a document.
@@ -37,6 +38,9 @@ use TheliaCMS\Content\VideoSource;
  */
 final readonly class ThemeComponentSection implements SectionDefinitionInterface, ExampleRenderingInterface
 {
+    /** The picture prop that takes the poster of the video of its component or of its row, unless the author picks one. */
+    private const string POSTER_PROP = 'poster';
+
     /**
      * @param array<string, string> $twigNames the name of each prop as the component spells it, by the name the schema uses
      * @param list<string>          $idLists   the props that hold several records, handed to the component as a list of ids
@@ -287,6 +291,20 @@ final readonly class ThemeComponentSection implements SectionDefinitionInterface
             $forComponent[$this->twigNames[$name] ?? $name] = $value;
         }
 
+        // A component that shows a video and has a `poster` picture the author
+        // left empty is given the poster taken from the video when it was converted.
+        if (\in_array(self::POSTER_PROP, $images, true) && !isset($forComponent[$this->twigNames[self::POSTER_PROP] ?? self::POSTER_PROP])) {
+            foreach ($videos as $video) {
+                $poster = VideoPoster::addressOf($props[$video] ?? null);
+
+                if (null !== $poster) {
+                    $forComponent[$this->twigNames[self::POSTER_PROP] ?? self::POSTER_PROP] = $poster;
+
+                    break;
+                }
+            }
+        }
+
         $draw = fn (): string => $this->renderer->createAndRender($this->component, $forComponent);
 
         return null === $this->localeSwitcher ? $draw() : $this->localeSwitcher->runWithLocale($locale, $draw);
@@ -321,10 +339,21 @@ final readonly class ThemeComponentSection implements SectionDefinitionInterface
                 }
             }
 
+            $posterOfRow = null;
+
             foreach ($videoFields as $field) {
                 if (\is_array($row) && \array_key_exists($field, $row)) {
+                    if (\in_array(self::POSTER_PROP, $fields, true)) {
+                        $posterOfRow ??= VideoPoster::addressOf($row[$field]);
+                    }
+
                     $row[$field] = VideoSource::of($row[$field]);
                 }
+            }
+
+            // The poster of a row the author left empty is the one of its video.
+            if (null !== $posterOfRow && \is_array($row) && \in_array(self::POSTER_PROP, $fields, true) && \in_array($row[self::POSTER_PROP] ?? null, [null, '', 0, '0'], true)) {
+                $row[self::POSTER_PROP] = $posterOfRow;
             }
 
             $drawn[] = $row;

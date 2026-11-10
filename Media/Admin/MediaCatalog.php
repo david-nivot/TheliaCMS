@@ -20,6 +20,9 @@ use TheliaCMS\Media\CmsMediaLibrary;
 use TheliaCMS\Media\MediaFile;
 use TheliaCMS\Media\MediaFilter;
 use TheliaCMS\Media\MediaKind;
+use TheliaCMS\Media\Video\VideoConversions;
+use TheliaCMS\Media\Video\VideoConversionStatus;
+use TheliaCMS\Media\Video\VideoFailure;
 use TheliaLibrary\Model\LibraryImage;
 
 /**
@@ -33,6 +36,7 @@ final readonly class MediaCatalog
     public function __construct(
         private CmsMediaLibrary $library,
         private MediaUsageFinder $usages,
+        private VideoConversions $conversions,
     ) {
     }
 
@@ -62,6 +66,9 @@ final readonly class MediaCatalog
         // What uses an image is read from the content of every page: only
         // when the screen says it.
         $counts = $withUsage ? $this->usages->countsFor(array_map(static fn (LibraryImage $image): int => (int) $image->getId(), $images)) : [];
+
+        // The state of the videos of the page, in one statement.
+        $this->conversions->load(array_values(array_map(static fn (LibraryImage $image): int => (int) $image->getId(), array_filter($images, static fn (LibraryImage $image): bool => $image->isVideo()))));
 
         $items = [];
 
@@ -147,6 +154,8 @@ final readonly class MediaCatalog
         }
 
         $fileName = (string) $image->getFileName();
+        $conversion = $image->isVideo() ? $this->conversions->of((int) $image->getId()) : null;
+        $failure = null === $conversion ? null : VideoFailure::tryFrom((string) $conversion->getFailure());
 
         return new MediaItem(
             id: (int) $image->getId(),
@@ -163,6 +172,8 @@ final readonly class MediaCatalog
             tags: $this->library->tagsOf($image),
             usageCount: $usageCount ?? $this->usages->countsFor([(int) $image->getId()])[(int) $image->getId()],
             video: $image->isVideo(),
+            conversion: $image->isVideo() ? $this->conversions->statusOf((int) $image->getId()) : VideoConversionStatus::Ready,
+            conversionProblem: null === $failure ? null : $failure->message(),
         );
     }
 
