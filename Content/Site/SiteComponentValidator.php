@@ -74,7 +74,7 @@ final readonly class SiteComponentValidator
         // The publication filters what a page shows, but a draft is drawn in
         // the back office before it: what runs code is refused here already.
         if (1 === preg_match('/<\s*(script|style|iframe|object|embed|form|base|meta|link)\b|\son[a-z]+\s*=|javascript:/i', $component->template, $match)) {
-            $problems[] = \sprintf('The template holds "%s": a component draws markup and nothing that runs, loads or submits; its styles go in its stylesheet.', $match[0]);
+            $problems[] = \sprintf('The template holds "%s": a component draws markup and nothing that runs, loads or submits; its styles go in its stylesheet.%s', $match[0], 1 === preg_match('/^<\s*(?:iframe|embed|object)$/i', $match[0]) ? ' A YouTube, Vimeo or Dailymotion video is an `embed` prop, printed as it is (`{{ props.video }}`): the module draws it and loads the player when the visitor clicks.' : '');
         }
 
         // The stylesheet names an animation after the component and runs it

@@ -19,6 +19,7 @@ use TheliaCMS\Content\EmbedFacade;
 use TheliaCMS\Content\InvalidDocumentException;
 use TheliaCMS\Content\PropSchema;
 use TheliaCMS\Content\PropType;
+use TheliaCMS\Content\Site\InvalidSiteComponentException;
 use TheliaCMS\Content\Site\SiteComponent;
 use TheliaCMS\Content\Site\SiteComponentSection;
 use TheliaCMS\Content\Site\SiteComponentValidator;
@@ -122,5 +123,32 @@ final class EmbedPropTest extends TestCase
         self::assertStringContainsString('&quot;&gt;&lt;b&gt;Intro&lt;/b&gt; (Dailymotion)', $markup);
         self::assertNull((new EmbedFacade())->markup('youtube:short', 'Video', 'en_US'));
         self::assertNull((new EmbedFacade())->markup(12, 'Video', 'en_US'));
+    }
+
+    public function testAnIframeInATemplateIsStillRefusedAndTheMessageSendsToTheEmbedProp(): void
+    {
+        $component = new SiteComponent('VideoBand', 'Video band', 'A video.', [['name' => 'title', 'type' => 'text', 'label' => 'Title']], ['title' => 'A'], '<section><iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ"></iframe>{{ props.title }}</section>');
+
+        try {
+            (new SiteComponentValidator())->validate($component);
+            self::fail('An iframe is refused in a template.');
+        } catch (InvalidSiteComponentException $exception) {
+            $problems = implode("\n", $exception->problems);
+
+            self::assertStringContainsString('"<iframe"', $problems);
+            self::assertStringContainsString('`embed` prop', $problems);
+        }
+    }
+
+    public function testAScriptInATemplateGetsNoPointerToTheEmbedProp(): void
+    {
+        $component = new SiteComponent('VideoBand', 'Video band', 'A video.', [['name' => 'title', 'type' => 'text', 'label' => 'Title']], ['title' => 'A'], '<section><script>1</script>{{ props.title }}</section>');
+
+        try {
+            (new SiteComponentValidator())->validate($component);
+            self::fail('A script is refused in a template.');
+        } catch (InvalidSiteComponentException $exception) {
+            self::assertStringNotContainsString('`embed` prop', implode("\n", $exception->problems));
+        }
     }
 }
