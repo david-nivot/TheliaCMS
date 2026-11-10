@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace TheliaCMS\Tests\Integration\Content\Site;
 
 use Propel\Runtime\Propel;
+use Symfony\Component\Filesystem\Filesystem;
 use TheliaCMS\Content\Document;
 use TheliaCMS\Content\Section;
 use TheliaCMS\Content\Site\SiteComponent;
@@ -138,7 +139,8 @@ final class SiteIconRenderingTest extends CmsIntegrationTestCase
     {
         $fileName = bin2hex(random_bytes(10)).'.svg';
         $path = TheliaLibrary::getImageDirectory().$fileName;
-        file_put_contents($path, '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 2">'.$body.'</svg>');
+        // The directory of the library does not exist yet on a fresh install, as in the CI.
+        (new Filesystem())->dumpFile($path, '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 2">'.$body.'</svg>');
         $this->files[] = $path;
 
         $image = new LibraryImage();
