@@ -43,7 +43,7 @@ final class ComponentPreviewFrameTest extends TestCase
 
         self::assertSame(1, preg_match('/<iframe\b[^>]*'.preg_quote($marker, '/').'[^>]*>/s', $source, $frame), 'The frame is in the template.');
         self::assertSame(1, preg_match('/\ssandbox="([^"]*)"/', $frame[0], $sandbox), 'The frame is sandboxed.');
-        self::assertSame(['allow-scripts'], preg_split('/\s+/', trim($sandbox[1])), 'Scripts, and nothing else.');
+        self::assertSame(['allow-scripts', 'allow-popups', 'allow-popups-to-escape-sandbox'], preg_split('/\s+/', trim($sandbox[1])), 'Scripts, and the new tab the video opens in, out of the sandbox.');
         self::assertStringNotContainsString('allow-same-origin', $frame[0]);
     }
 

@@ -603,7 +603,7 @@
                 {% if showing_prototype %}
                     <iframe class="cms-content__frame" src="{{ prototype.preview_url }}"
                             title="{{ 'The component prototyped, as the theme shows it'|trans({}, 'theliacms') }}"
-                            data-testid="cms-content-frame" data-cms-frame data-cms-frame-prototype sandbox="allow-scripts"></iframe>
+                            data-testid="cms-content-frame" data-cms-frame data-cms-frame-prototype sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"></iframe>
                 {% elseif subject.hasContent %}
                     <iframe class="cms-content__frame" src="{{ draft_page_url ?: subject.draftPreviewUrl }}"
                             title="{{ 'The draft, as the theme shows it'|trans({}, 'theliacms') }}"

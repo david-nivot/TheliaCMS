@@ -1,10 +1,12 @@
 {#
     The component drawn with its sample on a page of the theme, in a frame
     the editor sets to the width of a phone, a tablet or a screen. The frame
-    runs scripts (the one of the videos, which builds the player on a click)
-    but has no origin: `allow-scripts` without `allow-same-origin`, so it reads
-    nothing of the back office, and the back office reads nothing of it. What
-    a model wrote is markup the page filter has cleaned, never a script.
+    runs scripts but has no origin: `allow-scripts` without `allow-same-origin`,
+    so it reads nothing of the back office, and the back office reads nothing
+    of it. What a model wrote is markup the page filter has cleaned, never a
+    script. A player would inherit the sandbox and not play: the script of the
+    videos opens the video on its platform in a new tab instead, which the
+    popups, out of the sandbox, allow.
 #}
 {# The whole page or the component alone, as on the content screen: the
    choice is the one that screen stores, and is stored for it in turn. #}
@@ -29,7 +31,7 @@
     </div>
     <div class="card-body p-0 bg-body-tertiary text-center">
         <iframe src="{{ url }}" title="{{ 'Preview of the component'|trans({}, 'theliacms') }}" data-testid="cms-site-component-frame"
-                sandbox="allow-scripts"
+                sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
                 style="width: 100%; height: 42rem; border: 0; background: #fff; display: block; margin: 0 auto;"></iframe>
     </div>
 </div>
