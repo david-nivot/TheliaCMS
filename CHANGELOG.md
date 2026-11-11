@@ -7,6 +7,17 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Changed
+
+- **The generator of components is told what each colour of the site is for.**
+  The prompt listed the colour tokens by name only, and most new components
+  wrote their text in `--cms-color-accent-strong`, which Flexy maps on its
+  brand orange (3.4:1 on white, under the 4.5:1 of a text). Each token now
+  comes with its use (text, background, fill, border, text on the accent), the
+  accent is never the colour of a text, and a text sits only on the pairs that
+  read: `on-accent` on `accent`, the text colours on the page and the surfaces,
+  `text-faint` on the page only.
+
 ## [2.26.0] - 2026-11-10
 
 ### Added
