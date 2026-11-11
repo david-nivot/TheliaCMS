@@ -50,6 +50,17 @@ final class ReadableColoursRuleOfThePromptTest extends TestCase
         self::assertStringContainsString('4.5:1', $rule);
     }
 
+    public function testAColourSetOnAContainerIsSetOnTheParagraphsOfItsRichTextToo(): void
+    {
+        // The bench measured it: the site gives every paragraph of the page its
+        // own colour, so a dark quote whose text is an `html` prop showed it grey
+        // on dark (1.5:1) although the quote itself was white.
+        $rule = ComponentPrompt::colourRule(array_keys(ComponentPrompt::COLOUR_USES));
+
+        self::assertStringContainsString('every `p` of the page', $rule);
+        self::assertStringContainsString('`html` prop', $rule);
+    }
+
     public function testOnlyTheColoursTheSiteDefinesAreNamed(): void
     {
         $rule = ComponentPrompt::colourRule(['--cms-color-text', '--cms-color-accent']);

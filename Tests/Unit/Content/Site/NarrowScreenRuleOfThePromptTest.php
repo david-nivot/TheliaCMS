@@ -35,6 +35,10 @@ final class NarrowScreenRuleOfThePromptTest extends TestCase
         self::assertStringContainsString('`tabindex="0"`', $rule, 'A keyboard reaches what scrolls.');
         self::assertStringContainsString('`role="region"`', $rule);
         self::assertStringContainsString('`aria-label`', $rule);
+        // The bench measured it: a text hidden for the screen readers inside the
+        // table (`position: absolute`) escapes a wrapper that is not positioned,
+        // and makes the page wider than the phone.
+        self::assertStringContainsString('`position: relative`', $rule);
     }
 
     public function testTheExampleIsATemplateTheSiteKeepsWhole(): void

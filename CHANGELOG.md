@@ -22,6 +22,9 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   or row lays out again below `48rem`, or scrolls inside its own element, which
   a keyboard reaches and a screen reader names (`tabindex="0"`,
   `role="region"`, an `aria-label` from a prop), like the track of a carousel.
+  The wrapper is positioned, so a text hidden inside for screen readers does
+  not escape it; and a component that colours a container colours the
+  paragraphs of its `html` props too, which the site otherwise paints grey.
 
 ### Fixed
 
