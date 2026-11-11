@@ -47,6 +47,15 @@ final readonly class ComponentPrompt
      * never taught an attribute the page would take out.
      */
     /**
+     * How a wide element fits a phone: the bench saw a comparison table make
+     * the page scroll sideways (3 trials out of 3) and a scrolling track no
+     * keyboard could reach.
+     */
+    public const string NARROW_SCREEN_RULE = 'Narrow screens: at 375 px wide the page never scrolls sideways. A table or a row wider than a phone either lays out again below `48rem` (its columns stacked, a row turned into a card), or scrolls inside an element of its own: `overflow-x: auto` on a wrapper with `tabindex="0"`, `role="region"` and an `aria-label` printed from a prop, so a keyboard reaches it and a screen reader names it. Anything else that scrolls (the track of a carousel, a strip of logos) is reached the same way.';
+
+    public const string NARROW_SCREEN_EXAMPLE = '<section class="compare">{% if props.title is not empty %}<h2>{{ props.title }}</h2>{% endif %}<div class="compare__scroll" tabindex="0" role="region" aria-label="{{ props.title }}"><table><tr>{% for plan in props.plans %}<th scope="col">{{ plan.name }}</th>{% endfor %}</tr><tr>{% for plan in props.plans %}<td>{{ plan.price }}</td>{% endfor %}</tr></table></div></section>';
+
+    /**
      * What each colour of the stylesheet of the site is for. A theme maps the
      * accent on its brand colour, which is often too light to read as text (the
      * orange of Flexy is 3.4:1 on white): the generator is told the use of each
@@ -320,6 +329,7 @@ final readonly class ComponentPrompt
             '- `:scope` and `&` only start a selector, followed by a space or `>`: the stylesheet styles the component and what is inside it, never what is around it.',
             '- '.self::colourRule($this->tokens()),
             '- Mobile first: the component reads on a phone, and lays out wider from `@media (min-width: 48rem)`.',
+            '- '.self::NARROW_SCREEN_RULE.' For instance: `'.self::NARROW_SCREEN_EXAMPLE.'` with `.compare__scroll { overflow-x: auto; }`.',
             '',
             '# Sample',
             '',

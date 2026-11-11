@@ -17,6 +17,11 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   accent is never the colour of a text, and a text sits only on the pairs that
   read: `on-accent` on `accent`, the text colours on the page and the surfaces,
   `text-faint` on the page only.
+- **A generated component fits a phone without scrolling the page.** The
+  prompt now says that at 375 px the page never scrolls sideways: a wide table
+  or row lays out again below `48rem`, or scrolls inside its own element, which
+  a keyboard reaches and a screen reader names (`tabindex="0"`,
+  `role="region"`, an `aria-label` from a prop), like the track of a carousel.
 
 ## [2.26.0] - 2026-11-10
 
