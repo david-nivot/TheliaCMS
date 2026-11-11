@@ -12,6 +12,7 @@ what they show. The tables below are the verdicts of the oracle as it stands
 | `round-0` | 28, 3 runs each | 84 | 39 | 34 of 75 | 5.19 USD | 32.1 min |
 | `round-1` | 8 with an image prop, 3 runs each | 24 | 17 | 15 of 21 | 1.59 USD | 10.7 min |
 | `round-2` | 12 that failed on contrast or scroll, 3 runs each | 36 | 29 | 24 of 30 | 2.98 USD | 18.3 min |
+| `round-3` | the 2 still failing, 3 runs each | 6 | 6 | 6 of 6 | 0.66 USD | 3.8 min |
 
 Round 0 was played with an empty media library: a sample could not draw a
 picture. The cases with an image prop have required an `<img` in the rendered
@@ -143,8 +144,21 @@ the browser:
 - **compose-text-carousel** trial 3: a `li` outside a list (`listitem`), a
   known gap case (N71).
 
-The two prompt changes that follow from this round are not measured by a round
-yet.
+The two prompt changes that follow from this round (the positioned wrapper,
+the paragraphs of an `html` prop) were played in round 3.
+
+## Round 3
+
+Played on 2026-11-11, the two cases still failing in round 2, 3 runs each,
+after the prompt gained the positioned wrapper and the paragraphs of an `html`
+prop: 6 trials, 0.66 USD, 3.8 min. Both keep the contract 3 times out of 3.
+
+| Case | Trials | Outcomes | Kept the contract | Corrections | Copied a target | Mean cost USD |
+|---|---|---|---|---|---|---|
+| quote-dark | 3 | 3 copy | 3/3 | 0 | 3/3 | 0.076 |
+| table-compare | 3 | 3 component | 3/3 | 0 | - | 0.145 |
+
+6 trials, 6 kept the contract (6 of 6 outside the cases of a known gap). Cost 0.66 USD, duration 3.8 min.
 
 ## Findings
 
