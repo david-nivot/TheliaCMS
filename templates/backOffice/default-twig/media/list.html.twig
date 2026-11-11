@@ -79,7 +79,7 @@
         } %}
         {# A GET form: a filtered list is an address, bookmarked, shared or
            reloaded as it is. #}
-        <form method="get" class="row g-2 align-items-end mb-3" action="{{ path('admin.cms.media.list') }}"
+        <form method="get" class="row g-2 align-items-start mb-3" action="{{ path('admin.cms.media.list') }}"
               data-testid="cms-media-filters">
             <input type="hidden" name="edit_language_id" value="{{ edit_language_id }}">
             {% if in_list %}<input type="hidden" name="view" value="list">{% endif %}
@@ -204,9 +204,9 @@
                 <input class="form-check-input" type="checkbox" id="cms-media-select-all" data-cms-media-select-all hidden>
                 <label class="form-check-label small" for="cms-media-select-all" data-cms-media-selected hidden>{{ 'Select the page'|trans({}, 'theliacms') }}</label>
             </div>
-            <label class="visually-hidden" for="cms-media-bulk-action">{{ 'With the selected images'|trans({}, 'theliacms') }}</label>
+            <label class="visually-hidden" for="cms-media-bulk-action">{{ 'With the selected files'|trans({}, 'theliacms') }}</label>
             <select class="form-select form-select-sm w-auto" id="cms-media-bulk-action" name="action">
-                <option value="">{{ 'With the selected images…'|trans({}, 'theliacms') }}</option>
+                <option value="">{{ 'With the selected files…'|trans({}, 'theliacms') }}</option>
                 <option value="tag-add">{{ 'Add a tag'|trans({}, 'theliacms') }}</option>
                 <option value="tag-remove">{{ 'Remove a tag'|trans({}, 'theliacms') }}</option>
                 <option value="decorative">{{ 'Mark decorative'|trans({}, 'theliacms') }}</option>
@@ -225,7 +225,7 @@
         <dialog class="border-0 rounded shadow p-0" data-cms-media-bulk-dialog aria-labelledby="cms-media-bulk-title"
                 style="width: min(480px, calc(100vw - 32px))">
             <div class="p-4">
-                <h2 class="h5" id="cms-media-bulk-title">{{ 'Delete the selected images for good?'|trans({}, 'theliacms') }}</h2>
+                <h2 class="h5" id="cms-media-bulk-title">{{ 'Delete the selected files for good?'|trans({}, 'theliacms') }}</h2>
                 <p class="text-body-secondary">{{ 'Their files are removed. An image a page or an item still shows is kept.'|trans({}, 'theliacms') }}</p>
                 <div class="d-flex justify-content-end gap-2">
                     <button type="button" class="btn btn-outline-secondary" data-cms-media-bulk-cancel>{{ 'Cancel'|trans({}, 'theliacms') }}</button>

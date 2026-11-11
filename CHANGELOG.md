@@ -23,6 +23,13 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   a keyboard reaches and a screen reader names (`tabindex="0"`,
   `role="region"`, an `aria-label` from a prop), like the track of a carousel.
 
+### Fixed
+
+- **The filters of the media library keep their labels on one line.** The
+  hint under the empty tag filter pushed its label above the others; and the
+  bulk actions spoke of images while a video can be selected: they now say
+  *files*, as the counts of the screen do.
+
 ## [2.26.0] - 2026-11-10
 
 ### Added
