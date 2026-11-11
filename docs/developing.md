@@ -238,6 +238,10 @@ real path. The commands themselves are pinned by `FfmpegBinaryTest`. The tests
 that store a MOV skip, with their reason, on a host still on a TheliaLibrary
 older than 2.7.0, which stores MP4 only (`QuickTimeVideos::libraryStoresThem()`). The real encoder is checked by
 hand on a phone video (README, "Videos from a phone").
+The integration suite runs without ffmpeg whatever the machine
+(`THELIA_CMS_FFMPEG_PATH` points nowhere in `phpunit.integration.xml.dist`): a host
+with ffmpeg and TheliaLibrary 2.7.0 would otherwise turn the conversion on and
+change the formats and ceilings the media screens announce.
 
 ## Browser checks
 
