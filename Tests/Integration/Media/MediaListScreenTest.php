@@ -205,6 +205,21 @@ final class MediaListScreenTest extends AdminScreenTestCase
         self::assertSame(0, $screen->filter('[data-testid="cms-media-tag-hint"]')->count());
     }
 
+    public function testTheFiltersKeepTheirLabelsOnOneLineAndTheBulkActionsSpeakOfFiles(): void
+    {
+        $this->image('Sans étiquette');
+
+        $screen = $this->screen(self::LIST);
+        $classes = explode(' ', (string) $screen->filter('[data-testid="cms-media-filters"]')->attr('class'));
+
+        // Aligned at the bottom, the column of the tag, which carries a hint
+        // under its select, would push its label above the others.
+        self::assertContains('align-items-start', $classes);
+        self::assertNotContains('align-items-end', $classes);
+        self::assertSame('With the selected files…', trim($screen->filter('#cms-media-bulk-action option')->first()->text()), 'A video is selected as well as an image.');
+        self::assertStringContainsString('selected files', $screen->filter('#cms-media-bulk-title')->text());
+    }
+
     public function testTheListDrawsARowPerFileWithWhatTheCardsShowOnHover(): void
     {
         $described = $this->image('Rangée décrite', alt: 'Un fauteuil bleu', fileSize: 2048);

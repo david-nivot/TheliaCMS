@@ -46,6 +46,38 @@ final readonly class ComponentPrompt
      * that says it: tested against the filter of the site, so the model is
      * never taught an attribute the page would take out.
      */
+    /**
+     * How a wide element fits a phone: the bench saw a comparison table make
+     * the page scroll sideways (3 trials out of 3) and a scrolling track no
+     * keyboard could reach.
+     */
+    public const string NARROW_SCREEN_RULE = 'Narrow screens: at 375 px wide the page never scrolls sideways. A table or a row wider than a phone either lays out again below `48rem` (its columns stacked, a row turned into a card), or scrolls inside an element of its own: `overflow-x: auto` and `position: relative` on a wrapper with `tabindex="0"`, `role="region"` and an `aria-label` printed from a prop, so a keyboard reaches it and a screen reader names it (without `position: relative`, a text hidden inside for screen readers, which is positioned, escapes the wrapper and widens the page). Anything else that scrolls (the track of a carousel, a strip of logos) is reached the same way.';
+
+    public const string NARROW_SCREEN_EXAMPLE = '<section class="compare">{% if props.title is not empty %}<h2>{{ props.title }}</h2>{% endif %}<div class="compare__scroll" tabindex="0" role="region" aria-label="{{ props.title }}"><table><tr>{% for plan in props.plans %}<th scope="col">{{ plan.name }}</th>{% endfor %}</tr><tr>{% for plan in props.plans %}<td>{{ plan.price }}</td>{% endfor %}</tr></table></div></section>';
+
+    /**
+     * What each colour of the stylesheet of the site is for. A theme maps the
+     * accent on its brand colour, which is often too light to read as text (the
+     * orange of Flexy is 3.4:1 on white): the generator is told the use of each
+     * colour, not only its name.
+     *
+     * @var array<string, string>
+     */
+    public const array COLOUR_USES = [
+        '--cms-color-text' => 'the text: headings and body',
+        '--cms-color-text-muted' => 'a secondary text: a lead, a caption, a date',
+        '--cms-color-text-subtle' => 'a quieter text: a note, a label',
+        '--cms-color-text-faint' => 'the faintest text, for a detail, on the background of the page only',
+        '--cms-color-surface' => 'the background of a tinted section or of a card',
+        '--cms-color-accent-surface' => 'a light background in the tone of the accent',
+        '--cms-color-border' => 'a hairline, a border, a separator',
+        '--cms-color-accent' => 'a fill (a button, a badge, a band), a border, a rule, an icon, a shape; never the colour of a text',
+        '--cms-color-accent-strong' => 'a border, a rule, a bar of a chart, the hover of a fill; never the colour of a text, nor a background under one',
+        '--cms-color-on-accent' => 'the text and the icons written on `accent`',
+        '--cms-color-on-dark' => 'the text written on a dark background, such as `text` used as a background',
+        '--cms-color-error' => 'an error message only',
+    ];
+
     public const string IMAGE_WIDTH_RULE = 'Pictures: the site offers each picture of the media library in several widths, and the browser chooses by `sizes`, the width the picture is drawn at. Without a word from the component it assumes the whole viewport. When the component draws its pictures narrower than the page (a fifth or a third of it, a row of logos, a card), put `data-cms-sizes` on the element that holds them, with the `sizes` the browser reads: `(min-width: 64rem) 20vw, 50vw` is a fifth of the page on a wide screen and half of it on a narrow one. Conditions are on `min-width` or `max-width`; widths are in `px`, `rem`, `em`, `vw`, `vh` or `calc()`; nothing else is read. A picture drawn at a fixed height, as wide as its proportions make it (a band of logos), adds `data-cms-height` on the same element, a length such as `5rem`. Both attributes are taken out of the published page; they are the only `data-` attributes a template may hold.';
 
     public const string IMAGE_WIDTH_EXAMPLE = '<ul class="logos" data-cms-sizes="(min-width: 64rem) 20vw, 50vw">{% for logo in props.logos %}<li class="logos__item"><img src="{{ logo.image }}" alt="{{ logo.name }}"></li>{% endfor %}</ul>';
@@ -295,8 +327,9 @@ final readonly class ComponentPrompt
             '- A movement is a `@keyframes` of a plain name with its steps (`from`, `to`, percentages), used by `animation` or `animation-name`; the site names it after the component. A rule that sets an animation sits in `@media (prefers-reduced-motion: no-preference)`, so a visitor who asks for less motion sees the component still; never in a `style` attribute of the template (a prop picks a speed or a direction through a class or a custom property). A movement that lasts more than five seconds stops under the pointer and on focus (`animation-play-state: paused` on `:hover` and `:focus-within`).',
             '- Nothing loaded: no `url()`, no `image-set()`, no backslash escape, no font of its own. Pictures are `image` props drawn with `<img>`; the component uses the fonts of the theme.',
             '- `:scope` and `&` only start a selector, followed by a space or `>`: the stylesheet styles the component and what is inside it, never what is around it.',
-            '- Colours come from the tokens of the site, so the component follows its theme: '.implode(', ', array_map(static fn (string $token): string => '`var('.$token.')`', $this->tokens())).'.',
+            '- '.self::colourRule($this->tokens()),
             '- Mobile first: the component reads on a phone, and lays out wider from `@media (min-width: 48rem)`.',
+            '- '.self::NARROW_SCREEN_RULE.' For instance: `'.self::NARROW_SCREEN_EXAMPLE.'` with `.compare__scroll { overflow-x: auto; position: relative; }`.',
             '',
             '# Sample',
             '',
@@ -323,6 +356,22 @@ final readonly class ComponentPrompt
         $skill = $this->skills->find($code);
 
         return null !== $skill && $skill->enabled ? $skill->body : null;
+    }
+
+    /**
+     * The rule of the colours, for the tokens the site defines: each one with
+     * its use, so a text is written only in a colour that reads.
+     *
+     * @param list<string> $tokens
+     */
+    public static function colourRule(array $tokens): string
+    {
+        $uses = array_map(
+            static fn (string $token): string => '`var('.$token.')` '.(self::COLOUR_USES[$token] ?? 'a colour of the theme'),
+            $tokens,
+        );
+
+        return 'Colours come from the tokens of the site, so the component follows its theme, and each has one use: '.implode('; ', $uses).'. A text and the background under it come from these pairs only, which the theme keeps at 4.5:1 or more: `text`, `text-muted` or `text-subtle` on the page, `surface` or `accent-surface`, `text-faint` on the page only, `on-accent` on `accent`, `on-dark` on a dark background. A link is a text colour, underlined. The site gives every `p` of the page a colour of its own (`text-muted`): a component that sets a colour on a container (a dark band, a quote) sets it on the paragraphs of its `html` props too (`.quote__text p`), or they stay grey on its background.';
     }
 
     /**

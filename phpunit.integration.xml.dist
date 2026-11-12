@@ -32,6 +32,9 @@
         <env name="APP_SECRET" value="287f2178af9e0c250e8219a9df833504"/>
         <env name="MAILER_DSN" value="null://null"/>
         <env name="LOCK_DSN" value="flock"/>
+        <!-- No ffmpeg, whatever the machine: the screens are tested as the CI
+             sees them, and the tests of the conversion bring their own fake. -->
+        <env name="THELIA_CMS_FFMPEG_PATH" value="/nonexistent/ffmpeg-of-the-tests" force="true"/>
     </php>
 
     <testsuites>

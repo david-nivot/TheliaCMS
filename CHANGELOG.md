@@ -7,6 +7,32 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Changed
+
+- **The generator of components is told what each colour of the site is for.**
+  The prompt listed the colour tokens by name only, and most new components
+  wrote their text in `--cms-color-accent-strong`, which Flexy maps on its
+  brand orange (3.4:1 on white, under the 4.5:1 of a text). Each token now
+  comes with its use (text, background, fill, border, text on the accent), the
+  accent is never the colour of a text, and a text sits only on the pairs that
+  read: `on-accent` on `accent`, the text colours on the page and the surfaces,
+  `text-faint` on the page only.
+- **A generated component fits a phone without scrolling the page.** The
+  prompt now says that at 375 px the page never scrolls sideways: a wide table
+  or row lays out again below `48rem`, or scrolls inside its own element, which
+  a keyboard reaches and a screen reader names (`tabindex="0"`,
+  `role="region"`, an `aria-label` from a prop), like the track of a carousel.
+  The wrapper is positioned, so a text hidden inside for screen readers does
+  not escape it; and a component that colours a container colours the
+  paragraphs of its `html` props too, which the site otherwise paints grey.
+
+### Fixed
+
+- **The filters of the media library keep their labels on one line.** The
+  hint under the empty tag filter pushed its label above the others; and the
+  bulk actions spoke of images while a video can be selected: they now say
+  *files*, as the counts of the screen do.
+
 ## [2.26.0] - 2026-11-10
 
 ### Added
