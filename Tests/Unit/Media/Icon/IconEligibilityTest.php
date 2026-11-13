@@ -30,6 +30,29 @@ final class IconEligibilityTest extends TestCase
         self::assertTrue((new IconEligibility())->isFit($svg));
     }
 
+    /**
+     * What a page keeps since the filter takes definitions: gradients, masks,
+     * clipping paths and the references to them, classes, ids and a style a
+     * page keeps.
+     */
+    #[DataProvider('kept')]
+    public function testADrawingAPageKeepsWholeIsFit(string $body): void
+    {
+        self::assertSame([], array_map(strval(...), (new IconEligibility())->obstacles(self::OPEN.$body.'</svg>')));
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function kept(): iterable
+    {
+        yield 'a gradient and its stops' => ['<defs><linearGradient id="a" gradientTransform="rotate(45)"><stop offset="0" stop-color="#000"/></linearGradient><radialGradient id="b" href="#a"/></defs><path d="M0 0" fill="url(#a)" stroke="url(#b)"/>'];
+        yield 'a mask, as a round flag of the theme draws it' => ['<mask id="m" style="mask-type:luminance"><circle cx="1" cy="1" r="1" fill="#fff"/></mask><g mask="url(#m)"><path d="M0 0"/></g>'];
+        yield 'a clipping path' => ['<clipPath id="c"><rect width="1" height="1"/></clipPath><g clip-path="url(#c)"><path d="M0 0"/></g>'];
+        yield 'a class, an id and a style a page keeps' => ['<path d="M0 0" class="a" id="b" style="fill:red"/>'];
+        yield 'an accessibility attribute' => ['<g aria-hidden="true" role="presentation"><path d="M0 0"/></g>'];
+    }
+
     public function testNamespaceDeclarationsAreNotAttributesOfTheDrawing(): void
     {
         $svg = '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" viewBox="0 0 8 8"><path d="M0 0h8v8z"/></svg>';
@@ -53,19 +76,20 @@ final class IconEligibilityTest extends TestCase
      */
     public static function refused(): iterable
     {
-        yield 'a gradient and its stops' => ['<defs><linearGradient id="a"><stop offset="0"/></linearGradient></defs><path d="M0 0" fill="url(#a)"/>', ['a block of definitions (defs)', 'a gradient or a pattern as paint (fill)']];
         yield 'an element out of the list' => ['<path d="M0 0"/><text x="1">Hi</text>', ['some text (text)']];
-        yield 'a mask' => ['<mask id="m"><rect width="1" height="1"/></mask>', ['a mask (mask)']];
         yield 'a use' => ['<use href="#a"/>', ['a reused shape (use)']];
         yield 'an element of another namespace' => ['<sodipodi:namedview xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"/>', ['an element a page does not keep (sodipodi:namedview)']];
-        yield 'a style attribute' => ['<path d="M0 0" style="fill:red"/>', ['CSS style (style)']];
-        yield 'a class attribute' => ['<path d="M0 0" class="a"/>', ['CSS classes (class)']];
-        yield 'a clip-path attribute' => ['<g clip-path="url(#c)"><path d="M0 0"/></g>', ['a clipping (clip-path)']];
         yield 'an element written with a prefix' => ['<svg:path xmlns:svg="http://www.w3.org/2000/svg" d="M0 0"/>', ['an element a page does not keep (svg:path)']];
         yield 'an attribute the element does not take' => ['<path d="M0 0" x="3"/>', ['an attribute a page does not keep (x)']];
         yield 'text in a group' => ['<g>hello<path d="M0 0"/></g>', ['some text (text)']];
-        yield 'each obstacle once' => ['<path d="M0 0" class="a"/><path d="M1 1" class="b"/>', ['CSS classes (class)']];
+        yield 'each obstacle once' => ['<use href="#a"/><use href="#b"/>', ['a reused shape (use)']];
         yield 'a style element is not read inside' => ['<style>.a{fill:red}</style>', ['CSS style (style)']];
+        yield 'a reference to an id the drawing does not hold' => ['<g clip-path="url(#c)"><path d="M0 0"/></g>', ['a reference to a shape the file does not hold (clip-path)']];
+        yield 'a reference to an id on an element a page drops' => ['<pattern id="p"><path d="M0 0"/></pattern><path d="M0 0" fill="url(#p)"/>', ['a pattern (pattern)', 'a reference to a shape the file does not hold (fill)']];
+        yield 'a paint from another file' => ['<path d="M0 0" fill="url(other.svg#a)"/>', ['a color a page does not keep (fill)']];
+        yield 'a gradient that inherits one by the old xlink:href' => ['<radialGradient xmlns:xlink="http://www.w3.org/1999/xlink" id="r" xlink:href="#r"/>', ['an old way of pointing to a shape (xlink:href)']];
+        yield 'a gradient transform that is not one' => ['<linearGradient id="l" gradientTransform="url(#l)"/>', ['a value a page does not keep (gradientTransform)']];
+        yield 'a style a page cuts' => ['<path d="M0 0" style="fill:url(#a);stroke:red"/>', ['CSS style (style)']];
     }
 
     public function testAFileThatIsNotXmlCannotBeRead(): void

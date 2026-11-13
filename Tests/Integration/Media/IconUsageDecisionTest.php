@@ -32,7 +32,8 @@ final class IconUsageDecisionTest extends CmsIntegrationTestCase
 {
     private const string DARK = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="#1C1C1C"/></svg>';
 
-    private const string GRADIENT = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><defs><linearGradient id="g"><stop offset="0" stop-color="#000"/><stop offset="1" stop-color="#fff"/></linearGradient></defs><path d="M0 0h24v24H0z" fill="url(#g)"/></svg>';
+    /** A shape drawn twice by `use`, which a page does not keep: it cannot be an icon. */
+    private const string REUSED = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><defs><path id="s" d="M0 0h12v12H0z" fill="#1C1C1C"/></defs><use href="#s"/><use href="#s" x="12" y="12"/></svg>';
 
     protected function tearDown(): void
     {
@@ -72,7 +73,7 @@ final class IconUsageDecisionTest extends CmsIntegrationTestCase
 
     public function testADrawingThatCannotBeAnIconIsNeverGivenTheColorPreset(): void
     {
-        $draft = $this->decision()->prepare(self::GRADIENT, null, true, new SvgColoring(), false);
+        $draft = $this->decision()->prepare(self::REUSED, null, true, new SvgColoring(), false);
 
         self::assertSame($draft->result->content, $draft->judged);
     }
@@ -82,8 +83,8 @@ final class IconUsageDecisionTest extends CmsIntegrationTestCase
         $decision = $this->decision();
         $this->getService(CmsMediaWriter::class)->addPreparedSvg(self::DARK, 'usage-held.svg', $this->locale(), 'usage-held');
 
-        self::assertNull($decision->problem(self::GRADIENT, false, '', null), 'An image is not judged.');
-        self::assertSame($this->said('This file cannot be added as an icon: see below what a page would not keep. It can still be added as an image.'), $decision->problem(self::GRADIENT, true, 'usage-fit', null));
+        self::assertNull($decision->problem(self::REUSED, false, '', null), 'An image is not judged.');
+        self::assertSame($this->said('This file cannot be added as an icon: see below what a page would not keep. It can still be added as an image.'), $decision->problem(self::REUSED, true, 'usage-fit', null));
         self::assertSame($this->said('The icon name is made of lowercase letters and digits, separated by single hyphens, %d characters at most.', 64), $decision->problem(self::DARK, true, 'Not Valid', null));
         self::assertSame($this->said('The icon name "%s" is already used by another image.', 'cms:usage-held'), $decision->problem(self::DARK, true, 'usage-held', null));
         self::assertNull($decision->problem(self::DARK, true, 'usage-free', null));
@@ -91,7 +92,7 @@ final class IconUsageDecisionTest extends CmsIntegrationTestCase
 
     public function testTheScreenOfAFileThatCannotBeAnIconSaysWhatStandsInTheWay(): void
     {
-        $variables = $this->decision()->variables('plan.svg', null, false, self::GRADIENT, true, null, null);
+        $variables = $this->decision()->variables('plan.svg', null, false, self::REUSED, true, null, null);
 
         self::assertTrue($variables['icon_offered']);
         self::assertFalse($variables['icon_chosen'], 'Held to what the drawing allows.');

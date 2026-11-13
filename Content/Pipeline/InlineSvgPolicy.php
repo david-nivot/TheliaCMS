@@ -156,6 +156,44 @@ final readonly class InlineSvgPolicy
     }
 
     /**
+     * Everything a page would not keep of an SVG file, in the order of the
+     * drawing: the same rules as `configure()` and `clean()`, read on the
+     * file instead of applied to a page. An empty list means the drawing is
+     * written in a page whole, its ids aside.
+     *
+     * What stands inside an element a page drops is not read any further.
+     * Namespace declarations (`xmlns`, `xmlns:*`) are not attributes for the
+     * XML reader, so they never count.
+     *
+     * @param list<string> $everywhere the attributes the page keeps on every element
+     *
+     * @return list<InlineSvgViolation>
+     */
+    public function validate(string $svg, array $everywhere = []): array
+    {
+        $document = new \DOMDocument();
+        $previous = libxml_use_internal_errors(true);
+
+        try {
+            $loaded = '' !== trim($svg) && $document->loadXML($svg, \LIBXML_NONET);
+        } finally {
+            libxml_clear_errors();
+            libxml_use_internal_errors($previous);
+        }
+
+        if (!$loaded || !$document->documentElement instanceof \DOMElement) {
+            return [new InlineSvgViolation(InlineSvgViolationKind::Unreadable, '')];
+        }
+
+        $ids = [];
+        self::collectIds($document->documentElement, $ids);
+        $violations = [];
+        $this->inspect($document->documentElement, $everywhere, $ids, $violations);
+
+        return $violations;
+    }
+
+    /**
      * Gives the ids of each SVG of the markup a prefix of its own and points
      * its references to them; a reference to an id the SVG does not hold is
      * dropped. The prefix is drawn from the markup and the rank of the SVG in
@@ -174,6 +212,81 @@ final readonly class InlineSvgPolicy
         $hash = hash('xxh32', $plain);
 
         return $this->rewrite($plain, static fn (int $rank): string => 's'.$hash.'-'.$rank.'-');
+    }
+
+    /**
+     * Whether a page keeps the element itself: an SVG element of the list,
+     * written without a prefix (`svg:path` is not read as an SVG element by
+     * the parser of a page).
+     */
+    private static function isKept(\DOMElement $element): bool
+    {
+        return isset(self::ELEMENTS[strtolower($element->localName ?? $element->nodeName)])
+            && '' === $element->prefix
+            && (self::NAMESPACE === $element->namespaceURI || '' === (string) $element->namespaceURI);
+    }
+
+    /**
+     * The ids of the elements a page keeps: a reference to an id written on
+     * an element it drops would point to nothing.
+     *
+     * @param array<string, true> $ids
+     */
+    private static function collectIds(\DOMElement $element, array &$ids): void
+    {
+        if (!self::isKept($element)) {
+            return;
+        }
+
+        if ($element->hasAttribute('id')) {
+            $ids[$element->getAttribute('id')] = true;
+        }
+
+        foreach ($element->childNodes as $child) {
+            if ($child instanceof \DOMElement) {
+                self::collectIds($child, $ids);
+            }
+        }
+    }
+
+    /**
+     * @param list<string>             $everywhere
+     * @param array<string, true>      $ids
+     * @param list<InlineSvgViolation> $violations
+     */
+    private function inspect(\DOMElement $element, array $everywhere, array $ids, array &$violations): void
+    {
+        if (!self::isKept($element)) {
+            $violations[] = new InlineSvgViolation(InlineSvgViolationKind::Element, $element->nodeName);
+
+            return;
+        }
+
+        $name = strtolower($element->localName ?? $element->nodeName);
+        $allowed = self::attributesOf($name, $everywhere) ?? [];
+
+        foreach ($element->attributes ?? [] as $attribute) {
+            $attributeName = strtolower($attribute->nodeName);
+            $value = (string) $attribute->nodeValue;
+
+            if (!\in_array($attributeName, $allowed, true)) {
+                $violations[] = new InlineSvgViolation(InlineSvgViolationKind::Attribute, $attribute->nodeName);
+            } elseif (!self::acceptsValue($name, $attributeName, $value)) {
+                $violations[] = new InlineSvgViolation(InlineSvgViolationKind::Value, $attribute->nodeName);
+            } elseif (\in_array($attributeName, self::REFERENCES, true) && null !== ($reference = self::reference($attributeName, $value)) && !isset($ids[$reference])) {
+                $violations[] = new InlineSvgViolation(InlineSvgViolationKind::Reference, $attribute->nodeName);
+            } elseif ('style' === $attributeName && trim((new CssAllowList())->declarations($value), " \t\n\r;") !== trim($value, " \t\n\r;")) {
+                $violations[] = new InlineSvgViolation(InlineSvgViolationKind::Style, $attribute->nodeName);
+            }
+        }
+
+        foreach ($element->childNodes as $child) {
+            if ($child instanceof \DOMElement) {
+                $this->inspect($child, $everywhere, $ids, $violations);
+            } elseif ($child instanceof \DOMText && '' !== trim($child->data)) {
+                $violations[] = new InlineSvgViolation(InlineSvgViolationKind::Text, 'text');
+            }
+        }
     }
 
     /**

@@ -161,6 +161,67 @@ final class InlineSvgPolicyTest extends TestCase
         self::assertSame($markup, (new InlineSvgPolicy())->clean($markup));
     }
 
+    /**
+     * The validation of the preparation screen and the filter of a page read
+     * the same rules: a file the validation finds whole comes out of a page
+     * the same, its ids aside, and a file it finds cut loses something there.
+     */
+    #[DataProvider('fixtures')]
+    public function testTheValidationSaysWhatAPageKeeps(string $file, bool $kept): void
+    {
+        $svg = trim((string) file_get_contents($file));
+        $violations = (new InlineSvgPolicy())->validate($svg, PublishedContentSanitizer::ACCESSIBILITY_ATTRIBUTES);
+        $published = (string) $this->sanitizer->html($svg);
+
+        if ($kept) {
+            self::assertSame([], $violations, basename($file));
+            self::assertSame(self::drawing($svg), self::drawing($published), basename($file));
+        } else {
+            self::assertNotSame([], $violations, basename($file));
+            self::assertNotSame(self::drawing($svg), self::drawing($published), basename($file));
+        }
+    }
+
+    /**
+     * @return iterable<string, array{string, bool}>
+     */
+    public static function fixtures(): iterable
+    {
+        foreach (['kept' => true, 'cut' => false] as $folder => $kept) {
+            foreach (glob(\dirname(__DIR__, 3).'/Fixtures/inline-svg/'.$folder.'/*.svg') ?: [] as $file) {
+                yield $folder.'/'.basename($file) => [$file, $kept];
+            }
+        }
+    }
+
+    /**
+     * The drawing of some markup, one line per element: its name and its
+     * attributes, in lowercase as a page writes them, without the namespace
+     * declarations a parser keeps or not, and with ids read back without the
+     * prefix a page gives them.
+     *
+     * @return list<string>
+     */
+    private static function drawing(string $markup): array
+    {
+        $document = new \DOMDocument();
+        self::assertTrue($document->loadXML($markup), $markup);
+        $lines = [];
+
+        foreach ($document->getElementsByTagName('*') as $element) {
+            $attributes = [];
+
+            foreach ($element->attributes ?? [] as $attribute) {
+                $attributes[] = strtolower($attribute->nodeName).'='.preg_replace('/s[0-9a-f]{8}-[0-9]+-/', '', (string) $attribute->nodeValue);
+            }
+
+            sort($attributes);
+            $lines[] = strtolower($element->localName ?? $element->nodeName).' '.implode(' ', $attributes);
+        }
+
+        return $lines;
+    }
+
     #[DataProvider('values')]
     public function testEachValueTakesTheFormOfItsAttribute(string $element, string $attribute, string $value, bool $accepted): void
     {
