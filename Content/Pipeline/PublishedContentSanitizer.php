@@ -48,7 +48,7 @@ final readonly class PublishedContentSanitizer
      * a section named by its own heading, an icon hidden from screen readers,
      * the current entry of a menu. None of them can carry script or a URL.
      */
-    private const array ACCESSIBILITY_ATTRIBUTES = [
+    public const array ACCESSIBILITY_ATTRIBUTES = [
         'role',
         'aria-label',
         'aria-labelledby',
@@ -113,7 +113,7 @@ final readonly class PublishedContentSanitizer
             return $html;
         }
 
-        return $this->filterStyleAttributes($this->sanitizerFor($allowCustomCode, $html)->sanitize($html));
+        return $this->filterStyleAttributes((new InlineSvgPolicy())->clean($this->sanitizerFor($allowCustomCode, $html)->sanitize($html)));
     }
 
     /**
@@ -265,17 +265,13 @@ final readonly class PublishedContentSanitizer
             $config = $config->withAttributeSanitizer(new StimulusAttributeSanitizer($controllers));
         }
 
-        foreach (self::SVG_ELEMENTS as $element => $attributes) {
-            // An element with a list of its own loses the attributes allowed
-            // on every element: the common ones are named again.
-            $config = $config->allowElement($element, [...$attributes, 'class', 'id', 'style', ...self::ACCESSIBILITY_ATTRIBUTES]);
-        }
+        $config = (new InlineSvgPolicy())->configure($config, self::ACCESSIBILITY_ATTRIBUTES);
 
         // `<image>` is read as `<img>` by the sanitizer and would load a
         // picture from wherever it is told to.
         $config = $config->dropElement('image');
 
-        $config = $config->withAttributeSanitizer(new SvgAttributeSanitizer())->withAttributeSanitizer(new EmbedAttributeSanitizer());
+        $config = $config->withAttributeSanitizer(new EmbedAttributeSanitizer());
 
         foreach (self::EMBED_ELEMENTS as $element) {
             $config = $allowCustomCode

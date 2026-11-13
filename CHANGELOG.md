@@ -7,6 +7,25 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Changed
+
+- **An SVG written in a page keeps its gradients, masks and clipping paths.**
+  The publication filter used to keep the plain shapes of an inline SVG only:
+  a round flag of the theme (`circle-flags`) came out square, an icon with a
+  gradient without its colors. It now keeps `defs`, `linearGradient`,
+  `radialGradient`, `stop`, `mask` and `clipPath`, and the `mask`,
+  `clip-path` and `url(#…)` paints that use them. Every id of an SVG gets a
+  prefix of its own (`s<hash>-<rank>-`), so that two copies of an icon in a
+  page do not draw with each other's definitions; the prefix is drawn from
+  the markup, and a page saved again unchanged is written the same. A
+  reference is kept only towards an id of the same SVG: a paint, a mask or a
+  gradient from another file or another SVG of the page is dropped. `use`,
+  `style`, `filter`, `pattern`, `text` and animations stay out. The rules
+  live in `InlineSvgPolicy`. Pages published before keep what the former
+  filter left until they are rendered again:
+  `php Thelia thelia_cms:render-published --all` (`--dry-run` counts them),
+  and `php Thelia thelia_cms:render` for the drafts.
+
 ## [2.32.0] - 2026-11-16
 
 ### Fixed
