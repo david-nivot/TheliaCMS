@@ -3,7 +3,7 @@
 An icon is an SVG of the media library that was given a name. The module draws
 it through ux-icons as `ux_icon('cms:<name>')`, and a section stores its name in
 an `icon` prop. The decision is
-[ADR 13](adr/0013-an-icon-is-a-named-svg-of-the-library.md). What an editor does
+[ADR 14](adr/0014-an-icon-is-a-named-svg-of-the-library.md). What an editor does
 with icons (adding one, the name, replacing, deleting, choosing one in a section)
 is written in **CMS > Documentation**, sections "Icons" and "Choosing an icon in
 a section" (`templates/backOffice/default-twig/documentation/`).
@@ -21,8 +21,8 @@ a section" (`templates/backOffice/default-twig/documentation/`).
   sheet of the image (`Media/Admin/CmsMediaAdminController`), refused while a
   page, an item or a component of the site cites the icon.
 - Table `cms_icon` (`name` unique, `image_id` unique), created by
-  `Config/update/2.26.0.sql`, also in `Config/TheliaMain.sql`. No foreign key to
-  `library_image` (ADR 13): a row whose image is gone is ignored when read.
+  `Config/update/2.27.0.sql`, also in `Config/TheliaMain.sql`. No foreign key to
+  `library_image` (ADR 14): a row whose image is gone is ignored when read.
 - The source of ux-icons has priority 0, under the local sources of the theme
   and above Iconify (-10). An unknown `cms:` name draws an empty icon and logs
   one warning; it does not throw.

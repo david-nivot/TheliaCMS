@@ -1,4 +1,4 @@
-# 13. An icon is a named SVG of the library
+# 14. An icon is a named SVG of the library
 
 Date: 2026-11-10. Status: accepted.
 
@@ -28,7 +28,7 @@ Three constraints shape the answer:
 by `ux_icon('cms:<name>')`.
 
 - The name is lowercase letters, digits and single hyphens, 64 characters at
-  most. It is stored without the prefix in `cms_icon` (`Config/update/2.26.0.sql`),
+  most. It is stored without the prefix in `cms_icon` (`Config/update/2.27.0.sql`),
   unique, and one image holds one name at most. The rule is the one of a slug
   of ux-icons, so a name that passes is a name the icon chain accepts
   (`Media/Icon/IconName`).
@@ -93,7 +93,7 @@ by `ux_icon('cms:<name>')`.
 - The icons of the module and the ones of the theme share one picker and one
   prop type ("No icon" empties an optional field); the picker previews with `<img>` carrying a data URI, so no SVG
   of the library is injected in the back office.
-- `Config/update/2.26.0.sql` is replayable and also lives in `TheliaMain.sql`.
+- `Config/update/2.27.0.sql` is replayable and also lives in `TheliaMain.sql`.
 - An icon of the theme is "known" when its file is in `assets/icons` of the
   active front template or of its parents, read at runtime. ux-icons reads its
   local directories when the container is built. The two agree as long as the

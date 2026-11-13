@@ -119,7 +119,11 @@ from two places:
   component draws one element per video, so the page loads nothing until the
   visitor plays one when the theme sets only the address and
   `preload="none"` on it (a `preload` or a `poster` of its own is the theme's
-  to write; the module adds neither). The editor picks the video in the
+  to write; the module adds neither). A video converted by the library
+  (README, "Videos from a phone") has a poster image: a prop named `poster`
+  of type `image`, at the top of the component or in the row of a list that
+  has the `video` field, is given it when the author left it empty, and keeps
+  the image the author picked; a video with no poster leaves the prop empty. The editor picks the video in the
   library, filtered on the videos, or sends an MP4 from the field;
   `product`, `category`, `folder`, `form` or `menu` is one record,
   picked by its id with the same pickers the partials use (the generator
@@ -423,6 +427,14 @@ document that is refused is sent back to the model with every problem listed,
 twice at most. The same validator runs on a section edited by hand and on an
 import, so a rule written in the schema holds whoever wrote the document. How
 the prompt is built and what the model may read: [generator.md](generator.md).
+
+A request for a *new* component made to the generator of components (not a
+document of a page) may also end without one: the model answers `existing`
+when a component of the catalogue already does what is asked, and `copy` when
+it is a variant of a component of the site, whose source it is then sent to
+write the variant under a new code. So write the `description` of a component
+for that choice too: it is what the generator reads to tell "the site has it"
+from "a variant of it" from "something new".
 
 ## Testing it
 

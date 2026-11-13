@@ -1,0 +1,351 @@
+{
+  "format": "thelia-cms",
+  "version": 4,
+  "generated_at": "2026-11-10T00:00:00+00:00",
+  "module_version": "2.24.0",
+  "locales": [
+    "fr_FR"
+  ],
+  "components": [
+    {
+      "code": "Quote",
+      "label": "Citation",
+      "description": "A quote with the name and the role of the person quoted, and an optional portrait. Use it for a testimonial, a pull quote or a line from an interview.",
+      "props": [
+        {
+          "name": "quote",
+          "type": "text",
+          "label": "Citation",
+          "required": true,
+          "max": 400
+        },
+        {
+          "name": "author",
+          "type": "text",
+          "label": "Auteur",
+          "required": true,
+          "max": 80
+        },
+        {
+          "name": "role",
+          "type": "text",
+          "label": "Fonction",
+          "max": 120
+        },
+        {
+          "name": "portrait",
+          "type": "image",
+          "label": "Portrait"
+        }
+      ],
+      "sample": {
+        "quote": "Nous avons gagné une heure par jour dès la première semaine.",
+        "author": "Claire Martin",
+        "role": "Directrice de l’atelier Fil & Cie",
+        "portrait": null
+      },
+      "template": "<section class=\"quote\"><figure class=\"quote__figure\"><blockquote class=\"quote__text\"><p>{{ props.quote }}</p></blockquote><figcaption class=\"quote__caption\">{% if props.portrait %}<img class=\"quote__portrait\" src=\"{{ props.portrait }}\" alt=\"{{ props.author }}\">{% endif %}<span class=\"quote__author\">{{ props.author }}</span>{% if props.role is not empty %}<span class=\"quote__role\">{{ props.role }}</span>{% endif %}</figcaption></figure></section>",
+      "css": ".quote__figure { margin: 0; padding: 2rem 1.5rem; border-radius: 0.5rem; background: var(--cms-color-surface); }\n.quote__text { margin: 0 0 1rem; font-size: 1.375rem; line-height: 1.4; color: var(--cms-color-text); }\n.quote__text p { margin: 0; }\n.quote__caption { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem; }\n.quote__portrait { width: 3rem; height: 3rem; border-radius: 50%; object-fit: cover; }\n.quote__author { font-weight: 700; color: var(--cms-color-text); }\n.quote__role { color: var(--cms-color-text-muted); }\n@media (min-width: 48rem) { .quote__figure { padding: 3rem; } .quote__text { font-size: 1.75rem; } }",
+      "provenance": null,
+      "status": "ready"
+    },
+    {
+      "code": "ImageText",
+      "label": "Image et texte",
+      "description": "A picture beside a heading and a text, on the left or on the right of it. Use it to present a person, a place, a product or a story with one picture.",
+      "props": [
+        {
+          "name": "title",
+          "type": "text",
+          "label": "Titre",
+          "max": 120
+        },
+        {
+          "name": "text",
+          "type": "html",
+          "label": "Texte"
+        },
+        {
+          "name": "image",
+          "type": "image",
+          "label": "Image"
+        },
+        {
+          "name": "side",
+          "type": "choice",
+          "label": "Côté de l’image",
+          "choices": {
+            "left": "À gauche",
+            "right": "À droite"
+          },
+          "default": "left"
+        },
+        {
+          "name": "link_label",
+          "type": "text",
+          "label": "Texte du lien",
+          "max": 60
+        },
+        {
+          "name": "link",
+          "type": "url",
+          "label": "Lien"
+        }
+      ],
+      "sample": {
+        "title": "Un atelier au cœur de Lyon",
+        "text": "<p>Depuis 2012, nous façonnons à la main des sacs en cuir végétal, dans un atelier ouvert aux visites.</p><p>Chaque pièce passe entre les mains de trois artisans.</p>",
+        "image": null,
+        "side": "left",
+        "link_label": "Découvrir l’atelier",
+        "link": "/atelier"
+      },
+      "template": "<section class=\"imagetext imagetext--{{ props.side }}\">{% if props.image %}<div class=\"imagetext__media\"><img class=\"imagetext__image\" src=\"{{ props.image }}\" alt=\"{{ props.title }}\" data-cms-sizes=\"(min-width: 48rem) 50vw, 100vw\"></div>{% endif %}<div class=\"imagetext__body\">{% if props.title is not empty %}<h2 class=\"imagetext__title\">{{ props.title }}</h2>{% endif %}<div class=\"imagetext__text\">{{ props.text }}</div>{% if props.link is not empty %}<a class=\"imagetext__link\" href=\"{{ props.link }}\">{{ props.link_label }}</a>{% endif %}</div></section>",
+      "css": ".imagetext { display: grid; gap: 1.5rem; align-items: center; }\n.imagetext__image { display: block; width: 100%; height: auto; border-radius: 0.5rem; }\n.imagetext__title { margin: 0 0 0.75rem; color: var(--cms-color-text); }\n.imagetext__text { color: var(--cms-color-text); }\n.imagetext__link { display: inline-block; margin-top: 1rem; font-weight: 700; color: var(--cms-color-accent); }\n@media (min-width: 48rem) { .imagetext { grid-template-columns: 1fr 1fr; gap: 3rem; } .imagetext--right .imagetext__media { order: 2; } }",
+      "provenance": null,
+      "status": "ready"
+    },
+    {
+      "code": "KeyFigures",
+      "label": "Chiffres clés",
+      "description": "A row of key figures, each a big number with a short label and an optional note. Use it for results, numbers of a company or milestones the page states.",
+      "props": [
+        {
+          "name": "title",
+          "type": "text",
+          "label": "Titre",
+          "max": 120
+        },
+        {
+          "name": "figures",
+          "type": "items",
+          "label": "Chiffres",
+          "min": 2,
+          "max": 6,
+          "items": [
+            {
+              "name": "value",
+              "type": "text",
+              "label": "Valeur",
+              "required": true,
+              "max": 20
+            },
+            {
+              "name": "label",
+              "type": "text",
+              "label": "Libellé",
+              "required": true,
+              "max": 80
+            },
+            {
+              "name": "note",
+              "type": "text",
+              "label": "Précision",
+              "max": 120
+            }
+          ]
+        }
+      ],
+      "sample": {
+        "title": "L’atelier en chiffres",
+        "figures": [
+          {
+            "value": "12",
+            "label": "ans d’existence",
+            "note": ""
+          },
+          {
+            "value": "4 500",
+            "label": "sacs livrés",
+            "note": "depuis la création"
+          },
+          {
+            "value": "98 %",
+            "label": "clients satisfaits",
+            "note": "enquête 2025"
+          }
+        ]
+      },
+      "template": "<section class=\"figures\">{% if props.title is not empty %}<h2 class=\"figures__title\">{{ props.title }}</h2>{% endif %}<ul class=\"figures__list\">{% for figure in props.figures %}<li class=\"figure\"><span class=\"figure__value\">{{ figure.value }}</span><span class=\"figure__label\">{{ figure.label }}</span>{% if figure.note is not empty %}<span class=\"figure__note\">{{ figure.note }}</span>{% endif %}</li>{% endfor %}</ul></section>",
+      "css": ".figures__title { margin: 0 0 1.5rem; color: var(--cms-color-text); }\n.figures__list { display: grid; gap: 1.5rem; margin: 0; padding: 0; list-style: none; }\n.figure { display: flex; flex-direction: column; gap: 0.25rem; }\n.figure__value { font-size: 2.5rem; font-weight: 700; line-height: 1; color: var(--cms-color-accent); }\n.figure__label { font-weight: 700; color: var(--cms-color-text); }\n.figure__note { color: var(--cms-color-text-muted); }\n@media (min-width: 48rem) { .figures__list { grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); } }",
+      "provenance": null,
+      "status": "ready"
+    },
+    {
+      "code": "Steps",
+      "label": "Étapes",
+      "description": "The steps of a process in order, each a short title and a sentence. Use it for how an order, a booking or a service goes.",
+      "props": [
+        {
+          "name": "title",
+          "type": "text",
+          "label": "Titre",
+          "max": 120
+        },
+        {
+          "name": "steps",
+          "type": "items",
+          "label": "Étapes",
+          "min": 2,
+          "max": 8,
+          "items": [
+            {
+              "name": "title",
+              "type": "text",
+              "label": "Étape",
+              "required": true,
+              "max": 80
+            },
+            {
+              "name": "text",
+              "type": "text",
+              "label": "Ce qui se passe",
+              "max": 300
+            }
+          ]
+        }
+      ],
+      "sample": {
+        "title": "Comment commander",
+        "steps": [
+          {
+            "title": "Vous choisissez",
+            "text": "Modèle, couleur et finition en quelques clics."
+          },
+          {
+            "title": "Nous fabriquons",
+            "text": "Votre sac est assemblé à la main sous trois semaines."
+          },
+          {
+            "title": "Nous livrons",
+            "text": "Colissimo suivi, retours gratuits pendant 30 jours."
+          }
+        ]
+      },
+      "template": "<section class=\"steps\">{% if props.title is not empty %}<h2 class=\"steps__title\">{{ props.title }}</h2>{% endif %}<ol class=\"steps__list\">{% for step in props.steps %}<li class=\"step\"><h3 class=\"step__title\">{{ step.title }}</h3>{% if step.text is not empty %}<p class=\"step__text\">{{ step.text }}</p>{% endif %}</li>{% endfor %}</ol></section>",
+      "css": ".steps__list { display: grid; gap: 1.5rem; padding: 0; list-style: none; counter-reset: step; }\n.step { counter-increment: step; padding-top: 1rem; border-top: 2px solid var(--cms-color-accent); }\n.step__title { margin: 0 0 0.5rem; }\n.step__title::before { content: counter(step) \". \"; }\n.step__text { margin: 0; color: var(--cms-color-text-muted); }\n@media (min-width: 48rem) { .steps__list { grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); } }",
+      "provenance": null,
+      "status": "ready"
+    },
+    {
+      "code": "Carousel",
+      "label": "Carrousel",
+      "description": "A row of pictures, each with an optional caption, that scrolls sideways and snaps on each picture, with no script. Use it for a gallery of a few pictures a visitor swipes through.",
+      "props": [
+        {
+          "name": "title",
+          "type": "text",
+          "label": "Titre",
+          "max": 120
+        },
+        {
+          "name": "slides",
+          "type": "items",
+          "label": "Images",
+          "min": 2,
+          "max": 12,
+          "items": [
+            {
+              "name": "image",
+              "type": "image",
+              "label": "Image"
+            },
+            {
+              "name": "alt",
+              "type": "text",
+              "label": "Texte alternatif",
+              "required": true,
+              "max": 160
+            },
+            {
+              "name": "caption",
+              "type": "text",
+              "label": "Légende",
+              "max": 160
+            }
+          ]
+        }
+      ],
+      "sample": {
+        "title": "Dans l’atelier",
+        "slides": [
+          {
+            "image": null,
+            "alt": "Découpe du cuir sur l’établi",
+            "caption": "La découpe"
+          },
+          {
+            "image": null,
+            "alt": "Couture d’une anse à la main",
+            "caption": "La couture"
+          },
+          {
+            "image": null,
+            "alt": "Contrôle final d’un sac",
+            "caption": "Le contrôle"
+          }
+        ]
+      },
+      "template": "<section class=\"carousel\">{% if props.title is not empty %}<h2 class=\"carousel__title\">{{ props.title }}</h2>{% endif %}<ul class=\"carousel__track\" data-cms-sizes=\"(min-width: 48rem) 40vw, 85vw\">{% for slide in props.slides %}<li class=\"carousel__slide\">{% if slide.image %}<img class=\"carousel__image\" src=\"{{ slide.image }}\" alt=\"{{ slide.alt }}\">{% endif %}{% if slide.caption is not empty %}<p class=\"carousel__caption\">{{ slide.caption }}</p>{% endif %}</li>{% endfor %}</ul></section>",
+      "css": ".carousel__title { margin: 0 0 1rem; color: var(--cms-color-text); }\n.carousel__track { display: flex; gap: 1rem; margin: 0; padding: 0 0 0.5rem; list-style: none; overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; }\n.carousel__slide { flex: 0 0 85%; scroll-snap-align: start; }\n.carousel__image { display: block; width: 100%; height: auto; border-radius: 0.5rem; }\n.carousel__caption { margin: 0.5rem 0 0; color: var(--cms-color-text-muted); }\n@media (min-width: 48rem) { .carousel__slide { flex-basis: 40%; } }",
+      "provenance": null,
+      "status": "ready"
+    },
+    {
+      "code": "Faq",
+      "label": "Questions fréquentes",
+      "description": "A list of questions that open to show their answer. Use it for the questions a visitor asks before an order, a booking or a visit.",
+      "props": [
+        {
+          "name": "title",
+          "type": "text",
+          "label": "Titre",
+          "max": 120
+        },
+        {
+          "name": "questions",
+          "type": "items",
+          "label": "Questions",
+          "min": 2,
+          "max": 12,
+          "items": [
+            {
+              "name": "question",
+              "type": "text",
+              "label": "Question",
+              "required": true,
+              "max": 160
+            },
+            {
+              "name": "answer",
+              "type": "html",
+              "label": "Réponse",
+              "required": true
+            }
+          ]
+        }
+      ],
+      "sample": {
+        "title": "Questions fréquentes",
+        "questions": [
+          {
+            "question": "Combien de temps dure la fabrication ?",
+            "answer": "<p>Trois semaines en moyenne, un peu plus en décembre.</p>"
+          },
+          {
+            "question": "Puis-je retourner un sac ?",
+            "answer": "<p>Oui, pendant 30 jours, sans frais.</p>"
+          },
+          {
+            "question": "Les cuirs sont-ils d’origine animale ?",
+            "answer": "<p>Non, nous travaillons uniquement des cuirs végétaux.</p>"
+          }
+        ]
+      },
+      "template": "<section class=\"faq\">{% if props.title is not empty %}<h2 class=\"faq__title\">{{ props.title }}</h2>{% endif %}<div class=\"faq__list\">{% for item in props.questions %}<details class=\"faq__item\"><summary class=\"faq__question\">{{ item.question }}</summary><div class=\"faq__answer\">{{ item.answer }}</div></details>{% endfor %}</div></section>",
+      "css": ".faq__title { margin: 0 0 1rem; color: var(--cms-color-text); }\n.faq__item { padding: 0.75rem 0; border-bottom: 1px solid var(--cms-color-border); }\n.faq__question { cursor: pointer; font-weight: 700; color: var(--cms-color-text); }\n.faq__answer { padding-top: 0.5rem; color: var(--cms-color-text-muted); }",
+      "provenance": null,
+      "status": "ready"
+    }
+  ]
+}

@@ -18,6 +18,7 @@
         <div class="alert alert-warning small" role="status">
             {{ 'The generator could not make a component the site can keep:'|trans({}, 'theliacms') }} {{ prototype.candidate.error }}
         </div>
+        {% if cms_ai_available('theliacms.component') %}
         <form method="post" action="{{ subject.url('component_generate') }}" enctype="multipart/form-data" data-cms-generate novalidate data-testid="cms-content-prototype-again">
             <input type="hidden" name="_token" value="{{ assignToken() }}">
             <label class="form-label" for="cms-content-prototype-again">{{ 'Ask again'|trans({}, 'theliacms') }}</label>
@@ -26,7 +27,29 @@
             {{ form_row(prototype_reference.panel, { id: 'cms-content-prototype-again-reference', row_attr: { class: 'mt-3' }, attr: { 'data-testid': 'cms-content-prototype-again-reference' } }) }}
             <button type="submit" class="btn btn-sm btn-primary mt-2"><i class="bi bi-stars" aria-hidden="true"></i> {{ 'Prototype it'|trans({}, 'theliacms') }}</button>
         </form>
+        {% endif %}
+    {% elseif prototype.candidate.existing %}
+        <div class="alert alert-info small" role="status" data-testid="cms-content-prototype-existing">
+            {% set existing_name %}{% if prototype.existing_code %}<a href="{{ path('admin.cms.components.site.show', { component: prototype.existing_code }) }}"><code>{{ prototype.candidate.existing }}</code></a>{% else %}<code>{{ prototype.candidate.existing }}</code>{% endif %}{% endset %}
+            {{ 'The component %name% already does what you ask:'|trans({ '%name%': existing_name }, 'theliacms')|raw }} {{ prototype.candidate.reason }}
+        </div>
+        {% if cms_ai_available('theliacms.component') %}
+        <form method="post" action="{{ subject.url('component_generate') }}" enctype="multipart/form-data" data-cms-generate novalidate data-testid="cms-content-prototype-again">
+            <input type="hidden" name="_token" value="{{ assignToken() }}">
+            <label class="form-label" for="cms-content-prototype-again">{{ 'Ask again'|trans({}, 'theliacms') }}</label>
+            <textarea class="form-control" id="cms-content-prototype-again" name="request" rows="3" required>{{ prototype.candidate.request }}</textarea>
+            <div class="form-text">{{ 'If it is not the same thing, say what differs.'|trans({}, 'theliacms') }}</div>
+            {{ form_row(prototype_reference.panel, { id: 'cms-content-prototype-again-reference', row_attr: { class: 'mt-3' }, attr: { 'data-testid': 'cms-content-prototype-again-reference' } }) }}
+            <button type="submit" class="btn btn-sm btn-primary mt-2"><i class="bi bi-stars" aria-hidden="true"></i> {{ 'Prototype it'|trans({}, 'theliacms') }}</button>
+        </form>
+        {% endif %}
     {% else %}
+        {% if prototype.candidate.basedOn %}
+            <p class="small text-muted mb-1" data-testid="cms-content-prototype-based-on">
+                {{ 'Based on'|trans({}, 'theliacms') }}
+                {% if prototype.based_on_code %}<a href="{{ path('admin.cms.components.site.show', { component: prototype.based_on_code }) }}"><code>{{ prototype.candidate.basedOn }}</code></a>{% else %}<code>{{ prototype.candidate.basedOn }}</code>{% endif %}{% if prototype.candidate.reason %}: {{ prototype.candidate.reason }}{% endif %}
+            </p>
+        {% endif %}
         <p class="mb-1"><strong>{{ prototype.component.label }}</strong> <code class="small">{{ prototype.component.name }}</code></p>
         <p class="cms-content__item-excerpt">{{ prototype.component.description }}</p>
         {% if prototype.props is not empty %}
@@ -50,6 +73,7 @@
             <a class="btn btn-sm btn-outline-secondary" href="{{ subject.url('screen') }}">{{ 'Discard'|trans({}, 'theliacms') }}</a>
         </div>
         <p class="form-text">{{ 'Kept, it is a prototype of this site: shown on the pages that hold it, offered to nobody else until CMS > Components keeps it for the whole site.'|trans({}, 'theliacms') }}</p>
+        {% if cms_ai_available('theliacms.component') %}
         <form method="post" action="{{ subject.url('component_generate') }}" class="mt-2" enctype="multipart/form-data" data-cms-generate novalidate data-testid="cms-content-prototype-change">
             <input type="hidden" name="_token" value="{{ assignToken() }}">
             <input type="hidden" name="candidate" value="{{ prototype.candidate.logId }}">
@@ -59,5 +83,6 @@
             {{ form_row(prototype_reference.panel, { id: 'cms-content-prototype-change-reference', row_attr: { class: 'mt-3' }, attr: { 'data-testid': 'cms-content-prototype-change-reference' } }) }}
             <button type="submit" class="btn btn-sm btn-outline-primary mt-2"><i class="bi bi-stars" aria-hidden="true"></i> {{ 'Change it'|trans({}, 'theliacms') }}</button>
         </form>
+        {% endif %}
     {% endif %}
 </section>

@@ -41,6 +41,7 @@ use TheliaCMS\Generation\Ai\SentBackAnswer;
 use TheliaCMS\Generation\Ai\StreamCutException;
 use TheliaCMS\Generation\Guardrail\ReferenceFileGuardrail;
 use TheliaCMS\Generation\Tool\GeneratorTools;
+use TheliaCMS\Generation\Tool\ImportImageTool;
 use TheliaCMS\Generation\Tool\MakeComponentTool;
 use TheliaCMS\Generation\Tool\ReadUrlTool;
 use TheliaCMS\Page\Field\FieldDefinitions;
@@ -129,6 +130,7 @@ final readonly class PageGenerator
         private DocumentChecker $checker,
         private EditorValues $editorValues,
         private ObservedStream $streams = new ObservedStream(),
+        private ?ImportImageTool $imageImporter = null,
     ) {
     }
 
@@ -156,6 +158,15 @@ final readonly class PageGenerator
         // that cites none stays the one it was.
         if ([] !== $addresses) {
             $tools[] = $this->pageReader->definition();
+        }
+
+        // Offered when the brief cites a picture and the site allowed the
+        // reading of the web: the picture is copied into the library, and the
+        // page holds its id.
+        $pictures = [];
+
+        if ($this->imageImporter instanceof ImportImageTool && [] !== $pictures = $this->prompts->importableAddresses($request)) {
+            $tools[] = $this->imageImporter->definition();
         }
 
         // Offered when the site allows a brief to make a component and the
@@ -197,6 +208,8 @@ final readonly class PageGenerator
         $finishReason = null;
         /** @var list<WebPageRead> $reads */
         $reads = [];
+        /** @var array<string, string> $imported what `import_image` answered for each address, so an address imported twice gives the same id */
+        $imported = [];
         /** @var list<UntrustedContent> $pages the pages read, handed to the model as data of a third party */
         $pages = [];
 
@@ -279,7 +292,7 @@ final readonly class PageGenerator
                     $this->log->touch($rowId, $model, $usage, $turns, (int) ((hrtime(true) - $started) / 1_000_000), $costUsd, $coreLogId);
                     $observer?->onTurn($turns, $names);
                     $madeBefore = \count($this->componentMaker->made());
-                    $results = $this->toolResults($response->toolCalls, $request, [] !== $addresses, $addresses, $reads, $pages, $mayMakeComponents, $observer);
+                    $results = $this->toolResults($response->toolCalls, $request, [] !== $addresses, $addresses, $pictures, $imported, $reads, $pages, $mayMakeComponents, $observer);
                     // A component made this turn is a name the schema did not
                     // hold: the schema is written again with it.
                     $schema = \count($this->componentMaker->made()) > $madeBefore
@@ -450,20 +463,23 @@ final readonly class PageGenerator
      *
      * @param list<AiToolCall>       $calls
      * @param list<string>           $addresses what the brief cites, empty when no page may be read
+     * @param list<string>           $pictures  the addresses of pictures the brief cites, empty when none may be imported
+     * @param array<string, string>  $imported
      * @param list<WebPageRead>      $reads
      * @param list<UntrustedContent> $pages
      *
      * @return list<AiMessage>
      */
-    private function toolResults(array $calls, GenerationRequest $request, bool $mayRead, array $addresses, array &$reads, array &$pages, bool $mayMakeComponents, ?GenerationObserverInterface $observer): array
+    private function toolResults(array $calls, GenerationRequest $request, bool $mayRead, array $addresses, array $pictures, array &$imported, array &$reads, array &$pages, bool $mayMakeComponents, ?GenerationObserverInterface $observer): array
     {
         $results = [];
 
         foreach ($calls as $call) {
             $results[] = AiMessage::toolResult($call->id, match (true) {
                 ReadUrlTool::NAME === $call->name && $mayRead => $this->readPage((string) ($call->arguments['url'] ?? ''), $addresses, $reads, $pages),
+                ImportImageTool::NAME === $call->name && [] !== $pictures && null !== $this->imageImporter => $imported[trim((string) ($call->arguments['url'] ?? ''))] ??= $this->imageImporter->import($call->arguments, $pictures, $request->locale),
                 MakeComponentTool::NAME === $call->name && $mayMakeComponents => $this->componentMaker->make($call->arguments, $request, $observer),
-                ReadUrlTool::NAME !== $call->name && MakeComponentTool::NAME !== $call->name => $this->tools->run($call->name, $call->arguments, $request),
+                ReadUrlTool::NAME !== $call->name && MakeComponentTool::NAME !== $call->name && ImportImageTool::NAME !== $call->name => $this->tools->run($call->name, $call->arguments, $request),
                 default => \sprintf('There is no tool called "%s".', $call->name),
             });
         }

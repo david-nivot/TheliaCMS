@@ -92,6 +92,8 @@ final class PreparedSvgCleanupTest extends CmsIntegrationTestCase
                 }
             })),
             $this->getService(IconCacheInvalidator::class),
+            $this->getService(\TheliaCMS\Media\Video\VideoIntake::class),
+            $this->getService(\TheliaCMS\Media\Video\VideoConversions::class),
             $logger,
         );
 

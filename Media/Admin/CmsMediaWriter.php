@@ -26,6 +26,8 @@ use TheliaCMS\Media\Icon\IconNameTakenException;
 use TheliaCMS\Media\Icon\InvalidIconNameException;
 use TheliaCMS\Media\Svg\PreparedSvgStore;
 use TheliaCMS\Media\Svg\SvgUpload;
+use TheliaCMS\Media\Video\VideoConversions;
+use TheliaCMS\Media\Video\VideoIntake;
 use TheliaLibrary\Exception\UnreadableSvgException;
 use TheliaLibrary\Exception\UnsupportedLibraryImageException;
 use TheliaLibrary\Model\LibraryImage;
@@ -46,6 +48,8 @@ final readonly class CmsMediaWriter
         private PreparedSvgStore $preparedSvgs,
         private IconNames $iconNames,
         private IconCacheInvalidator $iconCache,
+        private VideoIntake $videoIntake,
+        private VideoConversions $videoConversions,
         private LoggerInterface $logger = new NullLogger(),
     ) {
     }
@@ -60,6 +64,11 @@ final readonly class CmsMediaWriter
      * SVG is not stored here: it is cleaned once, so a file that cannot be read
      * is refused at once, then kept apart for the preparation screen, where the
      * editor sees what the cleaning removed before it enters the library.
+     *
+     * With ffmpeg on the server a phone video (MOV, WebM, an MP4 of up to 100 MB)
+     * is stored as sent and queued for its conversion: it is listed as
+     * processing and replaced, under the same id, by a web MP4. Without ffmpeg
+     * only an MP4 of up to 50 MB is taken, as it is.
      *
      * An `$imagesOnly` caller (a section, a page: places that draw a picture)
      * has an MP4 refused as a format it does not take, and nothing is stored.
@@ -95,6 +104,7 @@ final readonly class CmsMediaWriter
                 try {
                     $image = $this->images->createImage($file, $file->getClientOriginalName(), $locale);
                     $this->library->tag($image);
+                    $this->convertIfVideo($image);
                     $stored[] = $image;
 
                     continue;
@@ -233,6 +243,10 @@ final readonly class CmsMediaWriter
             // published page points at, is kept.
             $this->images->updateImage($image->getId(), $data['file'], null, $locale);
             $image->reload();
+
+            if ($this->convertIfVideo($image)) {
+                $image->reload();
+            }
         }
 
         $image->setLocale($locale)->setCaption($data['caption']);
@@ -286,6 +300,24 @@ final readonly class CmsMediaWriter
         // The name goes after the image: a row left behind by a failure is ignored when names are read.
         $this->images->deleteImage($image->getId());
         $this->iconNames->remove($image->getId());
+        $this->videoConversions->forget((int) $image->getId());
+    }
+
+    /**
+     * Queues the conversion of a video just stored, when the server converts.
+     * The conversion may have run already (a server without a queue runs it in
+     * the request): the video is read again from the library.
+     */
+    private function convertIfVideo(LibraryImage $image): bool
+    {
+        if (!$image->isVideo() || !$this->videoIntake->converts()) {
+            return false;
+        }
+
+        $this->videoConversions->queue($image);
+        $image->reload();
+
+        return true;
     }
 
     private function refusalOf(UploadedFile $file, bool $imagesOnly): ?MediaUploadRefusal
@@ -297,8 +329,15 @@ final readonly class CmsMediaWriter
         }
 
         // The type read in the content of the file decides, never its extension.
-        if (!$imagesOnly && \in_array($file->getMimeType(), CmsMediaType::ACCEPTED_VIDEO_MIME_TYPES, true)) {
-            return $file->getSize() > CmsMediaType::MAX_VIDEO_BYTES ? MediaUploadRefusal::VideoTooHeavy : null;
+        if (!$imagesOnly && \in_array($file->getMimeType(), $this->videoIntake->mimeTypes(), true)) {
+            return $file->getSize() > $this->videoIntake->maxBytes()
+                ? ($this->videoIntake->converts() ? MediaUploadRefusal::RawVideoTooHeavy : MediaUploadRefusal::VideoTooHeavy)
+                : null;
+        }
+
+        // A phone video the server cannot convert: said as it is, not as an unknown format.
+        if (!$imagesOnly && \in_array($file->getMimeType(), CmsMediaType::RAW_VIDEO_MIME_TYPES, true)) {
+            return MediaUploadRefusal::VideoNeedsFfmpeg;
         }
 
         if (!\in_array($file->getMimeType(), CmsMediaType::ACCEPTED_MIME_TYPES, true)) {

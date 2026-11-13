@@ -25,6 +25,8 @@ enum MediaUploadRefusal: string
     case TooLarge = 'too-large';
     case TooHeavy = 'too-heavy';
     case VideoTooHeavy = 'video-too-heavy';
+    case RawVideoTooHeavy = 'raw-video-too-heavy';
+    case VideoNeedsFfmpeg = 'video-needs-ffmpeg';
     case TooManyPixels = 'too-many-pixels';
     case Unreadable = 'unreadable';
     case Failed = 'failed';
@@ -58,6 +60,8 @@ enum MediaUploadRefusal: string
             self::TooLarge => 'The file is larger than the server accepts.',
             self::TooHeavy => 'The image is heavier than 10 MB.',
             self::VideoTooHeavy => 'The video is heavier than 50 MB.',
+            self::RawVideoTooHeavy => 'The video is heavier than 100 MB.',
+            self::VideoNeedsFfmpeg => 'This video format needs ffmpeg to be converted, and the server has none. Send an MP4 video (H.264) of 50 MB at most, or ask the administrator to install ffmpeg.',
             self::TooManyPixels => 'The image has more than 25 million pixels.',
             self::Unreadable => 'The file is not a readable image.',
             self::Failed => 'The file did not arrive whole. Send it again.',

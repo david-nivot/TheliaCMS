@@ -239,6 +239,8 @@ final class IconNamesTest extends CmsIntegrationTestCase
             $this->getService(\TheliaCMS\Media\Svg\PreparedSvgStore::class),
             $failing,
             $this->getService(IconCacheInvalidator::class),
+            $this->getService(\TheliaCMS\Media\Video\VideoIntake::class),
+            $this->getService(\TheliaCMS\Media\Video\VideoConversions::class),
         );
         $before = LibraryImageQuery::create()->count();
 

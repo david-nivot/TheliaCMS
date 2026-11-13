@@ -36,6 +36,7 @@ use Thelia\Model\ResourceQuery;
 use Thelia\Model\RewritingUrlQuery;
 use Thelia\Module\BaseModule;
 use TheliaCMS\Content\Section\SectionStories;
+use TheliaCMS\Generation\Ai\AiAvailability;
 use TheliaCMS\Http\SharedCache\CmsSharedCacheContributor;
 use TheliaCMS\Http\SharedCache\CoreSharedCache;
 use TheliaCMS\Http\SharedCache\SharedMaxAgeCapListener;
@@ -410,6 +411,9 @@ class TheliaCMS extends BaseModule
                 // Built per call by ContentTargets, around the page or the item they serve.
                 __DIR__.'/Page/Admin/PageContentTarget.php',
                 __DIR__.'/Page/Admin/PageContentRow.php',
+                // Built by LinkedPagesFinder for the drawer of the pages of an element.
+                __DIR__.'/Page/Admin/LinkedPage.php',
+                __DIR__.'/Page/Admin/LinkedPages.php',
                 __DIR__.'/Zone/ZoneContentTarget.php',
                 __DIR__.'/Catalogue/Admin/ItemContentTarget.php',
                 __DIR__.'/Catalogue/Admin/ItemContentRow.php',
@@ -447,6 +451,9 @@ class TheliaCMS extends BaseModule
                 // Registered below, guarded: it implements an interface of the
                 // Flexy theme.
                 __DIR__.'/Content/Section/SectionStories.php',
+                // Value objects and messages of the video conversion, built by the code that sends them.
+                __DIR__.'/Media/Video/ConvertVideo.php',
+                __DIR__.'/Media/Video/ProcessOutcome.php',
                 __DIR__.'/Page/Document/PageDocument.php',
                 __DIR__.'/Page/Document/PageDocumentLink.php',
                 __DIR__.'/Page/Document/PageDocumentUpload.php',
@@ -476,6 +483,13 @@ class TheliaCMS extends BaseModule
             ])
             ->autowire(true)
             ->autoconfigure(true);
+
+        // Public so the tests of the screens can replace it by an answer that
+        // needs no AI connection, which the database of the tests has none of.
+        $servicesConfigurator->set(AiAvailability::class)
+            ->autowire(true)
+            ->autoconfigure(true)
+            ->public();
 
         // Dynamic blocks are rendered through an interface so the substitution
         // of a page can be unit-tested without a theme behind it.

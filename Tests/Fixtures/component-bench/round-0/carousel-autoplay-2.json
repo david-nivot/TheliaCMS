@@ -1,0 +1,38 @@
+{
+  "case": "carousel-autoplay",
+  "round": "round-0",
+  "run": 2,
+  "prompt_sha256": "4840d102900f6dfcf3b6fb52a0edfa83c8bb19a1f7c2aec5ea697cac56706637",
+  "answers": [
+    "{\"outcome\":\"copy\",\"existing\":\"Site:Carousel\",\"reason\":\"La variante fait défiler les photos toute seule, en boucle continue, avec un choix de vitesse. Elle s'arrête au survol et au focus clavier, et reste immobile pour les visiteurs qui demandent moins de mouvement.\",\"code\":\"\",\"label\":\"\",\"description\":\"\",\"props\":\"\",\"sample\":\"\",\"template\":\"\",\"css\":\"\"}",
+    "{\"outcome\":\"component\",\"existing\":\"\",\"reason\":\"\",\"code\":\"AutoScrollGallery\",\"label\":\"Scrolling gallery\",\"description\":\"A row of pictures, each with an optional caption, that scrolls sideways on its own in a seamless loop and pauses under the pointer and on keyboard focus. It stays still and scrolls by hand for visitors who ask for less motion. Use it to show a series of works, projects or products as a moving band.\",\"props\":\"[{\\\"name\\\":\\\"title\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Heading\\\",\\\"max\\\":120},{\\\"name\\\":\\\"speed\\\",\\\"type\\\":\\\"choice\\\",\\\"label\\\":\\\"Speed\\\",\\\"choices\\\":{\\\"slow\\\":\\\"Slow\\\",\\\"normal\\\":\\\"Normal\\\",\\\"fast\\\":\\\"Fast\\\"},\\\"default\\\":\\\"normal\\\"},{\\\"name\\\":\\\"direction\\\",\\\"type\\\":\\\"choice\\\",\\\"label\\\":\\\"Direction\\\",\\\"choices\\\":{\\\"left\\\":\\\"Towards the left\\\",\\\"right\\\":\\\"Towards the right\\\"},\\\"default\\\":\\\"left\\\"},{\\\"name\\\":\\\"slides\\\",\\\"type\\\":\\\"items\\\",\\\"label\\\":\\\"Pictures\\\",\\\"min\\\":2,\\\"max\\\":12,\\\"items\\\":[{\\\"name\\\":\\\"image\\\",\\\"type\\\":\\\"image\\\",\\\"label\\\":\\\"Picture\\\"},{\\\"name\\\":\\\"alt\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Alternative text\\\",\\\"help\\\":\\\"What the picture shows, in one sentence.\\\",\\\"required\\\":true,\\\"max\\\":160},{\\\"name\\\":\\\"caption\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Caption\\\",\\\"max\\\":160}]}]\",\"sample\":\"{\\\"title\\\":\\\"Nos réalisations\\\",\\\"speed\\\":\\\"normal\\\",\\\"direction\\\":\\\"left\\\",\\\"slides\\\":[{\\\"image\\\":null,\\\"alt\\\":\\\"Cuisine en chêne massif avec un îlot central et un plan de travail en pierre\\\",\\\"caption\\\":\\\"Cuisine sur mesure à Nantes\\\"},{\\\"image\\\":null,\\\"alt\\\":\\\"Bibliothèque blanche qui couvre tout un mur autour d’une fenêtre\\\",\\\"caption\\\":\\\"Bibliothèque intégrée\\\"},{\\\"image\\\":null,\\\"alt\\\":\\\"Salle de bains avec un meuble vasque en noyer et une douche à l’italienne\\\",\\\"caption\\\":\\\"Salle de bains rénovée\\\"},{\\\"image\\\":null,\\\"alt\\\":\\\"Dressing en bois clair avec des tiroirs et des penderies ouvertes\\\",\\\"caption\\\":\\\"Dressing sous les combles\\\"},{\\\"image\\\":null,\\\"alt\\\":\\\"Escalier en bois aux marches suspendues dans une entrée lumineuse\\\",\\\"caption\\\":\\\"Escalier suspendu\\\"},{\\\"image\\\":null,\\\"alt\\\":\\\"Comptoir de boutique en bois et métal noir face à l’entrée\\\",\\\"caption\\\":\\\"Agencement d’une boutique\\\"}]}\",\"template\":\"<section class=\\\"marquee marquee--{{ props.speed|default('normal') }} marquee--{{ props.direction|default('left') }}\\\">{% if props.title is not empty %}<h2 class=\\\"marquee__title\\\">{{ props.title }}</h2>{% endif %}<div class=\\\"marquee__frame\\\" tabindex=\\\"0\\\"{% if props.title is not empty %} role=\\\"region\\\" aria-label=\\\"{{ props.title }}\\\"{% endif %}><ul class=\\\"marquee__track\\\" data-cms-sizes=\\\"(min-width: 48rem) 22rem, 16rem\\\">{% for slide in props.slides %}<li class=\\\"marquee__slide\\\">{% if slide.image %}<img class=\\\"marquee__image\\\" src=\\\"{{ slide.image }}\\\" alt=\\\"{{ slide.alt }}\\\">{% endif %}{% if slide.caption is not empty %}<p class=\\\"marquee__caption\\\">{{ slide.caption }}</p>{% endif %}</li>{% endfor %}{% for slide in props.slides %}<li class=\\\"marquee__slide marquee__slide--copy\\\" aria-hidden=\\\"true\\\">{% if slide.image %}<img class=\\\"marquee__image\\\" src=\\\"{{ slide.image }}\\\" alt=\\\"\\\">{% endif %}{% if slide.caption is not empty %}<p class=\\\"marquee__caption\\\">{{ slide.caption }}</p>{% endif %}</li>{% endfor %}</ul></div></section>\",\"css\":\".marquee__title { margin: 0 0 1rem; color: var(--cms-color-text); }\\n.marquee__frame { overflow-x: auto; overscroll-behavior-x: contain; border-radius: 0.5rem; }\\n.marquee__frame:focus-visible { outline: 2px solid var(--cms-color-accent); outline-offset: 4px; }\\n.marquee__track { display: flex; width: max-content; margin: 0; padding: 0; list-style: none; }\\n.marquee__slide { flex: 0 0 16rem; padding-right: 1rem; }\\n.marquee__slide--copy { display: none; }\\n.marquee__image { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 0.5rem; background: var(--cms-color-accent-surface); }\\n.marquee__caption { margin: 0.5rem 0 0; color: var(--cms-color-text-muted); }\\n@media (min-width: 48rem) { .marquee__slide { flex-basis: 22rem; padding-right: 1.5rem; } }\\n@keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }\\n@media (prefers-reduced-motion: no-preference) { .marquee__frame { overflow: hidden; } .marquee__slide--copy { display: block; } .marquee__track { animation: scroll 40s linear infinite; } .marquee--slow .marquee__track { animation-duration: 60s; } .marquee--fast .marquee__track { animation-duration: 25s; } .marquee--right .marquee__track { animation-direction: reverse; } .marquee__frame:hover .marquee__track { animation-play-state: paused; } .marquee__frame:focus-within .marquee__track { animation-play-state: paused; } }\"}"
+  ],
+  "outcome": "component",
+  "existing": null,
+  "based_on": "Site:Carousel",
+  "browser": {
+    "375": {
+      "scroll": false,
+      "axe": []
+    },
+    "1440": {
+      "scroll": false,
+      "axe": []
+    }
+  },
+  "verdict": {
+    "pass": false,
+    "checks": {
+      "outcome": true,
+      "target": true,
+      "valid": true,
+      "props": true,
+      "markup": false,
+      "css": true,
+      "no_h1": true,
+      "img_alt": true,
+      "reduced_motion": true,
+      "browser": true
+    }
+  }
+}

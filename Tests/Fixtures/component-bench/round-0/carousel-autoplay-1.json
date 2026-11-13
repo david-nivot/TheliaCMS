@@ -1,0 +1,38 @@
+{
+  "case": "carousel-autoplay",
+  "round": "round-0",
+  "run": 1,
+  "prompt_sha256": "4840d102900f6dfcf3b6fb52a0edfa83c8bb19a1f7c2aec5ea697cac56706637",
+  "answers": [
+    "{\"outcome\":\"copy\",\"existing\":\"Site:Carousel\",\"reason\":\"La variante fait défiler les photos toute seule, en boucle continue, avec une pause au survol et au focus clavier, et reste immobile pour les visiteurs qui demandent moins de mouvement, au lieu d’un défilement à la main.\",\"code\":\"\",\"label\":\"\",\"description\":\"\",\"props\":\"\",\"sample\":\"\",\"template\":\"\",\"css\":\"\"}",
+    "{\"outcome\":\"component\",\"existing\":\"\",\"reason\":\"\",\"code\":\"AutoScrollCarousel\",\"label\":\"Auto-scrolling carousel\",\"description\":\"A row of pictures, each with an optional caption, that scrolls sideways on its own in a seamless loop and pauses under the pointer and on keyboard focus. Use it to show a gallery of work or achievements; for a visitor who asks for less motion it stays still and scrolls by hand.\",\"props\":\"[{\\\"name\\\":\\\"title\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Heading\\\",\\\"max\\\":120},{\\\"name\\\":\\\"speed\\\",\\\"type\\\":\\\"choice\\\",\\\"label\\\":\\\"Speed\\\",\\\"choices\\\":{\\\"slow\\\":\\\"Slow\\\",\\\"normal\\\":\\\"Normal\\\",\\\"fast\\\":\\\"Fast\\\"},\\\"default\\\":\\\"normal\\\"},{\\\"name\\\":\\\"direction\\\",\\\"type\\\":\\\"choice\\\",\\\"label\\\":\\\"Direction\\\",\\\"choices\\\":{\\\"left\\\":\\\"Towards the left\\\",\\\"right\\\":\\\"Towards the right\\\"},\\\"default\\\":\\\"left\\\"},{\\\"name\\\":\\\"slides\\\",\\\"type\\\":\\\"items\\\",\\\"label\\\":\\\"Pictures\\\",\\\"min\\\":2,\\\"max\\\":12,\\\"items\\\":[{\\\"name\\\":\\\"image\\\",\\\"type\\\":\\\"image\\\",\\\"label\\\":\\\"Picture\\\"},{\\\"name\\\":\\\"alt\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Alternative text\\\",\\\"help\\\":\\\"What the picture shows, in one sentence.\\\",\\\"required\\\":true,\\\"max\\\":160},{\\\"name\\\":\\\"caption\\\",\\\"type\\\":\\\"text\\\",\\\"label\\\":\\\"Caption\\\",\\\"max\\\":160}]}]\",\"sample\":\"{\\\"title\\\":\\\"Nos réalisations\\\",\\\"speed\\\":\\\"normal\\\",\\\"direction\\\":\\\"left\\\",\\\"slides\\\":[{\\\"image\\\":null,\\\"alt\\\":\\\"Cuisine en chêne clair avec un îlot central et un plan de travail en pierre\\\",\\\"caption\\\":\\\"Cuisine sur mesure à Lyon\\\"},{\\\"image\\\":null,\\\"alt\\\":\\\"Salle de bain carrelée de blanc avec une douche à l’italienne vitrée\\\",\\\"caption\\\":\\\"Rénovation d’une salle de bain\\\"},{\\\"image\\\":null,\\\"alt\\\":\\\"Bibliothèque en noyer qui couvre tout un mur de salon\\\",\\\"caption\\\":\\\"Bibliothèque murale\\\"},{\\\"image\\\":null,\\\"alt\\\":\\\"Terrasse en bois prolongée par une pergola au-dessus d’un jardin\\\",\\\"caption\\\":\\\"Terrasse et pergola\\\"},{\\\"image\\\":null,\\\"alt\\\":\\\"Dressing aux portes coulissantes miroir dans une chambre\\\",\\\"caption\\\":\\\"Dressing d’une suite parentale\\\"}]}\",\"template\":\"<section class=\\\"carousel\\\">{% if props.title is not empty %}<h2 class=\\\"carousel__title\\\">{{ props.title }}</h2>{% endif %}<div class=\\\"carousel__frame carousel__frame--{{ props.speed|default('normal') }} carousel__frame--{{ props.direction|default('left') }}\\\" tabindex=\\\"0\\\"{% if props.title is not empty %} role=\\\"region\\\" aria-label=\\\"{{ props.title }}\\\"{% endif %} data-cms-sizes=\\\"(min-width: 48rem) 24rem, 18rem\\\"><ul class=\\\"carousel__track\\\">{% for slide in props.slides %}<li class=\\\"carousel__slide\\\">{% if slide.image %}<img class=\\\"carousel__image\\\" src=\\\"{{ slide.image }}\\\" alt=\\\"{{ slide.alt }}\\\">{% endif %}{% if slide.caption is not empty %}<p class=\\\"carousel__caption\\\">{{ slide.caption }}</p>{% endif %}</li>{% endfor %}{% for slide in props.slides %}<li class=\\\"carousel__slide carousel__slide--copy\\\" aria-hidden=\\\"true\\\">{% if slide.image %}<img class=\\\"carousel__image\\\" src=\\\"{{ slide.image }}\\\" alt=\\\"\\\">{% endif %}{% if slide.caption is not empty %}<p class=\\\"carousel__caption\\\">{{ slide.caption }}</p>{% endif %}</li>{% endfor %}</ul></div></section>\",\"css\":\".carousel__title { margin: 0 0 1rem; color: var(--cms-color-text); }\\n.carousel__frame { overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; border-radius: 0.5rem; }\\n.carousel__frame:focus-visible { outline: 2px solid var(--cms-color-accent); outline-offset: 4px; }\\n.carousel__track { display: flex; width: max-content; margin: 0; padding: 0 0 0.5rem; list-style: none; }\\n.carousel__slide { flex: 0 0 18rem; width: 18rem; margin-right: 1rem; scroll-snap-align: start; }\\n.carousel__slide--copy { display: none; }\\n.carousel__image { display: block; width: 100%; height: auto; border-radius: 0.5rem; }\\n.carousel__caption { margin: 0.5rem 0 0; color: var(--cms-color-text-muted); }\\n@media (min-width: 48rem) { .carousel__slide { flex-basis: 24rem; width: 24rem; } }\\n@keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }\\n@media (prefers-reduced-motion: no-preference) { .carousel__frame { overflow: hidden; scroll-snap-type: none; } .carousel__slide--copy { display: block; } .carousel__track { animation: scroll 40s linear infinite; } .carousel__frame--slow .carousel__track { animation-duration: 60s; } .carousel__frame--fast .carousel__track { animation-duration: 25s; } .carousel__frame--right .carousel__track { animation-direction: reverse; } .carousel__frame:hover .carousel__track { animation-play-state: paused; } .carousel__frame:focus-within .carousel__track { animation-play-state: paused; } }\"}"
+  ],
+  "outcome": "component",
+  "existing": null,
+  "based_on": "Site:Carousel",
+  "browser": {
+    "375": {
+      "scroll": false,
+      "axe": []
+    },
+    "1440": {
+      "scroll": false,
+      "axe": []
+    }
+  },
+  "verdict": {
+    "pass": false,
+    "checks": {
+      "outcome": true,
+      "target": true,
+      "valid": true,
+      "props": true,
+      "markup": false,
+      "css": true,
+      "no_h1": true,
+      "img_alt": true,
+      "reduced_motion": true,
+      "browser": true
+    }
+  }
+}

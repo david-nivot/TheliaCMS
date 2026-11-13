@@ -128,6 +128,13 @@ shows how to test an update, outside a transaction.
   -c local/modules/TheliaCMS/phpunit.integration.xml.dist`), after removing
   `var/propel/test` and `var/cache/test` if they were built with it.
 
+- The database of the tests has no AI connection and no model, so the real
+  `Generation\Ai\AiAvailability` answers "no model" for every usage and the
+  screens draw no AI entry. `AdminScreenTestCase` replaces it by
+  `Tests\Support\FakeAiAvailability` (everything available) in `$this->ai`; a
+  test of the degraded mode calls `$this->ai->turnOff()` before it asks for a
+  screen. `FakeAiGateway` answers the calls, not the buttons: both are needed.
+
 - One integration suite at a time on a host. Two suites run together, or a
   suite stopped halfway, leave rows behind (`Duplicate entry 'admin-40'`,
   `'ROUND-TRIP-REF'`) and the next run fails by the hundred, with no link to
@@ -217,6 +224,32 @@ shows how to test an update, outside a transaction.
   section through the writer before it asks for a screen leaves `app.request`
   null for the rest of the process: ask for any screen first
   (`SectionEditScreenTest::renderedOnce()`).
+- The other way round, once a screen of the back office was drawn, the kernel
+  of the test keeps the templates of the back office ahead of the theme's: a
+  page of the site asked next (a preview, a page of the front) comes out in
+  the layout of the back office, without the hooks of the theme
+  (`layout.body.bottom`). A test that checks what the theme adds asks for that
+  page first (`SiteComponentScreenTest::testThePreviewLinksTheScriptOfTheVideosAsTheSiteDoes`).
+- The master switch of the AI layer (`ai_enabled`) reads on when the setting is
+  missing, but the test database of Thelia 3.3.0 holds it off: a test that
+  expects an AI usage to be judged on its connection or its model writes the
+  switch on first (`AiAvailabilityTest::setUp()`), or the CI on 3.3.0 sees
+  every usage disabled.
+
+### The conversion of a video
+
+The tests of the video conversion (`Tests/Integration/Media/Video`,
+`Tests/Unit/Media/Video`) never run ffmpeg: `Tests/Support/FakeProcessExecutor`
+answers `-version` and writes the file a conversion or a poster would have
+written, at the last argument of the command, so the handler goes through its
+real path. The commands themselves are pinned by `FfmpegBinaryTest`. The tests
+that store a MOV skip, with their reason, on a host still on a TheliaLibrary
+older than 2.7.0, which stores MP4 only (`QuickTimeVideos::libraryStoresThem()`). The real encoder is checked by
+hand on a phone video (README, "Videos from a phone").
+The integration suite runs without ffmpeg whatever the machine
+(`THELIA_CMS_FFMPEG_PATH` points nowhere in `phpunit.integration.xml.dist`): a host
+with ffmpeg and TheliaLibrary 2.7.0 would otherwise turn the conversion on and
+change the formats and ceilings the media screens announce.
 
 ## Browser checks
 

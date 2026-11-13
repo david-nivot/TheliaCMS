@@ -234,7 +234,10 @@ final readonly class CmsPageComponentController
                 return;
             }
 
-            $events->done(self::withCandidate($screen, $result->logId), $this->support->translate('The component is written.'));
+            $events->done(
+                self::withCandidate($screen, $result->logId),
+                $this->support->translate(null === $result->component ? 'The site already has a component that does this.' : 'The component is written.'),
+            );
         }, Response::HTTP_OK, [
             'Content-Type' => 'text/event-stream; charset=UTF-8',
             'Cache-Control' => 'no-cache, no-store, must-revalidate',

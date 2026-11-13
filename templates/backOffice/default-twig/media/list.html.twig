@@ -44,6 +44,12 @@
                 <input class="form-control" type="file" id="cms-media-files" name="files[]" multiple
                        accept="{{ accepted_mime_types }}" onchange="this.form.requestSubmit()">
                 <div class="form-text">{{ 'JPEG, PNG, WebP or SVG images, or MP4 videos. Several at once.'|trans({}, 'theliacms') }}</div>
+                {% if converts_videos %}
+                    <div class="form-text" data-testid="cms-media-video-conversion-hint">{{ 'Videos from a phone (MOV, MP4, WebM, %size% MB at most) are converted for the web in the background.'|trans({ '%size%': (video_ceiling / 1048576)|round }, 'theliacms') }}</div>
+                {% endif %}
+                {% if video_php_limits_too_low %}
+                    <div class="form-text text-warning-emphasis" data-testid="cms-media-video-php-limits">{{ 'The server accepts files of %size% MB at most (PHP upload_max_filesize and post_max_size): raise both above %ceiling% MB to send phone videos.'|trans({ '%size%': (max_video_upload_size / 1048576)|round(1), '%ceiling%': (video_ceiling / 1048576)|round }, 'theliacms') }}</div>
+                {% endif %}
             </div>
             <button type="submit" class="btn btn-primary text-nowrap" data-cms-media-upload-submit>
                 <i class="bi bi-upload me-1" aria-hidden="true"></i>{{ 'Add files'|trans({}, 'theliacms') }}
@@ -74,7 +80,7 @@
         } %}
         {# A GET form: a filtered list is an address, bookmarked, shared or
            reloaded as it is. #}
-        <form method="get" class="row g-2 align-items-end mb-3" action="{{ path('admin.cms.media.list') }}"
+        <form method="get" class="row g-2 align-items-start mb-3" action="{{ path('admin.cms.media.list') }}"
               data-testid="cms-media-filters">
             <input type="hidden" name="edit_language_id" value="{{ edit_language_id }}">
             {% if in_list %}<input type="hidden" name="view" value="list">{% endif %}
@@ -92,17 +98,30 @@
                     {% endfor %}
                 </select>
             </div>
-            {% if tags is not empty %}
-                <div class="col-6 col-md-auto">
-                    <label class="form-label small mb-1" for="cms-media-tag">{{ 'Tag'|trans({}, 'theliacms') }}</label>
-                    <select class="form-select" id="cms-media-tag" name="tag">
-                        <option value="">{{ 'Every tag'|trans({}, 'theliacms') }}</option>
-                        {% for title, count in tags %}
-                            <option value="{{ title }}" {{ query.tag == title ? 'selected' }}>{{ title }} ({{ count }})</option>
-                        {% endfor %}
-                    </select>
-                </div>
-            {% endif %}
+            <div class="col-6 col-md-auto">
+                <label class="form-label small mb-1" for="cms-media-kind">{{ 'Type'|trans({}, 'theliacms') }}</label>
+                <select class="form-select" id="cms-media-kind" name="kind" data-testid="cms-media-kind">
+                    <option value="">{{ 'Images and videos'|trans({}, 'theliacms') }}</option>
+                    {% for kind in kinds %}
+                        <option value="{{ kind.value }}" {{ query.kind == kind ? 'selected' }}>{{ (kind.value == 'video' ? 'Videos only' : 'Images only')|trans({}, 'theliacms') }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {# Always there: a library with no tag yet says how to give one,
+               instead of hiding the means to narrow a list. #}
+            <div class="col-6 col-md-auto">
+                <label class="form-label small mb-1" for="cms-media-tag">{{ 'Tag'|trans({}, 'theliacms') }}</label>
+                <select class="form-select" id="cms-media-tag" name="tag" data-testid="cms-media-tag"
+                        {% if tags is empty %}disabled aria-describedby="cms-media-tag-hint"{% endif %}>
+                    <option value="">{{ 'Every tag'|trans({}, 'theliacms') }}</option>
+                    {% for title, count in tags %}
+                        <option value="{{ title }}" {{ query.tag == title ? 'selected' }}>{{ title }} ({{ count }})</option>
+                    {% endfor %}
+                </select>
+                {% if tags is empty %}
+                    <div class="form-text" id="cms-media-tag-hint" data-testid="cms-media-tag-hint">{{ 'No tag yet. Add one from a media sheet or with “Add a tag” below.'|trans({}, 'theliacms') }}</div>
+                {% endif %}
+            </div>
             <div class="col-6 col-md-auto">
                 <label class="form-label small mb-1" for="cms-media-order">{{ 'Order'|trans({}, 'theliacms') }}</label>
                 <select class="form-select" id="cms-media-order" name="order">
@@ -138,9 +157,11 @@
            the library. #}
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
             <p class="text-body-secondary small mb-0" data-testid="cms-media-count">
-            {{ '%count% image(s)'|trans({ '%count%': tally.total - tally.videos }, 'theliacms') }}
-            {%- if tally.videos > 0 %}
-                · {{ '%count% video(s)'|trans({ '%count%': tally.videos }, 'theliacms') }}
+            {%- if query.kind.value|default('') != 'video' %}
+                {{ '%count% image(s)'|trans({ '%count%': tally.total - tally.videos }, 'theliacms') }}
+            {%- endif -%}
+            {%- if query.kind.value|default('') != 'image' and (tally.videos > 0 or query.kind is not null) %}
+                {{ query.kind is null ? '· ' }}{{ '%count% video(s)'|trans({ '%count%': tally.videos }, 'theliacms') }}
             {%- endif -%}
             {%- if tally.undescribed > 0 %}
                 · <a class="link-warning" href="{{ path('admin.cms.media.list', bare_list|merge({ filter: 'to-describe' })) }}">{{ '%count% still to describe'|trans({ '%count%': tally.undescribed }, 'theliacms') }}</a>
@@ -165,7 +186,7 @@
         <div class="card">
             <div class="card-body text-center py-5">
                 {% if query.isNarrowed %}
-                    <p class="text-muted mb-3">{{ 'No image matches.'|trans({}, 'theliacms') }}</p>
+                    <p class="text-muted mb-3">{{ (query.kind.value|default('') == 'video' ? 'No video matches.' : 'No image matches.')|trans({}, 'theliacms') }}</p>
                     <a class="btn btn-outline-secondary" href="{{ path('admin.cms.media.list', bare_list) }}">{{ 'Show every image'|trans({}, 'theliacms') }}</a>
                 {% else %}
                     <p class="text-muted mb-0">{{ 'No image yet. Images added here can be placed in any page, and are described once for every page that uses them.'|trans({}, 'theliacms') }}</p>
@@ -184,9 +205,9 @@
                 <input class="form-check-input" type="checkbox" id="cms-media-select-all" data-cms-media-select-all hidden>
                 <label class="form-check-label small" for="cms-media-select-all" data-cms-media-selected hidden>{{ 'Select the page'|trans({}, 'theliacms') }}</label>
             </div>
-            <label class="visually-hidden" for="cms-media-bulk-action">{{ 'With the selected images'|trans({}, 'theliacms') }}</label>
+            <label class="visually-hidden" for="cms-media-bulk-action">{{ 'With the selected files'|trans({}, 'theliacms') }}</label>
             <select class="form-select form-select-sm w-auto" id="cms-media-bulk-action" name="action">
-                <option value="">{{ 'With the selected images…'|trans({}, 'theliacms') }}</option>
+                <option value="">{{ 'With the selected files…'|trans({}, 'theliacms') }}</option>
                 <option value="tag-add">{{ 'Add a tag'|trans({}, 'theliacms') }}</option>
                 <option value="tag-remove">{{ 'Remove a tag'|trans({}, 'theliacms') }}</option>
                 <option value="decorative">{{ 'Mark decorative'|trans({}, 'theliacms') }}</option>
@@ -205,7 +226,7 @@
         <dialog class="border-0 rounded shadow p-0" data-cms-media-bulk-dialog aria-labelledby="cms-media-bulk-title"
                 style="width: min(480px, calc(100vw - 32px))">
             <div class="p-4">
-                <h2 class="h5" id="cms-media-bulk-title">{{ 'Delete the selected images for good?'|trans({}, 'theliacms') }}</h2>
+                <h2 class="h5" id="cms-media-bulk-title">{{ 'Delete the selected files for good?'|trans({}, 'theliacms') }}</h2>
                 <p class="text-body-secondary">{{ 'Their files are removed. An image a page or an item still shows is kept.'|trans({}, 'theliacms') }}</p>
                 <div class="d-flex justify-content-end gap-2">
                     <button type="button" class="btn btn-outline-secondary" data-cms-media-bulk-cancel>{{ 'Cancel'|trans({}, 'theliacms') }}</button>
@@ -259,6 +280,11 @@
 
                             {% if item.video %}
                                 <span class="badge text-bg-light"><i class="bi bi-camera-video me-1" aria-hidden="true"></i>{{ 'Video'|trans({}, 'theliacms') }}</span>
+                                {% if item.conversion.value == 'processing' %}
+                                    <span class="badge text-bg-info" data-testid="cms-media-video-state" data-state="processing">{{ 'Processing'|trans({}, 'theliacms') }}</span>
+                                {% elseif item.conversion.value == 'failed' %}
+                                    <span class="badge text-bg-danger" data-testid="cms-media-video-state" data-state="failed" title="{{ (item.conversionProblem ?? 'The video could not be converted.')|trans({}, 'theliacms') }}">{{ 'Failed'|trans({}, 'theliacms') }}</span>
+                                {% endif %}
                             {% elseif not item.isDescribed %}
                                 <span class="badge text-bg-warning">
                                     <i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>
@@ -281,7 +307,7 @@
                         </div>
                         <div class="card-footer bg-transparent py-2 text-muted small">
                             {% if item.usageCount > 0 %}
-                                {{ 'Used by %count% page(s) or item(s)'|trans({ '%count%': item.usageCount }, 'theliacms') }}
+                                {% include '@TheliaCMSModule/backOffice/default-twig/linked-pages/_trigger.html.twig' with { kind: 'media', key: item.id, count: item.usageCount, text: 'Used by %count% page(s) or item(s)'|trans({ '%count%': item.usageCount }, 'theliacms'), subject: item.title, testid: 'cms-media-usage-open-' ~ item.id } only %}
                             {% else %}
                                 {{ 'Not used yet'|trans({}, 'theliacms') }}
                             {% endif %}

@@ -64,6 +64,13 @@ The **Generator** card of CMS > Settings keeps three choices: how hard the AI
 thinks (more effort, better but slower and dearer; read by Anthropic models only),
 how long an answer may be, and whether it may read the web pages a brief cites.
 
+When the AI is turned off, or has no model, the buttons that use it are not shown
+on the screens of the CMS: the brief, the changes, the translations, the
+prototypes of components and the texts of a field. You keep writing, editing and
+publishing by hand. An administrator reads why, and which uses are concerned, in
+the **Generator** card of CMS > Settings. A budget that is spent does not hide
+the buttons: the message appears when you use one.
+
 If something is missing, the editor reads one sentence that says what to change
 (budget spent, use turned off, connection unreadable, too many requests).
 

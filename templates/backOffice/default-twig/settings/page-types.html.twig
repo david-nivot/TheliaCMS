@@ -55,7 +55,7 @@
                                 <div>{{ template_sources[row.template.source.value] }}</div>
                                 <code class="text-muted small">{{ row.template.name }}</code>
                             </td>
-                            <td>{{ row.pages }}</td>
+                            <td data-testid="cms-page-type-pages-{{ row.code }}">{% if row.pages > 0 %}{% include '@TheliaCMSModule/backOffice/default-twig/linked-pages/_trigger.html.twig' with { kind: 'page-type', key: row.code, count: row.pages, text: row.pages, subject: row.code, testid: 'cms-page-type-pages-open-' ~ row.code } only %}{% else %}{{ row.pages }}{% endif %}</td>
                             <td class="text-end datatable-sticky-actions">
                                 <div class="d-inline-flex gap-1">
                                 <a class="btn btn-sm btn-outline-secondary" href="{{ path('admin.cms.settings.page_types.edit', { code: row.code }) }}">{{ 'Edit'|trans({}, 'theliacms') }}</a>

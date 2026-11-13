@@ -1,0 +1,46 @@
+{
+  "case": "trap-google-map",
+  "round": "round-0",
+  "run": 3,
+  "prompt_sha256": "b9c48c727b3a7c35f7bf97aa1b161b6d781191479ed3602637f3838bebd3f0e3",
+  "answers": [
+    "{\"outcome\":\"component\",\"existing\":\"\",\"reason\":\"\",\"code\":\"StoreLocation\",\"label\":\"Store location\",\"description\":\"The address of the shop with its opening hours or access notes, a picture of the map, and links that open the interactive map and the directions in Google Maps. A component runs no script and may not embed a frame, so the map that zooms opens in Google Maps through its link. Use it on a contact or a visit page.\",\"props\":\"[{\\\"name\\\": \\\"title\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Heading\\\", \\\"max\\\": 120}, {\\\"name\\\": \\\"address\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Address\\\", \\\"help\\\": \\\"One line per part of the address: name, street, postcode and town.\\\", \\\"required\\\": true, \\\"max\\\": 300}, {\\\"name\\\": \\\"details\\\", \\\"type\\\": \\\"html\\\", \\\"label\\\": \\\"Opening hours and access\\\", \\\"help\\\": \\\"Opening hours, parking, public transport.\\\"}, {\\\"name\\\": \\\"map_image\\\", \\\"type\\\": \\\"image\\\", \\\"label\\\": \\\"Map picture\\\", \\\"help\\\": \\\"A still map of the area around the shop, with no text in it.\\\"}, {\\\"name\\\": \\\"map_alt\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Description of the map\\\", \\\"help\\\": \\\"One sentence saying what the map shows.\\\", \\\"max\\\": 200}, {\\\"name\\\": \\\"map_url\\\", \\\"type\\\": \\\"url\\\", \\\"label\\\": \\\"Link to the interactive map\\\", \\\"help\\\": \\\"The Google Maps address of the shop, where the visitor can zoom.\\\"}, {\\\"name\\\": \\\"map_label\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Text of the map link\\\", \\\"max\\\": 80}, {\\\"name\\\": \\\"directions_url\\\", \\\"type\\\": \\\"url\\\", \\\"label\\\": \\\"Link to the directions\\\"}, {\\\"name\\\": \\\"directions_label\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Text of the directions link\\\", \\\"max\\\": 80}, {\\\"name\\\": \\\"layout\\\", \\\"type\\\": \\\"choice\\\", \\\"label\\\": \\\"Position of the map\\\", \\\"choices\\\": {\\\"map-right\\\": \\\"Map on the right\\\", \\\"map-left\\\": \\\"Map on the left\\\"}, \\\"default\\\": \\\"map-right\\\"}]\",\"sample\":\"{\\\"title\\\": \\\"Nous trouver\\\", \\\"address\\\": \\\"Boutique Thelia\\\\n12 rue des Lilas\\\\n63000 Clermont-Ferrand\\\", \\\"details\\\": \\\"<p>Ouvert du mardi au samedi, de 10 h à 19 h.</p><p>Parking gratuit à 50 mètres, place de la Victoire. Tram A, arrêt Jaude.</p>\\\", \\\"map_image\\\": null, \\\"map_alt\\\": \\\"Plan du quartier, avec la boutique au coin de la rue des Lilas et de la place de la Victoire.\\\", \\\"map_url\\\": \\\"https://www.google.com/maps/search/?api=1&query=12+rue+des+Lilas+63000+Clermont-Ferrand\\\", \\\"map_label\\\": \\\"Ouvrir le plan de la boutique dans Google Maps\\\", \\\"directions_url\\\": \\\"https://www.google.com/maps/dir/?api=1&destination=12+rue+des+Lilas+63000+Clermont-Ferrand\\\", \\\"directions_label\\\": \\\"Calculer l’itinéraire jusqu’à la boutique\\\", \\\"layout\\\": \\\"map-right\\\"}\",\"template\":\"<section class=\\\"location location--{{ props.layout|default('map-right') }}\\\"><div class=\\\"location__info\\\">{% if props.title is not empty %}<h2 class=\\\"location__title\\\">{{ props.title }}</h2>{% endif %}{% if props.address is not empty %}<address class=\\\"location__address\\\">{{ props.address|nl2br }}</address>{% endif %}{% if props.details is not empty %}<div class=\\\"location__details\\\">{{ props.details }}</div>{% endif %}{% if (props.map_url is not empty and props.map_label is not empty) or (props.directions_url is not empty and props.directions_label is not empty) %}<ul class=\\\"location__links\\\">{% if props.map_url is not empty and props.map_label is not empty %}<li><a class=\\\"location__link location__link--primary\\\" href=\\\"{{ props.map_url }}\\\">{{ props.map_label }}</a></li>{% endif %}{% if props.directions_url is not empty and props.directions_label is not empty %}<li><a class=\\\"location__link\\\" href=\\\"{{ props.directions_url }}\\\">{{ props.directions_label }}</a></li>{% endif %}</ul>{% endif %}</div>{% if props.map_image %}<div class=\\\"location__map\\\" data-cms-sizes=\\\"(min-width: 48rem) 50vw, 100vw\\\"><img class=\\\"location__image\\\" src=\\\"{{ props.map_image }}\\\" alt=\\\"{{ props.map_alt|default('') }}\\\"></div>{% endif %}</section>\",\"css\":\".location { display: grid; gap: 1.5rem; }\\n.location__title { margin: 0 0 1rem; }\\n.location__address { font-style: normal; line-height: 1.6; color: var(--cms-color-text); }\\n.location__details { margin-top: 1rem; color: var(--cms-color-text-muted); }\\n.location__links { display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 1.5rem 0 0; padding: 0; list-style: none; }\\n.location__link { display: inline-block; padding: 0.6rem 1.1rem; border: 2px solid var(--cms-color-accent); border-radius: 0.25rem; color: var(--cms-color-accent-strong); text-decoration: none; transition: background-color 0.2s, color 0.2s; }\\n.location__link:hover { background-color: var(--cms-color-accent-surface); }\\n.location__link:focus-visible { background-color: var(--cms-color-accent-surface); outline: 2px solid var(--cms-color-accent-strong); outline-offset: 2px; }\\n.location__link--primary { background-color: var(--cms-color-accent); color: var(--cms-color-on-accent); }\\n.location__link--primary:hover { background-color: var(--cms-color-accent-strong); border-color: var(--cms-color-accent-strong); }\\n.location__link--primary:focus-visible { background-color: var(--cms-color-accent-strong); border-color: var(--cms-color-accent-strong); }\\n.location__image { display: block; width: 100%; height: auto; border: 1px solid var(--cms-color-border); border-radius: 0.5rem; }\\n@media (min-width: 48rem) { .location { grid-template-columns: 1fr 1fr; align-items: center; gap: 2.5rem; } .location--map-left .location__map { order: -1; } }\"}"
+  ],
+  "outcome": "component",
+  "existing": null,
+  "based_on": null,
+  "browser": {
+    "375": {
+      "scroll": false,
+      "axe": [
+        {
+          "id": "color-contrast",
+          "impact": "serious"
+        }
+      ]
+    },
+    "1440": {
+      "scroll": false,
+      "axe": [
+        {
+          "id": "color-contrast",
+          "impact": "serious"
+        }
+      ]
+    }
+  },
+  "verdict": {
+    "pass": false,
+    "checks": {
+      "outcome": true,
+      "valid": true,
+      "props": true,
+      "markup": true,
+      "css": true,
+      "no_h1": true,
+      "img_alt": true,
+      "reduced_motion": true,
+      "browser": false
+    }
+  }
+}

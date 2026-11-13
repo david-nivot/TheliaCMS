@@ -33,6 +33,7 @@ use TheliaCMS\Content\Site\SiteComponentValidator;
 use TheliaCMS\Content\Site\SitePropReader;
 use TheliaCMS\Content\Site\SitePropRows;
 use TheliaCMS\Generation\Admin\GenerationStream;
+use TheliaCMS\Generation\Component\ComponentCandidate;
 use TheliaCMS\Generation\Component\ComponentCandidates;
 use TheliaCMS\Generation\Component\ComponentGenerator;
 use TheliaCMS\Generation\Component\ComponentRequest;
@@ -167,7 +168,10 @@ final readonly class CmsSiteComponentController
                 return;
             }
 
-            $events->done($this->urls->generate('admin.cms.components.site.candidate', ['id' => $result->logId]), $this->support->translate('The component is written.'));
+            $events->done(
+                $this->urls->generate('admin.cms.components.site.candidate', ['id' => $result->logId]),
+                $this->support->translate(null === $result->component ? 'The site already has a component that does this.' : 'The component is written.'),
+            );
         }, Response::HTTP_OK, [
             'Content-Type' => 'text/event-stream; charset=UTF-8',
             'Cache-Control' => 'no-cache, no-store, must-revalidate',
@@ -180,9 +184,14 @@ final readonly class CmsSiteComponentController
     {
         $candidate = $this->candidates->find($id) ?? throw new NotFoundHttpException();
         $kept = $candidate->componentId > 0 ? $this->components->codeOf($candidate->componentId) : null;
+        $existingCode = ComponentCandidate::siteCodeOf($candidate->existing);
+        $basedOnCode = ComponentCandidate::siteCodeOf($candidate->basedOn);
 
         return $this->render('candidate.html.twig', [
             'candidate' => $candidate,
+            // A link only to a component of the site that is still there.
+            'existing_code' => null !== $existingCode && null !== $this->components->find($existingCode) ? $existingCode : null,
+            'based_on_code' => null !== $basedOnCode && null !== $this->components->find($basedOnCode) ? $basedOnCode : null,
             'component' => $candidate->component,
             'props' => null === $candidate->component ? [] : $this->propRows->of($candidate->component),
             'preview_url' => null === $candidate->component ? null : $this->previews->candidate($candidate->logId, $request->getLocale()),

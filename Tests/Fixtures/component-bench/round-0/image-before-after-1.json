@@ -1,0 +1,36 @@
+{
+  "case": "image-before-after",
+  "round": "round-0",
+  "run": 1,
+  "prompt_sha256": "97171f05b0bdaab32c859edb1b49a6bd8406821eee72226877cd4a34b30fd193",
+  "answers": [
+    "{\"outcome\":\"component\",\"existing\":\"\",\"reason\":\"\",\"code\":\"BeforeAfter\",\"label\":\"Before and after\",\"description\":\"Two photos side by side, labelled before and after, each with a short text under it. Use it to show the result of a renovation, a repair or a transformation.\",\"props\":\"[{\\\"name\\\": \\\"title\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Heading\\\", \\\"max\\\": 120}, {\\\"name\\\": \\\"intro\\\", \\\"type\\\": \\\"html\\\", \\\"label\\\": \\\"Introduction\\\", \\\"help\\\": \\\"An optional short text above the two photos.\\\"}, {\\\"name\\\": \\\"before_label\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Label of the first photo\\\", \\\"max\\\": 40, \\\"default\\\": \\\"Before\\\", \\\"required\\\": true}, {\\\"name\\\": \\\"before_image\\\", \\\"type\\\": \\\"image\\\", \\\"label\\\": \\\"Photo before\\\"}, {\\\"name\\\": \\\"before_alt\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Description of the photo before\\\", \\\"help\\\": \\\"One sentence saying what the photo shows, for visitors who cannot see it.\\\", \\\"max\\\": 200}, {\\\"name\\\": \\\"before_text\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Text under the photo before\\\", \\\"max\\\": 400}, {\\\"name\\\": \\\"after_label\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Label of the second photo\\\", \\\"max\\\": 40, \\\"default\\\": \\\"After\\\", \\\"required\\\": true}, {\\\"name\\\": \\\"after_image\\\", \\\"type\\\": \\\"image\\\", \\\"label\\\": \\\"Photo after\\\"}, {\\\"name\\\": \\\"after_alt\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Description of the photo after\\\", \\\"help\\\": \\\"One sentence saying what the photo shows, for visitors who cannot see it.\\\", \\\"max\\\": 200}, {\\\"name\\\": \\\"after_text\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Text under the photo after\\\", \\\"max\\\": 400}]\",\"sample\":\"{\\\"title\\\": \\\"La rénovation d’une cuisine à Lyon\\\", \\\"intro\\\": \\\"<p>Six semaines de travaux pour transformer une cuisine des années 1980 en pièce ouverte et lumineuse.</p>\\\", \\\"before_label\\\": \\\"Avant\\\", \\\"before_image\\\": null, \\\"before_alt\\\": \\\"Une cuisine étroite aux meubles en bois foncé et au carrelage beige.\\\", \\\"before_text\\\": \\\"Des meubles abîmés, peu de rangements et une seule fenêtre masquée par les placards.\\\", \\\"after_label\\\": \\\"Après\\\", \\\"after_image\\\": null, \\\"after_alt\\\": \\\"Une cuisine ouverte aux façades blanches avec un îlot central en chêne clair.\\\", \\\"after_text\\\": \\\"La cloison est tombée : un îlot en chêne, des façades blanches et deux fois plus de rangements.\\\"}\",\"template\":\"<section class=\\\"before-after\\\">{% if props.title is not empty %}<h2 class=\\\"before-after__title\\\">{{ props.title }}</h2>{% endif %}{% if props.intro is not empty %}<div class=\\\"before-after__intro\\\">{{ props.intro }}</div>{% endif %}<div class=\\\"before-after__pair\\\" data-cms-sizes=\\\"(min-width: 48rem) 50vw, 100vw\\\"><figure class=\\\"shot shot--before\\\"><div class=\\\"shot__frame\\\">{% if props.before_image %}<img class=\\\"shot__image\\\" src=\\\"{{ props.before_image }}\\\" alt=\\\"{{ props.before_alt|default('') }}\\\">{% endif %}<span class=\\\"shot__label\\\">{{ props.before_label }}</span></div>{% if props.before_text is not empty %}<figcaption class=\\\"shot__text\\\">{{ props.before_text }}</figcaption>{% endif %}</figure><figure class=\\\"shot shot--after\\\"><div class=\\\"shot__frame\\\">{% if props.after_image %}<img class=\\\"shot__image\\\" src=\\\"{{ props.after_image }}\\\" alt=\\\"{{ props.after_alt|default('') }}\\\">{% endif %}<span class=\\\"shot__label\\\">{{ props.after_label }}</span></div>{% if props.after_text is not empty %}<figcaption class=\\\"shot__text\\\">{{ props.after_text }}</figcaption>{% endif %}</figure></div></section>\",\"css\":\".before-after__title { margin: 0 0 0.75rem; }\\n.before-after__intro { margin-bottom: 1.5rem; color: var(--cms-color-text-muted); }\\n.before-after__pair { display: grid; gap: 1.5rem; }\\n.shot { margin: 0; display: flex; flex-direction: column; gap: 0.75rem; }\\n.shot__frame { position: relative; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 0.5rem; background: var(--cms-color-accent-surface); border: 1px solid var(--cms-color-border); }\\n.shot__image { display: block; width: 100%; height: 100%; object-fit: cover; }\\n.shot__label { position: absolute; top: 0.75rem; left: 0.75rem; padding: 0.25rem 0.75rem; border-radius: 999px; font-weight: 600; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; background: var(--cms-color-surface); color: var(--cms-color-text); }\\n.shot--after .shot__label { background: var(--cms-color-accent); color: var(--cms-color-on-accent); }\\n.shot__text { color: var(--cms-color-text-muted); line-height: 1.5; }\\n@media (min-width: 48rem) { .before-after__pair { grid-template-columns: 1fr 1fr; gap: 2rem; } }\"}"
+  ],
+  "outcome": "component",
+  "existing": null,
+  "based_on": null,
+  "browser": {
+    "375": {
+      "scroll": false,
+      "axe": []
+    },
+    "1440": {
+      "scroll": false,
+      "axe": []
+    }
+  },
+  "verdict": {
+    "pass": false,
+    "checks": {
+      "outcome": true,
+      "valid": true,
+      "props": true,
+      "markup": false,
+      "css": true,
+      "no_h1": true,
+      "img_alt": true,
+      "reduced_motion": true,
+      "browser": true
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "case": "reuse-faq",
+  "round": "round-0",
+  "run": 2,
+  "prompt_sha256": "a944713528027845dad0b1ff00295e3bea79bdd26d1d3127e26b86313658fc23",
+  "answers": [
+    "{\"outcome\":\"existing\",\"existing\":\"Site:Faq\",\"reason\":\"Le composant Questions fréquentes affiche déjà une liste de questions qui s'ouvrent pour montrer leur réponse, pensée pour les questions posées avant une commande.\",\"code\":\"\",\"label\":\"\",\"description\":\"\",\"props\":\"\",\"sample\":\"\",\"template\":\"\",\"css\":\"\"}"
+  ],
+  "outcome": "existing",
+  "existing": "Site:Faq",
+  "based_on": null,
+  "browser": null,
+  "verdict": {
+    "pass": true,
+    "checks": {
+      "outcome": true,
+      "target": true
+    }
+  }
+}

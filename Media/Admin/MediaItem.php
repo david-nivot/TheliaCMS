@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace TheliaCMS\Media\Admin;
 
 use TheliaCMS\Media\Icon\IconName;
+use TheliaCMS\Media\Video\VideoConversionStatus;
 
 /**
  * An image, or a video, as the media screens show it.
@@ -41,6 +42,8 @@ final readonly class MediaItem
         public bool $video = false,
         // The name the image answers to as an icon, without its `cms:` prefix.
         public ?string $iconName = null,
+        public VideoConversionStatus $conversion = VideoConversionStatus::Ready,
+        public ?string $conversionProblem = null,
     ) {
     }
 

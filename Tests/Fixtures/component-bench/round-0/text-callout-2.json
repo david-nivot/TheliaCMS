@@ -1,0 +1,46 @@
+{
+  "case": "text-callout",
+  "round": "round-0",
+  "run": 2,
+  "prompt_sha256": "b21c2ddd5af1aad3954b61274f94f8e52351d709a6a034546fde354e09522606",
+  "answers": [
+    "{\"outcome\":\"component\",\"existing\":\"\",\"reason\":\"\",\"code\":\"NoticeBox\",\"label\":\"Notice box\",\"description\":\"A framed box that highlights one important piece of information, such as an exceptional closure, a delivery delay or a change of hours, with a short label, a heading, a short text and an optional link. Use it once near the top of a page when visitors must not miss the information.\",\"props\":\"[{\\\"name\\\": \\\"kicker\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Short label above the heading\\\", \\\"help\\\": \\\"For instance: Important information. Says the nature of the notice in words, not only through its colour.\\\", \\\"max\\\": 60}, {\\\"name\\\": \\\"title\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Heading\\\", \\\"required\\\": true, \\\"max\\\": 120}, {\\\"name\\\": \\\"text\\\", \\\"type\\\": \\\"html\\\", \\\"label\\\": \\\"Text\\\", \\\"help\\\": \\\"One or two short sentences.\\\"}, {\\\"name\\\": \\\"tone\\\", \\\"type\\\": \\\"choice\\\", \\\"label\\\": \\\"Look\\\", \\\"choices\\\": {\\\"info\\\": \\\"Information\\\", \\\"warning\\\": \\\"Warning\\\", \\\"neutral\\\": \\\"Neutral\\\"}, \\\"default\\\": \\\"info\\\"}, {\\\"name\\\": \\\"link_label\\\", \\\"type\\\": \\\"text\\\", \\\"label\\\": \\\"Link text\\\", \\\"help\\\": \\\"Says where the link leads, for instance: See the delivery times.\\\", \\\"max\\\": 80}, {\\\"name\\\": \\\"link_url\\\", \\\"type\\\": \\\"url\\\", \\\"label\\\": \\\"Link address\\\"}]\",\"sample\":\"{\\\"kicker\\\": \\\"Information importante\\\", \\\"title\\\": \\\"Fermeture exceptionnelle du 14 au 16 août\\\", \\\"text\\\": \\\"<p>Notre boutique et notre service client seront fermés du jeudi 14 au samedi 16 août. Les commandes passées pendant cette période partiront à partir du lundi 18 août.</p>\\\", \\\"tone\\\": \\\"warning\\\", \\\"link_label\\\": \\\"Voir nos délais de livraison\\\", \\\"link_url\\\": \\\"/livraison\\\"}\",\"template\":\"<section class=\\\"notice notice--{{ props.tone|default('info') }}\\\">{% if props.kicker is not empty %}<p class=\\\"notice__kicker\\\">{{ props.kicker }}</p>{% endif %}{% if props.title is not empty %}<h2 class=\\\"notice__title\\\">{{ props.title }}</h2>{% endif %}{% if props.text is not empty %}<div class=\\\"notice__text\\\">{{ props.text }}</div>{% endif %}{% if props.link_url is not empty and props.link_label is not empty %}<p class=\\\"notice__action\\\"><a class=\\\"notice__link\\\" href=\\\"{{ props.link_url }}\\\">{{ props.link_label }}</a></p>{% endif %}</section>\",\"css\":\".notice { padding: 1.25rem 1.25rem 1.25rem 1rem; border: 1px solid var(--cms-color-border); border-left: 0.375rem solid var(--cms-color-accent); border-radius: 0.5rem; background: var(--cms-color-accent-surface); color: var(--cms-color-text); }\\n.notice--warning { border-left-color: var(--cms-color-error); background: var(--cms-color-surface); }\\n.notice--neutral { border-left-color: var(--cms-color-text-subtle); background: var(--cms-color-surface); }\\n.notice__kicker { margin: 0 0 0.25rem; font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--cms-color-accent-strong); }\\n.notice--warning .notice__kicker { color: var(--cms-color-error); }\\n.notice--neutral .notice__kicker { color: var(--cms-color-text-muted); }\\n.notice__title { margin: 0; font-size: 1.25rem; line-height: 1.3; }\\n.notice__text { margin-top: 0.5rem; color: var(--cms-color-text-muted); }\\n.notice__text > :first-child { margin-top: 0; }\\n.notice__text > :last-child { margin-bottom: 0; }\\n.notice__action { margin: 0.75rem 0 0; }\\n.notice__link { font-weight: 600; color: var(--cms-color-accent-strong); text-decoration: underline; text-underline-offset: 0.2em; transition: color 0.2s ease; }\\n.notice__link:hover { color: var(--cms-color-text); }\\n.notice__link:focus-visible { color: var(--cms-color-text); outline: 2px solid var(--cms-color-accent); outline-offset: 2px; }\\n@media (min-width: 48rem) { .notice { padding: 1.5rem 2rem 1.5rem 1.75rem; } .notice__title { font-size: 1.375rem; } }\"}"
+  ],
+  "outcome": "component",
+  "existing": null,
+  "based_on": null,
+  "browser": {
+    "375": {
+      "scroll": false,
+      "axe": [
+        {
+          "id": "color-contrast",
+          "impact": "serious"
+        }
+      ]
+    },
+    "1440": {
+      "scroll": false,
+      "axe": [
+        {
+          "id": "color-contrast",
+          "impact": "serious"
+        }
+      ]
+    }
+  },
+  "verdict": {
+    "pass": false,
+    "checks": {
+      "outcome": true,
+      "valid": true,
+      "props": true,
+      "markup": true,
+      "css": true,
+      "no_h1": true,
+      "img_alt": true,
+      "reduced_motion": true,
+      "browser": false
+    }
+  }
+}

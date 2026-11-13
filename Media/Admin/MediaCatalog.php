@@ -21,6 +21,9 @@ use TheliaCMS\Media\Icon\IconNames;
 use TheliaCMS\Media\MediaFile;
 use TheliaCMS\Media\MediaFilter;
 use TheliaCMS\Media\MediaKind;
+use TheliaCMS\Media\Video\VideoConversions;
+use TheliaCMS\Media\Video\VideoConversionStatus;
+use TheliaCMS\Media\Video\VideoFailure;
 use TheliaLibrary\Model\LibraryImage;
 
 /**
@@ -35,6 +38,7 @@ final readonly class MediaCatalog
         private CmsMediaLibrary $library,
         private MediaUsageFinder $usages,
         private IconNames $iconNames,
+        private VideoConversions $conversions,
     ) {
     }
 
@@ -67,6 +71,10 @@ final readonly class MediaCatalog
 
         // The names of the icons, read once for the page.
         $iconNames = $this->iconNames->namesByImage();
+
+        // The state of the videos of the page, in one statement.
+        $this->conversions->load(array_values(array_map(static fn (LibraryImage $image): int => (int) $image->getId(), array_filter($images, static fn (LibraryImage $image): bool => $image->isVideo()))));
+
         $items = [];
 
         foreach ($images as $image) {
@@ -88,7 +96,7 @@ final readonly class MediaCatalog
      */
     public function toDescribe(MediaQuery $query, string $locale, int $position): MediaGrid
     {
-        $imageIds = $this->library->selection($locale, $query->search, MediaFilter::ToDescribe, $query->tag, $query->images);
+        $imageIds = $this->library->selection($locale, $query->search, MediaFilter::ToDescribe, $query->tag, $query->images, $query->kind);
         $total = \count($imageIds);
         $position = max(0, min($position, $total - 1));
         $images = $this->library->sorted($imageIds, $query->order, $locale, $position, 1);
@@ -154,6 +162,8 @@ final readonly class MediaCatalog
         }
 
         $fileName = (string) $image->getFileName();
+        $conversion = $image->isVideo() ? $this->conversions->of((int) $image->getId()) : null;
+        $failure = null === $conversion ? null : VideoFailure::tryFrom((string) $conversion->getFailure());
 
         return new MediaItem(
             id: (int) $image->getId(),
@@ -171,6 +181,8 @@ final readonly class MediaCatalog
             usageCount: $usageCount ?? $this->usages->countsFor([(int) $image->getId()])[(int) $image->getId()],
             video: $image->isVideo(),
             iconName: null === $iconNames ? $this->iconNames->nameOf((int) $image->getId()) : ($iconNames[(int) $image->getId()] ?? null),
+            conversion: $image->isVideo() ? $this->conversions->statusOf((int) $image->getId()) : VideoConversionStatus::Ready,
+            conversionProblem: null === $failure ? null : $failure->message(),
         );
     }
 

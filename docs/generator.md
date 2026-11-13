@@ -58,6 +58,53 @@ in its usage log, and the ledger of the module points at the row of the last
 request of a call (`cms_page_generation.log_id`); the requests of one call
 share a correlation id in that log.
 
+## When the AI is not available
+
+The screens of the back office draw an entry that calls the AI (a button, a
+link, a form, a panel) only when the AI can serve its usage. Everything else
+works as before: a page is written, edited, published and translated by hand.
+
+- **The signal.** `Generation\Ai\AiAvailability::isAvailable($usage)`: the
+  master switch of the AI layer (`AiSettings::isEnabled()`), then the usage
+  turned on in its own settings (`AiUsageRegistryInterface::isActive()`), then a
+  connection and a model that serve it (`AiTargetResolver::resolve()`, which
+  throws `InactiveAiUsageException` without them), then, when the shop accepts
+  the European Union only, the jurisdiction of that connection. These are the
+  checks the gateway makes at each call, in the same order, so an entry is
+  hidden exactly when its call would be refused for one of them.
+  `isActive()` alone is not enough: it does not look at the model, and a usage
+  turned on without a model passes it.
+- **Once per request.** The answer is kept by usage for the request, however
+  many buttons a screen has, and forgotten between two requests of a long
+  worker (`ResetInterface`). The service is public, and not final, so the tests
+  of the screens can replace it.
+- **In the templates.** `cms_ai_available('theliacms.component')`, a Twig
+  function answered by `Twig\AiAvailabilityRuntime`. The usage is the one the
+  entry's call runs under:
+
+| Entry | Usage |
+|---|---|
+| Write from a brief, change the brief, ask for a change, rewrite a section (content screen of a page or of a catalogue item) | `theliacms.page_generation` |
+| Write this language from another, write it again (stale translation) | `theliacms.page_translation` |
+| Prototype a component from a page (add-a-section drawer, panel of a prototype); New component, ask a change (CMS > Components) | `theliacms.component` |
+| Write from a brief beside a rich-text field (hook `wysiwyg.js`, `TextBriefHook`) | `theliacms.text` |
+
+- **Not hidden.** The routes: none depends on the hiding. Called by a stale
+  tab or a script while the AI is off, each answers with its own refusal
+  (`GatewayFailures`, "The generator is turned off, or no AI connection and
+  model is set up for it", a 503 for the text route), never a 500. The skills
+  and the settings of the generator stay: they are configuration, and the
+  screens that describe what the generator reads. The **Generator** card of
+  CMS > Settings (and only it) carries one line for an administrator when a
+  usage is unavailable: why (turned off for the whole shop, turned off for the
+  usage, no connection or model, unreadable key, jurisdiction) and which usages.
+  The core has no back-office screen of the AI settings to link to: the line
+  names them.
+- **Limit.** The monthly cap and the budget left are not looked at. An
+  entry stays when the cap is reached, and the call says so
+  (`AiBudgetExceededException`); a screen that hid its buttons at the ceiling
+  would hide them for a reason that goes away by itself.
+
 ## What the model is told
 
 The system prompt is the same for every call of the site, written in a stable
@@ -225,8 +272,43 @@ page says is handed to the model as untrusted content: a given of the brief,
 never an instruction. A page that cannot be read (private, behind a login, an
 error) is left out and said so in the history. The address of a picture (a path
 ending in `.jpg`, `.png`, `.webp`, `.gif`, `.svg` or `.avif`) is not a page: it
-is not offered for reading, and goes as it is into an image prop. A translation
+is not offered for reading, it is a picture to import (next section). A translation
 cites none: its source is the document of the other language.
+
+### Pictures the brief cites: `import_image`
+
+A brief that cites the `https` address of a picture ("import this image:
+https://example.com/banner.jpg") ends with that picture copied into the media
+library and used by its library id, never with the external address in the
+page. Under the same setting as `read_url` (**Read the web pages a brief
+cites**), when the brief cites at least one picture address, the request
+offers `import_image` (`Generation/Tool/ImportImageTool.php`), the user message
+lists the pictures cited and says an image prop takes the id the tool gives.
+It takes the address, a title, a text for what the picture shows and a credit
+(the last two may be empty), and answers with the id and the editor form of
+the address (`/image-library/<id>/…`), or with a failure code and a short
+reason (`url_not_cited`, `url_not_allowed`, `blocked_address`,
+`url_not_accessible`, `too_many_redirects`, `too_large`, `unsupported_type`,
+`too_many_pixels`, `refused`, `import_failed`), never an error: the picture is
+then left out.
+
+- Only an address the brief cites is imported, `https` only. The download goes
+  through the same client as `read_url` (private, loopback and link-local
+  addresses refused when the name is resolved, every redirect checked, and a
+  redirect may not leave the host of the address cited), bounded in time, and cut
+  one byte past the ceiling rather than waited for.
+- The bytes decide, not the extension or the Content-Type: JPEG, PNG or WebP
+  (the formats of the upload routes; a GIF is refused like there), up to 10
+  MiB and 25 million pixels, the limits of the upload routes.
+- The image is stored by `CmsMediaWriter::add()`, so it is tagged for the CMS
+  library like an upload; the title and the credit (as caption) are set, and
+  the alternative text by `describe()`.
+- The same address imported twice in one call gives the same id, without a
+  second download. At most the pictures cited can be imported.
+- Not done: the ledger does not record the imported images (id, source
+  address, credit), which needs a column of `cms_page_generation` and so a
+  migration. The images are in the library, tagged `cms`, with their credit in
+  the caption.
 
 ### A file joined to the brief or to a change
 
@@ -311,6 +393,26 @@ reads that usage). The ledger keeps the name, length and fingerprint in the
 JSON of the request of the component, never its text. A refused file
 or a failed candidate is not put back in the form. **CMS > Components** and the
 `make_component` tool of the brief take no file.
+
+### The media the generator of components is offered
+
+The user message of `ComponentPrompt` has a section **Pictures and videos for
+the sample**, between the components of the site and the request (or the
+component to change), so the sample of a component draws its pictures. It lists
+the media the CMS offers its editors (`Generation\Component\SampleMedia`, over
+`CmsMediaLibrary`): the 12 most recent pictures and the 3 most recent videos
+at most, one line each (`- 12 (image, 1600 × 900): <text>`), the text being the
+alternative text of a picture or the title of a video, in the language of the
+request and then in the default language of the shop, cut to one line of 120
+characters. The section is left out when the library holds nothing.
+
+The rule of the system prompt follows: an `image` or `video` prop of the sample
+takes the id of one of those media, chosen for what it shows, or null when none
+fits or when there is no list; an `image` may still take an `https` address the
+request gives. The schema of the answer is unchanged. A change of a component
+is offered the same list. The list is read at each call, after the cached
+system prompt, so it never breaks the cache. The bench fills the library with
+`thelia_cms:component-bench:media` (`docs/evaluation/components/README.md`).
 
 A file that instructs rather than documents (it addresses an assistant, asks
 to act or to ignore rules, or has nothing to do with a page to write) is
@@ -603,10 +705,42 @@ choice labels of each prop) are asked in the default language of the shop,
 whatever the language of the request; the sample stays in the language of the
 request. This holds for a component asked from the back office and for one
 the generator of pages makes from a brief or a page prototypes. The answer is constrained to a schema
-of seven strings (`code`, `label`, `description`, `props` and `sample` as JSON
-written as a string, `template`, `css`). A component the validator refuses,
-a new one whose code is taken, a change that renames its component or that
-breaks the pages using it goes back with every problem listed, twice at most.
+of ten strings: the `outcome` (an enum), `existing` and `reason`, then the
+seven of the component (`code`, `label`, `description`, `props` and `sample`
+as JSON written as a string, `template`, `css`). A component the validator
+refuses, a new one whose code is taken, a change that renames its component or
+that breaks the pages using it goes back with every problem listed, twice at
+most.
+
+The `outcome` says what the model made of the request, and with `existing` or
+`copy` every field of the component is empty:
+
+- `component`: a new component (or the change asked). The default when an
+  answer, written before the outcomes, has none.
+- `existing`: a component of the catalogue already does what is asked, the
+  request differing by its wording or its example. `existing` holds its name,
+  checked against `SectionCatalog::all()`, and `reason` says in a sentence what
+  it already does. The result has no component (`ComponentResult::$component`
+  is null, `outcome` is `existing`, `existing` is the name); the screens say
+  that the component does it already, with a link when it is a `Site:` one, and
+  show no candidate; the tool of the page generator answers with its sheet and
+  tells the model to use it. Every `reason` is kept in the ledger.
+- `copy`: the request is a variant of a component named `Site:…` (another
+  look, a prop more or less). `existing` holds its name, found in
+  `SiteComponentRepository`. The generator then sends its source
+  (`ComponentPrompt::copy()`, the JSON of `ComponentPrompt::json()`) in the same
+  conversation and asks for the variant under a new code; that second answer
+  must be a `component`. The result carries `basedOn`, the screens show the
+  candidate as usual with "Based on `Site:…`", and the row of the ledger keeps
+  `based_on` and `reason` in its `document`.
+
+A name the catalogue does not hold, a `copy` of a component that is not a
+`Site:` one, an `existing` or a `copy` for a change (`ComponentRequest::$current`
+set: only `component` is accepted) or after a copy, is sent back like any
+refused component. The call that follows a `copy` is a turn, not a correction.
+A row of the ledger whose `document` says `existing` is never a candidate
+(`ComponentCandidates::componentOf()` gives null), so no screen offers to keep
+it. `make_component` counts an answer `existing` among its two uses per page.
 
 Its calls are in the ledger with the pages, under `target_type` `component`:
 `target_id` is the row of the component, 0 for one not kept yet, and the

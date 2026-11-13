@@ -1,0 +1,20 @@
+{
+  "case": "reuse-single-photo",
+  "round": "round-0",
+  "run": 3,
+  "prompt_sha256": "c1ba8014e1164103077d9b654966c3dd12f9009d0e03b7ebfb79c98acc74ae4f",
+  "answers": [
+    "{\"outcome\":\"existing\",\"existing\":\"cms:image\",\"reason\":\"Le composant Image affiche déjà une photo seule, en grande largeur si on le choisit, avec une légende facultative en dessous, ce qui convient à la façade de la boutique.\",\"code\":\"\",\"label\":\"\",\"description\":\"\",\"props\":\"\",\"sample\":\"\",\"template\":\"\",\"css\":\"\"}"
+  ],
+  "outcome": "existing",
+  "existing": "cms:image",
+  "based_on": null,
+  "browser": null,
+  "verdict": {
+    "pass": true,
+    "checks": {
+      "outcome": true,
+      "target": true
+    }
+  }
+}
