@@ -33,7 +33,7 @@ final readonly class SvgAttributeSanitizer implements AttributeSanitizerInterfac
 
     public function getSupportedAttributes(): array
     {
-        return ['fill', 'stroke', 'transform', 'xmlns', 'mask', 'clip-path', 'gradienttransform', 'stop-color', 'href'];
+        return ['fill', 'stroke', 'transform', 'xmlns', 'mask', 'clip-path', 'gradienttransform', 'stop-color', 'href', 'shape-rendering'];
     }
 
     public function sanitizeAttribute(string $element, string $attribute, string $value, HtmlSanitizerConfig $config): ?string

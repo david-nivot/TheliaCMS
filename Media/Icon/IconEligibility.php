@@ -62,7 +62,9 @@ final readonly class IconEligibility
         $obstacles = [];
 
         foreach ((new InlineSvgPolicy())->validate($svg, PublishedContentSanitizer::ACCESSIBILITY_ATTRIBUTES) as $violation) {
-            $obstacles[$violation->kind->value.':'.strtolower($violation->subject)] ??= self::said($violation);
+            // Two findings an editor reads the same way (a `<style>` and a style cut) are said once.
+            $said = self::said($violation);
+            $obstacles[$said->template."\0".implode("\0", array_map(strval(...), $said->values))] ??= $said;
         }
 
         return array_values($obstacles);
@@ -83,7 +85,8 @@ final readonly class IconEligibility
             InlineSvgViolationKind::Element => TranslatableText::of(self::ELEMENT_WORDS[$name] ?? 'an element a page does not keep (%s)', $subject),
             InlineSvgViolationKind::Attribute => TranslatableText::of(self::ATTRIBUTE_WORDS[$name] ?? 'an attribute a page does not keep (%s)', $subject),
             InlineSvgViolationKind::Value => TranslatableText::of(\in_array($name, ['fill', 'stroke', 'stop-color'], true) ? 'a color a page does not keep (%s)' : 'a value a page does not keep (%s)', $subject),
-            InlineSvgViolationKind::Reference => TranslatableText::of('a reference to a shape the file does not hold (%s)', $subject),
+            InlineSvgViolationKind::Reference => TranslatableText::of('a reference to a shape a page does not keep (%s)', $subject),
+            InlineSvgViolationKind::NestedCut => TranslatableText::of('a mask or a clipping inside another one (%s)', $subject),
             InlineSvgViolationKind::Style => TranslatableText::of('CSS style (%s)', $subject),
             InlineSvgViolationKind::Text => TranslatableText::of('some text (%s)', $subject),
         };

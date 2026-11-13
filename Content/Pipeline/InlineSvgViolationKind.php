@@ -31,6 +31,9 @@ enum InlineSvgViolationKind: string
     /** A reference to an id the drawing does not hold, which a page drops. */
     case Reference = 'reference';
 
+    /** A mask or a clipping path asked for inside another one, which a page drops. */
+    case NestedCut = 'nested_cut';
+
     /** Declarations of a `style` attribute a page drops. */
     case Style = 'style';
 

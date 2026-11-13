@@ -37,21 +37,21 @@ use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
 final readonly class InlineSvgPolicy
 {
     /** What paints, on every shape and group. */
-    private const array PRESENTATION = ['fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'stroke-miterlimit', 'stroke-dasharray', 'stroke-dashoffset', 'stroke-opacity', 'fill-opacity', 'opacity', 'mask', 'clip-path'];
+    private const array PRESENTATION = ['fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'stroke-miterlimit', 'stroke-dasharray', 'stroke-dashoffset', 'stroke-opacity', 'fill-opacity', 'opacity', 'mask', 'clip-path', 'shape-rendering'];
 
     /**
      * The elements kept and, for each, its own attributes.
      */
     public const array ELEMENTS = [
-        'svg' => ['xmlns', 'viewbox', 'width', 'height', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'stroke-miterlimit', 'stroke-dasharray', 'stroke-dashoffset', 'stroke-opacity', 'fill-opacity', 'fill-rule', 'clip-rule', 'opacity', 'mask', 'clip-path'],
+        'svg' => ['xmlns', 'viewbox', 'width', 'height', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'stroke-miterlimit', 'stroke-dasharray', 'stroke-dashoffset', 'stroke-opacity', 'fill-opacity', 'fill-rule', 'clip-rule', 'opacity', 'mask', 'clip-path', 'shape-rendering'],
         'g' => [...self::PRESENTATION, 'fill-rule', 'clip-rule', 'transform'],
         'path' => ['d', ...self::PRESENTATION, 'fill-rule', 'clip-rule', 'transform'],
-        'circle' => ['cx', 'cy', 'r', 'fill', 'stroke', 'stroke-width', 'stroke-opacity', 'fill-opacity', 'opacity', 'mask', 'clip-path', 'transform'],
-        'ellipse' => ['cx', 'cy', 'rx', 'ry', 'fill', 'stroke', 'stroke-width', 'stroke-opacity', 'fill-opacity', 'opacity', 'mask', 'clip-path', 'transform'],
-        'rect' => ['x', 'y', 'width', 'height', 'rx', 'ry', 'fill', 'stroke', 'stroke-width', 'stroke-linejoin', 'stroke-opacity', 'fill-opacity', 'opacity', 'mask', 'clip-path', 'transform'],
-        'line' => ['x1', 'y1', 'x2', 'y2', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-dasharray', 'stroke-opacity', 'opacity', 'mask', 'clip-path', 'transform'],
-        'polyline' => ['points', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'stroke-opacity', 'fill-opacity', 'opacity', 'mask', 'clip-path', 'transform'],
-        'polygon' => ['points', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'stroke-opacity', 'fill-opacity', 'fill-rule', 'opacity', 'mask', 'clip-path', 'transform'],
+        'circle' => ['cx', 'cy', 'r', 'fill', 'stroke', 'stroke-width', 'stroke-opacity', 'fill-opacity', 'opacity', 'mask', 'clip-path', 'transform', 'shape-rendering'],
+        'ellipse' => ['cx', 'cy', 'rx', 'ry', 'fill', 'stroke', 'stroke-width', 'stroke-opacity', 'fill-opacity', 'opacity', 'mask', 'clip-path', 'transform', 'shape-rendering'],
+        'rect' => ['x', 'y', 'width', 'height', 'rx', 'ry', 'fill', 'stroke', 'stroke-width', 'stroke-linejoin', 'stroke-opacity', 'fill-opacity', 'opacity', 'mask', 'clip-path', 'transform', 'shape-rendering'],
+        'line' => ['x1', 'y1', 'x2', 'y2', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-dasharray', 'stroke-opacity', 'opacity', 'mask', 'clip-path', 'transform', 'shape-rendering'],
+        'polyline' => ['points', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'stroke-opacity', 'fill-opacity', 'opacity', 'mask', 'clip-path', 'transform', 'shape-rendering'],
+        'polygon' => ['points', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'stroke-opacity', 'fill-opacity', 'fill-rule', 'opacity', 'mask', 'clip-path', 'transform', 'shape-rendering'],
         'defs' => [],
         'lineargradient' => ['x1', 'y1', 'x2', 'y2', 'gradientunits', 'gradienttransform', 'spreadmethod', 'href'],
         'radialgradient' => ['cx', 'cy', 'r', 'fx', 'fy', 'fr', 'gradientunits', 'gradienttransform', 'spreadmethod', 'href'],
@@ -72,12 +72,28 @@ final readonly class InlineSvgPolicy
     /** An id a reference may name. */
     private const string ID = '[A-Za-z0-9_.:-]+';
 
+    /** A hint of how the edges are drawn, nothing more. */
+    private const array SHAPE_RENDERING = ['auto', 'optimizeSpeed', 'crispEdges', 'geometricPrecision'];
+
     private const string COLOR = '/^(?:[a-z]+|#[0-9a-f]{3,8}|(?:rgb|rgba|hsl|hsla)\(\s*[0-9.,%\s\/]+\))$/i';
 
     private const string TRANSFORM = '/^(?:(?:matrix|translate|scale|rotate|skewX|skewY)\([0-9eE.,+\-\s]*\)\s*,?\s*)+$/';
 
-    /** The prefix `clean()` gives the ids of an SVG; read back so that cleaning twice changes nothing. */
-    private const string PREFIX = '/^s[0-9a-f]{8}-[0-9]+-/';
+    /** The prefix `clean()` gives the ids of an SVG, read back (however many times it was given) so that cleaning twice changes nothing. */
+    private const string PREFIX = '/^(?:s[0-9a-f]{8}-[0-9]+-)+/';
+
+    /**
+     * The tags that close an SVG in the parser of a browser: the HTML of a
+     * page that a writer left inside an `svg`. The parser of PHP 8.3 keeps
+     * them inside, the browser does not, and neither does `clean()`.
+     */
+    private const array LEAVES_SVG = ['b', 'big', 'blockquote', 'body', 'br', 'center', 'code', 'dd', 'div', 'dl', 'dt', 'em', 'embed', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'head', 'hr', 'i', 'img', 'li', 'listing', 'menu', 'meta', 'nobr', 'ol', 'p', 'pre', 'ruby', 's', 'small', 'span', 'strong', 'strike', 'sub', 'sup', 'table', 'tt', 'u', 'ul', 'var'];
+
+    /** The elements whose content a mask or a clipping path must not mask or clip again. */
+    private const array CUTTERS = ['mask', 'clippath'];
+
+    /** The references that mask or clip, dropped inside a mask or a clipping path. */
+    private const array CUTTING_REFERENCES = ['mask', 'clip-path'];
 
     /** A tag of the markup the sanitizer of Symfony writes: its values are quoted and escaped, never a raw `>`. */
     private const string TAG = '/<(\/?)([a-z][a-z0-9-]*)((?:\s[^>]*)?)>/';
@@ -114,6 +130,7 @@ final readonly class InlineSvgPolicy
             'stop-color' => 1 === preg_match(self::COLOR, $value),
             'fill', 'stroke' => 1 === preg_match(self::COLOR, $value) || null !== self::reference($attribute, $value),
             'mask', 'clip-path' => 'none' === strtolower($value) || null !== self::reference($attribute, $value),
+            'shape-rendering' => \in_array($value, self::SHAPE_RENDERING, true),
             'href' => !isset(self::ELEMENTS[strtolower($element)]) || null !== self::reference($attribute, $value),
             default => true,
         };
@@ -188,23 +205,29 @@ final readonly class InlineSvgPolicy
         $ids = [];
         self::collectIds($document->documentElement, $ids);
         $violations = [];
-        $this->inspect($document->documentElement, $everywhere, $ids, $violations);
+        $this->inspect($document->documentElement, $everywhere, $ids, false, $violations);
 
         return $violations;
     }
 
     /**
-     * Gives the ids of each SVG of the markup a prefix of its own and points
-     * its references to them; a reference to an id the SVG does not hold is
-     * dropped. The prefix is drawn from the markup and the rank of the SVG in
-     * it, so that the same markup is written the same way each time it is
-     * saved, and cleaning twice changes nothing.
+     * Gives the ids an SVG of the markup cites (a mask, a gradient, a
+     * clipping path) a prefix of its own and points its references to them;
+     * a reference to an id the SVG does not hold is dropped, and so is a mask
+     * or a clipping path asked for inside another one, which would multiply
+     * the drawing at each level. An id nothing cites keeps its name, for an
+     * anchor or a label that names it.
      *
-     * It reads the markup the sanitizer of Symfony wrote, nothing else.
+     * The prefix is drawn from the markup and the rank of the SVG in it, so
+     * that the same markup is written the same way each time it is saved, and
+     * cleaning twice changes nothing.
+     *
+     * It reads the markup the sanitizer of Symfony wrote, nothing else, one
+     * SVG at a time: the rest of a page is copied as it is.
      */
     public function clean(string $html): string
     {
-        if (false === stripos($html, '<svg')) {
+        if (1 !== preg_match('/<svg[\s>]/', $html)) {
             return $html;
         }
 
@@ -252,9 +275,10 @@ final readonly class InlineSvgPolicy
     /**
      * @param list<string>             $everywhere
      * @param array<string, true>      $ids
+     * @param bool                     $inCutter   whether the element stands inside a mask or a clipping path
      * @param list<InlineSvgViolation> $violations
      */
-    private function inspect(\DOMElement $element, array $everywhere, array $ids, array &$violations): void
+    private function inspect(\DOMElement $element, array $everywhere, array $ids, bool $inCutter, array &$violations): void
     {
         if (!self::isKept($element)) {
             $violations[] = new InlineSvgViolation(InlineSvgViolationKind::Element, $element->nodeName);
@@ -273,6 +297,8 @@ final readonly class InlineSvgPolicy
                 $violations[] = new InlineSvgViolation(InlineSvgViolationKind::Attribute, $attribute->nodeName);
             } elseif (!self::acceptsValue($name, $attributeName, $value)) {
                 $violations[] = new InlineSvgViolation(InlineSvgViolationKind::Value, $attribute->nodeName);
+            } elseif ($inCutter && \in_array($attributeName, self::CUTTING_REFERENCES, true) && null !== self::reference($attributeName, $value)) {
+                $violations[] = new InlineSvgViolation(InlineSvgViolationKind::NestedCut, $attribute->nodeName);
             } elseif (\in_array($attributeName, self::REFERENCES, true) && null !== ($reference = self::reference($attributeName, $value)) && !isset($ids[$reference])) {
                 $violations[] = new InlineSvgViolation(InlineSvgViolationKind::Reference, $attribute->nodeName);
             } elseif ('style' === $attributeName && trim((new CssAllowList())->declarations($value), " \t\n\r;") !== trim($value, " \t\n\r;")) {
@@ -282,7 +308,7 @@ final readonly class InlineSvgPolicy
 
         foreach ($element->childNodes as $child) {
             if ($child instanceof \DOMElement) {
-                $this->inspect($child, $everywhere, $ids, $violations);
+                $this->inspect($child, $everywhere, $ids, $inCutter || \in_array($name, self::CUTTERS, true), $violations);
             } elseif ($child instanceof \DOMText && '' !== trim($child->data)) {
                 $violations[] = new InlineSvgViolation(InlineSvgViolationKind::Text, 'text');
             }
@@ -294,115 +320,189 @@ final readonly class InlineSvgPolicy
      */
     private function rewrite(string $html, \Closure $prefixOf): string
     {
-        preg_match_all(self::TAG, $html, $tags, \PREG_SET_ORDER | \PREG_OFFSET_CAPTURE);
-
         $written = '';
         $position = 0;
-        $depth = 0;
         $rank = 0;
-        $ids = [];
-        $prefix = '';
 
-        foreach ($tags as $index => $tag) {
-            [$whole, $offset] = $tag[0];
-            $closing = '/' === $tag[1][0];
-            $name = $tag[2][0];
-
-            if ('svg' === $name && !$closing && 0 === $depth) {
-                ++$rank;
-                $prefix = $prefixOf($rank);
-                $ids = self::idsFrom($tags, $index);
-            }
-
-            $written .= substr($html, $position, $offset - $position);
-            $written .= $depth > 0 || ('svg' === $name && !$closing)
-                ? self::rewriteTag($whole, $closing, $name, $tag[3][0], $ids, $prefix)
-                : $whole;
-            $position = $offset + \strlen($whole);
-
-            if ('svg' === $name) {
-                $depth = max(0, $depth + ($closing ? -1 : 1));
-            }
+        foreach (self::segments($html) as [$start, $end]) {
+            $written .= substr($html, $position, $start - $position);
+            $written .= self::rewriteSvg(substr($html, $start, $end - $start), $prefixOf(++$rank));
+            $position = $end;
         }
 
         return $written.substr($html, $position);
     }
 
     /**
-     * The ids the SVG that opens at this tag holds, without a prefix a former
-     * cleaning gave them.
+     * Where each SVG of the markup starts and ends, as a browser reads it: at
+     * its closing tag, or at the first tag of HTML that leaves it. A tag is
+     * read one at a time, so that a long page costs no more memory than one
+     * of its tags.
      *
-     * @param array<int, array<int, array{string, int}>> $tags
-     *
-     * @return array<string, true>
+     * @return list<array{int, int}>
      */
-    private static function idsFrom(array $tags, int $start): array
+    private static function segments(string $html): array
     {
-        $ids = [];
-        $depth = 0;
+        $segments = [];
+        $offset = 0;
 
-        for ($index = $start, $count = \count($tags); $index < $count; ++$index) {
-            $closing = '/' === $tags[$index][1][0];
+        while (1 === preg_match('/<svg[\s>]/', $html, $opening, \PREG_OFFSET_CAPTURE, $offset)) {
+            $start = $opening[0][1];
+            $end = \strlen($html);
+            $position = $start;
+            $depth = 0;
 
-            if ('svg' === $tags[$index][2][0]) {
-                $depth += $closing ? -1 : 1;
+            while (1 === preg_match(self::TAG, $html, $tag, \PREG_OFFSET_CAPTURE, $position)) {
+                [$whole, $at] = $tag[0];
+                $closing = '/' === $tag[1][0];
+                $name = $tag[2][0];
+                $position = $at + \strlen($whole);
 
-                if (0 === $depth) {
+                if ('svg' === $name) {
+                    $depth += $closing ? -1 : 1;
+
+                    if (0 === $depth) {
+                        $end = $position;
+
+                        break;
+                    }
+                } elseif (self::leavesSvg($name, $closing, $tag[3][0])) {
+                    $end = $at;
+
                     break;
                 }
             }
 
-            if (!$closing && preg_match('/\sid="([^"]*)"/', $tags[$index][3][0], $match)) {
-                $ids[self::withoutPrefix(self::decoded($match[1]))] = true;
-            }
+            $segments[] = [$start, $end];
+            $offset = $end;
         }
 
-        return $ids;
+        return $segments;
     }
 
     /**
-     * @param array<string, true> $ids
+     * Whether a tag ends the SVG it is written in, in the parser of a
+     * browser: one of the HTML elements that leave foreign content, a `font`
+     * that sets a color, a face or a size, and the end tags of `p` and `br`.
      */
-    private static function rewriteTag(string $whole, bool $closing, string $name, string $attributes, array $ids, string $prefix): string
+    private static function leavesSvg(string $name, bool $closing, string $attributes): bool
     {
-        if ($closing || '' === trim($attributes)) {
-            return $whole;
+        if ($closing) {
+            return 'p' === $name || 'br' === $name;
         }
 
-        $svg = isset(self::ELEMENTS[$name]);
-        $kept = (string) preg_replace_callback(self::ATTRIBUTE, static function (array $match) use ($svg, $ids, $prefix): string {
-            $attribute = $match[1];
-            $value = isset($match[2]) ? self::decoded($match[2]) : null;
+        return \in_array($name, self::LEAVES_SVG, true)
+            || ('font' === $name && 1 === preg_match('/\s(?:color|face|size)[\s=]/', $attributes));
+    }
 
-            if (null === $value) {
-                return $match[0];
+    /**
+     * One SVG: the ids its references cite, then the SVG written again with
+     * those ids under the prefix.
+     */
+    private static function rewriteSvg(string $svg, string $prefix): string
+    {
+        $ids = [];
+        $cited = [];
+        $cutters = 0;
+
+        preg_replace_callback(self::TAG, static function (array $tag) use (&$ids, &$cited, &$cutters): string {
+            self::readTag($tag, $cutters, static function (string $attribute, string $value, bool $inCutter) use (&$ids, &$cited): void {
+                if ('id' === $attribute) {
+                    $ids[self::withoutPrefix($value)] = true;
+                } elseif (null !== $reference = self::followed($attribute, $value, $inCutter)) {
+                    $cited[self::withoutPrefix($reference)] = true;
+                }
+            });
+
+            return $tag[0];
+        }, $svg);
+
+        $cited = array_intersect_key($cited, $ids);
+        $cutters = 0;
+
+        return (string) preg_replace_callback(self::TAG, static function (array $tag) use ($cited, $prefix, &$cutters): string {
+            $name = $tag[2];
+            $svgElement = isset(self::ELEMENTS[$name]);
+            $kept = '' === trim($tag[3]) ? $tag[3] : (string) preg_replace_callback(self::ATTRIBUTE, static function (array $match) use ($cited, $prefix, $svgElement, $cutters): string {
+                $attribute = $match[1];
+
+                if (!isset($match[2])) {
+                    return $match[0];
+                }
+
+                $value = self::decoded($match[2]);
+
+                if ('id' === $attribute) {
+                    $id = self::withoutPrefix($value);
+
+                    return isset($cited[$id]) ? ' id="'.self::encoded($prefix.$id).'"' : $match[0];
+                }
+
+                // The `href` of a link is a link; that of a gradient points inside the SVG.
+                if (!\in_array($attribute, self::REFERENCES, true) || ('href' === $attribute && !$svgElement)) {
+                    return $match[0];
+                }
+
+                $reference = self::reference($attribute, $value);
+
+                if (null === $reference) {
+                    return $match[0];
+                }
+
+                $reference = self::withoutPrefix($reference);
+
+                if (!isset($cited[$reference]) || null === self::followed($attribute, $value, $cutters > 0)) {
+                    return '';
+                }
+
+                return ' '.$attribute.'="'.self::encoded('href' === $attribute ? '#'.$prefix.$reference : 'url(#'.$prefix.$reference.')').'"';
+            }, $tag[3]);
+
+            self::countCutters($tag[1], $name, $cutters);
+
+            return '<'.$tag[1].$name.$kept.'>';
+        }, $svg);
+    }
+
+    /**
+     * Hands each attribute of a tag to the reader, with whether the tag
+     * stands inside a mask or a clipping path, then counts the cutters.
+     *
+     * @param array<int, string>                   $tag
+     * @param \Closure(string, string, bool): void $read
+     */
+    private static function readTag(array $tag, int &$cutters, \Closure $read): void
+    {
+        if ('' === $tag[1] && preg_match_all(self::ATTRIBUTE, $tag[3], $attributes, \PREG_SET_ORDER) > 0) {
+            foreach ($attributes as $attribute) {
+                // The `href` of a link is a link, not a reference.
+                if (isset($attribute[2]) && ('href' !== $attribute[1] || isset(self::ELEMENTS[$tag[2]]))) {
+                    $read($attribute[1], self::decoded($attribute[2]), $cutters > 0);
+                }
             }
+        }
 
-            if ('id' === $attribute) {
-                return ' id="'.self::encoded($prefix.self::withoutPrefix($value)).'"';
-            }
+        self::countCutters($tag[1], $tag[2], $cutters);
+    }
 
-            // The `href` of a link is a link; that of a gradient points inside the SVG.
-            if (!\in_array($attribute, self::REFERENCES, true) || ('href' === $attribute && !$svg)) {
-                return $match[0];
-            }
+    private static function countCutters(string $closing, string $name, int &$cutters): void
+    {
+        if (\in_array($name, self::CUTTERS, true)) {
+            $cutters = max(0, $cutters + ('/' === $closing ? -1 : 1));
+        }
+    }
 
-            $reference = self::reference($attribute, $value);
+    /**
+     * The id a reference points to when a page follows it: not a mask or a
+     * clipping path asked for inside another one.
+     */
+    private static function followed(string $attribute, string $value, bool $inCutter): ?string
+    {
+        if (!\in_array($attribute, self::REFERENCES, true) || ($inCutter && \in_array($attribute, self::CUTTING_REFERENCES, true))) {
+            return null;
+        }
 
-            if (null === $reference) {
-                return $match[0];
-            }
-
-            $reference = self::withoutPrefix($reference);
-
-            if (!isset($ids[$reference])) {
-                return '';
-            }
-
-            return ' '.$attribute.'="'.self::encoded('href' === $attribute ? '#'.$prefix.$reference : 'url(#'.$prefix.$reference.')').'"';
-        }, $attributes);
-
-        return '<'.$name.$kept.'>';
+        return self::reference($attribute, $value);
     }
 
     private static function withoutPrefix(string $id): string

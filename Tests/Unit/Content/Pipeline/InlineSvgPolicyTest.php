@@ -146,6 +146,74 @@ final class InlineSvgPolicyTest extends TestCase
         self::assertStringNotContainsString('mask="', $html);
     }
 
+    /**
+     * An id nothing in the SVG cites keeps its name: an anchor, a label or a
+     * rule of the theme may name it. The definitions are cited, so they take
+     * the prefix.
+     */
+    public function testAnIdNothingCitesKeepsItsName(): void
+    {
+        $html = (string) $this->sanitizer->html('<svg id="logo" viewBox="0 0 8 8"><g id="layer"><path d="M0 0"/></g><mask id="m"><rect width="8" height="8" fill="#fff"/></mask><g mask="url(#m)"><path d="M0 0"/></g></svg>');
+
+        self::assertStringContainsString('<svg id="logo"', $html);
+        self::assertStringContainsString('<g id="layer">', $html);
+        self::assertMatchesRegularExpression('/<mask id="(s[0-9a-f]{8}-1-m)">.*<g mask="url\(#\1\)">/', $html);
+    }
+
+    /**
+     * A mask asked for inside a mask multiplies the drawing at each level:
+     * twenty of them paint a million shapes. A page drops it.
+     */
+    public function testAMaskOrAClippingPathInsideAnotherOneIsDropped(): void
+    {
+        $html = (string) $this->sanitizer->html('<svg viewBox="0 0 8 8"><mask id="a"><rect width="8" height="8" mask="url(#b)"/></mask><mask id="b"><rect width="8" height="8"/></mask><clipPath id="c"><rect width="8" height="8" clip-path="url(#d)"/></clipPath><clipPath id="d"><rect width="4" height="4"/></clipPath><g mask="url(#a)" clip-path="url(#c)"><path d="M0 0"/></g></svg>');
+
+        self::assertSame(1, substr_count($html, ' mask="'), $html);
+        self::assertSame(1, substr_count($html, ' clip-path="'), $html);
+        self::assertMatchesRegularExpression('/<g mask="url\(#s[0-9a-f]{8}-1-a\)" clip-path="url\(#s[0-9a-f]{8}-1-c\)">/', $html);
+    }
+
+    /**
+     * An SVG a writer left open ends, for a browser, at the first tag of HTML
+     * that leaves it. The parser of PHP 8.3 keeps that HTML inside the SVG: it
+     * is not an SVG for all that, and keeps its ids, and the next SVG of the
+     * page takes a rank of its own.
+     */
+    public function testAnSvgLeftOpenEndsWhereABrowserEndsIt(): void
+    {
+        $html = (string) $this->sanitizer->html('<svg viewBox="0 0 8 8"><path d="M0 0"/><p id="faq">FAQ</p><svg viewBox="0 0 1 1"><mask id="m"><rect width="1" height="1"/></mask><g mask="url(#m)"></g></svg>');
+
+        self::assertStringContainsString('<p id="faq">', $html);
+        self::assertMatchesRegularExpression('/<mask id="s[0-9a-f]{8}-2-m">/', $html);
+    }
+
+    /** Ids a former cleaning prefixed twice are read back whole: cleaning again changes nothing. */
+    public function testIdsPrefixedSeveralTimesAreReadBackWhole(): void
+    {
+        $html = (string) $this->sanitizer->html('<svg viewBox="0 0 8 8"><mask id="s11111111-1-s22222222-3-m"><rect width="8" height="8"/></mask><g mask="url(#s11111111-1-s22222222-3-m)"><path d="M0 0"/></g></svg>');
+
+        self::assertMatchesRegularExpression('/<mask id="s[0-9a-f]{8}-1-m">/', $html);
+        self::assertSame($html, $this->sanitizer->html($html));
+    }
+
+    /**
+     * The longest page the filter reads, one SVG of a hundred and forty
+     * thousand groups: cleaning reads one tag at a time, and takes a few
+     * megabytes, not the hundreds it took when every tag of the page was
+     * held at once.
+     */
+    public function testALongPageIsCleanedInLittleMemory(): void
+    {
+        $page = '<p>Text</p><svg viewBox="0 0 8 8">'.str_repeat('<g></g>', 140000).'<mask id="m"><rect width="8" height="8"></rect></mask><g mask="url(#m)"></g></svg>';
+        memory_reset_peak_usage();
+        $before = memory_get_usage();
+
+        $cleaned = (new InlineSvgPolicy())->clean($page);
+
+        self::assertLessThan(48 * 1024 * 1024, memory_get_peak_usage() - $before);
+        self::assertMatchesRegularExpression('/<mask id="s[0-9a-f]{8}-1-m">/', $cleaned);
+    }
+
     /** The `href` of a link is a link: only that of a gradient is held to the SVG. */
     public function testALinkAroundAnIconKeepsItsAddress(): void
     {
@@ -246,5 +314,7 @@ final class InlineSvgPolicyTest extends TestCase
         yield 'the href of a gradient that leaves' => ['lineargradient', 'href', 'https://example.com/#a', false];
         yield 'the href of a link' => ['a', 'href', 'https://example.com/', true];
         yield 'another namespace' => ['svg', 'xmlns', 'http://www.w3.org/1999/xhtml', false];
+        yield 'a hint of how edges are drawn' => ['path', 'shape-rendering', 'crispEdges', true];
+        yield 'a hint that is not one' => ['path', 'shape-rendering', 'url(#a)', false];
     }
 }

@@ -25,7 +25,10 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   a drawing with a gradient, a mask or a clipping path may now become an
   icon, and a file that cannot is told every reason at once (a reused shape,
   a style sheet, an old `xlink:href`, a reference to a shape the file does
-  not hold…). Pages published before keep what the former
+  not hold…). `shape-rendering` is kept, and the base optimization removes
+  what an Illustrator export writes on the root and nothing reads (`x`, `y`,
+  and `xml:space` when the drawing has no text): such an export is no longer
+  refused as an icon for them. Pages published before keep what the former
   filter left until they are rendered again:
   `php Thelia thelia_cms:render-published --all` (`--dry-run` counts them),
   and `php Thelia thelia_cms:render` for the drafts.

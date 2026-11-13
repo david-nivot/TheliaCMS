@@ -84,11 +84,14 @@ final class IconEligibilityTest extends TestCase
         yield 'text in a group' => ['<g>hello<path d="M0 0"/></g>', ['some text (text)']];
         yield 'each obstacle once' => ['<use href="#a"/><use href="#b"/>', ['a reused shape (use)']];
         yield 'a style element is not read inside' => ['<style>.a{fill:red}</style>', ['CSS style (style)']];
-        yield 'a reference to an id the drawing does not hold' => ['<g clip-path="url(#c)"><path d="M0 0"/></g>', ['a reference to a shape the file does not hold (clip-path)']];
-        yield 'a reference to an id on an element a page drops' => ['<pattern id="p"><path d="M0 0"/></pattern><path d="M0 0" fill="url(#p)"/>', ['a pattern (pattern)', 'a reference to a shape the file does not hold (fill)']];
+        yield 'a reference to an id the drawing does not hold' => ['<g clip-path="url(#c)"><path d="M0 0"/></g>', ['a reference to a shape a page does not keep (clip-path)']];
+        yield 'a reference to an id on an element a page drops' => ['<pattern id="p"><path d="M0 0"/></pattern><path d="M0 0" fill="url(#p)"/>', ['a pattern (pattern)', 'a reference to a shape a page does not keep (fill)']];
         yield 'a paint from another file' => ['<path d="M0 0" fill="url(other.svg#a)"/>', ['a color a page does not keep (fill)']];
         yield 'a gradient that inherits one by the old xlink:href' => ['<radialGradient xmlns:xlink="http://www.w3.org/1999/xlink" id="r" xlink:href="#r"/>', ['an old way of pointing to a shape (xlink:href)']];
         yield 'a gradient transform that is not one' => ['<linearGradient id="l" gradientTransform="url(#l)"/>', ['a value a page does not keep (gradientTransform)']];
+        yield 'a mask asked for inside a mask' => ['<mask id="a"><rect width="1" height="1" mask="url(#b)"/></mask><mask id="b"><rect width="1" height="1"/></mask><g mask="url(#a)"><path d="M0 0"/></g>', ['a mask or a clipping inside another one (mask)']];
+        yield 'a clipping path asked for inside a clipping path' => ['<clipPath id="a"><rect width="1" height="1" clip-path="url(#b)"/></clipPath><clipPath id="b"><rect width="1" height="1"/></clipPath><g clip-path="url(#a)"><path d="M0 0"/></g>', ['a mask or a clipping inside another one (clip-path)']];
+        yield 'a style element and a style cut, said once' => ['<style>.a{fill:red}</style><path d="M0 0" style="fill:url(#a)"/>', ['CSS style (style)']];
         yield 'a style a page cuts' => ['<path d="M0 0" style="fill:url(#a);stroke:red"/>', ['CSS style (style)']];
     }
 
