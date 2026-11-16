@@ -138,7 +138,8 @@ from two places:
   component receives the markup of a facade, a play button that loads the
   player when the visitor clicks it (`assets/embed.js`, linked on every page by
   the module), to print with `|raw`; nothing when the prop is left empty. The
-  description of the prop names the video for who cannot see it. Not in the
+  description of the prop, translated in the language of the page (`theliacms`
+  domain, as in the form), names the video for who cannot see it. Not in the
   rows of a list, where `embed` stays a line of text;
   `product`, `category`, `folder`, `form` or `menu` is one record,
   picked by its id with the same pickers the partials use (the generator
