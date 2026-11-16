@@ -208,6 +208,14 @@ class TheliaCMS extends BaseModule
      */
     public function update($currentVersion, $newVersion, ?ConnectionInterface $con = null): void
     {
+        // The core updates every module it finds, active or not. A site that never
+        // activated this one has none of its tables: the update files would alter
+        // tables that do not exist. Its first activation creates the schema and plays
+        // every update file then (installSchema()).
+        if (!$this->schemaIsInstalled($con)) {
+            return;
+        }
+
         foreach (self::migrationsBetween((string) $currentVersion, (string) $newVersion) as $file) {
             (new Database($con))->insertSql(null, [$file]);
         }

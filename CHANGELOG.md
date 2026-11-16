@@ -7,6 +7,19 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Fixed
+
+- **A picture the page already has offers WebP too**: when a section
+  draws a `<picture>` of its own (a separate image for a narrow screen, as
+  the Highlights section does), each mobile `<source>` of the library is now
+  preceded by its WebP twin and the `<img>` by a WebP `<source>`. Until now
+  such a picture was served in the uploaded format only, and its mobile image
+  was often the first one a phone waited for (a 520 kB JPEG on a home page).
+  A picture whose author typed a `<source>`, or wrote one without a media
+  query, is left as it is.
+
+## [2.30.0] - 2026-11-16
+
 ### Added
 
 - **A heading takes a style of the theme, apart from its level** (ADR 18):
@@ -30,14 +43,11 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Fixed
 
-- **A picture the page already has offers WebP too**: when a section
-  draws a `<picture>` of its own (a separate image for a narrow screen, as
-  the Highlights section does), each mobile `<source>` of the library is now
-  preceded by its WebP twin and the `<img>` by a WebP `<source>`. Until now
-  such a picture was served in the uploaded format only, and its mobile image
-  was often the first one a phone waited for (a 520 kB JPEG on a home page).
-  A picture whose author typed a `<source>`, or wrote one without a media
-  query, is left as it is.
+- **`module:refresh` stops on a site that never activated the module**: the
+  core updates every module whose version changed, active or not, and the
+  update files altered tables a site without the module does not have (2.19.0,
+  `cms_form_submission`). The update plays nothing until the tables exist; the
+  first activation creates them and plays every update file.
 
 ## [2.29.0] - 2026-11-13
 
@@ -3521,7 +3531,8 @@ the published pages.
 - The breadcrumb of a page filed under a draft one offered a link to that page,
   which answers 404, both to the reader and in the `BreadcrumbList`.
 
-[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.29.0...HEAD
+[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.30.0...HEAD
+[2.30.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.30.0
 [2.29.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.29.0
 [2.28.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.28.0
 [2.27.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.27.0
