@@ -340,6 +340,29 @@ opens a component is the heading of the site
   portraits too. Outside the contract, which asks a new component; a
   defensible answer.
 
+## Round 12
+
+Played on 2026-11-16, the same case, with the heading that opens a component
+set by the editor (ADR 18): the rule hands two `choice` props of the
+component, `title_level` and `title_style`, to the heading of the site. On
+Flexy, `style` offers `level` and the six headings of the toolkit. 3 trials,
+0.20 USD, 1.2 min.
+
+| Case | Trials | Outcomes | Kept the contract | Corrections | Copied a target | Mean cost USD |
+|---|---|---|---|---|---|---|
+| compose-heading-team | 3 | 3 component | 3/3 | 0 | - | 0.068 |
+
+- All three open on
+  `cms_component('cms:heading', {text: props.title, level: props.title_level, style: props.title_style})`,
+  with `title_level` offering `h2`, `h3`, `h4` (`h2` by default) and
+  `title_style` offering `level` and `h1` to `h6` (`level` by default):
+  the values of the heading, no other.
+- The labels of these choices are the generator's own (« Style 1 » to
+  « Style 6 »): the list of drawable components gives the values of a
+  choice, not its labels.
+- The contract of the case does not check the two props; they were read in
+  the trials (`var/eval/components/round-12/`).
+
 ## Findings
 
 1. **Reuse works and costs nothing.** The 8 `existing` cases (and the
