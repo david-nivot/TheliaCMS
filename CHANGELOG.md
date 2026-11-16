@@ -7,6 +7,17 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Fixed
+
+- **A picture the page already has offers WebP too**: when a section
+  draws a `<picture>` of its own (a separate image for a narrow screen, as
+  the Highlights section does), each mobile `<source>` of the library is now
+  preceded by its WebP twin and the `<img>` by a WebP `<source>`. Until now
+  such a picture was served in the uploaded format only, and its mobile image
+  was often the first one a phone waited for (a 520 kB JPEG on a home page).
+  A picture whose author typed a `<source>`, or wrote one without a media
+  query, is left as it is.
+
 ## [2.30.0] - 2026-11-16
 
 ### Added
