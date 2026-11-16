@@ -325,7 +325,30 @@ final class ImageRewriterTest extends TestCase
         self::assertStringContainsString('<source media="(max-width: 1023px)" srcset="/image-library/9/full/480,320/0/default.jpg 480w, /image-library/9/full/960,640/0/default.jpg 960w, /image-library/9/full/max/0/default.jpg 1200w" sizes="(max-width: 1440px) 100vw, 1440px">', $html);
         self::assertStringContainsString('sizes="(max-width: 1440px) 100vw, 1440px"', $this->imageTags($html)[0]);
         self::assertSame(1, substr_count($html, '<picture>'));
-        self::assertSame(1, substr_count($html, '<source'), 'No WebP alternative is added to a picture that exists.');
+    }
+
+    public function testOffersTheWebpOfTheMobileSourceAndOfTheImageInAPictureThatExists(): void
+    {
+        $html = $this->rewritePicture('<source media="(max-width: 1023px)" srcset="/image-library/9/full/max/0/default.jpg">');
+
+        self::assertSame(1, substr_count($html, '<picture>'));
+        self::assertSame(
+            '<picture>'
+            .'<source type="image/webp" srcset="/image-library/9/full/480,320/0/default.webp 480w, /image-library/9/full/960,640/0/default.webp 960w, /image-library/9/full/max/0/default.webp 1200w" sizes="(max-width: 1440px) 100vw, 1440px" media="(max-width: 1023px)">'
+            .'<source media="(max-width: 1023px)" srcset="/image-library/9/full/480,320/0/default.jpg 480w, /image-library/9/full/960,640/0/default.jpg 960w, /image-library/9/full/max/0/default.jpg 1200w" sizes="(max-width: 1440px) 100vw, 1440px">'
+            .'<source type="image/webp" srcset="/image-library/7/full/480,270/0/default.webp 480w, /image-library/7/full/960,540/0/default.webp 960w, /image-library/7/full/1440,810/0/default.webp 1440w, /image-library/7/full/max/0/default.webp 1600w" sizes="(max-width: 1440px) 100vw, 1440px">',
+            substr($html, 0, (int) strpos($html, '<img')),
+            'A browser reads the sources in order: the mobile WebP first, the mobile file, then the WebP of the image.',
+        );
+        self::assertStringNotContainsString('data-cms-rewriter-source', $html);
+    }
+
+    public function testAddsNoFormatToAPictureWhoseAuthorTypedASource(): void
+    {
+        $html = $this->rewritePicture('<source media="(max-width: 1023px)" type="image/avif" srcset="/image-library/9/full/max/0/default.avif"><source media="(max-width: 1023px)" srcset="/image-library/9/full/max/0/default.jpg">');
+
+        self::assertSame(2, substr_count($html, '<source'));
+        self::assertStringNotContainsString('image/webp', $html);
     }
 
     public function testTakesTheSizesAnImageDeclaresForItsMobileSource(): void

@@ -47,6 +47,12 @@ final readonly class ImageRewriter
      */
     private const int WIDEST_SLOT = 1440;
 
+    /**
+     * Marks the `<source>` this rewriter adds to a `<picture>` the page already had, so it is
+     * not mistaken for one of the author's. Taken out before the page goes online.
+     */
+    private const string ADDED_SOURCE_ATTRIBUTE = 'data-cms-rewriter-source';
+
     public function __construct(
         private MediaResolver $library,
         private MediaDescriptions $descriptions,
@@ -92,7 +98,7 @@ final readonly class ImageRewriter
         }
 
         // Read, it has done its work: nothing of it goes online.
-        foreach ([ImageSlot::ATTRIBUTE, ImageSlot::HEIGHT_ATTRIBUTE, ImageFrame::ATTRIBUTE] as $attribute) {
+        foreach ([ImageSlot::ATTRIBUTE, ImageSlot::HEIGHT_ATTRIBUTE, ImageFrame::ATTRIBUTE, self::ADDED_SOURCE_ATTRIBUTE] as $attribute) {
             foreach (iterator_to_array((new \DOMXPath($document))->query('//*[@'.$attribute.']') ?: []) as $declaring) {
                 if ($declaring instanceof \DOMElement) {
                     $declaring->removeAttribute($attribute);
@@ -198,8 +204,13 @@ final readonly class ImageRewriter
      * with no `type`, is touched: it is another file than the `<img>`, so it is
      * measured on its own, but the slot it is drawn at is the one of the
      * `<img>`, whose `sizes` it takes. The zone the `<img>` keeps is not
-     * carried over, and no WebP alternative is added: a `<picture>` that
-     * already exists is the author's, as `wrapInPicture()` leaves it.
+     * carried over.
+     *
+     * Each source rewritten is preceded by its WebP twin, for the same media
+     * query, unless the author already offers formats of their own (see
+     * `offersItsOwnFormats()`): the mobile picture of a section was otherwise
+     * the one image of the page served in its uploaded format, and the first
+     * one a phone waits for.
      */
     private function rewriteSources(\DOMElement $picture): void
     {
@@ -208,6 +219,8 @@ final readonly class ImageRewriter
         if (!$image instanceof \DOMElement) {
             return;
         }
+
+        $offersWebp = !$this->offersItsOwnFormats($picture);
 
         foreach (iterator_to_array($picture->getElementsByTagName('source')) as $source) {
             $address = trim($source->getAttribute('srcset'));
@@ -230,7 +243,44 @@ final readonly class ImageRewriter
 
             $source->setAttribute('srcset', $attributes['srcset']);
             $source->setAttribute('sizes', $image->getAttribute('sizes') ?: $attributes['sizes']);
+
+            if ($offersWebp && $source->ownerDocument instanceof \DOMDocument && $source->parentNode instanceof \DOMNode) {
+                $twin = $this->webpSource($source->ownerDocument, $media, null, $this->widthsFor($media->width), $source->getAttribute('sizes'));
+                $twin->setAttribute('media', $source->getAttribute('media'));
+                $source->parentNode->insertBefore($twin, $source);
+            }
         }
+    }
+
+    /**
+     * Whether the author's `<picture>` already decides the format, or shadows
+     * whatever would follow: a `<source>` with a `type`, or one without a media
+     * query, which a browser takes whatever the screen. Then nothing is added.
+     */
+    private function offersItsOwnFormats(\DOMElement $picture): bool
+    {
+        foreach ($picture->getElementsByTagName('source') as $source) {
+            if ($source->hasAttribute(self::ADDED_SOURCE_ATTRIBUTE)) {
+                continue;
+            }
+
+            if ($source->hasAttribute('type') || '' === trim($source->getAttribute('media'))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function nearestPicture(\DOMElement $image): ?\DOMElement
+    {
+        for ($node = $image->parentNode; $node instanceof \DOMNode; $node = $node->parentNode) {
+            if ($node instanceof \DOMElement && 'picture' === $node->nodeName) {
+                return $node;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -392,7 +442,9 @@ final readonly class ImageRewriter
     }
 
     /**
-     * Wraps the image in a `<picture>` offering a WebP alternative.
+     * Wraps the image in a `<picture>` offering a WebP alternative. An image
+     * that already sits in one gets the alternative as the last `<source>`
+     * before it, unless the author's picture offers its own formats.
      *
      * AVIF is not offered: TheliaLibrary only encodes jpg, png, gif, jp2 and
      * webp. Adding it there is worth an upstream change, not a workaround here.
@@ -404,24 +456,50 @@ final readonly class ImageRewriter
     {
         $parent = $image->parentNode;
 
-        if (!$parent instanceof \DOMNode || $this->isInsideAPicture($image)) {
+        if (!$parent instanceof \DOMNode) {
             return;
         }
 
+        $source = $this->webpSource($document, $media, $zone, $widths, $sizes);
+
+        if ($this->isInsideAPicture($image)) {
+            $picture = $this->nearestPicture($image);
+
+            if (null !== $picture && !$this->offersItsOwnFormats($picture)) {
+                $parent->insertBefore($source, $image);
+            }
+
+            return;
+        }
+
+        $source->removeAttribute(self::ADDED_SOURCE_ATTRIBUTE);
         $picture = $document->createElement('picture');
+        $parent->replaceChild($picture, $image);
+        $picture->appendChild($source);
+        $picture->appendChild($image);
+    }
+
+    /**
+     * A `<source>` of the WebP renderings of an image, marked as added by the rewriter.
+     *
+     * @param array{x: int, y: int, w: int, h: int}|null $zone
+     * @param list<int>                                  $widths
+     */
+    private function webpSource(\DOMDocument $document, MediaFile $media, ?array $zone, array $widths, ?string $sizes): \DOMElement
+    {
         $source = $document->createElement('source');
         $source->setAttribute('type', 'image/webp');
         $source->setAttribute('srcset', [] !== $widths
             ? $this->srcset($media, $zone, $widths, 'webp')
             : $this->url($media, $zone, null, 'webp'));
 
-        if (null !== $sizes) {
+        if (null !== $sizes && '' !== $sizes) {
             $source->setAttribute('sizes', $sizes);
         }
 
-        $parent->replaceChild($picture, $image);
-        $picture->appendChild($source);
-        $picture->appendChild($image);
+        $source->setAttribute(self::ADDED_SOURCE_ATTRIBUTE, '');
+
+        return $source;
     }
 
     /**
