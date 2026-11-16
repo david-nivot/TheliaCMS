@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Media\Svg\Optimization;
 
+use TheliaCMS\Media\Svg\Optimization\Path\PathData;
+
 /**
  * Points that enclose a shape, never fewer than what it draws: the control
  * points of a curve (a Bezier stays inside them) and, around the ends of
@@ -22,7 +24,9 @@ namespace TheliaCMS\Media\Svg\Optimization;
  */
 final readonly class GeometryEnvelope
 {
-    private const string NUMBER = '[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?';
+    public function __construct(private PathData $paths = new PathData())
+    {
+    }
 
     /**
      * The longest path data or point list read. Every point is kept to find
@@ -35,7 +39,7 @@ final readonly class GeometryEnvelope
     {
         $value = trim($value);
 
-        return 1 === preg_match('/^'.self::NUMBER.'$/', $value) ? (float) $value : null;
+        return $this->paths->isNumber($value) ? (float) $value : null;
     }
 
     /**
@@ -67,9 +71,9 @@ final readonly class GeometryEnvelope
      */
     private function pathPoints(string $data): ?array
     {
-        $tokens = $this->tokens($data);
+        $segments = $this->paths->segments($data);
 
-        if (null === $tokens) {
+        if (null === $segments) {
             return null;
         }
 
@@ -78,24 +82,9 @@ final readonly class GeometryEnvelope
         $start = [0.0, 0.0];
         $lastCubic = null;
         $lastQuadratic = null;
-        $command = '';
-        $position = 0;
-        $count = \count($tokens);
-        $first = true;
 
-        while ($position < $count) {
-            if (\is_string($tokens[$position])) {
-                $command = $tokens[$position++];
-
-                if ($first && 'M' !== $command && 'm' !== $command) {
-                    return null;
-                }
-            } elseif ('' === $command || 'z' === strtolower($command)) {
-                return null;
-            }
-
-            $first = false;
-            $upper = strtoupper($command);
+        foreach ($segments as $segment) {
+            $upper = strtoupper($segment->command);
 
             if ('Z' === $upper) {
                 $current = $start;
@@ -104,19 +93,8 @@ final readonly class GeometryEnvelope
                 continue;
             }
 
-            $arity = ['M' => 2, 'L' => 2, 'H' => 1, 'V' => 1, 'C' => 6, 'S' => 4, 'Q' => 4, 'T' => 2, 'A' => 7][$upper] ?? null;
-
-            if (null === $arity) {
-                return null;
-            }
-
-            $arguments = $this->arguments($tokens, $position, $arity, 'A' === $upper);
-
-            if (null === $arguments) {
-                return null;
-            }
-
-            $relative = $command === strtolower($command);
+            $arguments = array_map(floatval(...), $segment->arguments);
+            $relative = $segment->isRelative();
             [$x, $y] = $current;
             $originX = $relative ? $x : 0.0;
             $originY = $relative ? $y : 0.0;
@@ -129,7 +107,6 @@ final readonly class GeometryEnvelope
                     $points[] = $current;
                     if ('M' === $upper) {
                         $start = $current;
-                        $command = $relative ? 'l' : 'L';
                     }
 
                     break;
@@ -242,26 +219,9 @@ final readonly class GeometryEnvelope
      */
     private function listPoints(string $list): ?array
     {
-        $numbers = preg_split('/[\s,]+/', trim($list), -1, \PREG_SPLIT_NO_EMPTY);
+        $points = $this->paths->pointList($list);
 
-        if (false === $numbers || [] === $numbers || 1 === \count($numbers) % 2) {
-            return null;
-        }
-
-        $points = [];
-
-        foreach (array_chunk($numbers, 2) as [$x, $y]) {
-            $x = $this->number($x);
-            $y = $this->number($y);
-
-            if (null === $x || null === $y) {
-                return null;
-            }
-
-            $points[] = [$x, $y];
-        }
-
-        return $points;
+        return null === $points ? null : array_map(static fn (array $point): array => [(float) $point[0], (float) $point[1]], $points);
     }
 
     /**
@@ -321,85 +281,5 @@ final readonly class GeometryEnvelope
         $scale = $ratio > 1 ? sqrt($ratio) : 1.0;
 
         return max($radiusX, $radiusY) * $scale;
-    }
-
-    /**
-     * Numbers, or the letter of a command.
-     *
-     * @return list<float|string>|null
-     */
-    private function tokens(string $data): ?array
-    {
-        $tokens = [];
-        $length = \strlen($data);
-        $offset = 0;
-        $arguments = 0;
-        $command = '';
-
-        while ($offset < $length) {
-            $character = $data[$offset];
-
-            if (ctype_space($character) || ',' === $character) {
-                ++$offset;
-
-                continue;
-            }
-
-            if (ctype_alpha($character)) {
-                $command = $character;
-                $tokens[] = $character;
-                $arguments = 0;
-                ++$offset;
-
-                continue;
-            }
-
-            // An arc flag is one character, glued to what follows.
-            if (\in_array(strtoupper($command), ['A'], true) && \in_array($arguments % 7, [3, 4], true) && ('0' === $character || '1' === $character)) {
-                $tokens[] = (float) $character;
-                ++$arguments;
-                ++$offset;
-
-                continue;
-            }
-
-            if (1 !== preg_match('/\G'.self::NUMBER.'/', $data, $match, 0, $offset)) {
-                return null;
-            }
-
-            $tokens[] = (float) $match[0];
-            ++$arguments;
-            $offset += \strlen($match[0]);
-        }
-
-        return $tokens;
-    }
-
-    /**
-     * @param list<float|string> $tokens
-     *
-     * @return list<float>|null
-     */
-    private function arguments(array $tokens, int &$position, int $arity, bool $arc): ?array
-    {
-        $arguments = [];
-
-        for ($index = 0; $index < $arity; ++$index) {
-            $token = $tokens[$position + $index] ?? null;
-
-            if (!\is_float($token)) {
-                return null;
-            }
-
-            $arguments[] = $token;
-        }
-
-        if ($arc && (!\in_array($arguments[3], [0.0, 1.0], true) || !\in_array($arguments[4], [0.0, 1.0], true))) {
-            return null;
-        }
-
-        $position += $arity;
-
-        return $arguments;
     }
 }
