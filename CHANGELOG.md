@@ -28,6 +28,14 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 - `blocks.css` sizes a heading section by its level only when it has no
   style (`.cms-heading__text--styled`).
 
+### Fixed
+
+- **`module:refresh` stops on a site that never activated the module**: the
+  core updates every module whose version changed, active or not, and the
+  update files altered tables a site without the module does not have (2.19.0,
+  `cms_form_submission`). The update plays nothing until the tables exist; the
+  first activation creates them and plays every update file.
+
 ## [2.29.0] - 2026-11-13
 
 ### Added
