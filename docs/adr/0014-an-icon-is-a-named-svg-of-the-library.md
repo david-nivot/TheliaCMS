@@ -1,6 +1,8 @@
 # 14. An icon is a named SVG of the library
 
-Date: 2026-11-10. Status: accepted.
+Date: 2026-11-10. Status: accepted, partly superseded by ADR 19 (the publication filter keeps definitions, gradients, masks and clipping paths).
+
+Partly superseded: the decision « The filter is not widened » below no longer holds. The filter keeps the definitions of an inline SVG under ids of its own, and an icon is judged by the same rules (ADR 19). The other decisions stand. The text below is the decision as it was taken.
 
 ## Context
 

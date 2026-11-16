@@ -14,13 +14,18 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   a round flag of the theme (`circle-flags`) came out square, an icon with a
   gradient without its colors. It now keeps `defs`, `linearGradient`,
   `radialGradient`, `stop`, `mask` and `clipPath`, and the `mask`,
-  `clip-path` and `url(#…)` paints that use them. Every id of an SVG gets a
-  prefix of its own (`s<hash>-<rank>-`), so that two copies of an icon in a
-  page do not draw with each other's definitions; the prefix is drawn from
-  the markup, and a page saved again unchanged is written the same. A
-  reference is kept only towards an id of the same SVG: a paint, a mask or a
-  gradient from another file or another SVG of the page is dropped. `use`,
-  `style`, `filter`, `pattern`, `text` and animations stay out. The rules
+  `clip-path` and `url(#…)` paints that use them. Every id an SVG cites (a
+  mask, a gradient, a clipping path) gets a prefix of its own
+  (`s<hash>-<rank>-`), so that two copies of an icon in a page do not draw
+  with each other's definitions; the prefix is drawn from the markup, and a
+  page saved again unchanged is written the same. An id nothing cites keeps
+  its name. A reference is kept only towards an id of the same SVG: a paint,
+  a mask or a gradient from another file or another SVG of the page is
+  dropped, and so is a mask or a clipping path asked for inside another one.
+  `use`, the `style` element, `filter`, `pattern`, `text` and animations stay
+  out. A component of the site that draws such an SVG in its template is no
+  longer told that the page takes its masks, gradients, transforms or
+  namespace out. The rules
   live in `InlineSvgPolicy`, which the « Prepare the SVG » screen asks too:
   a drawing with a gradient, a mask or a clipping path may now become an
   icon, and a file that cannot is told every reason at once (a reused shape,
@@ -31,7 +36,7 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   refused as an icon for them. Pages published before keep what the former
   filter left until they are rendered again:
   `php Thelia thelia_cms:render-published --all` (`--dry-run` counts them),
-  and `php Thelia thelia_cms:render` for the drafts.
+  and `php Thelia thelia_cms:render` for the drafts. See ADR 19.
 
 ### Fixed
 
