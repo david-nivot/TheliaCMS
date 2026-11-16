@@ -38,6 +38,6 @@ final class UpdateWithoutSchemaTest extends TestCase
         $connection->expects(self::never())->method('exec');
         $connection->expects(self::never())->method('query');
 
-        new TheliaCMS()->update('2.18.0', '2.29.0', $connection);
+        (new TheliaCMS())->update('2.18.0', '2.29.0', $connection);
     }
 }
