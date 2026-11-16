@@ -75,9 +75,9 @@ final readonly class InlineSvgPolicy
     /** A hint of how the edges are drawn, nothing more. */
     private const array SHAPE_RENDERING = ['auto', 'optimizeSpeed', 'crispEdges', 'geometricPrecision'];
 
-    private const string COLOR = '/^(?:[a-z]+|#[0-9a-f]{3,8}|(?:rgb|rgba|hsl|hsla)\(\s*[0-9.,%\s\/]+\))$/i';
+    private const string COLOR = '/^(?:[a-z]+|#[0-9a-f]{3,8}|(?:rgb|rgba|hsl|hsla)\([0-9.,%\s\/]++\))$/i';
 
-    private const string TRANSFORM = '/^(?:(?:matrix|translate|scale|rotate|skewX|skewY)\([0-9eE.,+\-\s]*\)\s*,?\s*)+$/';
+    private const string TRANSFORM = '/^(?:(?:matrix|translate|scale|rotate|skewX|skewY)\([0-9eE.,+\-\s]*+\)\s*+(?:,\s*+)?+)++$/';
 
     /** The prefix `clean()` gives the ids of an SVG, read back (however many times it was given) so that cleaning twice changes nothing. */
     private const string PREFIX = '/^(?:s[0-9a-f]{8}-[0-9]+-)+/';

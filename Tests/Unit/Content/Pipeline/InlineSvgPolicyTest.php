@@ -337,4 +337,29 @@ final class InlineSvgPolicyTest extends TestCase
         yield 'a hint of how edges are drawn' => ['path', 'shape-rendering', 'crispEdges', true];
         yield 'a hint that is not one' => ['path', 'shape-rendering', 'url(#a)', false];
     }
+
+    /**
+     * A value written to make the reader try every way of splitting it is
+     * refused at once: the reader goes through it once, and never stops on
+     * the limit PHP sets to how far it may go back. Read the former way, the
+     * transforms hit that limit and the color took three seconds.
+     */
+    #[DataProvider('valuesMadeToBeReadForLong')]
+    public function testAValueMadeToBeReadForLongIsRefusedAtOnce(string $attribute, string $value): void
+    {
+        $start = hrtime(true);
+
+        self::assertFalse(InlineSvgPolicy::acceptsValue('path', $attribute, $value));
+        self::assertSame(\PREG_NO_ERROR, preg_last_error(), preg_last_error_msg());
+        self::assertLessThan(1000, (hrtime(true) - $start) / 1e6, 'Milliseconds to refuse the value.');
+    }
+
+    /**
+     * @return iterable<string, array{string, string}>
+     */
+    public static function valuesMadeToBeReadForLong(): iterable
+    {
+        yield 'transforms followed by spaces' => ['transform', str_repeat('scale(1)'.str_repeat(' ', 30), 8).'x'];
+        yield 'a color opened on spaces' => ['fill', 'rgb('.str_repeat(' ', 100000).'x'];
+    }
 }

@@ -42,6 +42,13 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Fixed
 
+- **A transform or a color written to be read for long no longer slows the
+  publication of a page.** The filter read a `transform` (`scale(1)`
+  followed by spaces, repeated) up to the limit PHP sets to going back, and
+  an `rgb(` opened on a hundred thousand spaces for three seconds; a page
+  holding thousands of them took seconds to save. Both are now read in one
+  pass (`InlineSvgPolicy`), and refuse the same values as before.
+
 - **Replacing the file of an icon with a drawing that cannot be one.** The
   button « Replace the file of the image » stayed active under the warning,
   and the answer came back refused with the same words. It is now disabled
