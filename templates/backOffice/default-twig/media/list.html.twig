@@ -130,15 +130,22 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-6 col-md-auto d-flex gap-2">
-                <button class="btn btn-outline-secondary text-nowrap" type="submit">{{ 'Apply'|trans({}, 'theliacms') }}</button>
-                {% if query.isNarrowed %}
-                    <a class="btn btn-link text-nowrap" href="{{ path('admin.cms.media.list', bare_list) }}">{{ 'Clear'|trans({}, 'theliacms') }}</a>
-                {% endif %}
+            {# The buttons and the view switch carry no label: an empty one of
+               the height of the others, from the width where the row is one
+               line, puts them level with the fields rather than their labels. #}
+            <div class="col-6 col-md-auto">
+                <div class="form-label small mb-1 invisible d-none d-md-block" aria-hidden="true" data-testid="cms-media-filters-spacer">&nbsp;</div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-secondary text-nowrap" type="submit">{{ 'Apply'|trans({}, 'theliacms') }}</button>
+                    {% if query.isNarrowed %}
+                        <a class="btn btn-link text-nowrap" href="{{ path('admin.cms.media.list', bare_list) }}">{{ 'Clear'|trans({}, 'theliacms') }}</a>
+                    {% endif %}
+                </div>
             </div>
             {# Two links, not a setting: the view is part of the address, so a
                list bookmarked or opened again comes back drawn the same way. #}
             <div class="col-12 col-md-auto ms-md-auto">
+                <div class="form-label small mb-1 invisible d-none d-md-block" aria-hidden="true" data-testid="cms-media-filters-spacer">&nbsp;</div>
                 <div class="btn-group" role="group" aria-label="{{ 'Display'|trans({}, 'theliacms') }}" data-testid="cms-media-views">
                     {% for view in views %}
                         {% set current = view == query.view %}

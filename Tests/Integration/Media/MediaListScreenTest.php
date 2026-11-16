@@ -224,6 +224,33 @@ final class MediaListScreenTest extends AdminScreenTestCase
         self::assertSame(0, $screen->filter('[data-testid="cms-media-tag-hint"]')->count());
     }
 
+    /**
+     * Sabotage expected to turn it red: remove the spacer from the column of
+     * the Apply button or from the one of the view switch in
+     * `media/list.html.twig` (they sit above the fields, level with the labels).
+     */
+    public function testTheButtonsAndTheViewSwitchSitLevelWithTheFieldsWhateverTheType(): void
+    {
+        $library = $this->getService(CmsMediaLibrary::class);
+        $this->image('Une photo');
+        Mp4Videos::row($library, $this->locale(), 'Un clip');
+
+        foreach (['', 'image', 'video'] as $kind) {
+            $filters = $this->screen(self::LIST.'?kind='.$kind)->filter('[data-testid="cms-media-filters"]');
+
+            foreach (['button[type="submit"]', '[data-testid="cms-media-views"]'] as $control) {
+                $column = $filters->filter($control)->ancestors()->reduce(
+                    static fn (Crawler $node): bool => str_contains((string) $node->attr('class'), 'col-'),
+                )->first();
+                $spacer = $column->filter('[data-testid="cms-media-filters-spacer"]');
+
+                self::assertSame(1, $spacer->count(), \sprintf('The column of %s keeps the room of a label above it (type "%s").', $control, $kind));
+                self::assertStringContainsString('invisible', (string) $spacer->attr('class'));
+                self::assertStringContainsString('d-none d-md-block', (string) $spacer->attr('class'), 'Only where the row is one line.');
+            }
+        }
+    }
+
     public function testTheFiltersKeepTheirLabelsOnOneLineAndTheBulkActionsSpeakOfFiles(): void
     {
         $this->image('Sans étiquette');
