@@ -77,7 +77,7 @@ final readonly class ThemeComponentSections implements SectionProviderInterface,
                 $twigNames[$prop->name] = self::twigName($prop->name);
             }
 
-            yield new ThemeComponentSection($component, $read['description'], $schema, $twigNames, $this->renderer, $read['id_lists'], self::example($declaration->examples[$component] ?? [], $read['objects']), $this->localeSwitcher, $this->packages, $this->icons, $this->logger, $read['objects'], $this->facade);
+            yield new ThemeComponentSection($component, $read['description'], $schema, $twigNames, $this->renderer, $read['id_lists'], self::example($declaration->examples[$component] ?? [], $read['objects']), $this->localeSwitcher, $this->packages, $this->icons, $this->logger, $read['objects'], $this->facade, $this->translator);
         }
     }
 

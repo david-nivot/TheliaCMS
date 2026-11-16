@@ -7,6 +7,14 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Fixed
+
+- **The facade of a video reads in German**: its button, its notice and its
+  link were printed in English on a German page (`I18n/de_DE.php`, the texts
+  the site shows only). A component of the theme names its video by the
+  description of the prop translated in the language of the page, as the form
+  of the section shows it, instead of the words of the theme as written.
+
 ## [2.31.0] - 2026-11-16
 
 ### Added
