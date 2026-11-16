@@ -7,6 +7,20 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **Three levels of optimization round the points of an SVG file**: on the
+  screen that prepares it, after "None", "No visible difference", "Slight loss
+  of detail" and "Visible loss of detail" keep each point of the paths and
+  polygons within 1/4000, 1/1000 and 1/400 of the diagonal of the drawing.
+  The decimals kept are the fewest that hold that tolerance; a point written
+  relative to the one before starts from that point as rounded, so no error
+  adds up along a path. A `transform` that enlarges the drawing keeps more
+  decimals; a pattern, a marker, a symbol, a nested `svg` or a content in
+  units of its bounding box is left as it is. On the same 548 files, after
+  the base optimization: 30 %, 41 % and 48 % lighter, 39 %, 52 % and 63 %
+  once compressed.
+
 ### Changed
 
 - **The base optimization writes each path in its shorter notation**: every

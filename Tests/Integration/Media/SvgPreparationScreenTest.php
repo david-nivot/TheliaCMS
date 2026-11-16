@@ -97,14 +97,14 @@ final class SvgPreparationScreenTest extends AdminScreenTestCase
         self::assertSame('logo.svg', trim($screen->filter('[data-testid="cms-svg-name"]')->text()));
         self::assertSame(0, $screen->filter('[data-testid="cms-svg-position"]')->count(), 'One file: no "File 1 of 1".');
         self::assertSame(1, $screen->filter('[data-testid="cms-svg-nothing-removed"]')->count(), 'A clean file says there was nothing to remove.');
-        self::assertSame(0, $screen->filter('[data-testid="cms-svg-levels"]')->count(), 'No level of optimization exists: none is offered.');
+        self::assertSame(['', 'round-fine', 'round-medium', 'round-coarse'], $screen->filter('[data-testid="cms-svg-levels"] input[name="level"]')->each(static fn ($input): string => (string) $input->attr('value')), 'None, then the three roundings from the lightest to the strongest.');
         self::assertSame(0, $screen->filter('[data-testid="cms-svg-apply-following"]')->count());
         self::assertStringContainsString('/svg/', (string) $screen->filter('[data-testid="cms-svg-original"]')->attr('src'));
         self::assertStringContainsString('/result', (string) $screen->filter('[data-testid="cms-svg-result"]')->attr('src'));
         self::assertNotNull($this->getService(PreparedSvgStore::class)->result($this->tokenOf($location), 'base'), 'The preview and the answer read the result prepared for the screen.');
         self::assertStringContainsString($this->said('nothing to remove'), $screen->filter('[data-testid="cms-svg-cleaning"] summary')->first()->text());
         self::assertSame('fit', $screen->filter('[data-testid="cms-svg-zoom"] input:checked')->attr('value'), 'A small drawing opens fitted to its frame too.');
-        self::assertSame(1, $screen->filter('[data-testid="cms-svg-only-method"]')->count(), 'No level exists: the base is said to be the only method.');
+        self::assertSame(0, $screen->filter('[data-testid="cms-svg-only-method"]')->count(), 'Levels exist: the base is not said to be the only method.');
     }
 
     public function testADrawingLargerThanItsFrameOpensFittedAndCanStillBeZoomed(): void
