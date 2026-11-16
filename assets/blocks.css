@@ -276,6 +276,16 @@
     line-height: 1.2;
   }
 
+  /* The look of its level: a heading set one or two levels down is sized
+     as such. */
+  h3.cms-columns__title:not(.cms-columns__title--styled) {
+    font-size: var(--cms-font-size-h3);
+  }
+
+  h4.cms-columns__title:not(.cms-columns__title--styled) {
+    font-size: var(--cms-font-size-h4);
+  }
+
   .cms-columns__grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -332,6 +342,12 @@
     font-size: var(--cms-font-size-h3);
     font-weight: var(--font-weight-h2, 600);
     line-height: 1.25;
+  }
+
+  /* One level below a heading set lower: the scale stops at h4. */
+  h4.cms-columns__heading,
+  h5.cms-columns__heading {
+    font-size: var(--cms-font-size-h4);
   }
 
   .cms-columns__text {
@@ -649,6 +665,14 @@
     font-size: clamp(1.5rem, 3vw, 2rem);
   }
 
+  h3.cms-form__title:not(.cms-form__title--styled) {
+    font-size: var(--cms-font-size-h3);
+  }
+
+  h4.cms-form__title:not(.cms-form__title--styled) {
+    font-size: var(--cms-font-size-h4);
+  }
+
   .cms-form__intro {
     margin: 0 0 1.5rem;
   }
@@ -875,6 +899,14 @@
     line-height: 1.2;
   }
 
+  h3.cms-page-list__title:not(.cms-page-list__title--styled) {
+    font-size: var(--cms-font-size-h3);
+  }
+
+  h4.cms-page-list__title:not(.cms-page-list__title--styled) {
+    font-size: var(--cms-font-size-h4);
+  }
+
   .cms-page-list__empty {
     color: var(--cms-color-text-subtle);
   }
@@ -913,6 +945,11 @@
     font-size: var(--cms-font-size-h3);
     font-weight: var(--font-weight-h3, 600);
     line-height: 1.25;
+  }
+
+  h4.cms-page-card__title,
+  h5.cms-page-card__title {
+    font-size: var(--cms-font-size-h4);
   }
 
   /* The whole card answers the click, its title says where it goes. */

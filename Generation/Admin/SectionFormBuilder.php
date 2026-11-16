@@ -96,6 +96,8 @@ final readonly class SectionFormBuilder
         'file_url' => 'Address of the file',
         'thumbnail_image_id' => 'Poster image',
         'tag' => 'Heading level',
+        'title_tag' => 'Level of the heading',
+        'title_style' => 'Appearance of the heading',
         'container' => 'Width',
         'strong_text' => 'Text in bold',
         'link_label' => 'Text of the link',

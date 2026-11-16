@@ -20,6 +20,7 @@ use TheliaCMS\Content\HeadingChoice;
 use TheliaCMS\Content\Theme\ThemeComponentSections;
 use TheliaCMS\Partial\PartialPropType;
 use Twig\Environment;
+use Twig\Loader\ArrayLoader;
 use Twig\Loader\FilesystemLoader;
 use Twig\TwigFunction;
 
@@ -114,6 +115,32 @@ final class HeadingChoiceTest extends TestCase
         self::assertStringContainsString('<h4 class="cms-form__title" id="cms-form-contact-title">Écrivez-nous</h4>', $html);
     }
 
+    public function testTheHeadingOfABandOfTheThemeReadsInTheWordsOfTheHeadingOfTheModule(): void
+    {
+        $band = <<<'TWIG'
+            {# @prop title string The heading #}
+            {# @prop titleTag 'h2'|'h3'|'h4' The level of the heading #}
+            {# @prop titleStyle 'h1'|'h2'|'h3'|'h4'|'h5'|'h6' The look of the heading #}
+            {# @prop side 'h2'|'h3' Not a heading #}
+            {% props title = '', titleTag = 'h2', titleStyle = 'h4', side = 'h2' %}
+            TWIG;
+        $twig = new Environment(new ArrayLoader(['@Flexy/Layouts/Band/Base.html.twig' => $band]));
+
+        $this->inTheme('flexy', "sections:\n    components:\n        - Layouts:Band:Base\n", static function (ThemeComponentSections $theme): void {
+            $props = [];
+
+            foreach ([...$theme->sections()][0]->schema()->props as $prop) {
+                $props[$prop->name] = $prop;
+            }
+
+            self::assertSame('Level 3, under a heading of level 2', $props['title_tag']->choices['h3']);
+            self::assertSame('Heading 1 of the theme', $props['title_style']->choices['h1']);
+            self::assertSame(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'], array_keys($props['title_style']->choices), 'The values of the theme, no other.');
+            self::assertSame('h4', $props['title_style']->default);
+            self::assertSame(['h2' => 'h2', 'h3' => 'h3'], $props['side']->choices, 'Another choice keeps its words.');
+        }, $twig);
+    }
+
     /**
      * The module may come after the theme: its sizes would beat the classes
      * of a style, so it sizes these headings only without one.
@@ -125,6 +152,14 @@ final class HeadingChoiceTest extends TestCase
         foreach (['cms-columns__title', 'cms-page-list__title', 'cms-form__title'] as $class) {
             self::assertSame(0, preg_match('/\.'.$class.'\s*\{[^}]*font-/', $css), \sprintf('No rule sizes every .%s.', $class));
             self::assertMatchesRegularExpression('/\.'.$class.':not\(\.'.$class.'--styled\)\s*\{[^}]*font-size/', $css);
+
+            foreach (['h3', 'h4'] as $level) {
+                self::assertMatchesRegularExpression('/'.$level.'\.'.$class.':not\(\.'.$class.'--styled\)\s*\{\s*font-size: var\(--cms-font-size-'.$level.'\);/', $css, \sprintf('Like its level, an %s is sized as one.', $level));
+            }
+        }
+
+        foreach (['cms-columns__heading', 'cms-page-card__title'] as $class) {
+            self::assertMatchesRegularExpression('/h4\.'.$class.',\s*h5\.'.$class.'\s*\{\s*font-size: var\(--cms-font-size-h4\);/', $css, 'The headings below follow their level, down to the last token.');
         }
     }
 

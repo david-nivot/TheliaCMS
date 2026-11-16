@@ -22,6 +22,9 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   the headings of the columns and of the cards follow, one level below. A
   theme that draws the list of pages or the form itself reads `heading`
   (`tag`, `child_tag`, `class`).
+  With the look of their level, these headings and the ones below them are
+  sized by their level. The level and the look of a band of the theme
+  (`titleTag`, `titleStyle` on Flexy) read in the same words.
 - **Components of the site that draw their own heading are offered the
   heading of the site**: `thelia_cms:components:site-heading` writes, for
   each one drawing it as the generator did, a version to keep from the screen

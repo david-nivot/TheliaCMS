@@ -38,10 +38,9 @@
             {% set style = form.children['title_style'] %}
             <details class="cms-content__more" data-testid="cms-heading-choice" {{ not child.vars.valid or not style.vars.valid or child.vars.value != child.vars.attr['data-cms-default']|default(child.vars.value) or style.vars.value != style.vars.attr['data-cms-default']|default(style.vars.value) ? 'open' }}>
                 <summary>{{ 'Level and appearance of the heading'|trans({}, 'theliacms') }}</summary>
-                <div class="cms-content__item-fields">
-                    {{ form_row(child) }}
-                    {{ form_row(style) }}
-                </div>
+                {# One line each: their choices read whole. #}
+                {{ form_row(child) }}
+                {{ form_row(style) }}
             </details>
         {% elseif child.vars.name == 'style' and form.children['level'] is defined and form.children['text'] is defined %}
             {# The look of a heading on its own, set rarely, apart from its

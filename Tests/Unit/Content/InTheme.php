@@ -32,7 +32,7 @@ trait InTheme
     /**
      * @param \Closure(ThemeComponentSections): void $test
      */
-    private function inTheme(string $name, ?string $declaration, \Closure $test): void
+    private function inTheme(string $name, ?string $declaration, \Closure $test, ?Environment $twig = null): void
     {
         $directory = sys_get_temp_dir().'/theliacms-heading-'.bin2hex(random_bytes(4)).'/'.$name;
         mkdir($directory.'/config', 0o777, true);
@@ -51,7 +51,7 @@ trait InTheme
 
             $test(new ThemeComponentSections(
                 $templates,
-                new ComponentPropsReader($this->createStub(Environment::class), $this->createStub(UrlGeneratorInterface::class)),
+                new ComponentPropsReader($twig ?? $this->createStub(Environment::class), $this->createStub(UrlGeneratorInterface::class)),
                 $this->createStub(ComponentRendererInterface::class),
                 new NullLogger(),
             ));
