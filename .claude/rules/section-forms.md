@@ -24,6 +24,7 @@ Le formulaire d'une section, dans le tiroir de l'écran de contenu d'une page, e
 - Libellés visibles sur chaque champ, y compris dans les lignes 2 et suivantes d'une liste. « (facultatif) » seulement sur un champ facultatif.
 - Ce qui se règle rarement (apparence, cadrage, sources d'une image) reste replié ; ce qui se règle souvent (texte, image, lien) est visible.
 - Tout se fait au clavier : ordre de tabulation, focus gardé après une action (déplacer une ligne, ajouter, retirer), annonces `aria-live` des changements.
+- Sans session admin pour la preuve : faire écrire le balisage rendu de l'écran par un test d'intégration (sortie de diagnostic, retirée avant commit), puis le poser dans `/admin/login`, page publique qui charge les feuilles du back-office, et mesurer là. Simuler le menu latéral (240 px) : une rangée qui tient à 1440 px sans lui peut se replier avec lui.
 - Recopier les assets dans l'hôte (`cms_asset()` le fait au premier appel) et recharger sans cache avant de juger le rendu.
 - Libellés et aides traduits (`I18n/fr_FR.php`, `I18n/en_US.php`) et contrôlés en français, la langue des éditeurs.
 
