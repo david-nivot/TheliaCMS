@@ -224,6 +224,56 @@ final class MediaListScreenTest extends AdminScreenTestCase
         self::assertSame(0, $screen->filter('[data-testid="cms-media-tag-hint"]')->count());
     }
 
+    /**
+     * Beside five lists and the buttons, the search was left a few pixels, its
+     * words cut after the first letter: the sentence under the tag list
+     * widened its column. The search has a line of its own, the sentence
+     * sits under the row.
+     *
+     * Sabotage expected to turn it red: put `col-md` back on the column of the
+     * search, or the hint back in the column of the tag list.
+     */
+    public function testTheSearchHasALineOfItsOwnAndTheTagHintDoesNotWidenItsList(): void
+    {
+        $this->image('Sans étiquette');
+
+        $screen = $this->screen(self::LIST);
+        $search = $screen->filter('[data-testid="cms-media-filters"] #cms-media-search')->ancestors()->first();
+        $hint = $screen->filter('[data-testid="cms-media-tag-hint"]');
+
+        self::assertSame(['col-12'], array_values(array_filter(explode(' ', (string) $search->attr('class')), static fn (string $class): bool => str_starts_with($class, 'col'))), 'The whole width of the form, whatever the screen.');
+        self::assertSame(1, $hint->count());
+        self::assertSame('cms-media-filters', $hint->ancestors()->first()->attr('data-testid'), 'A line of the form, out of the column of the list.');
+        self::assertSame(0, $screen->filter('[data-testid="cms-media-tag"]')->ancestors()->first()->filter('[data-testid="cms-media-tag-hint"]')->count());
+    }
+
+    /**
+     * Sabotage expected to turn it red: remove the spacer from the column of
+     * the Apply button or from the one of the view switch in
+     * `media/list.html.twig` (they sit above the fields, level with the labels).
+     */
+    public function testTheButtonsAndTheViewSwitchSitLevelWithTheFieldsWhateverTheType(): void
+    {
+        $library = $this->getService(CmsMediaLibrary::class);
+        $this->image('Une photo');
+        Mp4Videos::row($library, $this->locale(), 'Un clip');
+
+        foreach (['', 'image', 'video'] as $kind) {
+            $filters = $this->screen(self::LIST.'?kind='.$kind)->filter('[data-testid="cms-media-filters"]');
+
+            foreach (['button[type="submit"]', '[data-testid="cms-media-views"]'] as $control) {
+                $column = $filters->filter($control)->ancestors()->reduce(
+                    static fn (Crawler $node): bool => str_contains((string) $node->attr('class'), 'col-'),
+                )->first();
+                $spacer = $column->filter('[data-testid="cms-media-filters-spacer"]');
+
+                self::assertSame(1, $spacer->count(), \sprintf('The column of %s keeps the room of a label above it (type "%s").', $control, $kind));
+                self::assertStringContainsString('invisible', (string) $spacer->attr('class'));
+                self::assertStringContainsString('d-none d-md-block', (string) $spacer->attr('class'), 'Only where the row is one line.');
+            }
+        }
+    }
+
     public function testTheFiltersKeepTheirLabelsOnOneLineAndTheBulkActionsSpeakOfFiles(): void
     {
         $this->image('Sans étiquette');
