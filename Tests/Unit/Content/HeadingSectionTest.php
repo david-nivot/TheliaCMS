@@ -16,21 +16,16 @@ namespace TheliaCMS\Tests\Unit\Content;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\NullLogger;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Translation\IdentityTranslator;
-use Symfony\UX\TwigComponent\ComponentRendererInterface;
-use Thelia\Core\Template\TemplateDefinition;
-use Thelia\Core\Template\TemplateHelperInterface;
 use TheliaCMS\Content\HeadingSection;
 use TheliaCMS\Content\InvalidDocumentException;
 use TheliaCMS\Content\Pipeline\HeadingChecker;
-use TheliaCMS\Content\Theme\ComponentPropsReader;
 use TheliaCMS\Content\Theme\ThemeComponentSections;
-use Twig\Environment;
 
 final class HeadingSectionTest extends TestCase
 {
+    use InTheme;
+
     /**
      * @return iterable<string, array{string}>
      */
@@ -176,40 +171,6 @@ final class HeadingSectionTest extends TestCase
 
         foreach (HeadingSection::LEVELS as $level) {
             self::assertStringContainsString($level.'.cms-heading__text:not(.cms-heading__text--styled) {', $css);
-        }
-    }
-
-    /**
-     * @param \Closure(ThemeComponentSections): void $test
-     */
-    private function inTheme(string $name, ?string $declaration, \Closure $test): void
-    {
-        $directory = sys_get_temp_dir().'/theliacms-heading-'.bin2hex(random_bytes(4)).'/'.$name;
-        mkdir($directory.'/config', 0o777, true);
-
-        try {
-            if (null !== $declaration) {
-                file_put_contents($directory.'/config/theliacms.yaml', $declaration);
-            }
-
-            $theme = $this->createStub(TemplateDefinition::class);
-            $theme->method('getAbsolutePath')->willReturn($directory);
-            $theme->method('getParentList')->willReturn([]);
-
-            $templates = $this->createStub(TemplateHelperInterface::class);
-            $templates->method('getActiveFrontTemplate')->willReturn($theme);
-
-            $test(new ThemeComponentSections(
-                $templates,
-                new ComponentPropsReader($this->createStub(Environment::class), $this->createStub(UrlGeneratorInterface::class)),
-                $this->createStub(ComponentRendererInterface::class),
-                new NullLogger(),
-            ));
-        } finally {
-            @unlink($directory.'/config/theliacms.yaml');
-            @rmdir($directory.'/config');
-            @rmdir($directory);
-            @rmdir(\dirname($directory));
         }
     }
 }

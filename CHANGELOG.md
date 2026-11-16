@@ -17,6 +17,11 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   of its toolkit (`h1` to `h6`) until Flexy declares its own. By default a
   heading keeps the look of its level. A style the theme no longer offers
   falls back on that look instead of refusing the page.
+- **The heading of Columns, of a list of pages and of a form takes a level
+  and a look** (ADR 18): the editor sets them, folded under the other fields;
+  the headings of the columns and of the cards follow, one level below. A
+  theme that draws the list of pages or the form itself reads `heading`
+  (`tag`, `child_tag`, `class`).
 
 ### Changed
 
@@ -27,6 +32,8 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   value the heading does not offer is refused when the component is saved.
 - `blocks.css` sizes a heading section by its level only when it has no
   style (`.cms-heading__text--styled`).
+- The look of a heading on its own (`cms:heading`) is folded under its level
+  in its form, open once set.
 
 ## [2.29.0] - 2026-11-13
 

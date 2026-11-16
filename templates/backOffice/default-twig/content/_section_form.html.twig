@@ -32,6 +32,24 @@
                     {{ form_row(focus_y) }}
                 </div>
             </details>
+        {% elseif child.vars.name in ['title_level', 'title_tag'] and form.children['title_style'] is defined %}
+            {# The level and the look of the heading of a section, set
+               rarely: folded, open when either is not the one by default. #}
+            {% set style = form.children['title_style'] %}
+            <details class="cms-content__more" data-testid="cms-heading-choice" {{ not child.vars.valid or not style.vars.valid or child.vars.value != child.vars.attr['data-cms-default']|default(child.vars.value) or style.vars.value != style.vars.attr['data-cms-default']|default(style.vars.value) ? 'open' }}>
+                <summary>{{ 'Level and appearance of the heading'|trans({}, 'theliacms') }}</summary>
+                <div class="cms-content__item-fields">
+                    {{ form_row(child) }}
+                    {{ form_row(style) }}
+                </div>
+            </details>
+        {% elseif child.vars.name == 'style' and form.children['level'] is defined and form.children['text'] is defined %}
+            {# The look of a heading on its own, set rarely, apart from its
+               level: folded, open when it is not the one by default. #}
+            <details class="cms-content__more" data-testid="cms-heading-choice" {{ not child.vars.valid or child.vars.value != child.vars.attr['data-cms-default']|default(child.vars.value) ? 'open' }}>
+                <summary>{{ 'Appearance of the heading'|trans({}, 'theliacms') }}</summary>
+                {{ form_row(child) }}
+            </details>
         {% elseif child.vars.attr['data-cms-choice-buttons'] is defined %}
             {{ _self.choice_buttons(child) }}
         {% elseif child.vars.name == 'cms_appearance' %}

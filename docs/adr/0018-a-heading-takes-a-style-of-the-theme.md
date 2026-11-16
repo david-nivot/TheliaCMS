@@ -34,6 +34,12 @@ publication reads, or leave it small.
   `title_style`, to the heading that opens it; the values a `choice` prop of
   the caller offers are checked against those of the heading when the
   component is saved, as for the level (ADR 17).
+- **The heading that opens a section of the module takes the same two
+  choices.** Columns, the list of pages and the form offer `title_level` and
+  `title_style` (`HeadingChoice`, shared with `cms:heading`); the headings
+  they draw under it, of a column or a card, are one level below it. A theme
+  that draws the list of pages or the form itself reads `heading` (`tag`,
+  `child_tag`, `class`).
 
 ## Consequences
 

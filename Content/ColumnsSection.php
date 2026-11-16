@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace TheliaCMS\Content;
 
 use Symfony\Contracts\Translation\TranslatorInterface;
+use TheliaCMS\Content\Theme\ThemeComponentSections;
 use TheliaCMS\Locale\TranslatableText;
 use TheliaCMS\TheliaCMS;
 
@@ -25,14 +26,21 @@ use TheliaCMS\TheliaCMS;
  * Drawn by the module rather than the theme, with the grid of its stylesheet:
  * no theme ships a component that takes any number of columns, and free text
  * cannot lay one out. The columns stack on a narrow screen.
+ *
+ * The editor sets the level and the look of the heading above the columns
+ * ({@see HeadingChoice}); the headings of the columns are one level below it.
  */
 final readonly class ColumnsSection implements SectionDefinitionInterface
 {
     public const string NAME = 'cms:columns';
 
+    private HeadingChoice $heading;
+
     public function __construct(
         private ?TranslatorInterface $translator = null,
+        ?ThemeComponentSections $theme = null,
     ) {
+        $this->heading = new HeadingChoice($translator, $theme);
     }
 
     public function name(): string
@@ -54,6 +62,8 @@ final readonly class ColumnsSection implements SectionDefinitionInterface
     {
         return new PropSchema([
             Prop::text('title', $this->trans('Heading'), help: $this->trans('Above the columns; none when empty.')),
+            $this->heading->levelProp(),
+            $this->heading->styleProp(),
             Prop::choice('proportions', $this->trans('Proportions of the images'), [
                 ImageProportions::BAND => $this->trans('Band (logos)'),
                 ImageProportions::ORIGINAL => $this->trans('Original image'),
@@ -90,7 +100,7 @@ final readonly class ColumnsSection implements SectionDefinitionInterface
 
     public function normalizeProps(array $props): array
     {
-        $props = $this->schema()->normalize($props);
+        $props = $this->schema()->normalize($this->heading->forgetUndeclaredStyle($props));
 
         foreach ($props['columns'] as $index => $column) {
             if (0 !== $column['zoom'] % ImageSection::ZOOM_STEP) {
@@ -115,9 +125,11 @@ final readonly class ColumnsSection implements SectionDefinitionInterface
         // Only the band is held to a height: a picture on the width of its column has the height its proportions give.
         $html = \sprintf('<section class="cms-columns cms-columns--%d"%s>', \count($columns), ImageSlot::attribute(ImageSlot::column(\count($columns)), $banded ? ImageSlot::columnBand() : null));
         $title = trim((string) ($props['title'] ?? ''));
+        $level = $this->heading->level($props[HeadingChoice::LEVEL_PROP] ?? null);
+        $columnLevel = $this->heading->childLevel($level);
 
         if ('' !== $title) {
-            $html .= '<h2 class="cms-columns__title">'.self::escape($title).'</h2>';
+            $html .= \sprintf('<%s class="%s">%s</%1$s>', $level, self::escape($this->heading->classes('cms-columns__title', $props[HeadingChoice::STYLE_PROP] ?? null)), self::escape($title));
         }
 
         $html .= '<div class="cms-columns__grid">';
@@ -137,7 +149,7 @@ final readonly class ColumnsSection implements SectionDefinitionInterface
             }
 
             if ('' !== $heading = trim((string) ($column['title'] ?? ''))) {
-                $html .= '<h3 class="cms-columns__heading">'.self::escape($heading).'</h3>';
+                $html .= \sprintf('<%s class="cms-columns__heading">%s</%1$s>', $columnLevel, self::escape($heading));
             }
 
             if ('' !== $text = trim((string) ($column['text'] ?? ''))) {

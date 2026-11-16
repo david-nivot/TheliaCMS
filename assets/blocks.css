@@ -267,6 +267,10 @@
 
   .cms-columns__title {
     margin: 0 0 2rem;
+  }
+
+  /* In a style of the theme (ADR 18), the classes of the style size it. */
+  .cms-columns__title:not(.cms-columns__title--styled) {
     font-size: var(--cms-font-size-h2);
     font-weight: var(--font-weight-h2, 600);
     line-height: 1.2;
@@ -639,6 +643,9 @@
 
   .cms-form__title {
     margin: 0 0 0.5rem;
+  }
+
+  .cms-form__title:not(.cms-form__title--styled) {
     font-size: clamp(1.5rem, 3vw, 2rem);
   }
 
@@ -860,6 +867,9 @@
 
   .cms-page-list__title {
     margin: 0 0 2rem;
+  }
+
+  .cms-page-list__title:not(.cms-page-list__title--styled) {
     font-size: var(--cms-font-size-h2);
     font-weight: var(--font-weight-h2, 600);
     line-height: 1.2;
