@@ -84,7 +84,9 @@
               data-testid="cms-media-filters">
             <input type="hidden" name="edit_language_id" value="{{ edit_language_id }}">
             {% if in_list %}<input type="hidden" name="view" value="list">{% endif %}
-            <div class="col-12 col-md">
+            {# A line of its own: beside five lists and the buttons it was left
+               a few pixels, its words cut after the first letter. #}
+            <div class="col-12">
                 <label class="form-label small mb-1" for="cms-media-search">{{ 'Search'|trans({}, 'theliacms') }}</label>
                 <input class="form-control" type="search" id="cms-media-search" name="search" value="{{ query.search }}"
                        placeholder="{{ 'Name, description, caption or tag'|trans({}, 'theliacms') }}">
@@ -118,9 +120,6 @@
                         <option value="{{ title }}" {{ query.tag == title ? 'selected' }}>{{ title }} ({{ count }})</option>
                     {% endfor %}
                 </select>
-                {% if tags is empty %}
-                    <div class="form-text" id="cms-media-tag-hint" data-testid="cms-media-tag-hint">{{ 'No tag yet. Add one from a media sheet or with “Add a tag” below.'|trans({}, 'theliacms') }}</div>
-                {% endif %}
             </div>
             <div class="col-6 col-md-auto">
                 <label class="form-label small mb-1" for="cms-media-order">{{ 'Order'|trans({}, 'theliacms') }}</label>
@@ -157,6 +156,11 @@
                     {% endfor %}
                 </div>
             </div>
+            {# Under the row rather than under its list: in the column of the
+               list, the sentence widened it and squeezed the others. #}
+            {% if tags is empty %}
+                <div class="col-12 form-text mt-0" id="cms-media-tag-hint" data-testid="cms-media-tag-hint">{{ 'No tag yet. Add one from a media sheet or with “Add a tag” below.'|trans({}, 'theliacms') }}</div>
+            {% endif %}
         </form>
 
         {# Counts come from the library, not from the rows loaded: the grid is

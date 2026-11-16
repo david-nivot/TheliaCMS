@@ -34,6 +34,9 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 - **The buttons of the media filters sit level with the fields**: the Apply and
   Clear buttons and the grid/list switch of the media library were drawn about
   23 px above the fields (level with their labels), whatever the type chosen.
+  The search has a line of its own and the hint of an empty tag list sits
+  under the row: beside the lists, the search was squeezed to a few pixels and,
+  next to the side menu, the buttons fell on a line of their own.
 
 - **The heading of the site drawn by a component has room under it**: it
   touched what follows (0 px) in most generated components and in the
