@@ -7,6 +7,8 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+## [2.32.0] - 2026-11-16
+
 ### Fixed
 
 - **The facade of a video reads in German**: its button, its notice and its
@@ -14,6 +16,12 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   the site shows only). A component of the theme names its video by the
   description of the prop translated in the language of the page, as the form
   of the section shows it, instead of the words of the theme as written.
+- **The buttons of the media filters sit level with the fields**: the Apply and
+  Clear buttons and the grid/list switch of the media library were drawn about
+  23 px above the fields (level with their labels), whatever the type chosen.
+  The search has a line of its own and the hint of an empty tag list sits
+  under the row: beside the lists, the search was squeezed to a few pixels and,
+  next to the side menu, the buttons fell on a line of their own.
 
 ## [2.31.0] - 2026-11-16
 
@@ -46,13 +54,6 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   in its form, open once set.
 
 ### Fixed
-
-- **The buttons of the media filters sit level with the fields**: the Apply and
-  Clear buttons and the grid/list switch of the media library were drawn about
-  23 px above the fields (level with their labels), whatever the type chosen.
-  The search has a line of its own and the hint of an empty tag list sits
-  under the row: beside the lists, the search was squeezed to a few pixels and,
-  next to the side menu, the buttons fell on a line of their own.
 
 - **The heading of the site drawn by a component has room under it**: it
   touched what follows (0 px) in most generated components and in the
@@ -3581,7 +3582,8 @@ the published pages.
 - The breadcrumb of a page filed under a draft one offered a link to that page,
   which answers 404, both to the reader and in the `BreadcrumbList`.
 
-[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.31.0...HEAD
+[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.32.0...HEAD
+[2.32.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.32.0
 [2.31.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.31.0
 [2.30.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.30.0
 [2.29.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.29.0
