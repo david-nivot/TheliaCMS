@@ -9,6 +9,12 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Added
 
+- **A component of the theme may show a video of YouTube, Vimeo or
+  Dailymotion**: a prop documented `{# @prop video embed The video #}` gets
+  the address field of the `embed` prop of the components of the site, keeps
+  the platform and the identifier only, and reaches the component as the
+  markup of the facade that loads the player on a click. Not in the rows of a
+  list.
 - **The heading of Columns, of a list of pages and of a form takes a level
   and a look** (ADR 18): the editor sets them, folded under the other fields;
   the headings of the columns and of the cards follow, one level below. A

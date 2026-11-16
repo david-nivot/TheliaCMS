@@ -87,6 +87,25 @@ final class ComponentPropsReaderTest extends TestCase
         self::assertFalse($fields['trailer']->required);
     }
 
+    public function testAPropMayBeTheAddressOfAVideoOfAPlatform(): void
+    {
+        $read = $this->reader()->readSource(<<<'TWIG'
+            {# @prop video embed The video of the section #}
+            {# @prop teaser embed|null A short video, when there is one #}
+            {% props video, teaser = null %}
+            TWIG);
+        $props = $this->byName($read);
+
+        self::assertSame(PropType::Embed, $props['video']->type);
+        self::assertTrue($props['video']->required);
+        self::assertSame(PropType::Embed, $props['teaser']->type);
+        self::assertFalse($props['teaser']->required, 'embed|null is optional.');
+        self::assertSame('youtube:zR6O50UbivM', $read['schema']->normalize(['video' => 'https://www.youtube.com/watch?v=zR6O50UbivM'])['video'], 'Only the platform and the identifier are kept.');
+
+        $this->expectException(InvalidDocumentException::class);
+        $read['schema']->normalize(['video' => 'https://example.com/video.mp4']);
+    }
+
     public function testAListOfRecordsIsRowsOfIdsForTheDocumentAndIsToldApart(): void
     {
         $read = $this->reader()->readSource(<<<'TWIG'
