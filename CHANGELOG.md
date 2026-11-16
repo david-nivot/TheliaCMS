@@ -7,6 +7,8 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+## [2.30.0] - 2026-11-16
+
 ### Added
 
 - **A heading takes a style of the theme, apart from its level** (ADR 18):
@@ -3518,7 +3520,8 @@ the published pages.
 - The breadcrumb of a page filed under a draft one offered a link to that page,
   which answers 404, both to the reader and in the `BreadcrumbList`.
 
-[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.29.0...HEAD
+[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.30.0...HEAD
+[2.30.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.30.0
 [2.29.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.29.0
 [2.28.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.28.0
 [2.27.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.27.0
