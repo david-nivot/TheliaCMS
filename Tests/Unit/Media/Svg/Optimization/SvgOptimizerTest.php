@@ -18,6 +18,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use TheliaCMS\Media\Svg\Optimization\FigmaClipRemover;
 use TheliaCMS\Media\Svg\Optimization\GeometryEnvelope;
+use TheliaCMS\Media\Svg\Optimization\Path\ShorterPathNotation;
 use TheliaCMS\Media\Svg\Optimization\SvgOptimizer;
 use TheliaCMS\Media\Svg\Optimization\SvgReferences;
 use TheliaCMS\Media\Svg\Optimization\UnreferencedIdRemover;
@@ -157,6 +158,21 @@ final class SvgOptimizerTest extends TestCase
         yield 'illustrator export with text' => ['<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="40" height="24" viewBox="0 0 40 24" xml:space="preserve"><text x="2" y="16">A  B</text></svg>'];
         yield 'illustrator export with an empty text' => ['<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="24" height="24" viewBox="0 0 24 24" xml:space="preserve"><text x="2" y="16"></text><path d="M0 0h24v24H0z"/></svg>'];
         yield 'clip around the drawing' => ['<svg width="48" height="24" viewBox="0 0 48 24" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#c)"><path d="M2 2h8v8z"/></g><clipPath id="c"><rect width="20" height="20"/></clipPath></svg>'];
+        yield 'paths in both notations and shapes the library turns into paths' => [self::PATHS];
+    }
+
+    private const string PATHS = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">'
+        .'<path d="M 100.5 100.25 L 101.5 101.25 L 102.75 102.5 C 103 103 104.5 104.5 105 105 Z M 300 300 L 310 300 L 310 310"/>'
+        .'<path d="m 200 200 l 0.5 0.5 l 0.25 -0.75 l 150 150"/>'
+        .'<rect x="120.5" y="130.5" width="10" height="10"/><polygon points="250 250 251 251 252 250"/></svg>';
+
+    public function testAPathIsWrittenInTheShorterNotationOfEachCommand(): void
+    {
+        $output = $this->optimize(self::PATHS);
+
+        self::assertStringContainsString('d="M100.5 100.25l1 1 1.25 1.25c.25.5 1.75 2 2.25 2.5zM300 300h10v10"', $output);
+        self::assertStringContainsString('d="m200 200 .5.5.25-.75 150 150"', $output);
+        self::assertLessThan(\strlen(self::PATHS), \strlen($output));
     }
 
     #[DataProvider('documents')]
@@ -293,6 +309,6 @@ final class SvgOptimizerTest extends TestCase
     {
         $references = new SvgReferences();
 
-        return (new SvgOptimizer(new FigmaClipRemover(new GeometryEnvelope(), $references), new UnreferencedIdRemover($references)))->optimize($svg);
+        return (new SvgOptimizer(new FigmaClipRemover(new GeometryEnvelope(), $references), new UnreferencedIdRemover($references), new ShorterPathNotation()))->optimize($svg);
     }
 }

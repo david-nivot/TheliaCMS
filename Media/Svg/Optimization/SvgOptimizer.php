@@ -19,15 +19,18 @@ use MathiasReker\PhpSvgOptimizer\Rule;
 use MathiasReker\PhpSvgOptimizer\SvgOptimizer as Library;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use TheliaCMS\Media\Svg\Optimization\Path\ShorterPathNotation;
 
 /**
  * The base optimization, lossless on screen, always applied.
  *
  * The risky rules of the library stay off (one of them removes width and
  * height) and so do the transform rewrites, which produce values some
- * readers misparse. Three rules of ours cover what the library does not: the
+ * readers misparse. Four rules of ours cover what the library does not: the
  * clip of an editor export that clips nothing, the identifiers nobody
- * references, and the placement an Illustrator export writes on the root.
+ * references, the placement an Illustrator export writes on the root, and the
+ * notation of a path, each command written in the shorter of its absolute and
+ * relative forms.
  */
 final readonly class SvgOptimizer
 {
@@ -36,6 +39,7 @@ final readonly class SvgOptimizer
     public function __construct(
         private FigmaClipRemover $clipRemover,
         private UnreferencedIdRemover $idRemover,
+        private ShorterPathNotation $pathNotation,
         private LoggerInterface $logger = new NullLogger(),
         private RootPlacementRemover $placementRemover = new RootPlacementRemover(),
     ) {
@@ -59,7 +63,7 @@ final readonly class SvgOptimizer
             for ($round = 0; $round < self::MAX_ROUNDS; ++$round) {
                 // The placement goes in each round: whether `xml:space` stays
                 // depends on a text the library may have emptied.
-                $next = $this->library()->optimizeString($this->withoutUnreferencedIds($this->withoutRootPlacement($current)))->getContent();
+                $next = $this->library()->optimizeString($this->withShorterPaths($this->withoutUnreferencedIds($this->withoutRootPlacement($current))))->getContent();
 
                 if ($next === $current) {
                     break;
@@ -116,6 +120,19 @@ final readonly class SvgOptimizer
         $document = SvgDocument::load($svg);
 
         if (null === $document || !$this->idRemover->remove($document)) {
+            return $svg;
+        }
+
+        return SvgDocument::serialize($document);
+    }
+
+    // Before the library, whose own path rule only shortens the numbers:
+    // what it writes after ours comes out no shorter, so the rounds settle.
+    private function withShorterPaths(string $svg): string
+    {
+        $document = SvgDocument::load($svg);
+
+        if (null === $document || !$this->pathNotation->shorten($document)) {
             return $svg;
         }
 

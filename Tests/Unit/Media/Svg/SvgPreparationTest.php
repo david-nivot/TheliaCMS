@@ -20,6 +20,7 @@ use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use TheliaCMS\Media\Svg\Optimization\FigmaClipRemover;
 use TheliaCMS\Media\Svg\Optimization\GeometryEnvelope;
+use TheliaCMS\Media\Svg\Optimization\Path\ShorterPathNotation;
 use TheliaCMS\Media\Svg\Optimization\SvgOptimizationLevel;
 use TheliaCMS\Media\Svg\Optimization\SvgOptimizationLevels;
 use TheliaCMS\Media\Svg\Optimization\SvgOptimizer;
@@ -135,7 +136,7 @@ final class SvgPreparationTest extends TestCase
 
         return new SvgPreparation(
             $sanitizer,
-            new SvgOptimizer(new FigmaClipRemover(new GeometryEnvelope(), $references), new UnreferencedIdRemover($references)),
+            new SvgOptimizer(new FigmaClipRemover(new GeometryEnvelope(), $references), new UnreferencedIdRemover($references), new ShorterPathNotation()),
             new SvgOptimizationLevels($levels),
             logger: $logger,
         );

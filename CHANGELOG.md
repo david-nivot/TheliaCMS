@@ -7,6 +7,18 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Changed
+
+- **The base optimization writes each path in its shorter notation**: every
+  command of a path takes the shorter of its absolute and relative forms,
+  weighed over the whole path, and a line that keeps a coordinate becomes a
+  horizontal or vertical one. No value changes: the positions are computed
+  exactly, the path written is read back and compared with the one read, and
+  the data stays as it was unless it comes out shorter. On 548 files (the
+  icons and illustrations of Flexy, the flags of the back office, a sample of
+  Bootstrap Icons) the total weighs 14 % less, 17 % less once compressed; the
+  illustrations of Flexy, 31 % and 39 %.
+
 ## [2.34.0] - 2026-11-19
 
 ### Changed
