@@ -7,6 +7,28 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **The heading of Columns, of a list of pages and of a form takes a level
+  and a look** (ADR 18): the editor sets them, folded under the other fields;
+  the headings of the columns and of the cards follow, one level below. A
+  theme that draws the list of pages or the form itself reads `heading`
+  (`tag`, `child_tag`, `class`).
+  With the look of their level, these headings and the ones below them are
+  sized by their level. The level and the look of a band of the theme
+  (`titleTag`, `titleStyle` on Flexy) read in the same words.
+- **Components of the site that draw their own heading are offered the
+  heading of the site**: `thelia_cms:components:site-heading` writes, for
+  each one drawing it as the generator did, a version to keep from the screen
+  of the component, with `title_level` and `title_style`. No call to a model;
+  no page changes before the version is kept; the class of the old heading
+  no longer styles it. `--dry-run` lists them.
+
+### Changed
+
+- The look of a heading on its own (`cms:heading`) is folded under its level
+  in its form, open once set.
+
 ### Fixed
 
 - **A picture the page already has offers WebP too**: when a section
@@ -30,20 +52,6 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   of its toolkit (`h1` to `h6`) until Flexy declares its own. By default a
   heading keeps the look of its level. A style the theme no longer offers
   falls back on that look instead of refusing the page.
-- **The heading of Columns, of a list of pages and of a form takes a level
-  and a look** (ADR 18): the editor sets them, folded under the other fields;
-  the headings of the columns and of the cards follow, one level below. A
-  theme that draws the list of pages or the form itself reads `heading`
-  (`tag`, `child_tag`, `class`).
-  With the look of their level, these headings and the ones below them are
-  sized by their level. The level and the look of a band of the theme
-  (`titleTag`, `titleStyle` on Flexy) read in the same words.
-- **Components of the site that draw their own heading are offered the
-  heading of the site**: `thelia_cms:components:site-heading` writes, for
-  each one drawing it as the generator did, a version to keep from the screen
-  of the component, with `title_level` and `title_style`. No call to a model;
-  no page changes before the version is kept; the class of the old heading
-  no longer styles it. `--dry-run` lists them.
 
 ### Changed
 
@@ -54,8 +62,6 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   value the heading does not offer is refused when the component is saved.
 - `blocks.css` sizes a heading section by its level only when it has no
   style (`.cms-heading__text--styled`).
-- The look of a heading on its own (`cms:heading`) is folded under its level
-  in its form, open once set.
 
 ### Fixed
 
