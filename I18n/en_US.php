@@ -2099,6 +2099,7 @@ return [
     'Level of the heading' => 'Level of the heading',
     'Appearance of the heading' => 'Appearance of the heading',
     'Level and appearance of the heading' => 'Level and appearance of the heading',
+    'The heading of the component becomes the heading of the site: the editor sets its level and its look. The rule of the stylesheet for ".%class%" no longer styles it.' => 'The heading of the component becomes the heading of the site: the editor sets its level and its look. The rule of the stylesheet for ".%class%" no longer styles it.',
     'A heading style of the theme, whatever the level: the level orders the page, the appearance is how it looks.' => 'A heading style of the theme, whatever the level: the level orders the page, the appearance is how it looks.',
     'Heading 1 of the theme' => 'Heading 1 of the theme',
     'Heading 2 of the theme' => 'Heading 2 of the theme',

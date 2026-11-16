@@ -2099,6 +2099,7 @@ return [
     'Level of the heading' => 'Niveau du titre',
     'Appearance of the heading' => 'Apparence du titre',
     'Level and appearance of the heading' => 'Niveau et apparence du titre',
+    'The heading of the component becomes the heading of the site: the editor sets its level and its look. The rule of the stylesheet for ".%class%" no longer styles it.' => 'Le titre du composant devient le titre du site : le rédacteur en règle le niveau et l’apparence. La règle de la feuille de style pour « .%class% » ne le met plus en forme.',
     'A heading style of the theme, whatever the level: the level orders the page, the appearance is how it looks.' => 'Un style de titre du thème, quel que soit le niveau : le niveau ordonne la page, l\'apparence règle son aspect.',
     'Heading 1 of the theme' => 'Titre 1 du thème',
     'Heading 2 of the theme' => 'Titre 2 du thème',
