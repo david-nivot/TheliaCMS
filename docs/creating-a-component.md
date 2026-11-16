@@ -132,6 +132,14 @@ from two places:
   has the `video` field, is given it when the author left it empty, and keeps
   the image the author picked; a video with no poster leaves the prop empty. The editor picks the video in the
   library, filtered on the videos, or sends an MP4 from the field;
+  `embed` is a video of YouTube, Vimeo or Dailymotion: the editor types the
+  address of its page (watch, short, embed or share address), the document
+  keeps only the platform and the identifier (`youtube:zR6O50UbivM`), and the
+  component receives the markup of a facade, a play button that loads the
+  player when the visitor clicks it (`assets/embed.js`, linked on every page by
+  the module), to print with `|raw`; nothing when the prop is left empty. The
+  description of the prop names the video for who cannot see it. Not in the
+  rows of a list, where `embed` stays a line of text;
   `product`, `category`, `folder`, `form` or `menu` is one record,
   picked by its id with the same pickers the partials use (the generator
   finds the id with its search tools); `product[]`, `category[]`, or

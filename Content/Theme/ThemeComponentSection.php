@@ -18,6 +18,7 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\Asset\Packages;
 use Symfony\Component\Translation\LocaleSwitcher;
 use Symfony\UX\TwigComponent\ComponentRendererInterface;
+use TheliaCMS\Content\EmbedFacade;
 use TheliaCMS\Content\ExampleRenderingInterface;
 use TheliaCMS\Content\ImageFraming;
 use TheliaCMS\Content\Prop;
@@ -50,6 +51,7 @@ final readonly class ThemeComponentSection implements SectionDefinitionInterface
      * @param Packages|null         $packages  what turns the path of a file of the theme into the address it is served from
      * @param KnownIcons|null       $icons     when given, an icon prop the site does not hold is handed to the component empty, so that `ux_icon(value)` never asks Iconify for it nor raises
      * @param list<string>          $objects   the props that hold one object, stored as a list of one row and handed to the component as that row
+     * @param EmbedFacade           $facade    what turns the video of a platform into the markup the component prints
      */
     public function __construct(
         private string $component,
@@ -64,6 +66,7 @@ final readonly class ThemeComponentSection implements SectionDefinitionInterface
         private ?KnownIcons $icons = null,
         private ?LoggerInterface $logger = null,
         private array $objects = [],
+        private EmbedFacade $facade = new EmbedFacade(),
     ) {
     }
 
@@ -242,6 +245,7 @@ final readonly class ThemeComponentSection implements SectionDefinitionInterface
         $forComponent = [];
         $images = [];
         $videos = [];
+        $embeds = [];
         $rowImages = [];
         $rowVideos = [];
         $rowLists = [];
@@ -251,6 +255,10 @@ final readonly class ThemeComponentSection implements SectionDefinitionInterface
                 $images[] = $prop->name;
             } elseif (PropType::Video === $prop->type) {
                 $videos[] = $prop->name;
+            } elseif (PropType::Embed === $prop->type) {
+                // The facade names the video by what the theme says of the
+                // prop, the prop of a theme having no label of its own.
+                $embeds[$prop->name] = trim($prop->help ?? '') ?: $prop->label;
             } elseif (PropType::Items === $prop->type && !$prop->scalarItems && !\in_array($prop->name, $this->idLists, true)) {
                 $rowLists[] = $prop->name;
 
@@ -277,6 +285,10 @@ final readonly class ThemeComponentSection implements SectionDefinitionInterface
                 $value = ImageFraming::source($value, $name, $stored);
             } elseif (\in_array($name, $videos, true)) {
                 $value = VideoSource::of($value);
+            } elseif (isset($embeds[$name])) {
+                // The video of a platform is stored as `platform:id`; the
+                // component prints the facade, which loads the player on a click.
+                $value = $this->facade->markup($value, $embeds[$name], $locale);
             } elseif (isset($rowImages[$name]) || isset($rowVideos[$name])) {
                 if (\is_array($value)) {
                     $value = $this->rowsWithAddresses($value, $rowImages[$name] ?? [], \is_array($addresses[$name] ?? null) ? $addresses[$name] : [], $this->rowFraming($name), $rowVideos[$name] ?? []);

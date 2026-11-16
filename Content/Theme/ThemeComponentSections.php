@@ -21,6 +21,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 use Symfony\UX\TwigComponent\ComponentRendererInterface;
 use Thelia\Core\Template\TemplateDefinition;
 use Thelia\Core\Template\TemplateHelperInterface;
+use TheliaCMS\Content\EmbedFacade;
 use TheliaCMS\Content\HeadingChoice;
 use TheliaCMS\Content\ImageFraming;
 use TheliaCMS\Content\Prop;
@@ -51,6 +52,7 @@ final readonly class ThemeComponentSections implements SectionProviderInterface,
         private ?ImageFraming $framing = null,
         private ?KnownIcons $icons = null,
         private ?TranslatorInterface $translator = null,
+        private EmbedFacade $facade = new EmbedFacade(),
     ) {
     }
 
@@ -75,7 +77,7 @@ final readonly class ThemeComponentSections implements SectionProviderInterface,
                 $twigNames[$prop->name] = self::twigName($prop->name);
             }
 
-            yield new ThemeComponentSection($component, $read['description'], $schema, $twigNames, $this->renderer, $read['id_lists'], self::example($declaration->examples[$component] ?? [], $read['objects']), $this->localeSwitcher, $this->packages, $this->icons, $this->logger, $read['objects']);
+            yield new ThemeComponentSection($component, $read['description'], $schema, $twigNames, $this->renderer, $read['id_lists'], self::example($declaration->examples[$component] ?? [], $read['objects']), $this->localeSwitcher, $this->packages, $this->icons, $this->logger, $read['objects'], $this->facade);
         }
     }
 

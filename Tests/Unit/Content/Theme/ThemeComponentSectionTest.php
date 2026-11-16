@@ -22,6 +22,7 @@ use Symfony\UX\TwigComponent\ComponentRendererInterface;
 use TheliaCMS\Content\Prop;
 use TheliaCMS\Content\PropSchema;
 use TheliaCMS\Content\Theme\ThemeComponentSection;
+use Twig\Markup;
 
 /**
  * A component of the theme that takes several records gets their ids as a
@@ -243,6 +244,27 @@ final class ThemeComponentSectionTest extends TestCase
         ]);
 
         return new ThemeComponentSection('Organisms:Recipe:Base', '', $schema, ['title' => 'title', 'ingredients' => 'ingredients', 'steps' => 'steps'], $renderer, [], $example, null, $packages);
+    }
+
+    public function testAVideoOfAPlatformReachesTheComponentAsTheMarkupOfItsFacade(): void
+    {
+        $received = null;
+        $renderer = $this->createStub(ComponentRendererInterface::class);
+        $renderer->method('createAndRender')->willReturnCallback(static function (string $name, array $props) use (&$received): string {
+            $received = $props;
+
+            return '<div></div>';
+        });
+        $schema = new PropSchema([Prop::embed('video', 'The video'), Prop::embed('teaser', 'A teaser')]);
+        $section = new ThemeComponentSection('Molecules:Video:Base', '', $schema, ['video' => 'video', 'teaser' => 'teaser'], $renderer);
+
+        $section->render(['video' => 'youtube:zR6O50UbivM', 'teaser' => ''], 'fr_FR');
+
+        self::assertIsArray($received);
+        self::assertInstanceOf(Markup::class, $received['video'], 'Printed as it is, not escaped by the component.');
+        self::assertStringContainsString('class="cms-embed" data-cms-embed-platform="youtube" data-cms-embed-id="zR6O50UbivM"', (string) $received['video']);
+        self::assertStringNotContainsString('<iframe', (string) $received['video'], 'Nothing is asked of the platform before the click.');
+        self::assertArrayNotHasKey('teaser', $received, 'A video left empty is left to the default of the component.');
     }
 
     /**

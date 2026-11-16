@@ -37,6 +37,9 @@ use Twig\Environment;
  * rendered page, and a prop may name what the site holds: `image`
  * for a picture of the media library, handed to the component as its address,
  * `video` for a video of the library, handed to it as the address of its file,
+ * `embed` for a video of YouTube, Vimeo or Dailymotion named by its address,
+ * handed to it as the markup of a facade that loads the player on a click
+ * (not in the rows of a list),
  * `icon` for the name of an icon (`cms:<name>` or one of the theme), printed with `ux_icon()`,
  * `product`, `category`, `folder`, `form` or `menu` for one record picked by
  * its id, and `product[]` or `category[]` for several, in the order they were
@@ -386,6 +389,10 @@ final readonly class ComponentPropsReader
 
         if (\in_array('video', $kinds, true)) {
             return Prop::video($name, $name, $required, $description);
+        }
+
+        if (\in_array('embed', $kinds, true)) {
+            return Prop::embed($name, $name, $required, $description);
         }
 
         if (\in_array('icon', $kinds, true)) {
