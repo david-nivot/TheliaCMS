@@ -34,6 +34,18 @@ publication reads, or leave it small.
   `title_style`, to the heading that opens it; the values a `choice` prop of
   the caller offers are checked against those of the heading when the
   component is saved, as for the level (ADR 17).
+- **The heading that opens a section of the module takes the same two
+  choices.** Columns, the list of pages and the form offer `title_level` and
+  `title_style` (`HeadingChoice`, shared with `cms:heading`); the headings
+  they draw under it, of a column or a card, are one level below it. A theme
+  that draws the list of pages or the form itself reads `heading` (`tag`,
+  `child_tag`, `class`).
+- **A component of the site that draws its own heading is offered the
+  heading of the site**, without a call to a model
+  (`thelia_cms:components:site-heading`): only the shape the generator wrote,
+  `{% if props.title is not empty %}<h2 class="…">{{ props.title }}</h2>{% endif %}`,
+  becomes the call with the two props, as a version the editor keeps from the
+  screen of the component. Any other shape is left as it is.
 
 ## Consequences
 
@@ -44,3 +56,5 @@ publication reads, or leave it small.
   next save, and drawn meanwhile with the look of the level.
 - Components generated before keep their level written in the call and the
   look of their level.
+- A component offered the heading of the site loses the rule of its
+  stylesheet that styled its old heading: its version says which class.

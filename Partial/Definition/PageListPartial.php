@@ -16,6 +16,7 @@ namespace TheliaCMS\Partial\Definition;
 
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Domain\Localization\Service\LangService;
+use TheliaCMS\Content\HeadingChoice;
 use TheliaCMS\Page\Field\FieldFormatter;
 use TheliaCMS\Page\PageCard;
 use TheliaCMS\Page\PageListQuery;
@@ -46,6 +47,7 @@ final readonly class PageListPartial implements PartialDefinitionInterface, Desc
         private FieldFormatter $formatter,
         private TranslatorInterface $translator,
         private LangService $langService,
+        private HeadingChoice $heading = new HeadingChoice(),
     ) {
     }
 
@@ -87,6 +89,7 @@ final readonly class PageListPartial implements PartialDefinitionInterface, Desc
         return [
             PartialProp::choice('type', $this->trans('Page template'), $types, PageTypeCode::DEFAULT),
             PartialProp::text('title', $this->trans('Heading'), max: 120, help: $this->trans('Shown above the list. Leave empty for none.')),
+            ...$this->heading->partialProps(),
             PartialProp::choice('sort', $this->trans('Order'), [
                 PageListQuery::SORT_RECENT => $this->trans('Most recent first'),
                 PageListQuery::SORT_OLDEST => $this->trans('Oldest first'),
@@ -123,6 +126,9 @@ final readonly class PageListPartial implements PartialDefinitionInterface, Desc
         return [
             'type' => ['code' => $type, 'title' => $details->title($locale), 'description' => $details->description($locale)],
             'title' => '' !== trim((string) ($props['title'] ?? '')) ? trim((string) $props['title']) : null,
+            // The level and the look of the heading, and the level of the
+            // titles of the cards, one below it.
+            'heading' => $this->heading->forTemplate($props),
             'pages' => array_map(fn (PageCard $card): array => [
                 'card' => $card,
                 'fields' => $this->formatter->rows($fields, $card->fields, $locale),

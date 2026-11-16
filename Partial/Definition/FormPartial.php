@@ -16,6 +16,7 @@ namespace TheliaCMS\Partial\Definition;
 
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use TheliaCMS\Content\HeadingChoice;
 use TheliaCMS\Form\AntiSpam;
 use TheliaCMS\Form\FormCatalog;
 use TheliaCMS\Form\FormDefinition;
@@ -44,6 +45,7 @@ final readonly class FormPartial implements PartialDefinitionInterface, Describe
         private AntiSpam $antiSpam,
         private TranslatorInterface $translator,
         private UrlGeneratorInterface $urls,
+        private HeadingChoice $heading = new HeadingChoice(),
     ) {
     }
 
@@ -76,6 +78,7 @@ final readonly class FormPartial implements PartialDefinitionInterface, Describe
     {
         return [
             PartialProp::reference('form', $this->trans('Form'), source: $this->urls->generate('admin.cms.partials.sources.forms')),
+            ...$this->heading->partialProps(),
         ];
     }
 
@@ -91,6 +94,7 @@ final readonly class FormPartial implements PartialDefinitionInterface, Describe
 
         return [
             'form' => $form,
+            'heading' => $this->heading->forTemplate($props),
             // A field with no label in this language is left out: an input
             // nobody can name cannot be filled in, and a screen reader
             // announces nothing at all for it.

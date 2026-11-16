@@ -34,15 +34,18 @@ final readonly class HeadingSection implements SectionDefinitionInterface
     public const string NAME = 'cms:heading';
 
     /** The levels offered, the first one by default. */
-    public const array LEVELS = ['h2', 'h3', 'h4'];
+    public const array LEVELS = HeadingChoice::LEVELS;
 
     /** The style by default: the look of its level, whatever the theme declares. */
-    public const string LEVEL_STYLE = 'level';
+    public const string LEVEL_STYLE = HeadingChoice::LEVEL_STYLE;
+
+    private HeadingChoice $heading;
 
     public function __construct(
         private ?TranslatorInterface $translator = null,
         private ?ThemeComponentSections $theme = null,
     ) {
+        $this->heading = new HeadingChoice($translator, $theme);
     }
 
     public function name(): string
@@ -62,20 +65,10 @@ final readonly class HeadingSection implements SectionDefinitionInterface
 
     public function schema(): PropSchema
     {
-        $styles = [self::LEVEL_STYLE => $this->trans('Like its level')];
-
-        foreach ($this->styles() as $value => $style) {
-            $styles[$value] = $this->trans($style['label']);
-        }
-
         return new PropSchema([
             Prop::text('text', $this->trans('Heading'), required: true, max: 120),
-            Prop::choice('level', $this->trans('Level'), [
-                'h2' => $this->trans('Level 2, a part of the page'),
-                'h3' => $this->trans('Level 3, under a heading of level 2'),
-                'h4' => $this->trans('Level 4, under a heading of level 3'),
-            ], self::LEVELS[0], $this->trans('The title of the page is the only heading of level 1.')),
-            Prop::choice('style', $this->trans('Appearance'), $styles, self::LEVEL_STYLE, $this->trans('A heading style of the theme, whatever the level: the level orders the page, the appearance is how it looks.')),
+            $this->heading->levelProp('level', 'Level'),
+            $this->heading->styleProp('style', 'Appearance'),
         ]);
     }
 
@@ -84,18 +77,10 @@ final readonly class HeadingSection implements SectionDefinitionInterface
         return ['text' => $this->trans('A heading'), 'level' => self::LEVELS[0], 'style' => self::LEVEL_STYLE];
     }
 
-    /**
-     * A style the theme no longer declares falls back on the look of the
-     * level: the page was right when it was written, and a look is not worth
-     * refusing it for.
-     */
+    /** A style the theme no longer declares falls back on the look of the level. */
     public function normalizeProps(array $props): array
     {
-        if (isset($props['style']) && \is_string($props['style']) && !\array_key_exists($props['style'], $this->styles())) {
-            $props['style'] = self::LEVEL_STYLE;
-        }
-
-        return $this->schema()->normalize($props);
+        return $this->schema()->normalize($this->heading->forgetUndeclaredStyle($props, 'style'));
     }
 
     public function render(array $props, string $locale): string
@@ -106,16 +91,16 @@ final readonly class HeadingSection implements SectionDefinitionInterface
             return '';
         }
 
-        $level = \in_array($props['level'] ?? null, self::LEVELS, true) ? $props['level'] : self::LEVELS[0];
-        $style = $this->styles()[(string) ($props['style'] ?? '')] ?? null;
+        $level = $this->heading->level($props['level'] ?? null);
+        $classes = $this->heading->classes('cms-heading__text', $props['style'] ?? null);
 
-        if (null !== $style) {
+        if ('cms-heading__text' !== $classes) {
             // The classes of the style alone: the free text the theme styles
             // would size it by its level again.
             return \sprintf(
-                '<div class="cms-heading"><%s class="cms-heading__text cms-heading__text--styled %s">%s</%1$s></div>',
+                '<div class="cms-heading"><%s class="%s">%s</%1$s></div>',
                 $level,
-                htmlspecialchars($style['class'], \ENT_QUOTES | \ENT_HTML5),
+                htmlspecialchars($classes, \ENT_QUOTES | \ENT_HTML5),
                 htmlspecialchars($text, \ENT_QUOTES | \ENT_HTML5),
             );
         }
@@ -131,14 +116,6 @@ final readonly class HeadingSection implements SectionDefinitionInterface
             $level,
             htmlspecialchars($text, \ENT_QUOTES | \ENT_HTML5),
         );
-    }
-
-    /**
-     * @return array<string, array{label: string, class: string}>
-     */
-    private function styles(): array
-    {
-        return $this->theme?->declaration()->headingStyles ?? [];
     }
 
     private function trans(string $message): string

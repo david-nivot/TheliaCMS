@@ -17,11 +17,15 @@ namespace TheliaCMS\Content\Theme;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Asset\Packages;
 use Symfony\Component\Translation\LocaleSwitcher;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Symfony\UX\TwigComponent\ComponentRendererInterface;
 use Thelia\Core\Template\TemplateDefinition;
 use Thelia\Core\Template\TemplateHelperInterface;
+use TheliaCMS\Content\HeadingChoice;
 use TheliaCMS\Content\ImageFraming;
+use TheliaCMS\Content\Prop;
 use TheliaCMS\Content\PropSchema;
+use TheliaCMS\Content\PropType;
 use TheliaCMS\Content\SectionHidingInterface;
 use TheliaCMS\Content\SectionProviderInterface;
 use TheliaCMS\Media\Icon\KnownIcons;
@@ -46,6 +50,7 @@ final readonly class ThemeComponentSections implements SectionProviderInterface,
         private ?Packages $packages = null,
         private ?ImageFraming $framing = null,
         private ?KnownIcons $icons = null,
+        private ?TranslatorInterface $translator = null,
     ) {
     }
 
@@ -62,7 +67,8 @@ final readonly class ThemeComponentSections implements SectionProviderInterface,
                 continue;
             }
 
-            $schema = null === $this->framing ? $read['schema'] : new PropSchema($this->framing->extend($read['schema']->props));
+            $props = $this->headingWords($read['schema']->props);
+            $schema = new PropSchema(null === $this->framing ? $props : $this->framing->extend($props));
             $twigNames = [];
 
             foreach ($schema->props as $prop) {
@@ -71,6 +77,34 @@ final readonly class ThemeComponentSections implements SectionProviderInterface,
 
             yield new ThemeComponentSection($component, $read['description'], $schema, $twigNames, $this->renderer, $read['id_lists'], self::example($declaration->examples[$component] ?? [], $read['objects']), $this->localeSwitcher, $this->packages, $this->icons, $this->logger, $read['objects']);
         }
+    }
+
+    /**
+     * The level and the look of the heading of a band of the theme (Flexy:
+     * `titleTag`, `titleStyle`) read in the words of the heading of the
+     * module, when the values the theme offers are among its own.
+     *
+     * @param list<Prop> $props
+     *
+     * @return list<Prop>
+     */
+    private function headingWords(array $props): array
+    {
+        $heading = new HeadingChoice($this->translator, $this);
+
+        return array_map(static function (Prop $prop) use ($heading): Prop {
+            $words = PropType::Choice !== $prop->type ? null : match ($prop->name) {
+                'title_tag', HeadingChoice::LEVEL_PROP => $heading->levelChoices(),
+                HeadingChoice::STYLE_PROP => $heading->styleChoices(),
+                default => null,
+            };
+
+            if (null === $words || [] !== array_diff_key($prop->choices, $words)) {
+                return $prop;
+            }
+
+            return Prop::choice($prop->name, $prop->label, array_intersect_key($words, $prop->choices), (string) $prop->default, $prop->help);
+        }, $props);
     }
 
     /**

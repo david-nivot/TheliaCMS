@@ -17,6 +17,7 @@ Le formulaire d'une section, dans le tiroir de l'écran de contenu d'une page, e
 
 ## À chaque changement qui touche ces fichiers
 
+- Une prop ajoutée au schéma d'une section (`schema()` de `Content/*Section.php`) ajoute un champ à son formulaire : même preuve que pour un changement du gabarit. Le champ Apparence de `cms:heading` est parti sans elle.
 - Preuve au navigateur, captures avant/après, à 1440 px, donc avec le tiroir à sa largeur réelle (environ 806 px). Un HTTP 200 ou un test DOM ne suffit pas.
 - Couvrir trois formulaires au moins : une section native à liste (Mises en avant), un composant du thème à liste (`list<{…}>`), une section à image (cadrage).
 - Pas de débordement horizontal du formulaire (`scrollWidth` ≤ `clientWidth`). Un texte de titre (80 caractères) se lit sans être tronqué.

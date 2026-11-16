@@ -96,6 +96,8 @@ final readonly class SectionFormBuilder
         'file_url' => 'Address of the file',
         'thumbnail_image_id' => 'Poster image',
         'tag' => 'Heading level',
+        'title_tag' => 'Level of the heading',
+        'title_style' => 'Appearance of the heading',
         'container' => 'Width',
         'strong_text' => 'Text in bold',
         'link_label' => 'Text of the link',
@@ -440,10 +442,10 @@ final readonly class SectionFormBuilder
                 'attr' => ['min' => $prop->min, 'max' => $prop->max],
             ]),
             PropType::Boolean => $builder->add($prop->name, CheckboxType::class, $common + ['required' => false]),
-            PropType::Choice => $builder->add($prop->name, ChoiceType::class, $common + [
+            PropType::Choice => $builder->add($prop->name, ChoiceType::class, self::withDefault($common + [
                 'choices' => array_flip(array_map(strval(...), $prop->choices)),
                 'choice_translation_domain' => false,
-            ] + ([] === $prop->icons ? [] : ['placeholder' => false]) + self::asButtons($prop->icons)),
+            ] + ([] === $prop->icons ? [] : ['placeholder' => false]) + self::asButtons($prop->icons), $prop)),
             PropType::Image => $this->addImage($builder, $prop, $common),
             PropType::Video => $this->addVideo($builder, $prop, $common),
             PropType::Reference => $builder->add($prop->name, IntegerType::class, $common + [
@@ -472,6 +474,22 @@ final readonly class SectionFormBuilder
                     )),
             ),
         };
+    }
+
+    /**
+     * The value a choice takes when the editor sets nothing: a choice folded
+     * away (the level and the look of a heading) opens when its value is
+     * another one, for the editor to see what was set.
+     *
+     * @param array<string, mixed> $options
+     *
+     * @return array<string, mixed>
+     */
+    private static function withDefault(array $options, Prop $prop): array
+    {
+        $options['attr'] = (\is_array($options['attr'] ?? null) ? $options['attr'] : []) + ['data-cms-default' => (string) $prop->default];
+
+        return $options;
     }
 
     /**

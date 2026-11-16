@@ -10,10 +10,13 @@
     `sizes` below is a guess at a grid of cards (a quarter of the page, then a
     half, then the whole width): a theme that draws them otherwise passes the
     width it really uses; left out, it is the viewport up to the width of the file.
+    `heading` is the level the editor chose for the heading (`tag`), the level
+    of the titles of the cards one below it (`child_tag`), and the classes of a
+    heading style of the theme (`class`, null for the look of the level).
 #}
 <section class="cms-page-list cms-page-list--{{ type.code }}">
     {% if title %}
-        <h2 class="cms-page-list__title">{{ title }}</h2>
+        <{{ heading.tag }} class="cms-page-list__title{% if heading.styled %} cms-page-list__title--styled {{ heading.class }}{% endif %}">{{ title }}</{{ heading.tag }}>
     {% endif %}
 
     {% if pages is empty %}
@@ -29,7 +32,7 @@
                                  {% for name, value in cms_image_attributes(card.image, '(min-width: 64rem) 25vw, (min-width: 40rem) 50vw, 100vw') %}{{ name }}="{{ value }}" {% endfor %}
                                  loading="lazy" decoding="async">
                         {% endif %}
-                        <h3 class="cms-page-card__title"><a class="cms-page-card__link" href="{{ card.url }}">{{ card.title }}</a></h3>
+                        <{{ heading.child_tag }} class="cms-page-card__title"><a class="cms-page-card__link" href="{{ card.url }}">{{ card.title }}</a></{{ heading.child_tag }}>
                         {% if item.fields is not empty %}
                             <dl class="cms-page-card__fields">
                                 {% for field in item.fields %}

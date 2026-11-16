@@ -2,6 +2,7 @@
 paths:
   - "Generation/Component/ComponentPrompt.php"
   - "docs/evaluation/components/**"
+  - "Content/HeadingSection.php"
 ---
 
 # Prompt du générateur de composants
@@ -10,3 +11,4 @@ paths:
 - Une règle neuve est une constante publique de `ComponentPrompt`, testée par un test unitaire `*RuleOfThePromptTest` (le texte) et par `ComponentGeneratorTest` (présente dans le prompt système) ; puis une ronde du banc sur un cas qui l'exerce (payante : accord du dev).
 - **Contrat d'un cas** : le type d'un champ suit ce que le composant appelé déclare. Le `href` d'un objet du thème (`{href: string, …}`) est un `text`, pas un `url` : un contrat qui exige `url` met 0/3 à des essais justes.
 - Une règle changée rend périmés les essais enregistrés (`ComponentBenchReplayTest` les marque incomplets, sans échec).
+- Le schéma d'une section dessinable (`cms:heading`) est écrit dans le prompt (ligne « Drawable » de `ComponentPrompt::drawable()`) : y ajouter une prop rend périmés tous les essais enregistrés, comme une règle changée, et change l'attendu de `ComponentCompositionTest`. Ses valeurs dépendent du thème (styles de titre de Flexy).

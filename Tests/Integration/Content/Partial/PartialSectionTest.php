@@ -74,7 +74,7 @@ final class PartialSectionTest extends CmsIntegrationTestCase
 
         $html = $section->render($section->normalizeProps(['form' => 7]), $this->locale());
 
-        self::assertSame('<div data-cms-partial="cms-form" data-props="{&quot;form&quot;:7}"></div>', $html);
+        self::assertSame('<div data-cms-partial="cms-form" data-props="{&quot;form&quot;:7,&quot;title_level&quot;:&quot;h2&quot;,&quot;title_style&quot;:&quot;level&quot;}"></div>', $html, 'The level and the look of the heading come with their defaults.');
     }
 
     public function testAPartialNeedsItsRequiredReference(): void
@@ -103,6 +103,6 @@ final class PartialSectionTest extends CmsIntegrationTestCase
         self::assertStringContainsString('data-cms-partial="cms-form"', (string) $content->getPublishedHtml(), 'The placeholder survives the sanitizer and is what the page stores.');
         // The sanitizer rewrites the attribute with the quotes it likes; the
         // settings inside are what matters.
-        self::assertStringContainsString('{"form":1}', html_entity_decode((string) $content->getPublishedHtml(), \ENT_QUOTES));
+        self::assertStringContainsString('{"form":1,"title_level":"h2","title_style":"level"}', html_entity_decode((string) $content->getPublishedHtml(), \ENT_QUOTES));
     }
 }

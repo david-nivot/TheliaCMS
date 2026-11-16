@@ -19,6 +19,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Model\Lang;
 use Thelia\Test\FixtureFactory;
+use TheliaCMS\Content\ColumnsSection;
 use TheliaCMS\Content\Document;
 use TheliaCMS\Content\HeadingSection;
 use TheliaCMS\Content\Section;
@@ -427,6 +428,29 @@ final class SectionEditScreenTest extends AdminScreenTestCase
 
         $draft = (string) CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($this->locale())->findOne()?->getDraftHtml();
         self::assertStringContainsString('<h3 class="cms-heading__text cms-heading__text--styled h1">Nos ateliers</h3>', $draft);
+    }
+
+    public function testTheLevelAndTheLookOfAHeadingAreFoldedUntilTheyAreSet(): void
+    {
+        $column = ['image' => null, 'image_alt' => '', 'title' => 'Local', 'text' => 'Un'];
+        $page = $this->pageWith([
+            new Section('cols', ColumnsSection::NAME, ['title' => 'Nos engagements', 'columns' => [$column, $column]]),
+            new Section('colsset', ColumnsSection::NAME, ['title' => 'Nos engagements', 'title_level' => 'h3', 'columns' => [$column, $column]]),
+            new Section('plain', HeadingSection::NAME, ['text' => 'Nos ateliers', 'level' => 'h3']),
+            new Section('styled', HeadingSection::NAME, ['text' => 'Nos ateliers', 'style' => 'h1']),
+        ]);
+        $screen = $this->screen($this->url($page));
+        $fold = static fn (string $section): Crawler => $screen->filter(\sprintf('[data-testid="cms-section-edit-%s"] [data-testid="cms-heading-choice"]', $section));
+
+        self::assertCount(1, $fold('cols'));
+        self::assertSame(1, $fold('cols')->filter('[name="cms_section_cols[title_level]"]')->count() * $fold('cols')->filter('[name="cms_section_cols[title_style]"]')->count(), 'The level and the look of the heading of the columns are folded together.');
+        self::assertNull($fold('cols')->attr('open'), 'Closed while both are the ones by default.');
+        self::assertNotNull($fold('colsset')->attr('open'), 'Open once a level is set.');
+
+        self::assertSame(0, $fold('plain')->filter('[name="cms_section_plain[level]"]')->count(), 'The level of a heading on its own stays in view.');
+        self::assertSame(1, $fold('plain')->filter('[name="cms_section_plain[style]"]')->count());
+        self::assertNull($fold('plain')->attr('open'));
+        self::assertNotNull($fold('styled')->attr('open'), 'Open once a look is set.');
     }
 
     public function testALongTextTakesTheWholeLineOfTheFormAndAShortOneHalf(): void

@@ -8,7 +8,8 @@
 #}
 {% if form %}
     <section class="cms-form" id="{{ form.anchor }}" aria-labelledby="{{ form.anchor }}-title">
-        <h2 class="cms-form__title" id="{{ form.anchor }}-title">{{ form.title }}</h2>
+        {# At the level and in the look the editor chose (`heading`). #}
+        <{{ heading.tag }} class="cms-form__title{% if heading.styled %} cms-form__title--styled {{ heading.class }}{% endif %}" id="{{ form.anchor }}-title">{{ form.title }}</{{ heading.tag }}>
 
         {% if sent %}
             {# `role="status"` rather than an alert: the message is good news,

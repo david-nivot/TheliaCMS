@@ -267,9 +267,23 @@
 
   .cms-columns__title {
     margin: 0 0 2rem;
+  }
+
+  /* In a style of the theme (ADR 18), the classes of the style size it. */
+  .cms-columns__title:not(.cms-columns__title--styled) {
     font-size: var(--cms-font-size-h2);
     font-weight: var(--font-weight-h2, 600);
     line-height: 1.2;
+  }
+
+  /* The look of its level: a heading set one or two levels down is sized
+     as such. */
+  h3.cms-columns__title:not(.cms-columns__title--styled) {
+    font-size: var(--cms-font-size-h3);
+  }
+
+  h4.cms-columns__title:not(.cms-columns__title--styled) {
+    font-size: var(--cms-font-size-h4);
   }
 
   .cms-columns__grid {
@@ -328,6 +342,12 @@
     font-size: var(--cms-font-size-h3);
     font-weight: var(--font-weight-h2, 600);
     line-height: 1.25;
+  }
+
+  /* One level below a heading set lower: the scale stops at h4. */
+  h4.cms-columns__heading,
+  h5.cms-columns__heading {
+    font-size: var(--cms-font-size-h4);
   }
 
   .cms-columns__text {
@@ -639,7 +659,18 @@
 
   .cms-form__title {
     margin: 0 0 0.5rem;
+  }
+
+  .cms-form__title:not(.cms-form__title--styled) {
     font-size: clamp(1.5rem, 3vw, 2rem);
+  }
+
+  h3.cms-form__title:not(.cms-form__title--styled) {
+    font-size: var(--cms-font-size-h3);
+  }
+
+  h4.cms-form__title:not(.cms-form__title--styled) {
+    font-size: var(--cms-font-size-h4);
   }
 
   .cms-form__intro {
@@ -860,9 +891,20 @@
 
   .cms-page-list__title {
     margin: 0 0 2rem;
+  }
+
+  .cms-page-list__title:not(.cms-page-list__title--styled) {
     font-size: var(--cms-font-size-h2);
     font-weight: var(--font-weight-h2, 600);
     line-height: 1.2;
+  }
+
+  h3.cms-page-list__title:not(.cms-page-list__title--styled) {
+    font-size: var(--cms-font-size-h3);
+  }
+
+  h4.cms-page-list__title:not(.cms-page-list__title--styled) {
+    font-size: var(--cms-font-size-h4);
   }
 
   .cms-page-list__empty {
@@ -903,6 +945,11 @@
     font-size: var(--cms-font-size-h3);
     font-weight: var(--font-weight-h3, 600);
     line-height: 1.25;
+  }
+
+  h4.cms-page-card__title,
+  h5.cms-page-card__title {
+    font-size: var(--cms-font-size-h4);
   }
 
   /* The whole card answers the click, its title says where it goes. */
