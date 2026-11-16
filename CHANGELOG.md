@@ -31,6 +31,11 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Fixed
 
+- **The heading of the site drawn by a component has room under it**: it
+  touched what follows (0 px) in most generated components and in the
+  components offered the heading of the site, which give it no style of
+  their own. It now keeps 1.5rem under it, the room of the heading of a band
+  of Flexy.
 - **A picture the page already has offers WebP too**: when a section
   draws a `<picture>` of its own (a separate image for a narrow screen, as
   the Highlights section does), each mobile `<source>` of the library is now

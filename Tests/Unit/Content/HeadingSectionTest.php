@@ -97,7 +97,7 @@ final class HeadingSectionTest extends TestCase
     {
         $css = (string) file_get_contents(\dirname(__DIR__, 3).'/assets/blocks.css');
 
-        self::assertMatchesRegularExpression('/\.cms-site \.cms-heading \{\s*margin-inline: 0;\s*width: auto;\s*\}/', $css);
+        self::assertMatchesRegularExpression('/\.cms-site \.cms-heading \{\s*margin-inline: 0;\s*margin-block-end: 1\.5rem;\s*width: auto;\s*\}/', $css, 'In the box of the component, with room under it: the component gives it no style.');
     }
 
     /**
