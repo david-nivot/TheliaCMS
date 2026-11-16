@@ -150,9 +150,12 @@
   }
 
   /* Drawn by a component of the site (ADR 17), it sits in the box of the
-     component, not at the width of a section of its own. */
+     component, not at the width of a section of its own, and keeps the room
+     a heading of a band of Flexy has under it (`pb-6`): the component that
+     draws it gives it no style of its own. */
   .cms-site .cms-heading {
     margin-inline: 0;
+    margin-block-end: 1.5rem;
     width: auto;
   }
 
