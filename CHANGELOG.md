@@ -19,11 +19,13 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   page do not draw with each other's definitions, and a definition of a page
   does not catch a reference of the theme (a round flag of the language
   selector); the prefix is drawn from the markup, and a page saved again
-  unchanged is written the same. A reference is kept only towards an id of the same SVG: a paint,
-  a mask or a gradient from another file or another SVG of the page is
-  dropped, and so is a mask or a clipping path asked for inside another one.
-  `use`, the `style` element, `filter`, `pattern`, `text` and animations stay
-  out. A component of the site that draws such an SVG in its template is no
+  unchanged is written the same. A reference is kept only towards an id of
+  the same SVG: a paint, a mask or a gradient from another file or another
+  SVG of the page is dropped, and so is a mask or a clipping path asked for
+  inside another one. A `style` attribute in the SVG names no address and
+  reads no custom property (`url()`, `var()`), even towards a file of the
+  site. `use`, the `style` element, `filter`, `pattern`, `text` and
+  animations stay out. A component of the site that draws such an SVG in its template is no
   longer told that the page takes its masks, gradients, transforms or
   namespace out. The rules
   live in `InlineSvgPolicy`, which the « Prepare the SVG » screen asks too:

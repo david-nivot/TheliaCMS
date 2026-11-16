@@ -302,7 +302,7 @@ final readonly class InlineSvgPolicy
                 $violations[] = new InlineSvgViolation(InlineSvgViolationKind::NestedCut, $attribute->nodeName);
             } elseif (\in_array($attributeName, self::REFERENCES, true) && null !== ($reference = self::reference($attributeName, $value)) && !isset($ids[$reference])) {
                 $violations[] = new InlineSvgViolation(InlineSvgViolationKind::Reference, $attribute->nodeName);
-            } elseif ('style' === $attributeName && trim((new CssAllowList())->declarations($value), " \t\n\r;") !== trim($value, " \t\n\r;")) {
+            } elseif ('style' === $attributeName && trim((new CssAllowList(urls: false))->declarations($value), " \t\n\r;") !== trim($value, " \t\n\r;")) {
                 $violations[] = new InlineSvgViolation(InlineSvgViolationKind::Style, $attribute->nodeName);
             }
         }
@@ -431,6 +431,11 @@ final readonly class InlineSvgPolicy
 
                 if ('id' === $attribute) {
                     return ' id="'.self::encoded($prefix.self::withoutPrefix($value)).'"';
+                }
+
+                // A reference in a style would leave the SVG: no `url()`, no custom property.
+                if ('style' === $attribute) {
+                    return ' style="'.self::encoded((new CssAllowList(urls: false))->declarations($value)).'"';
                 }
 
                 // The `href` of a link is a link; that of a gradient points inside the SVG.

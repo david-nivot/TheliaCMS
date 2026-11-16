@@ -61,7 +61,11 @@ which a page would fetch from a third party on every visit.
   `filter` (`feImage` loads an address), animations (they can rewrite a
   link), `image`, `foreignObject`, `pattern`, `marker` and `text`. An `a`
   written in an SVG is kept as a link, under the rules of every link. A
-  reference in a `style` attribute stays refused by `CssAllowList`. The old
+  `style` attribute in an SVG may call neither `url()`, even towards a file
+  of the site, nor `var()`, whose custom property may carry an address set
+  on an element outside the SVG: `CssAllowList` reads it without them, for
+  the filter as for the screen; the style of an element of the page keeps
+  the paths of the site it had. The old
   `xlink:href` is read as `href` by the parser of PHP 8.3 and dropped by that
   of PHP 8.4: either way, it points inside the SVG or goes.
 - **One policy, read by the filter and by the screen.** The rules live in

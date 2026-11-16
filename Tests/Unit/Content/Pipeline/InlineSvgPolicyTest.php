@@ -133,6 +133,23 @@ final class InlineSvgPolicyTest extends TestCase
         yield 'a style sheet, which styles the whole page' => ['<style>body{display:none}</style>', 'display'];
         yield 'an animation that rewrites a link' => ['<animate attributeName="href" values="javascript:alert(1)"/>', '<animate'];
         yield 'a filter' => ['<filter id="f"><feImage href="https://evil.example/i.png"/></filter>', '<filter'];
+        yield 'a mask in a style, from a file of the site' => ['<path d="M0 0" style="mask:url(/media/m.svg#m)"/>', 'url('];
+        yield 'a clipping path in a style, from a file of the site' => ['<path d="M0 0" style="clip-path:url(/media/c.svg#c)"/>', 'url('];
+        yield 'a custom property in a style, which may carry an address set outside the SVG' => ['<path d="M0 0" style="mask:var(--m)"/>', 'var('];
+    }
+
+    /**
+     * Inside an SVG, a style keeps what draws and loses what would reach out
+     * of the SVG; the style of an element of the page keeps a path of the
+     * site, as before.
+     */
+    public function testAStyleOfAnSvgNamesNoAddressAndReadsNoCustomProperty(): void
+    {
+        $html = (string) $this->sanitizer->html('<div style="--m:url(/media/m.svg#m);mask-image:url(/media/m.png)"><svg viewBox="0 0 8 8"><mask id="m" style="mask-type:luminance"><rect width="8" height="8" fill="#fff"/></mask><path d="M0 0" style="opacity:.5;mask:var(--m);fill:url(/media/g.svg#g)"/></svg></div>');
+
+        self::assertStringContainsString('<div style="--m:url(/media/m.svg#m);mask-image:url(/media/m.png)">', $html);
+        self::assertStringContainsString('style="mask-type:luminance"', $html);
+        self::assertMatchesRegularExpression('/<path d="M0 0" style="opacity:\.5;?">/', $html);
     }
 
     /**
