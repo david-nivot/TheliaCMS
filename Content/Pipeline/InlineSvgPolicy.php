@@ -211,12 +211,13 @@ final readonly class InlineSvgPolicy
     }
 
     /**
-     * Gives the ids an SVG of the markup cites (a mask, a gradient, a
-     * clipping path) a prefix of its own and points its references to them;
-     * a reference to an id the SVG does not hold is dropped, and so is a mask
-     * or a clipping path asked for inside another one, which would multiply
-     * the drawing at each level. An id nothing cites keeps its name, for an
-     * anchor or a label that names it.
+     * Gives every id of an SVG of the markup a prefix of its own and points
+     * its references to them; a reference to an id the SVG does not hold is
+     * dropped, and so is a mask or a clipping path asked for inside another
+     * one, which would multiply the drawing at each level. No id of the SVG
+     * keeps its name: a mask, a gradient or a clipping path the theme draws
+     * outside the filter, or a page draws in another SVG, cannot resolve to
+     * it.
      *
      * The prefix is drawn from the markup and the rank of the SVG in it, so
      * that the same markup is written the same way each time it is saved, and
@@ -396,34 +397,30 @@ final readonly class InlineSvgPolicy
     }
 
     /**
-     * One SVG: the ids its references cite, then the SVG written again with
-     * those ids under the prefix.
+     * One SVG: the ids it holds, then the SVG written again with every id
+     * under the prefix and its references pointed to them.
      */
     private static function rewriteSvg(string $svg, string $prefix): string
     {
         $ids = [];
-        $cited = [];
         $cutters = 0;
 
-        preg_replace_callback(self::TAG, static function (array $tag) use (&$ids, &$cited, &$cutters): string {
-            self::readTag($tag, $cutters, static function (string $attribute, string $value, bool $inCutter) use (&$ids, &$cited): void {
+        preg_replace_callback(self::TAG, static function (array $tag) use (&$ids, &$cutters): string {
+            self::readTag($tag, $cutters, static function (string $attribute, string $value) use (&$ids): void {
                 if ('id' === $attribute) {
                     $ids[self::withoutPrefix($value)] = true;
-                } elseif (null !== $reference = self::followed($attribute, $value, $inCutter)) {
-                    $cited[self::withoutPrefix($reference)] = true;
                 }
             });
 
             return $tag[0];
         }, $svg);
 
-        $cited = array_intersect_key($cited, $ids);
         $cutters = 0;
 
-        return (string) preg_replace_callback(self::TAG, static function (array $tag) use ($cited, $prefix, &$cutters): string {
+        return (string) preg_replace_callback(self::TAG, static function (array $tag) use ($ids, $prefix, &$cutters): string {
             $name = $tag[2];
             $svgElement = isset(self::ELEMENTS[$name]);
-            $kept = '' === trim($tag[3]) ? $tag[3] : (string) preg_replace_callback(self::ATTRIBUTE, static function (array $match) use ($cited, $prefix, $svgElement, $cutters): string {
+            $kept = '' === trim($tag[3]) ? $tag[3] : (string) preg_replace_callback(self::ATTRIBUTE, static function (array $match) use ($ids, $prefix, $svgElement, $cutters): string {
                 $attribute = $match[1];
 
                 if (!isset($match[2])) {
@@ -433,9 +430,7 @@ final readonly class InlineSvgPolicy
                 $value = self::decoded($match[2]);
 
                 if ('id' === $attribute) {
-                    $id = self::withoutPrefix($value);
-
-                    return isset($cited[$id]) ? ' id="'.self::encoded($prefix.$id).'"' : $match[0];
+                    return ' id="'.self::encoded($prefix.self::withoutPrefix($value)).'"';
                 }
 
                 // The `href` of a link is a link; that of a gradient points inside the SVG.
@@ -451,7 +446,7 @@ final readonly class InlineSvgPolicy
 
                 $reference = self::withoutPrefix($reference);
 
-                if (!isset($cited[$reference]) || null === self::followed($attribute, $value, $cutters > 0)) {
+                if (!isset($ids[$reference]) || null === self::followed($attribute, $value, $cutters > 0)) {
                     return '';
                 }
 

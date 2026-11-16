@@ -34,11 +34,15 @@ which a page would fetch from a third party on every visit.
   the `href` of a gradient is kept only when it names an id of the same SVG.
   One that names another file, a `data:` address, an id the SVG does not
   hold or an id of another SVG of the page is dropped.
-- **Every id an SVG cites gets a prefix of its own,** after the sanitizer of
+- **Every id of an SVG gets a prefix of its own,** after the sanitizer of
   Symfony: `s<hash>-<rank>-`, the hash drawn from the markup and the rank of
-  the SVG in it, its references rewritten alike. An id nothing in the SVG
-  cites keeps its name, for an anchor, a label or a rule of the theme that
-  names it. The same markup is written the same each time it is saved, and
+  the SVG in it, its references rewritten alike. An id nothing cites takes
+  it too: under its own name, a definition would catch the reference of a
+  drawing the theme renders outside the filter (the round flags of Flexy cite
+  `circleFlagsFr0`) and hide or recolour it. Nothing outside the SVG can name
+  one of its ids anyway: the prefix changes with the markup, the filter keeps
+  no `title`, `desc` or `text` for a label to point to, and `class` stays for
+  a rule of the theme. The same markup is written the same each time it is saved, and
   cleaning markup twice changes nothing (a former prefix is read back, however
   many times it was given), so no history or cache sees a change that is not
   one.
@@ -81,9 +85,9 @@ which a page would fetch from a third party on every visit.
 - A page published before keeps what the former filter left until it is
   rendered again: `thelia_cms:render-published --all` for what is online,
   `thelia_cms:render` for the drafts. Nothing renders by itself.
-- The id of a mask, a gradient or a clipping path written in an SVG of a
-  page is no longer the id the file holds: a style sheet of the theme that
-  would aim at it misses. None is known. The other ids keep their names.
+- No id written in an SVG of a page is the id the file holds: a style sheet
+  of the theme, an anchor or a script that would aim at one misses. None is
+  known; a class reaches the drawing instead.
 - A drawing that holds `use`, a style sheet or text stays an image. Taking
   `use` in would need a ceiling on its depth and count, and a review of its
   own.

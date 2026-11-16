@@ -14,12 +14,12 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   a round flag of the theme (`circle-flags`) came out square, an icon with a
   gradient without its colors. It now keeps `defs`, `linearGradient`,
   `radialGradient`, `stop`, `mask` and `clipPath`, and the `mask`,
-  `clip-path` and `url(#…)` paints that use them. Every id an SVG cites (a
-  mask, a gradient, a clipping path) gets a prefix of its own
-  (`s<hash>-<rank>-`), so that two copies of an icon in a page do not draw
-  with each other's definitions; the prefix is drawn from the markup, and a
-  page saved again unchanged is written the same. An id nothing cites keeps
-  its name. A reference is kept only towards an id of the same SVG: a paint,
+  `clip-path` and `url(#…)` paints that use them. Every id of an SVG gets a
+  prefix of its own (`s<hash>-<rank>-`), so that two copies of an icon in a
+  page do not draw with each other's definitions, and a definition of a page
+  does not catch a reference of the theme (a round flag of the language
+  selector); the prefix is drawn from the markup, and a page saved again
+  unchanged is written the same. A reference is kept only towards an id of the same SVG: a paint,
   a mask or a gradient from another file or another SVG of the page is
   dropped, and so is a mask or a clipping path asked for inside another one.
   `use`, the `style` element, `filter`, `pattern`, `text` and animations stay

@@ -512,7 +512,7 @@ sections:
 
 The filter keeps the inline svg icons a component draws (`ux_icon()`): their
 shapes, geometry and paint, and the gradients, masks and clipping paths they
-define, the ids they cite given a prefix of their own so that two copies of
+define, every id of an svg given a prefix of its own so that two copies of
 an icon in a page do not mix (ADR 19); a mask or a clipping path inside
 another one is dropped. A reference must name an id of the same svg;
 `use`, `style`, `image`, `foreignObject`, `a`, `animate*`, handlers and a

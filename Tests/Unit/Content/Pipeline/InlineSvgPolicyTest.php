@@ -147,17 +147,20 @@ final class InlineSvgPolicyTest extends TestCase
     }
 
     /**
-     * An id nothing in the SVG cites keeps its name: an anchor, a label or a
-     * rule of the theme may name it. The definitions are cited, so they take
-     * the prefix.
+     * Every id of an SVG takes the prefix, cited or not: a definition nothing
+     * cites under the name of a mask the theme draws outside the filter (the
+     * round flags of Flexy cite `circleFlagsFr0`) would hide or recolour the
+     * drawing of the theme that resolves to it.
      */
-    public function testAnIdNothingCitesKeepsItsName(): void
+    public function testEveryIdOfAnSvgTakesThePrefixCitedOrNot(): void
     {
-        $html = (string) $this->sanitizer->html('<svg id="logo" viewBox="0 0 8 8"><g id="layer"><path d="M0 0"/></g><mask id="m"><rect width="8" height="8" fill="#fff"/></mask><g mask="url(#m)"><path d="M0 0"/></g></svg>');
+        $html = (string) $this->sanitizer->html('<svg id="logo" width="0" height="0"><defs><mask id="circleFlagsFr0"><rect width="1" height="1" fill="black"/></mask></defs><g id="layer"><path d="M0 0"/></g></svg><p id="faq">FAQ</p>');
 
-        self::assertStringContainsString('<svg id="logo"', $html);
-        self::assertStringContainsString('<g id="layer">', $html);
-        self::assertMatchesRegularExpression('/<mask id="(s[0-9a-f]{8}-1-m)">.*<g mask="url\(#\1\)">/', $html);
+        self::assertDoesNotMatchRegularExpression('/id="(?:logo|circleFlagsFr0|layer)"/', $html);
+        self::assertMatchesRegularExpression('/<svg id="s[0-9a-f]{8}-1-logo"/', $html);
+        self::assertMatchesRegularExpression('/<mask id="s[0-9a-f]{8}-1-circleFlagsFr0">/', $html);
+        self::assertMatchesRegularExpression('/<g id="s[0-9a-f]{8}-1-layer">/', $html);
+        self::assertStringContainsString('<p id="faq">', $html, 'An id of the page outside an SVG keeps its name.');
     }
 
     /**
