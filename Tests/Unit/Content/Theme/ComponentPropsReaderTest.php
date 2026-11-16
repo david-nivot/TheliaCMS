@@ -198,6 +198,27 @@ final class ComponentPropsReaderTest extends TestCase
         self::assertSame([], $read['id_lists'], 'Rows of fields are not lists of ids.');
     }
 
+    /**
+     * The heading of a band of Flexy is set by the editor: a union of quoted
+     * values is a choice, and it starts from the value `{% props %}` gives it.
+     */
+    public function testAUnionOfQuotedValuesIsAChoiceThatStartsFromItsDefault(): void
+    {
+        $props = $this->byName($this->reader()->readSource(<<<'TWIG'
+            {# @prop title string The heading above the contents #}
+            {# @prop titleTag 'h2'|'h3'|'h4' The level of the heading: h2 under the title of the page, h3 under a heading of level 2 #}
+            {# @prop titleStyle 'h1'|'h2'|'h3'|'h4'|'h5'|'h6' The look of the heading, among the heading styles of the theme, whatever its level #}
+            {% props title = '', titleTag = 'h2', titleStyle = 'h4', button = null %}
+            TWIG));
+
+        self::assertSame(PropType::Choice, $props['title_tag']->type);
+        self::assertSame(['h2' => 'h2', 'h3' => 'h3', 'h4' => 'h4'], $props['title_tag']->choices);
+        self::assertSame('h2', $props['title_tag']->default);
+        self::assertSame(PropType::Choice, $props['title_style']->type);
+        self::assertSame(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'], array_keys($props['title_style']->choices));
+        self::assertSame('h4', $props['title_style']->default, 'The look the band had.');
+    }
+
     public function testAnObjectIsReadAsOneRowOfItsFields(): void
     {
         $read = $this->reader()->readSource(<<<'TWIG'
