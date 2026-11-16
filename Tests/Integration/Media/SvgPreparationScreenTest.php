@@ -769,7 +769,13 @@ final class SvgPreparationScreenTest extends AdminScreenTestCase
 
         self::assertStringContainsString('cms:marque', $this->normalize($screen->filter('[data-testid="cms-svg-icon-replaced-obstacles"]')->text()), 'It is told before the answer.');
         self::assertSame(0, $screen->filter('[data-testid="cms-svg-usage-read-only"]')->count(), 'The card does not say the file replaces the icon it cannot replace.');
+        $replace = $screen->filter('[data-testid="cms-svg-add"]');
+        self::assertNotNull($replace->attr('disabled'), 'The button that would replace the file is not offered.');
+        self::assertSame('cms-svg-icon-replaced-obstacles', $replace->attr('aria-describedby'), 'It is tied to the warning that says why.');
+        self::assertSame(1, $screen->filter('#cms-svg-icon-replaced-obstacles')->count());
+        self::assertNull($screen->filter('[data-testid="cms-svg-skip"]')->attr('disabled'), 'The file can still be left out.');
 
+        // A form sent by hand is refused by the server all the same.
         $answer = $this->submit($screen, 'add');
 
         self::assertSame(422, $this->client->getResponse()->getStatusCode());
@@ -784,6 +790,7 @@ final class SvgPreparationScreenTest extends AdminScreenTestCase
         $this->postSheet(\sprintf('/admin/cms/media/%d', $icon->getId()), [], $this->svg('neuve.svg', self::COLORED));
         $screen = $this->screen($this->remember((string) $this->client->getResponse()->headers->get('Location')));
 
+        self::assertNull($screen->filter('[data-testid="cms-svg-add"]')->attr('disabled'));
         $this->answer($screen, 'add');
 
         self::assertSame('marque', $this->getService(IconNames::class)->nameOf((int) $icon->getId()));

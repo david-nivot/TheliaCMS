@@ -30,6 +30,13 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   `php Thelia thelia_cms:render-published --all` (`--dry-run` counts them),
   and `php Thelia thelia_cms:render` for the drafts.
 
+### Fixed
+
+- **Replacing the file of an icon with a drawing that cannot be one.** The
+  button « Replace the file of the image » stayed active under the warning,
+  and the answer came back refused with the same words. It is now disabled
+  and tied to the warning that says why; « Do not add this file » stays.
+
 ## [2.32.0] - 2026-11-16
 
 ### Fixed
