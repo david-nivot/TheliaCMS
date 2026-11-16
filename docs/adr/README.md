@@ -23,3 +23,4 @@ decision supersedes it with a new file.
 | [15](0015-a-component-of-the-site-draws-another-by-its-code.md) | A component of the site draws another by its code |
 | [16](0016-a-called-component-reads-the-stored-values-of-its-caller.md) | A called component reads the stored values of its caller |
 | [17](0017-a-heading-of-the-site-is-drawn-at-any-depth.md) | A heading of the site is drawn at any depth |
+| [18](0018-a-heading-takes-a-style-of-the-theme.md) | A heading takes a style of the theme, apart from its level |

@@ -109,4 +109,63 @@ final class ThemeSectionsTest extends TestCase
             @rmdir($directory);
         }
     }
+
+    public function testATHemeNamesTheStylesItsHeadingsMayTake(): void
+    {
+        $directory = sys_get_temp_dir().'/theliacms-theme-'.bin2hex(random_bytes(4));
+        mkdir($directory.'/config', 0o777, true);
+
+        try {
+            file_put_contents($directory.'/config/theliacms.yaml', "sections:\n    components: []\n    heading_styles:\n        display:\n            label: ' Display '\n            class: ' font-display text-5xl '\n");
+            self::assertSame(['display' => ['label' => 'Display', 'class' => 'font-display text-5xl']], ThemeSections::declaredIn([$directory])->headingStyles);
+
+            foreach ([
+                'reserved' => "        level:\n            label: Level\n            class: h1\n",
+                'not a value' => "        Display:\n            label: Display\n            class: h1\n",
+                'no label' => "        display:\n            class: h1\n",
+                'not a class' => "        display:\n            label: Display\n            class: 'h1\" onclick=\"x'\n",
+            ] as $case => $styles) {
+                file_put_contents($directory.'/config/theliacms.yaml', "sections:\n    components: []\n    heading_styles:\n".$styles);
+
+                try {
+                    ThemeSections::declaredIn([$directory]);
+                    self::fail(\sprintf('A heading style that is %s is refused.', $case));
+                } catch (\InvalidArgumentException) {
+                    $this->addToAssertionCount(1);
+                }
+            }
+        } finally {
+            @unlink($directory.'/config/theliacms.yaml');
+            @rmdir($directory.'/config');
+            @rmdir($directory);
+        }
+    }
+
+    /**
+     * Flexy 1.3.0 declares nothing: the headings of its toolkit are offered to
+     * it and to its children, unless the nearest declaration names its own.
+     */
+    public function testFlexyAndItsChildrenGetTheHeadingsOfItsToolkit(): void
+    {
+        $root = sys_get_temp_dir().'/theliacms-themes-'.bin2hex(random_bytes(4));
+        mkdir($root.'/flexy', 0o777, true);
+        mkdir($root.'/child/config', 0o777, true);
+
+        try {
+            self::assertSame(ThemeSections::FLEXY_HEADING_STYLES, ThemeSections::declaredIn([$root.'/flexy'])->headingStyles);
+
+            file_put_contents($root.'/child/config/theliacms.yaml', "sections:\n    components:\n        - Molecules:Rating:Base\n");
+            $child = ThemeSections::declaredIn([$root.'/child', $root.'/flexy/']);
+            self::assertSame(['Molecules:Rating:Base'], $child->components);
+            self::assertSame(ThemeSections::FLEXY_HEADING_STYLES, $child->headingStyles, 'A child of Flexy declaring none of its own.');
+
+            self::assertSame([], ThemeSections::declaredIn([$root.'/child'])->headingStyles, 'Another theme gets none.');
+        } finally {
+            @unlink($root.'/child/config/theliacms.yaml');
+            @rmdir($root.'/child/config');
+            @rmdir($root.'/child');
+            @rmdir($root.'/flexy');
+            @rmdir($root);
+        }
+    }
 }

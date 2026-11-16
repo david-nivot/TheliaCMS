@@ -399,9 +399,13 @@ What the generator writes, and what the site checks
   A heading of the site is drawn the same way (ADR 17):
   `cms_component('cms:heading', {text: props.title, level: 'h3'})`, at
   level `h2`, `h3` or `h4`, in place, at any depth, a drawn component
-  included; drawing one does not make a component one that draws others. A
-  level the heading does not offer, written in the call or offered by a
-  `choice` prop of the caller, is refused.
+  included; drawing one does not make a component one that draws others. Its
+  `style`, one of the heading styles of the theme or `level` by default, is
+  how it looks whatever its level (ADR 18): the generator hands it two
+  `choice` props the editor sets, `{text: props.title, level:
+  props.title_level, style: props.title_style}`. A level or a style the
+  heading does not offer, written in the call or offered by a `choice` prop
+  of the caller, is refused.
 
 Making, changing and keeping a component take the settings and the custom
 code permissions. A new version of a kept component is refused while a page

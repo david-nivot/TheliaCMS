@@ -1,6 +1,6 @@
 # 17. A heading of the site is drawn at any depth
 
-Date: 2026-11-13. Status: accepted. Amends ADR 15 and ADR 16.
+Date: 2026-11-13. Status: accepted, amended by ADR 18. Amends ADR 15 and ADR 16.
 
 ## Context
 

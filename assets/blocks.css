@@ -158,19 +158,25 @@
 
   .cms-heading__text {
     margin: 0;
+  }
+
+  /* A heading in a style of the theme (ADR 18) takes its size, weight and
+     line height from the classes of that style only: this layer may come
+     after the one of the theme and would size it by its level again. */
+  .cms-heading__text:not(.cms-heading__text--styled) {
     font-weight: var(--font-weight-h2, 600);
     line-height: 1.2;
   }
 
-  h2.cms-heading__text {
+  h2.cms-heading__text:not(.cms-heading__text--styled) {
     font-size: var(--cms-font-size-h2);
   }
 
-  h3.cms-heading__text {
+  h3.cms-heading__text:not(.cms-heading__text--styled) {
     font-size: var(--cms-font-size-h3);
   }
 
-  h4.cms-heading__text {
+  h4.cms-heading__text:not(.cms-heading__text--styled) {
     font-size: var(--cms-font-size-h4);
   }
 

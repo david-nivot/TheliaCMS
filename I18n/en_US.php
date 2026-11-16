@@ -2095,4 +2095,12 @@ return [
     'Level 4, under a heading of level 3' => 'Level 4, under a heading of level 3',
     'The title of the page is the only heading of level 1.' => 'The title of the page is the only heading of level 1.',
     'A heading on its own, at level 2, 3 or 4.' => 'A heading on its own, at level 2, 3 or 4.',
+    'Like its level' => 'Like its level',
+    'A heading style of the theme, whatever the level: the level orders the page, the appearance is how it looks.' => 'A heading style of the theme, whatever the level: the level orders the page, the appearance is how it looks.',
+    'Heading 1 of the theme' => 'Heading 1 of the theme',
+    'Heading 2 of the theme' => 'Heading 2 of the theme',
+    'Heading 3 of the theme' => 'Heading 3 of the theme',
+    'Heading 4 of the theme' => 'Heading 4 of the theme',
+    'Heading 5 of the theme' => 'Heading 5 of the theme',
+    'Heading 6 of the theme' => 'Heading 6 of the theme',
 ];

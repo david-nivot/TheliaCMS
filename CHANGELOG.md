@@ -7,6 +7,27 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **A heading takes a style of the theme, apart from its level** (ADR 18):
+  the Heading section (`cms:heading`) offers an appearance next to its level,
+  so an `h3` may look like the largest heading of the theme. The theme
+  declares its styles in `config/theliacms.yaml` (`sections.heading_styles`:
+  a value, a label, the classes); Flexy and its children get the six headings
+  of its toolkit (`h1` to `h6`) until Flexy declares its own. By default a
+  heading keeps the look of its level. A style the theme no longer offers
+  falls back on that look instead of refusing the page.
+
+### Changed
+
+- **The heading that opens a generated component is set by the editor**: the
+  generator of components is told to hand two `choice` props of the
+  component, `title_level` and `title_style`, to `cms:heading`, instead of
+  writing the level in the call. A `choice` prop handed to `style` offering a
+  value the heading does not offer is refused when the component is saved.
+- `blocks.css` sizes a heading section by its level only when it has no
+  style (`.cms-heading__text--styled`).
+
 ## [2.29.0] - 2026-11-13
 
 ### Added

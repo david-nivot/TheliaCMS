@@ -2095,4 +2095,12 @@ return [
     'Level 4, under a heading of level 3' => 'Niveau 4, sous un titre de niveau 3',
     'The title of the page is the only heading of level 1.' => 'Le titre de la page est le seul titre de niveau 1.',
     'A heading on its own, at level 2, 3 or 4.' => 'Un titre seul, de niveau 2, 3 ou 4.',
+    'Like its level' => 'Selon son niveau',
+    'A heading style of the theme, whatever the level: the level orders the page, the appearance is how it looks.' => 'Un style de titre du thème, quel que soit le niveau : le niveau ordonne la page, l\'apparence règle son aspect.',
+    'Heading 1 of the theme' => 'Titre 1 du thème',
+    'Heading 2 of the theme' => 'Titre 2 du thème',
+    'Heading 3 of the theme' => 'Titre 3 du thème',
+    'Heading 4 of the theme' => 'Titre 4 du thème',
+    'Heading 5 of the theme' => 'Titre 5 du thème',
+    'Heading 6 of the theme' => 'Titre 6 du thème',
 ];
