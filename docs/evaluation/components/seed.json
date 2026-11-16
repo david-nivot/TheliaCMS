@@ -61,6 +61,32 @@
           "max": 120
         },
         {
+          "name": "title_level",
+          "type": "choice",
+          "label": "Niveau du titre",
+          "choices": {
+            "h2": "Niveau 2, une partie de la page",
+            "h3": "Niveau 3, sous un titre de niveau 2",
+            "h4": "Niveau 4, sous un titre de niveau 3"
+          },
+          "default": "h2"
+        },
+        {
+          "name": "title_style",
+          "type": "choice",
+          "label": "Apparence du titre",
+          "choices": {
+            "level": "Selon son niveau",
+            "h1": "Titre 1 du thème",
+            "h2": "Titre 2 du thème",
+            "h3": "Titre 3 du thème",
+            "h4": "Titre 4 du thème",
+            "h5": "Titre 5 du thème",
+            "h6": "Titre 6 du thème"
+          },
+          "default": "level"
+        },
+        {
           "name": "text",
           "type": "html",
           "label": "Texte"
@@ -94,13 +120,15 @@
       ],
       "sample": {
         "title": "Un atelier au cœur de Lyon",
+        "title_level": "h2",
+        "title_style": "level",
         "text": "<p>Depuis 2012, nous façonnons à la main des sacs en cuir végétal, dans un atelier ouvert aux visites.</p><p>Chaque pièce passe entre les mains de trois artisans.</p>",
         "image": null,
         "side": "left",
         "link_label": "Découvrir l’atelier",
         "link": "/atelier"
       },
-      "template": "<section class=\"imagetext imagetext--{{ props.side }}\">{% if props.image %}<div class=\"imagetext__media\"><img class=\"imagetext__image\" src=\"{{ props.image }}\" alt=\"{{ props.title }}\" data-cms-sizes=\"(min-width: 48rem) 50vw, 100vw\"></div>{% endif %}<div class=\"imagetext__body\">{% if props.title is not empty %}<h2 class=\"imagetext__title\">{{ props.title }}</h2>{% endif %}<div class=\"imagetext__text\">{{ props.text }}</div>{% if props.link is not empty %}<a class=\"imagetext__link\" href=\"{{ props.link }}\">{{ props.link_label }}</a>{% endif %}</div></section>",
+      "template": "<section class=\"imagetext imagetext--{{ props.side }}\">{% if props.image %}<div class=\"imagetext__media\"><img class=\"imagetext__image\" src=\"{{ props.image }}\" alt=\"{{ props.title }}\" data-cms-sizes=\"(min-width: 48rem) 50vw, 100vw\"></div>{% endif %}<div class=\"imagetext__body\">{% if props.title is not empty %}{{ cms_component('cms:heading', {text: props.title, level: props.title_level, style: props.title_style}) }}{% endif %}<div class=\"imagetext__text\">{{ props.text }}</div>{% if props.link is not empty %}<a class=\"imagetext__link\" href=\"{{ props.link }}\">{{ props.link_label }}</a>{% endif %}</div></section>",
       "css": ".imagetext { display: grid; gap: 1.5rem; align-items: center; }\n.imagetext__image { display: block; width: 100%; height: auto; border-radius: 0.5rem; }\n.imagetext__title { margin: 0 0 0.75rem; color: var(--cms-color-text); }\n.imagetext__text { color: var(--cms-color-text); }\n.imagetext__link { display: inline-block; margin-top: 1rem; font-weight: 700; color: var(--cms-color-accent); }\n@media (min-width: 48rem) { .imagetext { grid-template-columns: 1fr 1fr; gap: 3rem; } .imagetext--right .imagetext__media { order: 2; } }",
       "provenance": null,
       "status": "ready"
@@ -115,6 +143,32 @@
           "type": "text",
           "label": "Titre",
           "max": 120
+        },
+        {
+          "name": "title_level",
+          "type": "choice",
+          "label": "Niveau du titre",
+          "choices": {
+            "h2": "Niveau 2, une partie de la page",
+            "h3": "Niveau 3, sous un titre de niveau 2",
+            "h4": "Niveau 4, sous un titre de niveau 3"
+          },
+          "default": "h2"
+        },
+        {
+          "name": "title_style",
+          "type": "choice",
+          "label": "Apparence du titre",
+          "choices": {
+            "level": "Selon son niveau",
+            "h1": "Titre 1 du thème",
+            "h2": "Titre 2 du thème",
+            "h3": "Titre 3 du thème",
+            "h4": "Titre 4 du thème",
+            "h5": "Titre 5 du thème",
+            "h6": "Titre 6 du thème"
+          },
+          "default": "level"
         },
         {
           "name": "figures",
@@ -148,6 +202,8 @@
       ],
       "sample": {
         "title": "L’atelier en chiffres",
+        "title_level": "h2",
+        "title_style": "level",
         "figures": [
           {
             "value": "12",
@@ -166,7 +222,7 @@
           }
         ]
       },
-      "template": "<section class=\"figures\">{% if props.title is not empty %}<h2 class=\"figures__title\">{{ props.title }}</h2>{% endif %}<ul class=\"figures__list\">{% for figure in props.figures %}<li class=\"figure\"><span class=\"figure__value\">{{ figure.value }}</span><span class=\"figure__label\">{{ figure.label }}</span>{% if figure.note is not empty %}<span class=\"figure__note\">{{ figure.note }}</span>{% endif %}</li>{% endfor %}</ul></section>",
+      "template": "<section class=\"figures\">{% if props.title is not empty %}{{ cms_component('cms:heading', {text: props.title, level: props.title_level, style: props.title_style}) }}{% endif %}<ul class=\"figures__list\">{% for figure in props.figures %}<li class=\"figure\"><span class=\"figure__value\">{{ figure.value }}</span><span class=\"figure__label\">{{ figure.label }}</span>{% if figure.note is not empty %}<span class=\"figure__note\">{{ figure.note }}</span>{% endif %}</li>{% endfor %}</ul></section>",
       "css": ".figures__title { margin: 0 0 1.5rem; color: var(--cms-color-text); }\n.figures__list { display: grid; gap: 1.5rem; margin: 0; padding: 0; list-style: none; }\n.figure { display: flex; flex-direction: column; gap: 0.25rem; }\n.figure__value { font-size: 2.5rem; font-weight: 700; line-height: 1; color: var(--cms-color-text); }\n.figure__label { font-weight: 700; color: var(--cms-color-text); }\n.figure__note { color: var(--cms-color-text-muted); }\n@media (min-width: 48rem) { .figures__list { grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); } }",
       "provenance": null,
       "status": "ready"
@@ -181,6 +237,32 @@
           "type": "text",
           "label": "Titre",
           "max": 120
+        },
+        {
+          "name": "title_level",
+          "type": "choice",
+          "label": "Niveau du titre",
+          "choices": {
+            "h2": "Niveau 2, une partie de la page",
+            "h3": "Niveau 3, sous un titre de niveau 2",
+            "h4": "Niveau 4, sous un titre de niveau 3"
+          },
+          "default": "h2"
+        },
+        {
+          "name": "title_style",
+          "type": "choice",
+          "label": "Apparence du titre",
+          "choices": {
+            "level": "Selon son niveau",
+            "h1": "Titre 1 du thème",
+            "h2": "Titre 2 du thème",
+            "h3": "Titre 3 du thème",
+            "h4": "Titre 4 du thème",
+            "h5": "Titre 5 du thème",
+            "h6": "Titre 6 du thème"
+          },
+          "default": "level"
         },
         {
           "name": "steps",
@@ -207,6 +289,8 @@
       ],
       "sample": {
         "title": "Comment commander",
+        "title_level": "h2",
+        "title_style": "level",
         "steps": [
           {
             "title": "Vous choisissez",
@@ -222,7 +306,7 @@
           }
         ]
       },
-      "template": "<section class=\"steps\">{% if props.title is not empty %}<h2 class=\"steps__title\">{{ props.title }}</h2>{% endif %}<ol class=\"steps__list\">{% for step in props.steps %}<li class=\"step\"><h3 class=\"step__title\">{{ step.title }}</h3>{% if step.text is not empty %}<p class=\"step__text\">{{ step.text }}</p>{% endif %}</li>{% endfor %}</ol></section>",
+      "template": "<section class=\"steps\">{% if props.title is not empty %}{{ cms_component('cms:heading', {text: props.title, level: props.title_level, style: props.title_style}) }}{% endif %}<ol class=\"steps__list\">{% for step in props.steps %}<li class=\"step\"><h3 class=\"step__title\">{{ step.title }}</h3>{% if step.text is not empty %}<p class=\"step__text\">{{ step.text }}</p>{% endif %}</li>{% endfor %}</ol></section>",
       "css": ".steps__list { display: grid; gap: 1.5rem; padding: 0; list-style: none; counter-reset: step; }\n.step { counter-increment: step; padding-top: 1rem; border-top: 2px solid var(--cms-color-accent); }\n.step__title { margin: 0 0 0.5rem; }\n.step__title::before { content: counter(step) \". \"; }\n.step__text { margin: 0; color: var(--cms-color-text-muted); }\n@media (min-width: 48rem) { .steps__list { grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); } }",
       "provenance": null,
       "status": "ready"
@@ -237,6 +321,32 @@
           "type": "text",
           "label": "Titre",
           "max": 120
+        },
+        {
+          "name": "title_level",
+          "type": "choice",
+          "label": "Niveau du titre",
+          "choices": {
+            "h2": "Niveau 2, une partie de la page",
+            "h3": "Niveau 3, sous un titre de niveau 2",
+            "h4": "Niveau 4, sous un titre de niveau 3"
+          },
+          "default": "h2"
+        },
+        {
+          "name": "title_style",
+          "type": "choice",
+          "label": "Apparence du titre",
+          "choices": {
+            "level": "Selon son niveau",
+            "h1": "Titre 1 du thème",
+            "h2": "Titre 2 du thème",
+            "h3": "Titre 3 du thème",
+            "h4": "Titre 4 du thème",
+            "h5": "Titre 5 du thème",
+            "h6": "Titre 6 du thème"
+          },
+          "default": "level"
         },
         {
           "name": "slides",
@@ -268,6 +378,8 @@
       ],
       "sample": {
         "title": "Dans l’atelier",
+        "title_level": "h2",
+        "title_style": "level",
         "slides": [
           {
             "image": null,
@@ -286,7 +398,7 @@
           }
         ]
       },
-      "template": "<section class=\"carousel\">{% if props.title is not empty %}<h2 class=\"carousel__title\">{{ props.title }}</h2>{% endif %}<div class=\"carousel__viewport\" tabindex=\"0\" role=\"region\"{% if props.title is not empty %} aria-label=\"{{ props.title }}\"{% endif %}><ul class=\"carousel__track\" data-cms-sizes=\"(min-width: 48rem) 40vw, 85vw\">{% for slide in props.slides %}<li class=\"carousel__slide\">{% if slide.image %}<img class=\"carousel__image\" src=\"{{ slide.image }}\" alt=\"{{ slide.alt }}\">{% endif %}{% if slide.caption is not empty %}<p class=\"carousel__caption\">{{ slide.caption }}</p>{% endif %}</li>{% endfor %}</ul></div></section>",
+      "template": "<section class=\"carousel\">{% if props.title is not empty %}{{ cms_component('cms:heading', {text: props.title, level: props.title_level, style: props.title_style}) }}{% endif %}<div class=\"carousel__viewport\" tabindex=\"0\" role=\"region\"{% if props.title is not empty %} aria-label=\"{{ props.title }}\"{% endif %}><ul class=\"carousel__track\" data-cms-sizes=\"(min-width: 48rem) 40vw, 85vw\">{% for slide in props.slides %}<li class=\"carousel__slide\">{% if slide.image %}<img class=\"carousel__image\" src=\"{{ slide.image }}\" alt=\"{{ slide.alt }}\">{% endif %}{% if slide.caption is not empty %}<p class=\"carousel__caption\">{{ slide.caption }}</p>{% endif %}</li>{% endfor %}</ul></div></section>",
       "css": ".carousel__title { margin: 0 0 1rem; color: var(--cms-color-text); }\n.carousel__viewport { position: relative; overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; }\n.carousel__viewport:focus-visible { outline: 2px solid var(--cms-color-text); outline-offset: 2px; }\n.carousel__track { display: flex; gap: 1rem; margin: 0; padding: 0 0 0.5rem; list-style: none; }\n.carousel__slide { flex: 0 0 85%; scroll-snap-align: start; }\n.carousel__image { display: block; width: 100%; height: auto; border-radius: 0.5rem; }\n.carousel__caption { margin: 0.5rem 0 0; color: var(--cms-color-text-muted); }\n@media (min-width: 48rem) { .carousel__slide { flex-basis: 40%; } }",
       "provenance": null,
       "status": "ready"
@@ -301,6 +413,32 @@
           "type": "text",
           "label": "Titre",
           "max": 120
+        },
+        {
+          "name": "title_level",
+          "type": "choice",
+          "label": "Niveau du titre",
+          "choices": {
+            "h2": "Niveau 2, une partie de la page",
+            "h3": "Niveau 3, sous un titre de niveau 2",
+            "h4": "Niveau 4, sous un titre de niveau 3"
+          },
+          "default": "h2"
+        },
+        {
+          "name": "title_style",
+          "type": "choice",
+          "label": "Apparence du titre",
+          "choices": {
+            "level": "Selon son niveau",
+            "h1": "Titre 1 du thème",
+            "h2": "Titre 2 du thème",
+            "h3": "Titre 3 du thème",
+            "h4": "Titre 4 du thème",
+            "h5": "Titre 5 du thème",
+            "h6": "Titre 6 du thème"
+          },
+          "default": "level"
         },
         {
           "name": "questions",
@@ -327,6 +465,8 @@
       ],
       "sample": {
         "title": "Questions fréquentes",
+        "title_level": "h2",
+        "title_style": "level",
         "questions": [
           {
             "question": "Combien de temps dure la fabrication ?",
@@ -342,7 +482,7 @@
           }
         ]
       },
-      "template": "<section class=\"faq\">{% if props.title is not empty %}<h2 class=\"faq__title\">{{ props.title }}</h2>{% endif %}<div class=\"faq__list\">{% for item in props.questions %}<details class=\"faq__item\"><summary class=\"faq__question\">{{ item.question }}</summary><div class=\"faq__answer\">{{ item.answer }}</div></details>{% endfor %}</div></section>",
+      "template": "<section class=\"faq\">{% if props.title is not empty %}{{ cms_component('cms:heading', {text: props.title, level: props.title_level, style: props.title_style}) }}{% endif %}<div class=\"faq__list\">{% for item in props.questions %}<details class=\"faq__item\"><summary class=\"faq__question\">{{ item.question }}</summary><div class=\"faq__answer\">{{ item.answer }}</div></details>{% endfor %}</div></section>",
       "css": ".faq__title { margin: 0 0 1rem; color: var(--cms-color-text); }\n.faq__item { padding: 0.75rem 0; border-bottom: 1px solid var(--cms-color-border); }\n.faq__question { cursor: pointer; font-weight: 700; color: var(--cms-color-text); }\n.faq__answer { padding-top: 0.5rem; color: var(--cms-color-text-muted); }",
       "provenance": null,
       "status": "ready"

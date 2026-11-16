@@ -363,6 +363,49 @@ Flexy, `style` offers `level` and the six headings of the toolkit. 3 trials,
 - The contract of the case does not check the two props; they were read in
   the trials (`var/eval/components/round-12/`).
 
+## Round 13
+
+Played on 2026-11-16, a control of the seed once its components open on the
+heading of the site: Carousel, Faq, ImageText, KeyFigures and Steps no longer
+draw their own `<h2>` but
+`cms_component('cms:heading', {text: props.title, level: props.title_level, style: props.title_style})`,
+as `thelia_cms:components:site-heading` offers them (the class of the old
+heading lost). The nine cases that reuse, copy or draw these components.
+27 trials, 1.61 USD, 10.7 min.
+
+| Case | Trials | Outcomes | Kept the contract | Corrections | Copied a target | Mean cost USD |
+|---|---|---|---|---|---|---|
+| carousel-autoplay | 3 | 3 copy | 3/3 | 0 | 3/3 | 0.128 |
+| compose-quote-figures | 3 | 3 component | 3/3 | 0 | - | 0.060 |
+| compose-steps-faq | 3 | 3 component | 3/3 | 0 | - | 0.061 |
+| compose-text-carousel | 3 | 3 component | 3/3 | 0 | - | 0.055 |
+| figures-bars | 3 | 3 copy | 3/3 | 2 | 3/3 | 0.132 |
+| reuse-faq | 3 | 3 existing | 3/3 | 0 | - | 0.009 |
+| reuse-image-right | 3 | 3 existing | 3/3 | 0 | - | 0.010 |
+| reuse-photo-carousel | 3 | 3 existing | 3/3 | 0 | - | 0.009 |
+| steps-timeline | 3 | 2 component, 1 copy | 3/3 | 0 | 1/1 | 0.073 |
+
+- Every component written (18 trials) opens on the heading of the site; none
+  draws a heading of its own. A copy keeps the call of the component it
+  copies.
+- The reuse cases keep finding the component of the site, for the same cost.
+- figures-bars needed two corrections: a bar drawn with `aria-valuemin`,
+  `aria-valuemax` and `aria-valuenow` on a `<span>`, which a page does not
+  keep, refused and sent back (3 corrections on round 0).
+- carousel-autoplay costs more than on round 0 (0.128 against 0.101 USD):
+  two turns, the copied template is longer by the call.
+- The browser script ran on the 18 components written: no horizontal scroll
+  at 375 and 1440 px, no axe-core violation.
+- In the five components of the seed, the old heading was drawn at the size
+  of body text (16 px, weight 400 on Flexy, whose reset leaves an `h2`
+  unstyled); the heading of the site draws it at the size of an `h2` of the
+  site (26 px on a phone, 36 px at 1440, bold). Measured in the preview of
+  each version, the old `<h2>` put back in place of the call.
+- The heading of the site has no space under it in a component: 0 px to what
+  follows in Carousel, Faq, ImageText and KeyFigures (12 to 24 px before),
+  and in 13 of the 18 components of this round; the others space it through
+  their own layout.
+
 ## Findings
 
 1. **Reuse works and costs nothing.** The 8 `existing` cases (and the
