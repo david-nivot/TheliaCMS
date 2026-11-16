@@ -27,6 +27,7 @@ use TheliaCMS\Content\SectionAvailability;
 use TheliaCMS\Content\SectionCatalog;
 use TheliaCMS\Content\Site\SiteComponent;
 use TheliaCMS\Content\Site\SiteComponentRepository;
+use TheliaCMS\Content\Theme\ThemeSections;
 use TheliaCMS\Generation\Admin\SectionFormBuilder;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Model\CmsPageContentQuery;
@@ -403,6 +404,29 @@ final class SectionEditScreenTest extends AdminScreenTestCase
 
         $draft = (string) CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($this->locale())->findOne()?->getDraftHtml();
         self::assertStringContainsString('<h3 class="cms-heading__text">Nos ateliers en région</h3>', $draft);
+    }
+
+    /**
+     * ADR 18: on Flexy, the form offers the headings of its toolkit next to
+     * the level, and the heading carries the class of the one chosen.
+     */
+    public function testAHeadingTakesAHeadingStyleOfTheThemeWhateverItsLevel(): void
+    {
+        $page = $this->pageWith([new Section('title', HeadingSection::NAME, ['text' => 'Nos ateliers', 'level' => 'h2'])]);
+        $form = $this->screen($this->url($page))->filter('[data-testid="cms-section-edit-title"] form[data-cms-section-form]');
+
+        $styles = $form->filter('[name="cms_section_title[style]"]')->each(static fn (Crawler $field): string => (string) ($field->attr('value') ?? ''));
+        $styles = [] !== array_filter($styles) ? $styles : $form->filter('[name="cms_section_title[style]"] option')->each(static fn (Crawler $option): string => (string) $option->attr('value'));
+        self::assertSame([HeadingSection::LEVEL_STYLE, ...array_keys(ThemeSections::FLEXY_HEADING_STYLES)], array_values(array_filter($styles)), 'The look of the level, then the headings of the toolkit.');
+
+        $values = $form->form()->getPhpValues();
+        $values['cms_section_title']['level'] = 'h3';
+        $values['cms_section_title']['style'] = 'h1';
+
+        self::assertSame(302, $this->send('POST', $form->form()->getUri(), $values));
+
+        $draft = (string) CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($this->locale())->findOne()?->getDraftHtml();
+        self::assertStringContainsString('<h3 class="cms-heading__text cms-heading__text--styled h1">Nos ateliers</h3>', $draft);
     }
 
     public function testALongTextTakesTheWholeLineOfTheFormAndAShortOneHalf(): void

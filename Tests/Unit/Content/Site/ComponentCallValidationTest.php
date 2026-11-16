@@ -64,6 +64,8 @@ final class ComponentCallValidationTest extends TestCase
         yield 'a text for an object' => ['{{ cms_component("Band", {button: props.heading}) }}', 'Line 1: props.heading is of type text, and the prop "button" of Band of type items.'];
         yield 'a level the heading does not offer' => ['{{ cms_component("cms:heading", {text: props.heading, level: "h5"}) }}', 'Line 1: "h5" is written for the prop "level" of cms:heading, which offers h2, h3, h4.'];
         yield 'a choice with a value the heading does not offer' => ['{{ cms_component("cms:heading", {text: props.heading, level: props.size}) }}', 'Line 1: props.size may be h1, which the prop "level" of cms:heading does not offer; it offers h2, h3, h4.'];
+        yield 'a style the heading does not offer' => ['{{ cms_component("cms:heading", {text: props.heading, style: "h1"}) }}', 'Line 1: "h1" is written for the prop "style" of cms:heading, which offers level.'];
+        yield 'a choice of styles the heading does not offer' => ['{{ cms_component("cms:heading", {text: props.heading, style: props.look}) }}', 'Line 1: props.look may be display, which the prop "style" of cms:heading does not offer; it offers level.'];
         yield 'rows with a field of another type' => ['{{ cms_component("Carousel", {slides: props.wrong}) }}', 'Line 1: "image" of the rows of props.wrong is of type text, and Carousel reads it as of type image.'];
     }
 
@@ -100,7 +102,7 @@ final class ComponentCallValidationTest extends TestCase
         $carousel = new SiteComponent('Carousel', 'Carousel', 'Photos in a row.', self::CAROUSEL_PROPS, ['title' => 'Photos', 'slides' => [['image' => 'https://example.com/a.jpg', 'alt' => 'A']]], '{{ cms_component("cms:heading", {text: props.title, level: "h3"}) }}<section>{% for slide in props.slides %}<img src="{{ slide.image }}" alt="{{ slide.alt }}">{% endfor %}</section>');
 
         self::assertSame('Carousel', $this->validator()->validate($carousel)->code, 'Gallery draws it, and it draws a heading.');
-        self::assertSame('Row', $this->validator()->validate($this->row('{{ cms_component("Titled", {said: props.heading}) }}{{ cms_component("cms:heading", {text: props.heading, level: props.level}) }}'))->code, 'Titled draws a heading only.');
+        self::assertSame('Row', $this->validator()->validate($this->row('{{ cms_component("Titled", {said: props.heading}) }}{{ cms_component("cms:heading", {text: props.heading, level: props.level, style: props.plain}) }}'))->code, 'Titled draws a heading only; the editor sets the level and the look of the other (ADR 18).');
     }
 
     public function testTheProductsAPageStoresAreHandedOnToAComponentThatShowsProducts(): void
@@ -138,6 +140,8 @@ final class ComponentCallValidationTest extends TestCase
             ['name' => 'section', 'type' => 'reference', 'label' => 'Category', 'record' => 'category'],
             ['name' => 'size', 'type' => 'choice', 'label' => 'Size', 'choices' => ['h1' => 'Large', 'h2' => 'Medium'], 'default' => 'h2'],
             ['name' => 'level', 'type' => 'choice', 'label' => 'Level', 'choices' => ['h2' => 'Part', 'h3' => 'Sub-part'], 'default' => 'h2'],
+            ['name' => 'look', 'type' => 'choice', 'label' => 'Look', 'choices' => ['level' => 'Its level', 'display' => 'Display'], 'default' => 'level'],
+            ['name' => 'plain', 'type' => 'choice', 'label' => 'Look', 'choices' => ['level' => 'Its level'], 'default' => 'level'],
             ['name' => 'cta', 'type' => 'items', 'label' => 'Button', 'max' => 1, 'items' => [['name' => 'href', 'type' => 'url', 'label' => 'Address', 'required' => true], ['name' => 'label', 'type' => 'text', 'label' => 'Label', 'required' => true]]],
         ], ['heading' => 'Photos', 'body' => '<p>Hello</p>', 'photos' => [['image' => 'https://example.com/a.jpg', 'alt' => 'A']]], '<div class="row"><h2>{{ props.heading }}</h2>'.$call.'</div>');
     }

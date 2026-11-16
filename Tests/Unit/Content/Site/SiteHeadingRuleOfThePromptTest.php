@@ -30,7 +30,8 @@ final class SiteHeadingRuleOfThePromptTest extends TestCase
     {
         $rule = ComponentPrompt::SITE_HEADING_RULE;
 
-        self::assertStringContainsString("cms_component('".HeadingSection::NAME."', {text: props.title, level: 'h2'})", $rule);
+        self::assertStringContainsString("cms_component('".HeadingSection::NAME."', {text: props.title, level: props.title_level, style: props.title_style})", $rule, 'The editor sets the level and the look of the heading (ADR 18).');
+        self::assertStringContainsString('`'.HeadingSection::LEVEL_STYLE.'` by default', $rule);
         self::assertStringContainsString('{% if props.title is not empty %}', $rule, 'A heading without words draws nothing and is not called.');
         self::assertStringContainsString('`h3`', $rule, 'The heading of a card or a row stays the component\'s own.');
     }

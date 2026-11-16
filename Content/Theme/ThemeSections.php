@@ -16,6 +16,7 @@ namespace TheliaCMS\Content\Theme;
 
 use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Yaml;
+use TheliaCMS\Content\HeadingSection;
 
 /**
  * What a front-office theme says about the components a page may be made of.
@@ -66,6 +67,21 @@ use Symfony\Component\Yaml\Yaml;
  * address, so the generator and a section added by hand start with the
  * picture empty. An id or an https address is kept as it is.
  *
+ * `heading_styles` names the looks of its headings a heading of the page
+ * (`cms:heading`) may take, whatever its level: a value of lowercase letters,
+ * digits, hyphens and underscores, the label the editor picks it by, and the
+ * classes the heading then carries:
+ *
+ *     sections:
+ *         heading_styles:
+ *             display:
+ *                 label: Display
+ *                 class: h1
+ *
+ * A theme that declares none and is Flexy, or a child of it, gets the six
+ * headings of the Flexy toolkit (`h1` to `h6`), which Flexy 1.3.0 does not
+ * declare.
+ *
  * Nothing is opened by default: a component of a shop — a cart line, a
  * checkout step — makes no sense on a page, and the theme is the one that
  * knows which ones do. A child theme inherits the list of its parent unless it
@@ -75,12 +91,31 @@ final readonly class ThemeSections
 {
     public const string FILE_NAME = 'config/theliacms.yaml';
 
+    /** The directory name of the Flexy theme, which its children name as their parent. */
+    public const string FLEXY = 'flexy';
+
     /**
-     * @param list<string>                        $components
-     * @param list<string>                        $hidden
-     * @param array<string, array<string, mixed>> $examples      props as the component names them, by component
-     * @param string|null                         $richTextClass the classes the theme styles written text with, added to the free text sections
-     * @param list<string>                        $controllers   the identifiers of the Stimulus controllers the components wire themselves with
+     * The headings of the Flexy toolkit (`components/Atoms/Typography`), each
+     * a utility of its own whatever the element.
+     *
+     * @var array<string, array{label: string, class: string}>
+     */
+    public const array FLEXY_HEADING_STYLES = [
+        'h1' => ['label' => 'Heading 1 of the theme', 'class' => 'h1'],
+        'h2' => ['label' => 'Heading 2 of the theme', 'class' => 'h2'],
+        'h3' => ['label' => 'Heading 3 of the theme', 'class' => 'h3'],
+        'h4' => ['label' => 'Heading 4 of the theme', 'class' => 'h4'],
+        'h5' => ['label' => 'Heading 5 of the theme', 'class' => 'h5'],
+        'h6' => ['label' => 'Heading 6 of the theme', 'class' => 'h6'],
+    ];
+
+    /**
+     * @param list<string>                                       $components
+     * @param list<string>                                       $hidden
+     * @param array<string, array<string, mixed>>                $examples      props as the component names them, by component
+     * @param string|null                                        $richTextClass the classes the theme styles written text with, added to the free text sections
+     * @param list<string>                                       $controllers   the identifiers of the Stimulus controllers the components wire themselves with
+     * @param array<string, array{label: string, class: string}> $headingStyles the looks a heading of the page may take, by value
      */
     public function __construct(
         public array $components = [],
@@ -88,6 +123,7 @@ final readonly class ThemeSections
         public array $examples = [],
         public ?string $richTextClass = null,
         public array $controllers = [],
+        public array $headingStyles = [],
     ) {
     }
 
@@ -98,19 +134,41 @@ final readonly class ThemeSections
      */
     public static function declaredIn(array $themeDirectories): self
     {
+        $declaration = new self();
+
         foreach ($themeDirectories as $directory) {
             $declared = self::readFrom($directory);
 
             if (null !== $declared) {
-                return new self($declared['components'], $declared['hidden'], $declared['examples'], $declared['richtext_class'], $declared['controllers']);
+                $declaration = new self($declared['components'], $declared['hidden'], $declared['examples'], $declared['richtext_class'], $declared['controllers'], $declared['heading_styles']);
+
+                break;
             }
         }
 
-        return new self();
+        if ([] !== $declaration->headingStyles || !self::isFlexy($themeDirectories)) {
+            return $declaration;
+        }
+
+        return new self($declaration->components, $declaration->hidden, $declaration->examples, $declaration->richTextClass, $declaration->controllers, self::FLEXY_HEADING_STYLES);
     }
 
     /**
-     * @return array{components: list<string>, hidden: list<string>, examples: array<string, array<string, mixed>>, richtext_class: string|null, controllers: list<string>}|null null when the theme declares nothing
+     * @param list<string> $themeDirectories
+     */
+    private static function isFlexy(array $themeDirectories): bool
+    {
+        foreach ($themeDirectories as $directory) {
+            if (self::FLEXY === basename(rtrim($directory, '/\\'))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return array{components: list<string>, hidden: list<string>, examples: array<string, array<string, mixed>>, richtext_class: string|null, controllers: list<string>, heading_styles: array<string, array{label: string, class: string}>}|null null when the theme declares nothing
      */
     private static function readFrom(string $themeDirectory): ?array
     {
@@ -142,7 +200,52 @@ final readonly class ThemeSections
             'examples' => self::examples($sections['examples'] ?? [], $file),
             'richtext_class' => self::classes($sections['richtext_class'] ?? null, $file),
             'controllers' => self::controllers($sections['controllers'] ?? null, $file),
+            'heading_styles' => self::headingStyles($sections['heading_styles'] ?? null, $file),
         ];
+    }
+
+    /**
+     * Values a prop of a component may hold (`[a-z0-9_-]`), each with its
+     * label and its classes, which end up on a heading of the page.
+     *
+     * @return array<string, array{label: string, class: string}>
+     */
+    private static function headingStyles(mixed $styles, string $file): array
+    {
+        if (null === $styles) {
+            return [];
+        }
+
+        if (!\is_array($styles) || ([] !== $styles && array_is_list($styles))) {
+            throw new \InvalidArgumentException(\sprintf('The "sections.heading_styles" key of %s must map a value to its label and its class.', $file));
+        }
+
+        $read = [];
+
+        foreach ($styles as $value => $style) {
+            $value = (string) $value;
+
+            if (1 !== preg_match('/^[a-z0-9][a-z0-9_-]{0,39}$/', $value) || HeadingSection::LEVEL_STYLE === $value) {
+                throw new \InvalidArgumentException(\sprintf('"%s" in the "sections.heading_styles" key of %s is not a value of lowercase letters, digits, hyphens and underscores other than "%s".', $value, $file, HeadingSection::LEVEL_STYLE));
+            }
+
+            if (!\is_array($style) || !\is_string($style['label'] ?? null) || '' === trim($style['label']) || !\is_string($style['class'] ?? null)) {
+                throw new \InvalidArgumentException(\sprintf('The heading style "%s" of %s needs a "label" and a "class".', $value, $file));
+            }
+
+            $read[$value] = ['label' => trim($style['label']), 'class' => self::headingClass($style['class'], $value, $file)];
+        }
+
+        return $read;
+    }
+
+    private static function headingClass(string $class, string $value, string $file): string
+    {
+        if (1 !== preg_match('/^[A-Za-z0-9_:\/\[\]\.-]+( [A-Za-z0-9_:\/\[\]\.-]+)*$/', trim($class))) {
+            throw new \InvalidArgumentException(\sprintf('The class of the heading style "%s" of %s must be class names separated by spaces, such as "h1".', $value, $file));
+        }
+
+        return trim($class);
     }
 
     /**

@@ -30,7 +30,7 @@ component refuses, is rejected on the way in, every problem listed at once
 | Family | Names | Where they come from |
 |---|---|---|
 | Free text | `cms:richtext` | The module. A piece of markup as is, filtered on the rendered page like everything that goes online. |
-| Heading | `cms:heading` | The module. A heading on its own between two sections (`text`, 120 characters), at the level the editor chooses: `h2` (by default), `h3` or `h4`, never `h1`, which is the title of the page (ADR 10). Styled like the headings of the free text, under the class the theme names for it; the heading check of the publication reads its level like any other. |
+| Heading | `cms:heading` | The module. A heading on its own between two sections (`text`, 120 characters), at the level the editor chooses: `h2` (by default), `h3` or `h4`, never `h1`, which is the title of the page (ADR 10). Its `style`, chosen apart from the level, is one of the heading styles of the theme (below, ADR 18), or by default the look of the headings of the free text at its level, under the class the theme names for it; the heading check of the publication reads its level like any other. |
 | Columns | `cms:columns` | The module. Two to four columns side by side, each an image (of the media library or an `https` address) over an optional heading and a short text, drawn with the grid of `blocks.css` and stacked below 48rem. |
 | Highlights | `cms:highlights` | The module. A band of one to three blocks, the first one the large one, each a picture under a title, a catchphrase and a button, with an optional picture for a screen narrower than 1024px (see [Highlights](#highlights)). |
 | Image | `cms:image` | The module. One picture (of the media library or an `https` address) with an optional caption, at the width of the reading column (by default), of the content, of the whole screen or at a size in pixels set by the editor, with an optional frame and the part of the picture kept (see [The size and the framing of an image](#the-size-and-the-framing-of-an-image)); nothing is drawn while no image is chosen. |
@@ -453,6 +453,31 @@ or numbers and its headings the size of a paragraph. The class is written
 when a page is rendered, at its save: a page saved before the theme named it
 keeps its old rendering until it is saved or published again, or until
 `thelia_cms:render` renders its draft again.
+
+The same file names the heading styles a heading section (`cms:heading`)
+may take, whatever its level: a value of lowercase letters, digits, hyphens
+and underscores, the label the editor picks it by, and the classes the
+heading then carries instead of those of the free text:
+
+```yaml
+sections:
+    heading_styles:
+        display:
+            label: Display
+            class: h1
+        kicker:
+            label: Kicker
+            class: indication
+```
+
+`level` is the style by default, the look of the level, and cannot be
+declared. A theme that declares none and is Flexy, or a child of it, gets
+the six headings of the Flexy toolkit (`h1` to `h6`, the utilities of
+`components/Atoms/Typography`); any other theme offers the look of the level
+only. A style the theme no longer declares falls back on the look of the
+level when the page is read again. A component of the site that opens with a
+heading hands two `choice` props of its own to it, `title_level` and
+`title_style`, which offer no value the heading does not (ADR 18).
 
 The same file may give a component the props the toolkit shows it with,
 which the generator is shown and a section added by hand starts from:

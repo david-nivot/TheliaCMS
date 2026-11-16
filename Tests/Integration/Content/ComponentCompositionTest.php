@@ -102,7 +102,7 @@ final class ComponentCompositionTest extends AdminScreenTestCase
         $lines = explode("\n", $this->getService(ComponentPrompt::class)->userMessage(new ComponentRequest('Un titre.', $this->locale())));
         $after = static fn (string $name): string => $lines[(int) array_search(true, array_map(static fn (string $line): bool => str_starts_with($line, '- `'.$name.'`'), $lines), true) + 1];
 
-        self::assertSame("  Drawable: `cms_component('cms:heading', {…})`, props `text` (text, required), `level` (one of `h2`, `h3`, `h4`).", $after('cms:heading'));
+        self::assertSame("  Drawable: `cms_component('cms:heading', {…})`, props `text` (text, required), `level` (one of `h2`, `h3`, `h4`), `style` (one of `level`, `h1`, `h2`, `h3`, `h4`, `h5`, `h6`).", $after('cms:heading'), 'On Flexy, the styles of its toolkit (ADR 18).');
         self::assertStringContainsString('Drawable', $after('Site:TitledQuote'), 'Drawing a heading keeps it drawable.');
     }
 
