@@ -34,6 +34,11 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Changed
 
+- **The files waiting on the screen that prepares an SVG weigh 200 MB at
+  most together**: past that, the files used least recently leave first,
+  never the one being prepared, and a prepared result that does not fit is
+  prepared again when it is asked for.
+
 - **The base optimization writes each path in its shorter notation**: every
   command of a path takes the shorter of its absolute and relative forms,
   weighed over the whole path, and a line that keeps a coordinate becomes a

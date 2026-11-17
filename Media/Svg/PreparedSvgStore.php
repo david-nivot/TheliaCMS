@@ -30,6 +30,9 @@ final readonly class PreparedSvgStore
 {
     public const int LIFETIME_IN_SECONDS = 3600;
 
+    /** The files waiting, their names and their results weigh no more than this together. */
+    public const int MAXIMUM_TOTAL_BYTES = 200 * 1024 * 1024;
+
     private const string TOKEN_PATTERN = '/^[a-f0-9]{32}\z/';
 
     /** The setting a result was prepared with: a level name, or `base`. */
@@ -45,6 +48,7 @@ final readonly class PreparedSvgStore
     public function __construct(
         #[Autowire('%kernel.project_dir%/var/theliacms/prepared-svg')]
         string $directory,
+        private int $maximumBytes = self::MAXIMUM_TOTAL_BYTES,
     ) {
         $this->directory = rtrim($directory, \DIRECTORY_SEPARATOR);
     }
@@ -64,6 +68,8 @@ final readonly class PreparedSvgStore
         $this->purge();
 
         $token = bin2hex(random_bytes(16));
+        // The file sent is written even past the ceiling: the screen needs it.
+        $this->makeRoom(\strlen($content) + \strlen($name), $token);
         $filesystem->dumpFile($this->contentPath($token), $content);
         $filesystem->dumpFile($this->namePath($token), $name);
 
@@ -97,6 +103,11 @@ final readonly class PreparedSvgStore
     public function remember(string $token, string $setting, string $result): void
     {
         if (!self::isToken($token) || 1 !== preg_match(self::SETTING_PATTERN, $setting) || !is_file($this->contentPath($token))) {
+            return;
+        }
+
+        // A result is only a shortcut: one that does not fit is prepared again.
+        if (!$this->makeRoom(\strlen($result), $token)) {
             return;
         }
 
@@ -157,6 +168,11 @@ final readonly class PreparedSvgStore
             // else that old is left from a write that stopped halfway.
             str_ends_with($path, '.svg') ? $this->forget(basename($path, '.svg')) : @unlink($path);
         }
+    }
+
+    private function makeRoom(int $incomingBytes, string $token): bool
+    {
+        return (new CacheCeiling())->makeRoom($this->directory, $this->maximumBytes, $incomingBytes, $token, $this->forget(...));
     }
 
     private function hasExpired(string $path): bool

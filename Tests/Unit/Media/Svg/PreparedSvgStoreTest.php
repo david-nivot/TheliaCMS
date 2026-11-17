@@ -27,6 +27,13 @@ final class PreparedSvgStoreTest extends TestCase
         $this->root = sys_get_temp_dir().'/theliacms-store-test-'.bin2hex(random_bytes(4));
     }
 
+    private function age(string $token, int $seconds): void
+    {
+        foreach (glob($this->root.'/waiting/'.$token.'.*') ?: [] as $path) {
+            touch($path, time() - $seconds);
+        }
+    }
+
     protected function tearDown(): void
     {
         (new Filesystem())->remove($this->root);
@@ -43,6 +50,32 @@ final class PreparedSvgStoreTest extends TestCase
         self::assertNotNull($file);
         self::assertSame('logo.svg', $file->name);
         self::assertSame('<svg xmlns="http://www.w3.org/2000/svg"/>', $file->content);
+    }
+
+    public function testTheFilesUsedLeastRecentlyLeaveToStayUnderTheCeiling(): void
+    {
+        $store = new PreparedSvgStore($this->root.'/waiting', 100);
+        $first = $store->put(str_repeat('a', 40), 'a.svg');
+        $this->age($first, 100);
+        $second = $store->put(str_repeat('b', 40), 'b.svg');
+        $this->age($second, 50);
+
+        $third = $store->put(str_repeat('c', 40), 'c.svg');
+
+        self::assertNull($store->find($first), 'The oldest file left.');
+        self::assertNotNull($store->find($second));
+        self::assertNotNull($store->find($third));
+    }
+
+    public function testAResultThatDoesNotFitIsNotKeptAndItsFileStays(): void
+    {
+        $store = new PreparedSvgStore($this->root.'/waiting', 100);
+        $token = $store->put(str_repeat('a', 40), 'a.svg');
+
+        $store->remember($token, 'base', str_repeat('r', 80));
+
+        self::assertNull($store->result($token, 'base'));
+        self::assertNotNull($store->find($token), 'The file being prepared is never the one that leaves.');
     }
 
     public function testAFileOlderThanAnHourIsGoneAndRemovedWhenItIsRead(): void
