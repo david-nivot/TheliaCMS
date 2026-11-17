@@ -136,40 +136,48 @@
                             </div>
                         </div>
 
-                        <div class="row g-3" style="--cms-svg-width: {{ result.width }}px; --cms-svg-height: {{ result.height }}px">
-                            <div class="col-sm-6">
-                                <figure class="mb-0">
-                                    <div class="cms-svg-frame border rounded" data-cms-svg-frame>
-                                        <div class="cms-svg-canvas"><img src="{{ path('admin.cms.media.svg.original', { token: file.token }) }}" alt="" data-testid="cms-svg-original"></div>
-                                    </div>
-                                    <figcaption class="small mt-2 text-center">{{ 'Original'|trans({}, 'theliacms') }} · <strong>{{ original_weight }}</strong></figcaption>
-                                </figure>
-                            </div>
-                            <div class="col-sm-6">
-                                <figure class="mb-0">
-                                    <div class="cms-svg-frame border rounded" data-cms-svg-frame>
-                                        {# A color that follows the text is drawn black in an image: the
-                                           result is drawn once per text color, the one chosen shown. #}
-                                        <div class="cms-svg-canvas">
-                                            <img class="cms-svg-result cms-svg-result--theme" src="{{ path('admin.cms.media.svg.result', { token: file.token, level: level, tint: 'accent' }|merge(color_values)|filter(value => value != '')) }}" alt="" data-testid="cms-svg-result">
-                                            <img class="cms-svg-result cms-svg-result--black" src="{{ path('admin.cms.media.svg.result', { token: file.token, level: level, tint: 'light' }|merge(color_values)|filter(value => value != '')) }}" alt="" data-testid="cms-svg-result-black">
-                                            <img class="cms-svg-result cms-svg-result--white" src="{{ path('admin.cms.media.svg.result', { token: file.token, level: level, tint: 'dark' }|merge(color_values)|filter(value => value != '')) }}" alt="" data-testid="cms-svg-result-white">
-                                        </div>
-                                    </div>
-                                    <figcaption class="small mt-2 text-center">
-                                        {{ 'Result'|trans({}, 'theliacms') }} · <strong>{{ result_weight }}</strong>
-                                        <span data-testid="cms-svg-gain">
-                                            {% if result.savedBytes > 0 %}
-                                                <span class="text-success fw-semibold" title="{{ '%percent% % lighter (%weight% saved)'|trans({ '%percent%': result.savedPercent, '%weight%': saved_weight }, 'theliacms') }}">{{ '−%percent% %'|trans({ '%percent%': result.savedPercent }, 'theliacms') }}</span>
-                                            {% elseif result.savedBytes < 0 %}
-                                                <span class="text-warning-emphasis">{{ '%weight% heavier'|trans({ '%weight%': saved_weight }, 'theliacms') }}</span>
+                        {# The original and the versions of the drawing, each in a frame
+                           that scrolls. Lossless, the base optimization, is the result
+                           the editor stores unless a level is checked below; in the lossy
+                           mode every version has the same size, the original and the
+                           one checked set apart, and none of them is clickable. #}
+                        {% set items = [{ key: 'original' }]|merge(lossy ? previews : [previews|first]) %}
+                        <div class="row g-3" style="--cms-svg-width: {{ result.width }}px; --cms-svg-height: {{ result.height }}px" {% if lossy %}data-testid="cms-svg-level-previews"{% endif %}>
+                            {% for item in items %}
+                                {% set is_original = item.key == 'original' %}
+                                {% set is_lossless = item.key == 'lossless' %}
+                                {% set marked = lossy and (is_original or item.selected) %}
+                                <div class="{{ lossy ? 'col-12 col-sm-6 col-lg-4' : 'col-sm-6' }}">
+                                    <figure class="mb-0" data-testid="{{ is_original ? 'cms-svg-preview-original' : (is_lossless ? 'cms-svg-preview-lossless' : 'cms-svg-level-preview-' ~ item.key) }}">
+                                        <div class="cms-svg-frame border rounded {{ marked ? (is_original ? 'border-dark' : 'border-primary') ~ ' border-2' : '' }}" data-cms-svg-frame>
+                                            {% if is_original %}
+                                                <div class="cms-svg-canvas"><img src="{{ path('admin.cms.media.svg.original', { token: file.token }) }}" alt="" data-testid="cms-svg-original"></div>
                                             {% else %}
-                                                <span class="text-body-secondary">{{ 'No weight saved.'|trans({}, 'theliacms') }}</span>
+                                                {# A color that follows the text is drawn black in an image: the
+                                                   version is drawn once per text color, the one chosen shown. #}
+                                                <div class="cms-svg-canvas">
+                                                    <img class="cms-svg-result cms-svg-result--theme" src="{{ path('admin.cms.media.svg.result', { token: file.token, level: item.level, tint: 'accent' }|merge(item.color_values)|filter(value => value != '')) }}" alt="" {% if is_lossless %}data-testid="cms-svg-result"{% endif %}>
+                                                    <img class="cms-svg-result cms-svg-result--black" src="{{ path('admin.cms.media.svg.result', { token: file.token, level: item.level, tint: 'light' }|merge(item.color_values)|filter(value => value != '')) }}" alt="" {% if is_lossless %}data-testid="cms-svg-result-black"{% endif %}>
+                                                    <img class="cms-svg-result cms-svg-result--white" src="{{ path('admin.cms.media.svg.result', { token: file.token, level: item.level, tint: 'dark' }|merge(item.color_values)|filter(value => value != '')) }}" alt="" {% if is_lossless %}data-testid="cms-svg-result-white"{% endif %}>
+                                                </div>
                                             {% endif %}
-                                        </span>
-                                    </figcaption>
-                                </figure>
-                            </div>
+                                        </div>
+                                        <figcaption class="small mt-2 text-center">
+                                            {% if is_original %}
+                                                {{ 'Original'|trans({}, 'theliacms') }} · <strong>{{ original_weight }}</strong>
+                                            {% else %}
+                                                {{ item.label|trans({}, 'theliacms') }} · <strong {% if not is_lossless %}data-testid="cms-svg-level-preview-weight"{% endif %}>{{ item.weight }}</strong>
+                                                <span data-testid="{{ is_lossless ? 'cms-svg-gain' : 'cms-svg-level-preview-gain' }}">
+                                                    {% include '@TheliaCMSModule/backOffice/default-twig/media/_svg_gain.html.twig' with { result: item.result, saved_weight: item.saved_weight } only %}
+                                                </span>
+                                            {% endif %}
+                                        </figcaption>
+                                    </figure>
+                                </div>
+                                {# Side by side, the original and Lossless leave the third place
+                                   empty, so that the three levels share the next line. #}
+                                {% if lossy and is_lossless %}<div class="col-lg-4 d-none d-lg-block" aria-hidden="true" data-testid="cms-svg-previews-gap"></div>{% endif %}
+                            {% endfor %}
                         </div>
 
                         {# The result at the size of a line of text, where a color that
@@ -239,7 +247,7 @@
                                    belongs to the form of the file below, and follows the preview
                                    in a hidden field. #}
                                 <form method="get" action="{{ path('admin.cms.media.svg.show', { token: file.token }) }}" data-testid="cms-svg-usage-form" data-cms-svg-autosubmit>
-                                    {% for name, value in carried|merge({ level: level })|merge(color_carry)|merge({ colors_touched: colors_touched ? '1' : '0' })|filter(value => value != '') %}
+                                    {% for name, value in carried|merge({ level: level, lossy: lossy ? '1' : '' })|merge(color_carry)|merge({ colors_touched: colors_touched ? '1' : '0' })|filter(value => value != '') %}
                                         <input type="hidden" name="{{ name }}" value="{{ value }}">
                                     {% endfor %}
                                     <input type="hidden" name="icon_name" value="{{ icon_chosen ? icon_name : '' }}" data-cms-svg-carry="icon_name">
@@ -331,42 +339,73 @@
                 <details class="card" open data-testid="cms-svg-optimization">
                     <summary class="card-header fw-semibold">
                         {{ first_step + 1 }}. {{ 'Optimization'|trans({}, 'theliacms') }}
-                        <small class="float-end fw-normal text-body-secondary">{{ 'lossless · required'|trans({}, 'theliacms') }}</small>
+                        <small class="float-end fw-normal text-body-secondary" data-testid="cms-svg-optimization-state">
+                            {% set checked_level = lossy and level != '' ? levels|filter(option => option.name == level)|first : null %}
+                            {{ (checked_level is null ? 'lossless' : checked_level.label)|trans({}, 'theliacms') }}
+                        </small>
                     </summary>
                     <div class="card-body">
                         <p class="small">{{ 'The base optimization is always applied, without any change to how the file looks: titles and descriptions, unused identifiers, editor data, empty or hidden elements, default attributes, needless spaces and digits leave it.'|trans({}, 'theliacms') }}</p>
                         {% if levels is empty %}
                             <p class="small text-body-secondary" data-testid="cms-svg-only-method">{{ 'It is the only method available for now; others may be added later.'|trans({}, 'theliacms') }}</p>
-                        {% endif %}
-
-
-                        {% if levels is not empty %}
-                            {# The setting is previewed by a form of its own, which reads the
-                               address and sends nothing else: the buttons of the file below
-                               keep their own form. #}
-                            <form method="get" action="{{ path('admin.cms.media.svg.show', { token: file.token }) }}" class="mt-3" data-testid="cms-svg-levels">
-                                {% for name, value in carried|merge(color_carry)|merge({ colors_touched: colors_touched ? '1' : '0' }) %}
+                        {% else %}
+                            {# The mode is read by a form of its own, which reloads the screen
+                               as the switch is flipped; leaving it drops the level. #}
+                            <form method="get" action="{{ path('admin.cms.media.svg.show', { token: file.token }) }}" class="mt-3" data-testid="cms-svg-lossy-form" data-cms-svg-autosubmit>
+                                {% for name, value in carried|merge(color_carry)|merge({ colors_touched: colors_touched ? '1' : '0' })|filter(value => value != '') %}
                                     <input type="hidden" name="{{ name }}" value="{{ value }}">
                                 {% endfor %}
                                 {% include '@TheliaCMSModule/backOffice/default-twig/media/_svg_usage_carry.html.twig' %}
-                                <fieldset class="mb-2">
-                                    <legend class="fs-6">{{ 'Further optimization'|trans({}, 'theliacms') }}</legend>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="level" id="cms-svg-level-none" value="" {{ level == '' ? 'checked' : '' }}>
-                                        <label class="form-check-label" for="cms-svg-level-none">{{ 'None'|trans({}, 'theliacms') }}</label>
-                                    </div>
-                                    {% for option in levels %}
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" name="lossy" id="cms-svg-lossy" value="1" {{ lossy ? 'checked' : '' }} {{ lossy_too_detailed ? 'disabled' : '' }} data-testid="cms-svg-lossy">
+                                    <label class="form-check-label" for="cms-svg-lossy">{{ 'Lossy optimization'|trans({}, 'theliacms') }}</label>
+                                </div>
+                                {% if lossy_too_detailed %}
+                                    <p class="small text-body-secondary mt-1 mb-0" data-testid="cms-svg-lossy-unavailable">{{ 'Not available for a drawing this detailed. It can be optimized with an external tool before it is imported.'|trans({}, 'theliacms') }}</p>
+                                {% else %}
+                                    <p class="small text-body-secondary mt-1 mb-0">{{ 'Computes three lighter versions of the drawing, which may change how it looks.'|trans({}, 'theliacms') }}</p>
+                                {% endif %}
+                                <noscript><button type="submit" class="btn btn-sm btn-outline-secondary mt-2">{{ 'Preview this setting'|trans({}, 'theliacms') }}</button></noscript>
+                            </form>
+
+                            {% if lossy %}
+                                {# The level is read by a form of its own, which reloads the
+                                   screen at each choice; the buttons of the file below keep
+                                   their own form. #}
+                                <form method="get" action="{{ path('admin.cms.media.svg.show', { token: file.token }) }}" class="mt-3" data-testid="cms-svg-levels" data-cms-svg-autosubmit>
+                                    {% for name, value in carried|merge(color_carry)|merge({ colors_touched: colors_touched ? '1' : '0', lossy: '1' })|filter(value => value != '') %}
+                                        <input type="hidden" name="{{ name }}" value="{{ value }}">
+                                    {% endfor %}
+                                    {% include '@TheliaCMSModule/backOffice/default-twig/media/_svg_usage_carry.html.twig' %}
+                                    {# The weight and the gain of each version, as under its preview. #}
+                                    {% set figures = {} %}
+                                    {% for preview in previews %}{% set figures = figures|merge({ (preview.key): preview }) %}{% endfor %}
+                                    <fieldset>
+                                        <legend class="visually-hidden">{{ 'Lossy optimization'|trans({}, 'theliacms') }}</legend>
                                         <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="level" id="cms-svg-level-{{ option.name }}" value="{{ option.name }}" {{ level == option.name ? 'checked' : '' }}>
-                                            <label class="form-check-label" for="cms-svg-level-{{ option.name }}">
-                                                {{ option.label|trans({}, 'theliacms') }}
-                                                {% if option.changesRendering %}<span class="badge text-bg-warning">{{ 'May change how it looks'|trans({}, 'theliacms') }}</span>{% endif %}
+                                            <input class="form-check-input" type="radio" name="level" id="cms-svg-level-lossless" value="" {{ level == '' ? 'checked' : '' }}>
+                                            <label class="form-check-label d-flex justify-content-between gap-2" for="cms-svg-level-lossless">
+                                                {{ 'Lossless'|trans({}, 'theliacms') }}
+                                                {% if figures.lossless is defined %}<span class="small text-nowrap" data-testid="cms-svg-level-figures-lossless"><strong>{{ figures.lossless.weight }}</strong> {% include '@TheliaCMSModule/backOffice/default-twig/media/_svg_gain.html.twig' with { result: figures.lossless.result, saved_weight: figures.lossless.saved_weight } only %}</span>{% endif %}
                                             </label>
                                         </div>
-                                    {% endfor %}
-                                </fieldset>
-                                <button type="submit" class="btn btn-sm btn-outline-secondary">{{ 'Preview this setting'|trans({}, 'theliacms') }}</button>
-                            </form>
+                                        {% for option in levels %}
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="level" id="cms-svg-level-{{ option.name }}" value="{{ option.name }}" {{ level == option.name ? 'checked' : '' }}>
+                                                <label class="form-check-label d-flex justify-content-between gap-2" for="cms-svg-level-{{ option.name }}">
+                                                    {{ option.label|trans({}, 'theliacms') }}
+                                                    {% if figures[option.name] is defined %}<span class="small text-nowrap" data-testid="cms-svg-level-figures-{{ option.name }}"><strong>{{ figures[option.name].weight }}</strong> {% include '@TheliaCMSModule/backOffice/default-twig/media/_svg_gain.html.twig' with { result: figures[option.name].result, saved_weight: figures[option.name].saved_weight } only %}</span>{% endif %}
+                                                </label>
+                                            </div>
+                                        {% endfor %}
+                                    </fieldset>
+                                    <noscript><button type="submit" class="btn btn-sm btn-outline-secondary mt-2">{{ 'Preview this setting'|trans({}, 'theliacms') }}</button></noscript>
+                                </form>
+                            {% endif %}
+                            {# Shown while the page reloads: the three versions take some seconds. #}
+                            <p class="small text-body-secondary mt-3 mb-0" role="status" hidden data-testid="cms-svg-computing">
+                                <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>{{ 'Computing the three versions…'|trans({}, 'theliacms') }}
+                            </p>
                         {% endif %}
                     </div>
                 </details>
@@ -396,7 +435,7 @@
                             {# Each choice shows its preview at once; the buttons of the file
                                below keep their own form. #}
                             <form method="get" action="{{ path('admin.cms.media.svg.show', { token: file.token }) }}" class="d-flex flex-column gap-3" data-testid="cms-svg-presets" data-cms-svg-autosubmit>
-                                {% for name, value in carried|merge({ level: level })|filter(value => value != '') %}
+                                {% for name, value in carried|merge({ level: level, lossy: lossy ? '1' : '' })|filter(value => value != '') %}
                                     <input type="hidden" name="{{ name }}" value="{{ value }}">
                                 {% endfor %}
                                 {# A change of this form is the editor's own: the usage leaves the colors alone from then on. #}
@@ -490,6 +529,7 @@
                 <form method="post" id="cms-svg-answer" action="{{ path('admin.cms.media.svg.submit', route_parameters) }}" class="card" data-testid="cms-svg-form">
                     <input type="hidden" name="_token" value="{{ assignToken() }}">
                     <input type="hidden" name="level" value="{{ level }}">
+                    {% if lossy %}<input type="hidden" name="lossy" value="1">{% endif %}
                     {% for name, value in color_carry %}
                         <input type="hidden" name="{{ name }}" value="{{ value }}">
                     {% endfor %}
@@ -563,6 +603,23 @@
 
             // A setting of the colors shows its preview as soon as it is chosen.
             document.querySelectorAll('[data-cms-svg-autosubmit]').forEach((form) => form.addEventListener('change', () => form.requestSubmit()));
+
+            // The three versions take some seconds: say so, and freeze the
+            // choices while the page reloads. The fields are disabled once the
+            // form has been read, never before.
+            const computing = document.querySelector('[data-testid="cms-svg-computing"]');
+            const choices = [...document.querySelectorAll('[data-testid="cms-svg-lossy-form"] input, [data-testid="cms-svg-levels"] input')];
+            const wasDisabled = choices.map((input) => input.disabled);
+            document.querySelectorAll('[data-testid="cms-svg-lossy-form"], [data-testid="cms-svg-levels"]').forEach((form) => form.addEventListener('submit', () => {
+                if (computing && (form.dataset.testid === 'cms-svg-levels' || form.querySelector('input[name="lossy"]')?.checked)) {
+                    computing.hidden = false;
+                }
+                setTimeout(() => choices.forEach((input) => { input.disabled = true; }), 0);
+            }));
+            window.addEventListener('pageshow', () => {
+                if (computing) { computing.hidden = true; }
+                choices.forEach((input, index) => { input.disabled = wasDisabled[index]; });
+            });
 
             // The usage and the name chosen follow a preview of the settings.
             const usages = [...document.querySelectorAll('input[type="radio"][name="usage"]')];

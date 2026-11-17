@@ -1,0 +1,8 @@
+{# The weight saved, as the legend of a result tells it: used by the large result and by the level previews. #}
+{% if result.savedBytes > 0 %}
+    <span class="text-success fw-semibold" title="{{ '%percent% % lighter (%weight% saved)'|trans({ '%percent%': result.savedPercent, '%weight%': saved_weight }, 'theliacms') }}">{{ '−%percent% %'|trans({ '%percent%': result.savedPercent }, 'theliacms') }}</span>
+{% elseif result.savedBytes < 0 %}
+    <span class="text-warning-emphasis">{{ '%weight% heavier'|trans({ '%weight%': saved_weight }, 'theliacms') }}</span>
+{% else %}
+    <span class="text-body-secondary">{{ 'No weight saved.'|trans({}, 'theliacms') }}</span>
+{% endif %}

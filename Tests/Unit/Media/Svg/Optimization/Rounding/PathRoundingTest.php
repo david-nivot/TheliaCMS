@@ -70,6 +70,19 @@ final class PathRoundingTest extends TestCase
         self::assertSame(['.1', '5.5', '33.333', '1', '0'], \array_slice($segments[1]->arguments, 0, 5));
     }
 
+    public function testTheCeilingIsPassedOnlyByMoreThanTheMaximumOfPathData(): void
+    {
+        $rounding = new PathRounding();
+        // `d` and `points` count, and nothing else.
+        $atTheMaximum = $this->svg('<path d="'.str_repeat('M', PathRounding::MAXIMUM_PATH_BYTES - 5).'"/><polygon points="1,2 3"/>');
+        $over = $this->svg('<path d="'.str_repeat('M', PathRounding::MAXIMUM_PATH_BYTES - 4).'"/><polygon points="1,2 3"/>');
+
+        self::assertFalse($rounding->exceedsCeiling($atTheMaximum));
+        self::assertTrue($rounding->exceedsCeiling($over));
+        self::assertFalse($rounding->exceedsCeiling($this->svg('<path d="M1 1L2 2"/>')));
+        self::assertFalse($rounding->exceedsCeiling('not an svg'), 'What cannot be read is not too detailed.');
+    }
+
     public function testThePointsOfAPolygonAreRounded(): void
     {
         $output = (new PathRounding())->round($this->svg('<polygon points="1.234,1.236 2.341,2.347 3.111,1.009"/>'), self::SHARE);

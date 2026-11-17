@@ -18,6 +18,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use TheliaCMS\Media\Svg\Color\SvgColoring;
+use TheliaCMS\Media\Svg\Color\SvgColorPreset;
 use TheliaCMS\Media\Svg\Optimization\FigmaClipRemover;
 use TheliaCMS\Media\Svg\Optimization\GeometryEnvelope;
 use TheliaCMS\Media\Svg\Optimization\Path\ShorterPathNotation;
@@ -27,6 +29,7 @@ use TheliaCMS\Media\Svg\Optimization\SvgOptimizer;
 use TheliaCMS\Media\Svg\Optimization\SvgReferences;
 use TheliaCMS\Media\Svg\Optimization\UnreferencedIdRemover;
 use TheliaCMS\Media\Svg\SvgPreparation;
+use TheliaCMS\Media\Svg\SvgStageCache;
 use TheliaLibrary\Exception\UnreadableSvgException;
 use TheliaLibrary\Service\Svg\SanitizedSvg;
 use TheliaLibrary\Service\Svg\SvgChange;
@@ -94,6 +97,75 @@ final class SvgPreparationTest extends TestCase
         self::assertStringNotContainsString('strong', $none->content);
     }
 
+    public function testEveryLevelIsAppliedOnItsOwnToTheSameBaseOptimizationComputedOnce(): void
+    {
+        $sanitizer = $this->sanitizer();
+        $preparation = $this->preparation($sanitizer, [$this->level('light', '<!--light-->'), $this->level('strong', '<!--strong-->')]);
+
+        $results = $preparation->prepareLevels(self::ORIGINAL);
+
+        self::assertSame(['light', 'strong'], array_keys($results));
+        // One cleaning of the file, then one control per level: the base is not rebuilt.
+        self::assertCount(3, $sanitizer->received);
+        self::assertSame('checked:'.$sanitizer->received[1], $results['light']->content);
+        self::assertSame('checked:'.$sanitizer->received[2], $results['strong']->content);
+        self::assertStringEndsWith('<!--light-->', $sanitizer->received[1]);
+        self::assertStringEndsWith('<!--strong-->', $sanitizer->received[2], 'Not applied on the result of the other level.');
+        self::assertStringNotContainsString('light', $sanitizer->received[2]);
+        self::assertSame(
+            $this->preparation($this->sanitizer(), [$this->level('light', '<!--light-->')])->prepare(self::ORIGINAL, 'light')->content,
+            $results['light']->content,
+            'The same result as preparing the level alone.',
+        );
+        self::assertSame(\strlen(self::ORIGINAL), $results['strong']->originalBytes, 'The gain is counted against the file sent.');
+    }
+
+    public function testAChangeOfColorsDoesNotApplyTheLevelNorCleanTheFileAgain(): void
+    {
+        $calls = new \ArrayObject();
+        $sanitizer = $this->sanitizer();
+        $preparation = $this->cachedPreparation($sanitizer, [$this->countingLevel('strong', $calls)]);
+
+        $first = $preparation->prepare(self::ORIGINAL, 'strong');
+        $second = $preparation->prepare(self::ORIGINAL, 'strong', new SvgColoring(SvgColorPreset::Monochrome));
+        $third = $preparation->prepareLevels(self::ORIGINAL, new SvgColoring(SvgColorPreset::Monochrome));
+
+        self::assertCount(1, $calls, 'The level is applied once for the bytes, whatever the colors.');
+        // The file is cleaned once; each preparation then runs its own control.
+        self::assertCount(1 + 3, $sanitizer->received);
+        self::assertSame(self::ORIGINAL, $sanitizer->received[0]);
+        self::assertSame($first->changes, $second->changes, 'The changes told are kept with the cleaning.');
+        self::assertSame($second->content, $third['strong']->content);
+    }
+
+    public function testAnotherFileDoesNotReadTheStagesOfThisOne(): void
+    {
+        $calls = new \ArrayObject();
+        $preparation = $this->cachedPreparation($this->sanitizer(), [$this->countingLevel('strong', $calls)]);
+
+        $preparation->prepare(self::ORIGINAL, 'strong');
+        $preparation->prepare(str_replace('24v24', '25v25', self::ORIGINAL), 'strong');
+
+        self::assertCount(2, $calls);
+    }
+
+    public function testTheChangesKeptWithTheCleaningAreReturnedAsTheyWere(): void
+    {
+        $preparation = $this->cachedPreparation($this->sanitizer(changes: [new SvgChange(SvgChangeKind::RemovedAttribute, 'onload')]));
+
+        $preparation->prepare(self::ORIGINAL);
+        $again = $preparation->prepare(self::ORIGINAL);
+
+        self::assertCount(1, $again->changes);
+        self::assertSame(SvgChangeKind::RemovedAttribute, $again->changes[0]->kind);
+        self::assertSame('onload', $again->changes[0]->subject);
+    }
+
+    public function testWithoutLevelsNothingIsPreparedByLevel(): void
+    {
+        self::assertSame([], $this->preparation($this->sanitizer())->prepareLevels(self::ORIGINAL));
+    }
+
     public function testWhatTheControlRemovesIsLoggedSinceTheEditorIsNotShownIt(): void
     {
         $logger = new class extends AbstractLogger {
@@ -140,6 +212,59 @@ final class SvgPreparationTest extends TestCase
             new SvgOptimizationLevels($levels),
             logger: $logger,
         );
+    }
+
+    /**
+     * @param list<SvgOptimizationLevel> $levels
+     */
+    private function cachedPreparation(object $sanitizer, array $levels = []): SvgPreparation
+    {
+        \assert($sanitizer instanceof SvgSanitizerInterface);
+        $references = new SvgReferences();
+
+        return new SvgPreparation(
+            $sanitizer,
+            new SvgOptimizer(new FigmaClipRemover(new GeometryEnvelope(), $references), new UnreferencedIdRemover($references), new ShorterPathNotation()),
+            new SvgOptimizationLevels($levels),
+            stages: new SvgStageCache(sys_get_temp_dir().'/cms-stages-'.bin2hex(random_bytes(6))),
+        );
+    }
+
+    /**
+     * @param \ArrayObject<int, string> $calls
+     */
+    private function countingLevel(string $name, \ArrayObject $calls): SvgOptimizationLevel
+    {
+        return new class($name, $calls) implements SvgOptimizationLevel {
+            /**
+             * @param \ArrayObject<int, string> $calls
+             */
+            public function __construct(private readonly string $name, private readonly \ArrayObject $calls)
+            {
+            }
+
+            public function name(): string
+            {
+                return $this->name;
+            }
+
+            public function label(): string
+            {
+                return 'Level '.$this->name;
+            }
+
+            public function changesRendering(): bool
+            {
+                return true;
+            }
+
+            public function apply(string $svg): string
+            {
+                $this->calls[] = $svg;
+
+                return $svg.'<!--'.$this->name.'-->';
+            }
+        };
     }
 
     /**

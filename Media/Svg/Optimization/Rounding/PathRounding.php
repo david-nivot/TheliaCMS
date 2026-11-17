@@ -92,6 +92,17 @@ final readonly class PathRounding
         return $this->rewritten($svg, $share, true);
     }
 
+    /**
+     * Whether the drawing holds more path data than the ceiling, which a
+     * level leaves as it is. A drawing that cannot be read does not.
+     */
+    public function exceedsCeiling(string $svg): bool
+    {
+        $document = SvgDocument::load($svg);
+
+        return null !== $document && $this->pathBytes($document) > self::MAXIMUM_PATH_BYTES;
+    }
+
     private function rewritten(string $svg, float $share, bool $simplifying): string
     {
         $document = SvgDocument::load($svg);

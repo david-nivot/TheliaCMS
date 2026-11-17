@@ -54,6 +54,9 @@ final class SvgPreparationScreenTest extends AdminScreenTestCase
     /** A gradient: a page keeps it, so it may be an icon. */
     private const string GRADIENT = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><defs><linearGradient id="g"><stop offset="0" stop-color="#000"/><stop offset="1" stop-color="#fff"/></linearGradient></defs><path d="M0 0h24v24H0z" fill="url(#g)"/></svg>';
 
+    /** Paths written with more decimals than the levels keep, so that each level saves weight. */
+    private const string DETAILED = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M1.23456 2.34567L10.98765 3.45678L12.3456 20.4321L3.11111 18.22222L5.4321 9.87654Z"/><path d="M13.33333 4.44444C14.111 5.222 15.333 6.444 17.555 7.666S19.777 8.888 21.999 9.111L20.5555 14.4444Z"/></svg>';
+
     private const string TRAPPED = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" onload="alert(1)"><script>alert(2)</script><path d="M0 0h24v24H0z"/></svg>';
 
     /** @var list<string> */
@@ -97,7 +100,7 @@ final class SvgPreparationScreenTest extends AdminScreenTestCase
         self::assertSame('logo.svg', trim($screen->filter('[data-testid="cms-svg-name"]')->text()));
         self::assertSame(0, $screen->filter('[data-testid="cms-svg-position"]')->count(), 'One file: no "File 1 of 1".');
         self::assertSame(1, $screen->filter('[data-testid="cms-svg-nothing-removed"]')->count(), 'A clean file says there was nothing to remove.');
-        self::assertSame(['', 'round-fine', 'round-medium', 'round-coarse'], $screen->filter('[data-testid="cms-svg-levels"] input[name="level"]')->each(static fn ($input): string => (string) $input->attr('value')), 'None, then the three roundings from the lightest to the strongest.');
+        self::assertSame(0, $screen->filter('[data-testid="cms-svg-levels"]')->count(), 'By default, no level is offered.');
         self::assertSame(0, $screen->filter('[data-testid="cms-svg-apply-following"]')->count());
         self::assertStringContainsString('/svg/', (string) $screen->filter('[data-testid="cms-svg-original"]')->attr('src'));
         self::assertStringContainsString('/result', (string) $screen->filter('[data-testid="cms-svg-result"]')->attr('src'));
@@ -105,6 +108,7 @@ final class SvgPreparationScreenTest extends AdminScreenTestCase
         self::assertStringContainsString($this->said('nothing to remove'), $screen->filter('[data-testid="cms-svg-cleaning"] summary')->first()->text());
         self::assertSame('fit', $screen->filter('[data-testid="cms-svg-zoom"] input:checked')->attr('value'), 'A small drawing opens fitted to its frame too.');
         self::assertSame(0, $screen->filter('[data-testid="cms-svg-only-method"]')->count(), 'Levels exist: the base is not said to be the only method.');
+        self::assertSame(1, $screen->filter('[data-testid="cms-svg-lossy"]')->count());
     }
 
     public function testADrawingLargerThanItsFrameOpensFittedAndCanStillBeZoomed(): void
@@ -926,6 +930,223 @@ final class SvgPreparationScreenTest extends AdminScreenTestCase
 
         self::assertSame($this->said('The drawing already takes the color of the text around it.'), trim($screen->filter('[data-testid="cms-svg-no-color"]')->text()));
         self::assertSame(0, $screen->filter('[data-testid="cms-svg-presets"]')->count());
+    }
+
+    public function testByDefaultNoLossyOptimizationIsComputedNorOffered(): void
+    {
+        $location = $this->remember($this->sent('detail.svg', self::DETAILED));
+        $screen = $this->screen($location);
+        $switch = $screen->filter('[data-testid="cms-svg-lossy"]');
+
+        self::assertSame(1, $switch->count());
+        self::assertNull($switch->attr('checked'));
+        self::assertNull($switch->attr('disabled'));
+        self::assertSame('switch', $switch->attr('role'));
+        self::assertSame(0, $screen->filter('[data-testid="cms-svg-levels"]')->count());
+        self::assertSame(0, $screen->filter('[data-testid="cms-svg-level-previews"]')->count());
+        self::assertSame(0, $screen->filter('[data-cms-svg-frame].border-2')->count(), 'Outside the lossy mode, nothing is set apart.');
+        self::assertSame(['cms-svg-preview-original', 'cms-svg-preview-lossless'], $screen->filter('figure[data-testid^="cms-svg-preview-"]')->each(static fn (Crawler $figure): string => (string) $figure->attr('data-testid')));
+        self::assertSame($this->said('Lossless'), trim(explode('·', $screen->filter('[data-testid="cms-svg-preview-lossless"] figcaption')->text())[0]));
+        self::assertSame(1, $screen->filter('[data-testid="cms-svg-computing"][hidden]')->count());
+        self::assertSame(0, $screen->filter('[data-testid="cms-svg-lossy-unavailable"]')->count());
+        self::assertSame($this->said('lossless'), trim($screen->filter('[data-testid="cms-svg-optimization-state"]')->text()));
+        self::assertNull($this->getService(PreparedSvgStore::class)->result($this->tokenOf($location), 'level-round-fine'), 'No level was prepared.');
+    }
+
+    public function testTheLossyModeOffersLosslessAndTheThreeLevelsAndPreviewsEachOnItsOwn(): void
+    {
+        $location = $this->remember($this->sent('detail.svg', self::DETAILED));
+        $screen = $this->screen($location.'&lossy=1');
+
+        self::assertNotNull($screen->filter('[data-testid="cms-svg-lossy"]')->attr('checked'));
+        self::assertSame(['', 'round-fine', 'round-medium', 'round-coarse'], $screen->filter('[data-testid="cms-svg-levels"] input[name="level"]')->each(static fn (Crawler $input): string => (string) $input->attr('value')));
+        self::assertSame('', $screen->filter('[data-testid="cms-svg-levels"] input[name="level"]:checked')->attr('value'), 'Lossless is the one checked.');
+        self::assertSame('1', $screen->filter('[data-testid="cms-svg-levels"] input[name="lossy"]')->attr('value'), 'A choice of level stays in the mode.');
+        self::assertSame($this->said('lossless'), trim($screen->filter('[data-testid="cms-svg-optimization-state"]')->text()));
+
+        self::assertSame(1, $screen->filter('[data-testid="cms-svg-level-previews"]')->count());
+        $original = \strlen(self::DETAILED);
+        $weights = [];
+
+        foreach (['round-fine' => 'No visible difference', 'round-medium' => 'Slight loss of detail', 'round-coarse' => 'Visible loss of detail'] as $name => $label) {
+            $preview = $screen->filter('[data-testid="cms-svg-level-preview-'.$name.'"]');
+            self::assertSame(1, $preview->count(), $name);
+            self::assertStringContainsString($this->said($label), $preview->filter('figcaption')->text());
+            self::assertSame(1, $preview->filter('[data-cms-svg-frame] .cms-svg-canvas')->count(), 'The frame of the large previews, so that the ground and the zoom apply.');
+            self::assertStringNotContainsString('border-primary', (string) $preview->filter('[data-cms-svg-frame]')->attr('class'), 'A level that is not checked is not set apart.');
+            self::assertSame(3, $preview->filter('.cms-svg-result')->count());
+            self::assertSame(0, $preview->filter('input, a, button, label')->count(), 'Read only: nothing to click.');
+            self::assertSame($preview->filter('figcaption strong')->text(), $screen->filter('[data-testid="cms-svg-level-figures-'.$name.'"] strong')->text(), 'The card gives the weight shown under the preview.');
+            self::assertStringContainsString('level='.$name, (string) $preview->filter('img')->first()->attr('src'));
+            self::assertStringContainsString('−', $preview->filter('[data-testid="cms-svg-level-preview-gain"]')->text(), 'The gain, counted against the file sent.');
+
+            $kept = $this->getService(PreparedSvgStore::class)->result($this->tokenOf($location), 'level-'.$name);
+            self::assertNotNull($kept, 'Each level is prepared once and kept for the previews.');
+            self::assertLessThan($original, \strlen($kept));
+            $weights[$name] = \strlen($kept);
+        }
+
+        self::assertGreaterThan(0, $weights['round-fine']);
+
+        // One grid of five frames of the same size: the original, Lossless, the three levels, in that order.
+        self::assertSame(5, $screen->filter('[data-testid="cms-svg-level-previews"] [data-cms-svg-frame]')->count());
+        self::assertSame(5, $screen->filter('[data-cms-svg-frame]')->count());
+        self::assertSame(
+            ['cms-svg-preview-original', 'cms-svg-preview-lossless', 'cms-svg-level-preview-round-fine', 'cms-svg-level-preview-round-medium', 'cms-svg-level-preview-round-coarse'],
+            $screen->filter('[data-testid="cms-svg-level-previews"] figure')->each(static fn (Crawler $figure): string => (string) $figure->attr('data-testid')),
+        );
+        self::assertSame(0, $screen->filter('[data-testid="cms-svg-level-previews"] input, [data-testid="cms-svg-level-previews"] a, [data-testid="cms-svg-level-previews"] button, [data-testid="cms-svg-level-previews"] label')->count(), 'Nothing to click in the previews.');
+
+        // Two lines of three places: the original and Lossless then an empty place, the three levels after it.
+        self::assertSame(
+            ['cms-svg-preview-original', 'cms-svg-preview-lossless', 'cms-svg-previews-gap', 'cms-svg-level-preview-round-fine', 'cms-svg-level-preview-round-medium', 'cms-svg-level-preview-round-coarse'],
+            $screen->filter('[data-testid="cms-svg-level-previews"] > div')->each(static fn (Crawler $place): string => (string) ($place->filter('figure')->count() > 0 ? $place->filter('figure')->attr('data-testid') : $place->attr('data-testid'))),
+        );
+        self::assertStringContainsString('col-lg-4', (string) $screen->filter('[data-testid="cms-svg-previews-gap"]')->attr('class'));
+
+        // The original and the version checked (Lossless here) are set apart, the others are not.
+        $lossless = $screen->filter('[data-testid="cms-svg-preview-lossless"]');
+        self::assertStringContainsString('border-dark', (string) $screen->filter('[data-testid="cms-svg-preview-original"] [data-cms-svg-frame]')->attr('class'), 'The original, in black.');
+        self::assertStringContainsString('border-primary', (string) $lossless->filter('[data-cms-svg-frame]')->attr('class'));
+        self::assertSame($this->said('Lossless'), trim(explode('·', $lossless->filter('figcaption')->text())[0]));
+        self::assertSame(1, $screen->filter('[data-cms-svg-frame].border-primary')->count(), 'The version checked alone, in the color of the theme.');
+        self::assertSame(1, $screen->filter('[data-testid="cms-svg-computing"][hidden]')->count(), 'The status of the computing is there, hidden until the form is sent.');
+        self::assertSame($lossless->filter('figcaption strong')->text(), $screen->filter('[data-testid="cms-svg-level-figures-lossless"] strong')->text());
+    }
+
+    public function testTheLevelCheckedGivesTheLargeResultAndItsNameTheHeaderOfTheCard(): void
+    {
+        $location = $this->remember($this->sent('detail.svg', self::DETAILED));
+        $screen = $this->screen($location.'&lossy=1&level=round-medium');
+
+        self::assertSame('round-medium', $screen->filter('[data-testid="cms-svg-levels"] input[name="level"]:checked')->attr('value'));
+        self::assertSame($this->said('Slight loss of detail'), trim($screen->filter('[data-testid="cms-svg-optimization-state"]')->text()));
+        self::assertStringNotContainsString('level=', (string) $screen->filter('[data-testid="cms-svg-result"]')->attr('src'), 'The Lossless frame is always the base.');
+        self::assertSame(1, $screen->filter('[data-cms-svg-frame].border-primary')->count(), 'The level checked alone.');
+        $medium = $screen->filter('[data-testid="cms-svg-level-preview-round-medium"]');
+        self::assertStringContainsString('border-primary', (string) $medium->filter('[data-cms-svg-frame]')->attr('class'));
+        self::assertStringNotContainsString('border-primary', (string) $screen->filter('[data-testid="cms-svg-preview-lossless"] [data-cms-svg-frame]')->attr('class'));
+
+        // Lossless weighs what the base weighs, whichever level is checked.
+        $weight = static fn (Crawler $screen, string $figure): string => trim($screen->filter('[data-testid="'.$figure.'"] figcaption strong')->first()->text());
+        $plain = $this->screen($location);
+        self::assertSame($weight($plain, 'cms-svg-preview-lossless'), $weight($screen, 'cms-svg-preview-lossless'));
+        self::assertNotSame($weight($screen, 'cms-svg-preview-lossless'), $weight($screen, 'cms-svg-level-preview-round-medium'));
+        self::assertSame('1', $screen->filter('[data-testid="cms-svg-form"] input[name="lossy"]')->attr('value'));
+        self::assertSame('round-medium', $screen->filter('[data-testid="cms-svg-form"] input[name="level"]')->attr('value'));
+        self::assertSame(1, $screen->filter('[data-testid="cms-svg-level-previews"]')->count());
+    }
+
+    public function testALevelWithoutTheLossyModeIsIgnored(): void
+    {
+        $location = $this->remember($this->sent('detail.svg', self::DETAILED));
+        $screen = $this->screen($location.'&level=round-coarse');
+
+        self::assertSame(0, $screen->filter('[data-testid="cms-svg-levels"]')->count());
+        self::assertSame('', $screen->filter('[data-testid="cms-svg-form"] input[name="level"]')->attr('value'));
+        self::assertStringNotContainsString('level=round', (string) $screen->filter('[data-testid="cms-svg-result"]')->attr('src'));
+        self::assertSame($this->said('lossless'), trim($screen->filter('[data-testid="cms-svg-optimization-state"]')->text()));
+        self::assertNotNull($this->getService(PreparedSvgStore::class)->result($this->tokenOf($location), 'base'));
+        self::assertNull($this->getService(PreparedSvgStore::class)->result($this->tokenOf($location), 'level-round-coarse'));
+    }
+
+    public function testTheFormsThatPreviewAnotherSettingCarryTheModeAndTheLevel(): void
+    {
+        $screen = $this->screen($this->remember($this->sent('detail.svg', self::COLORED)).'&lossy=1&level=round-fine');
+
+        foreach (['cms-svg-presets', 'cms-svg-usage-form'] as $form) {
+            $fields = $this->fieldsOf($screen->filter('[data-testid="'.$form.'"]'));
+
+            self::assertSame('1', $fields['lossy'] ?? null, $form);
+            self::assertSame('round-fine', $fields['level'] ?? null, $form);
+        }
+
+        $leaving = $this->fieldsOf($screen->filter('[data-testid="cms-svg-lossy-form"]'));
+        self::assertArrayNotHasKey('level', $leaving, 'Leaving the mode drops the level.');
+        self::assertArrayNotHasKey('lossy', $leaving);
+    }
+
+    public function testADrawingPastTheCeilingRefusesTheModeEvenWhenTheAddressAsksForIt(): void
+    {
+        $heavy = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0'.str_repeat('l.123 .456', 80000).'"/></svg>';
+        $location = $this->remember($this->sent('heavy.svg', $heavy));
+
+        foreach ([$location, $location.'&lossy=1&level=round-fine'] as $url) {
+            $screen = $this->screen($url);
+
+            self::assertNotNull($screen->filter('[data-testid="cms-svg-lossy"]')->attr('disabled'), $url);
+            self::assertNull($screen->filter('[data-testid="cms-svg-lossy"]')->attr('checked'), $url);
+            self::assertSame($this->said('Not available for a drawing this detailed. It can be optimized with an external tool before it is imported.'), $this->normalize($screen->filter('[data-testid="cms-svg-lossy-unavailable"]')->text()), $url);
+            self::assertSame(0, $screen->filter('[data-testid="cms-svg-levels"]')->count(), $url);
+            self::assertSame(0, $screen->filter('[data-testid="cms-svg-level-previews"]')->count(), $url);
+            self::assertSame('', $screen->filter('[data-testid="cms-svg-form"] input[name="level"]')->attr('value'), $url);
+            self::assertSame(0, $screen->filter('[data-testid="cms-svg-form"] input[name="lossy"]')->count(), $url);
+        }
+
+        self::assertNull($this->getService(PreparedSvgStore::class)->result($this->tokenOf($location), 'level-round-fine'), 'No level was computed.');
+    }
+
+    public function testTheLossyAnswerStoresTheLevelAndWithoutTheModeTheLevelIsIgnored(): void
+    {
+        $screen = $this->opened($this->svg('a.svg', self::DETAILED));
+        $this->answer($screen, 'add', ['level' => 'round-coarse']);
+        $withoutMode = $this->stored(0);
+
+        $screen = $this->opened($this->svg('b.svg', self::DETAILED));
+        $this->answer($screen, 'add', ['level' => 'round-coarse', 'lossy' => '1']);
+        $withMode = $this->stored(1);
+
+        $screen = $this->opened($this->svg('c.svg', self::DETAILED));
+        $this->answer($screen, 'add', ['level' => '', 'lossy' => '1']);
+        $lossless = $this->stored(2);
+
+        self::assertSame($lossless, $withoutMode, 'A level without the mode leaves the base result.');
+        self::assertLessThan(\strlen($lossless), \strlen($withMode), 'With the mode, the level is applied.');
+    }
+
+    public function testTheAnswerRefusesTheModeForADrawingPastTheCeiling(): void
+    {
+        $heavy = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0'.str_repeat('l.123 .456', 80000).'"/></svg>';
+        $this->answer($this->opened($this->svg('x.svg', $heavy)), 'add');
+        $base = $this->stored(0);
+
+        $this->answer($this->opened($this->svg('y.svg', $heavy)), 'add', ['level' => 'round-coarse', 'lossy' => '1']);
+
+        self::assertSame($base, $this->stored(1), 'The mode forced by the form changes nothing past the ceiling.');
+    }
+
+    public function testApplyToTheFollowingFilesCarriesNeitherTheLossyModeNorTheLevel(): void
+    {
+        $screen = $this->screen($this->remember($this->sent('un.svg', self::DETAILED, $this->svg('deux.svg', self::DETAILED))).'&lossy=1&level=round-fine');
+
+        $this->answer($screen, 'add', ['apply_to_following' => '1']);
+        $next = (string) $this->client->getResponse()->headers->get('Location');
+
+        self::assertStringNotContainsString('level=', $next);
+        self::assertStringNotContainsString('lossy=', $next);
+        $second = $this->screen($next);
+        self::assertNull($second->filter('[data-testid="cms-svg-lossy"]')->attr('checked'));
+        self::assertSame(0, $second->filter('[data-testid="cms-svg-levels"]')->count());
+        self::assertSame('', $second->filter('[data-testid="cms-svg-form"] input[name="level"]')->attr('value'));
+        self::assertSame(0, $second->filter('[data-testid="cms-svg-form"] input[name="lossy"]')->count());
+    }
+
+    /** The content of the nth image stored, in the order of the library. */
+    private function stored(int $index): string
+    {
+        $images = $this->getService(CmsMediaLibrary::class)->images();
+        usort($images, static fn (LibraryImage $a, LibraryImage $b): int => (int) $a->getId() <=> (int) $b->getId());
+        self::assertArrayHasKey($index, $images);
+
+        return (string) file_get_contents(TheliaLibrary::getImageDirectory().$images[$index]->getFileName());
+    }
+
+    /** The address of the screen of the first file of a sending. */
+    private function sent(string $name, string $content, UploadedFile ...$others): string
+    {
+        $this->upload([$this->svg($name, $content), ...$others]);
+
+        return (string) $this->client->getResponse()->headers->get('Location');
     }
 
     /**

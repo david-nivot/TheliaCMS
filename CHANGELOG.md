@@ -12,9 +12,12 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 - **Three levels of optimization round the points of an SVG file and remove
   those the drawing does not need**: they keep every point within 1/4000 (No
   visible difference), 1/1000 (Slight loss of detail) or 1/400 (Visible loss
-  of detail) of the diagonal of the `viewBox`, on each axis. The base optimization alone
-  stays the default. Only `d` and `points` change. The decimals kept are the
-  fewest that hold the tolerance, and a point written relative to the one
+  of detail) of the diagonal of the `viewBox`, on each axis. On the screen that prepares an
+  SVG file they are opt-in, behind a Lossy optimization switch: the base
+  optimization alone stays the default, and the three levels are then
+  previewed side by side, each with its weight and gain. A drawing with more
+  than 500,000 bytes of path data is refused the mode. Only `d` and `points`
+  change. The decimals kept are the fewest that hold the tolerance, and a point written relative to the one
   before starts from that point as rounded, so no error adds up along a path.
   A curve that stays within the tolerance of its chord becomes a line, and the
   points of a run of lines within the tolerance of a longer line are removed;
