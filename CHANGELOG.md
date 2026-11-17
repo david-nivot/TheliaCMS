@@ -23,7 +23,7 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   rounded. A `transform` that enlarges the drawing tightens the tolerance; a
   pattern, a marker, a symbol, a nested `svg`, a content in units of its
   bounding box, an unreadable `transform` or a `transform` in CSS leaves the
-  drawing as it is. On 548
+  drawing as it is, and so do more than 500,000 bytes of path data. On 548
   files (the icons and illustrations of Flexy, the flags of the back office, a
   sample of Bootstrap Icons), after the base optimization: 36.5 %, 59.0 % and
   69.0 % lighter, 39.9 %, 61.6 % and 70.3 % once compressed. The largest

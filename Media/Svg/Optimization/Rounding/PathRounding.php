@@ -37,10 +37,15 @@ use TheliaCMS\Media\Svg\Optimization\SvgDocument;
  * StraightRuns), within what the rounding leaves of the tolerance, so that
  * both together keep every point within it. A shape whose line ends or
  * corners are drawn (a round or square cap, a marker) keeps all its points.
-
+ *
+ * A drawing with more path data than the ceiling is left as it is: the
+ * work grows with the data, and the heaviest real drawings hold less than
+ * three quarters of it.
  */
 final readonly class PathRounding
 {
+    public const int MAXIMUM_PATH_BYTES = 500_000;
+
     private const array ROLES = [
         'M' => 'xy', 'L' => 'xy', 'H' => 'x', 'V' => 'y', 'C' => 'xyxyxy',
         'S' => 'xyxy', 'Q' => 'xyxy', 'T' => 'xy', 'A' => 'rrnnnxy', 'Z' => '',
@@ -90,7 +95,7 @@ final readonly class PathRounding
     private function rewritten(string $svg, float $share, bool $simplifying): string
     {
         $document = SvgDocument::load($svg);
-        $tolerance = null === $document ? null : $this->tolerance($document, $share);
+        $tolerance = null === $document || $this->pathBytes($document) > self::MAXIMUM_PATH_BYTES ? null : $this->tolerance($document, $share);
 
         if (null === $document || null === $tolerance) {
             return $svg;
@@ -144,6 +149,17 @@ final readonly class PathRounding
         }
 
         return $changed ? SvgDocument::serialize($document) : null;
+    }
+
+    private function pathBytes(\DOMDocument $document): int
+    {
+        $bytes = 0;
+
+        foreach ($document->getElementsByTagName('*') as $element) {
+            $bytes += \strlen($element->getAttribute('d')) + \strlen($element->getAttribute('points'));
+        }
+
+        return $bytes;
     }
 
     /**

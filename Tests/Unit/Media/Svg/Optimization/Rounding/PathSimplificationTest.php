@@ -160,6 +160,16 @@ final class PathSimplificationTest extends TestCase
         self::assertStringContainsString('d="M0 0H10"', $output);
     }
 
+    public function testADrawingWithMorePathDataThanTheCeilingIsLeftAsItIs(): void
+    {
+        $data = 'M0 0'.str_repeat('L5 .05', intdiv(PathRounding::MAXIMUM_PATH_BYTES - 4, 6));
+        $svg = $this->svg('<path d="'.$data.'"/><polyline points="0 0 5 .05 10 0"/>');
+
+        self::assertGreaterThan(PathRounding::MAXIMUM_PATH_BYTES, \strlen($data) + \strlen('0 0 5 .05 10 0'));
+        self::assertLessThan(PathRounding::MAXIMUM_PATH_BYTES, \strlen($data));
+        self::assertSame($svg, (new PathRounding())->simplify($svg, self::SHARE));
+    }
+
     public function testRoundingAloneKeepsEveryPoint(): void
     {
         $output = (new PathRounding())->round($this->svg('<path d="M0 0L5 .05L10 0"/>'), self::SHARE);
