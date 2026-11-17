@@ -18,6 +18,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use Symfony\Component\Filesystem\Filesystem;
 use TheliaCMS\Media\Svg\Color\SvgColoring;
 use TheliaCMS\Media\Svg\Color\SvgColorPreset;
 use TheliaCMS\Media\Svg\Optimization\FigmaClipRemover;
@@ -39,6 +40,15 @@ use TheliaLibrary\Service\Svg\UnreadableSvgReason;
 
 final class SvgPreparationTest extends TestCase
 {
+    private string $stagesRoot = '';
+
+    protected function tearDown(): void
+    {
+        if ('' !== $this->stagesRoot) {
+            (new Filesystem())->remove($this->stagesRoot);
+        }
+    }
+
     private const string ORIGINAL = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><!-- a long comment that only an editor needs --><path d="M0 0h24v24H0z" onload="x()"/></svg>';
 
     public function testTheOriginalIsCleanedThenOptimizedThenCleanedAgainAndTheSecondCleaningIsWhatIsShown(): void
@@ -161,6 +171,56 @@ final class SvgPreparationTest extends TestCase
         self::assertSame('onload', $again->changes[0]->subject);
     }
 
+    public function testAStageThatCannotBeReadBackIsComputedAgainWithoutAnException(): void
+    {
+        $change = [new SvgChange(SvgChangeKind::RemovedAttribute, 'onload')];
+
+        foreach ([
+            'corrupted JSON' => '[[',
+            'not an array' => '"text"',
+            'unknown kind' => '[["a_kind_of_another_deploy","onload"]]',
+            'wrong shape' => '[["removed_attribute"]]',
+            'wrong types' => '[[1,2]]',
+            'not a pair' => '["removed_attribute"]',
+        ] as $case => $damaged) {
+            $sanitizer = $this->sanitizer(changes: $change);
+            $preparation = $this->cachedPreparation($sanitizer);
+            $preparation->prepare(self::ORIGINAL);
+            $files = glob($this->stagesRoot.'/*.changes') ?: [];
+            self::assertCount(1, $files, $case);
+            file_put_contents($files[0], $damaged);
+
+            $preparation->prepare(self::ORIGINAL);
+
+            self::assertSame(2 + 2, \count($sanitizer->received), $case.': the file is cleaned again, then each preparation runs its control.');
+            (new Filesystem())->remove($this->stagesRoot);
+        }
+    }
+
+    public function testAMissingBaseDoesNotRefreshTheChangesLeftBehind(): void
+    {
+        $preparation = $this->cachedPreparation($this->sanitizer());
+        $preparation->prepare(self::ORIGINAL);
+        $base = glob($this->stagesRoot.'/*.base') ?: [];
+        $changes = glob($this->stagesRoot.'/*.changes') ?: [];
+        self::assertCount(1, $base);
+        self::assertCount(1, $changes);
+        unlink($base[0]);
+        touch($changes[0], time() - 600);
+        // A cache that refuses every write: only the read of the stages can touch the file.
+        $readOnly = new SvgPreparation(
+            $this->sanitizer(),
+            new SvgOptimizer(new FigmaClipRemover(new GeometryEnvelope(), new SvgReferences()), new UnreferencedIdRemover(new SvgReferences()), new ShorterPathNotation()),
+            new SvgOptimizationLevels([]),
+            stages: new SvgStageCache($this->stagesRoot, 0),
+        );
+
+        $readOnly->prepare(self::ORIGINAL);
+
+        clearstatcache();
+        self::assertLessThan(time() - 300, filemtime($changes[0]), 'The changes of a base that is gone are not kept alive.');
+    }
+
     public function testWithoutLevelsNothingIsPreparedByLevel(): void
     {
         self::assertSame([], $this->preparation($this->sanitizer())->prepareLevels(self::ORIGINAL));
@@ -226,7 +286,7 @@ final class SvgPreparationTest extends TestCase
             $sanitizer,
             new SvgOptimizer(new FigmaClipRemover(new GeometryEnvelope(), $references), new UnreferencedIdRemover($references), new ShorterPathNotation()),
             new SvgOptimizationLevels($levels),
-            stages: new SvgStageCache(sys_get_temp_dir().'/cms-stages-'.bin2hex(random_bytes(6))),
+            stages: new SvgStageCache($this->stagesRoot = sys_get_temp_dir().'/cms-stages-'.bin2hex(random_bytes(6))),
         );
     }
 

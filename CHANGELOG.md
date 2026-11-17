@@ -47,10 +47,13 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Changed
 
-- **The files waiting on the screen that prepares an SVG weigh 200 MB at
-  most together**: past that, the files used least recently leave first,
-  never the one being prepared, and a prepared result that does not fit is
-  prepared again when it is asked for.
+- **The files waiting on the screen that prepares an SVG, and the stages of
+  their preparation, weigh 200 MB at most together**, 100 MB each: past that,
+  the files used least recently leave first, never the one being prepared,
+  and a prepared result or a stage that does not fit, or that the disk
+  refuses, is prepared again when it is asked for. A file lives one hour from
+  its last use. The directories are weighed once a minute at most, so they
+  can pass their ceiling by what is written in between.
 
 - **The base optimization writes each path in its shorter notation**: every
   command of a path takes the shorter of its absolute and relative forms,

@@ -101,12 +101,10 @@ final readonly class SvgPreparation
     private function base(string $original): array
     {
         $key = SvgStageCache::key($original);
-        $kept = $this->stages?->get($key, 'base');
-        $changes = $this->stages?->get($key, 'changes');
-        $decoded = null === $changes ? null : json_decode($changes, true);
+        $kept = $this->keptBase($key);
 
-        if (null !== $kept && \is_array($decoded)) {
-            return [array_map(static fn (array $change): SvgChange => new SvgChange(SvgChangeKind::from($change[0]), $change[1]), $decoded), $kept];
+        if (null !== $kept) {
+            return $kept;
         }
 
         $cleaned = $this->sanitizer->sanitize($original);
@@ -115,6 +113,56 @@ final readonly class SvgPreparation
         $this->stages?->put($key, 'base', $base);
 
         return [$cleaned->changes, $base];
+    }
+
+    /**
+     * What the stages hold for the file, null when nothing usable: an entry
+     * written by another version of the code, or damaged, is a miss, and the
+     * next write replaces it.
+     *
+     * @return array{list<SvgChange>, string}|null
+     */
+    private function keptBase(string $key): ?array
+    {
+        $base = $this->stages?->get($key, 'base');
+
+        if (null === $base) {
+            return null;
+        }
+
+        $encoded = $this->stages->get($key, 'changes');
+
+        if (null === $encoded) {
+            return null;
+        }
+
+        try {
+            $decoded = json_decode($encoded, true, 512, \JSON_THROW_ON_ERROR);
+        } catch (\JsonException) {
+            return null;
+        }
+
+        if (!\is_array($decoded)) {
+            return null;
+        }
+
+        $changes = [];
+
+        foreach ($decoded as $change) {
+            if (!\is_array($change) || !isset($change[0], $change[1]) || !\is_string($change[0]) || !\is_string($change[1])) {
+                return null;
+            }
+
+            $kind = SvgChangeKind::tryFrom($change[0]);
+
+            if (null === $kind) {
+                return null;
+            }
+
+            $changes[] = new SvgChange($kind, $change[1]);
+        }
+
+        return [$changes, $base];
     }
 
     /** The output of a level on the base, kept as the base is: before any color. */

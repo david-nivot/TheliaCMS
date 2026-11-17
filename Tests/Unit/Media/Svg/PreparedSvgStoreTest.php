@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace TheliaCMS\Tests\Unit\Media\Svg;
 
 use PHPUnit\Framework\TestCase;
+use Psr\Log\AbstractLogger;
 use Symfony\Component\Filesystem\Filesystem;
 use TheliaCMS\Media\Svg\PreparedSvgStore;
 
@@ -41,7 +42,7 @@ final class PreparedSvgStoreTest extends TestCase
 
     public function testAFileIsFoundAgainByItsTokenWithItsNameAndItsBytes(): void
     {
-        $store = new PreparedSvgStore($this->root.'/waiting');
+        $store = new PreparedSvgStore($this->root.'/waiting', scanIntervalInSeconds: 0);
 
         $token = $store->put('<svg xmlns="http://www.w3.org/2000/svg"/>', 'logo.svg');
         $file = $store->find($token);
@@ -54,7 +55,7 @@ final class PreparedSvgStoreTest extends TestCase
 
     public function testTheFilesUsedLeastRecentlyLeaveToStayUnderTheCeiling(): void
     {
-        $store = new PreparedSvgStore($this->root.'/waiting', 100);
+        $store = new PreparedSvgStore($this->root.'/waiting', 100, 0);
         $first = $store->put(str_repeat('a', 40), 'a.svg');
         $this->age($first, 100);
         $second = $store->put(str_repeat('b', 40), 'b.svg');
@@ -69,7 +70,7 @@ final class PreparedSvgStoreTest extends TestCase
 
     public function testAResultThatDoesNotFitIsNotKeptAndItsFileStays(): void
     {
-        $store = new PreparedSvgStore($this->root.'/waiting', 100);
+        $store = new PreparedSvgStore($this->root.'/waiting', 100, 0);
         $token = $store->put(str_repeat('a', 40), 'a.svg');
 
         $store->remember($token, 'base', str_repeat('r', 80));
@@ -80,7 +81,7 @@ final class PreparedSvgStoreTest extends TestCase
 
     public function testAFileOlderThanAnHourIsGoneAndRemovedWhenItIsRead(): void
     {
-        $store = new PreparedSvgStore($this->root.'/waiting');
+        $store = new PreparedSvgStore($this->root.'/waiting', scanIntervalInSeconds: 0);
         $token = $store->put('<svg/>', 'vieux.svg');
         touch($this->root.'/waiting/'.$token.'.svg', time() - PreparedSvgStore::LIFETIME_IN_SECONDS - 5);
 
@@ -91,7 +92,7 @@ final class PreparedSvgStoreTest extends TestCase
 
     public function testAFileJustUnderAnHourIsStillThere(): void
     {
-        $store = new PreparedSvgStore($this->root.'/waiting');
+        $store = new PreparedSvgStore($this->root.'/waiting', scanIntervalInSeconds: 0);
         $token = $store->put('<svg/>', 'recent.svg');
         touch($this->root.'/waiting/'.$token.'.svg', time() - PreparedSvgStore::LIFETIME_IN_SECONDS + 60);
 
@@ -100,7 +101,7 @@ final class PreparedSvgStoreTest extends TestCase
 
     public function testWritingPurgesTheFilesNobodyCameBackFor(): void
     {
-        $store = new PreparedSvgStore($this->root.'/waiting');
+        $store = new PreparedSvgStore($this->root.'/waiting', scanIntervalInSeconds: 0);
         $old = $store->put('<svg/>', 'oublie.svg');
         touch($this->root.'/waiting/'.$old.'.svg', time() - 2 * PreparedSvgStore::LIFETIME_IN_SECONDS);
 
@@ -113,7 +114,7 @@ final class PreparedSvgStoreTest extends TestCase
 
     public function testAPreparedResultIsKeptForItsSettingAndGoesWithItsFile(): void
     {
-        $store = new PreparedSvgStore($this->root.'/waiting');
+        $store = new PreparedSvgStore($this->root.'/waiting', scanIntervalInSeconds: 0);
         $token = $store->put('<svg/>', 'a.svg');
 
         $store->remember($token, 'base', '<svg>base</svg>');
@@ -131,7 +132,7 @@ final class PreparedSvgStoreTest extends TestCase
 
     public function testAResultIsNeitherKeptNorReadOutsideTheStore(): void
     {
-        $store = new PreparedSvgStore($this->root.'/waiting');
+        $store = new PreparedSvgStore($this->root.'/waiting', scanIntervalInSeconds: 0);
         $token = $store->put('<svg/>', 'a.svg');
 
         $store->remember($token, '../../escape', '<svg/>');
@@ -144,7 +145,7 @@ final class PreparedSvgStoreTest extends TestCase
 
     public function testAResultOfAnExpiredFileIsNotRead(): void
     {
-        $store = new PreparedSvgStore($this->root.'/waiting');
+        $store = new PreparedSvgStore($this->root.'/waiting', scanIntervalInSeconds: 0);
         $token = $store->put('<svg/>', 'a.svg');
         $store->remember($token, 'base', '<svg>old</svg>');
         touch($this->root.'/waiting/'.$token.'.svg', time() - 2 * PreparedSvgStore::LIFETIME_IN_SECONDS);
@@ -154,7 +155,7 @@ final class PreparedSvgStoreTest extends TestCase
 
     public function testWritingPurgesWhatAWriteLeftHalfway(): void
     {
-        $store = new PreparedSvgStore($this->root.'/waiting');
+        $store = new PreparedSvgStore($this->root.'/waiting', scanIntervalInSeconds: 0);
         $store->put('<svg/>', 'a.svg');
         file_put_contents($this->root.'/waiting/'.str_repeat('b', 32).'.name', 'orphan.svg');
         touch($this->root.'/waiting/'.str_repeat('b', 32).'.name', time() - 2 * PreparedSvgStore::LIFETIME_IN_SECONDS);
@@ -166,7 +167,7 @@ final class PreparedSvgStoreTest extends TestCase
 
     public function testAWaitingFileIsTakenOnceAndOnlyOnce(): void
     {
-        $store = new PreparedSvgStore($this->root.'/waiting');
+        $store = new PreparedSvgStore($this->root.'/waiting', scanIntervalInSeconds: 0);
         $token = $store->put('<svg/>', 'double.svg');
 
         self::assertSame('double.svg', $store->claim($token)?->name);
@@ -180,7 +181,7 @@ final class PreparedSvgStoreTest extends TestCase
 
     public function testAForgottenFileIsGone(): void
     {
-        $store = new PreparedSvgStore($this->root.'/waiting');
+        $store = new PreparedSvgStore($this->root.'/waiting', scanIntervalInSeconds: 0);
         $token = $store->put('<svg/>', 'a.svg');
 
         $store->forget($token);
@@ -194,7 +195,7 @@ final class PreparedSvgStoreTest extends TestCase
         (new Filesystem())->mkdir($this->root.'/waiting');
         file_put_contents($this->root.'/victim.svg', 'keep me');
         file_put_contents($this->root.'/victim.name', 'keep me');
-        $store = new PreparedSvgStore($this->root.'/waiting');
+        $store = new PreparedSvgStore($this->root.'/waiting', scanIntervalInSeconds: 0);
 
         foreach (['../victim', '', 'ABCDEF0123456789ABCDEF0123456789', str_repeat('a', 31), str_repeat('a', 33), str_repeat('g', 32)] as $token) {
             self::assertFalse(PreparedSvgStore::isToken($token), $token);
@@ -210,5 +211,146 @@ final class PreparedSvgStoreTest extends TestCase
     {
         self::assertNull((new PreparedSvgStore($this->root.'/never-created'))->find(str_repeat('a', 32)));
         self::assertDirectoryDoesNotExist($this->root.'/never-created');
+    }
+
+    public function testAFileReadIsTheLastToLeaveWhenTheCeilingIsReached(): void
+    {
+        $store = new PreparedSvgStore($this->root.'/waiting', 100, 0);
+        $first = $store->put(str_repeat('a', 40), 'a.svg');
+        $this->age($first, 100);
+        $second = $store->put(str_repeat('b', 40), 'b.svg');
+        $this->age($second, 50);
+
+        // Written first, read last: it is no longer the one used least recently.
+        self::assertNotNull($store->find($first));
+        $third = $store->put(str_repeat('c', 40), 'c.svg');
+
+        self::assertNotNull($store->find($first), 'The file that was read stays.');
+        self::assertNull($store->find($second), 'The file nobody read leaves.');
+        self::assertNotNull($store->find($third));
+    }
+
+    public function testAResultReadKeepsItsFileAmongTheLastToLeave(): void
+    {
+        $store = new PreparedSvgStore($this->root.'/waiting', 100, 0);
+        $first = $store->put(str_repeat('a', 20), 'a.svg');
+        $store->remember($first, 'base', str_repeat('r', 10));
+        $this->age($first, 100);
+        $second = $store->put(str_repeat('b', 20), 'b.svg');
+        $this->age($second, 50);
+
+        // A read of the result refreshes the whole entry, not only its svg.
+        self::assertNotNull($store->result($first, 'base'));
+        $store->put(str_repeat('c', 40), 'c.svg');
+
+        self::assertNotNull($store->find($first));
+        self::assertNull($store->find($second));
+    }
+
+    public function testReadingAFileRefreshesItsNameToo(): void
+    {
+        $store = new PreparedSvgStore($this->root.'/waiting', scanIntervalInSeconds: 0);
+        $token = $store->put('<svg/>', 'used.svg');
+        $this->age($token, PreparedSvgStore::LIFETIME_IN_SECONDS - 60);
+
+        self::assertNotNull($store->find($token));
+
+        // The purge takes a name an hour old: the read must have refreshed it with its file.
+        clearstatcache();
+        self::assertGreaterThan(time() - 30, filemtime($this->root.'/waiting/'.$token.'.name'));
+        self::assertGreaterThan(time() - 30, filemtime($this->root.'/waiting/'.$token.'.svg'));
+    }
+
+    public function testTheDirectoryIsScannedOnceAnIntervalAndAWriteBetweenTwoScansIsAccepted(): void
+    {
+        $store = new PreparedSvgStore($this->root.'/waiting', 100, 3600);
+        $first = $store->put(str_repeat('a', 40), 'a.svg');
+        $this->age($first, 100);
+        $second = $store->put(str_repeat('b', 40), 'b.svg');
+        $third = $store->put(str_repeat('c', 40), 'c.svg');
+
+        // 3 x 45 bytes over a ceiling of 100: no scan since the first write, nothing left.
+        self::assertNotNull($store->find($first));
+        self::assertNotNull($store->find($second));
+        self::assertNotNull($store->find($third));
+        self::assertFileExists($this->root.'/waiting/.checked');
+
+        $store->remember($third, 'base', str_repeat('r', 200));
+        self::assertNull($store->result($third, 'base'), 'A result over the ceiling by itself is refused without a scan.');
+    }
+
+    public function testAStrayFileAndTheMarkerAreNeitherCountedNorRemoved(): void
+    {
+        $store = new PreparedSvgStore($this->root.'/waiting', 100, 0);
+        (new Filesystem())->mkdir($this->root.'/waiting');
+        file_put_contents($this->root.'/waiting/.gitkeep', str_repeat('k', 500));
+        file_put_contents($this->root.'/waiting/notes.txt', str_repeat('n', 500));
+
+        $token = $store->put(str_repeat('a', 40), 'a.svg');
+        $store->remember($token, 'base', str_repeat('r', 40));
+
+        self::assertSame(str_repeat('r', 40), $store->result($token, 'base'), 'The strays do not use the room.');
+        self::assertFileExists($this->root.'/waiting/.gitkeep');
+        self::assertFileExists($this->root.'/waiting/notes.txt');
+    }
+
+    public function testAResultTheDiskRefusesIsLoggedAndNotThrown(): void
+    {
+        $logger = new class extends AbstractLogger {
+            /** @var list<string> */
+            public array $levels = [];
+
+            public function log($level, string|\Stringable $message, array $context = []): void
+            {
+                $this->levels[] = (string) $level;
+            }
+        };
+        $store = new PreparedSvgStore($this->root.'/waiting', scanIntervalInSeconds: 0, logger: $logger);
+        $token = $store->put('<svg/>', 'a.svg');
+        // A directory where the result goes: the write cannot succeed.
+        (new Filesystem())->mkdir($this->root.'/waiting/'.$token.'.base.result/inside');
+
+        $store->remember($token, 'base', '<svg>x</svg>');
+
+        self::assertSame(['warning'], $logger->levels);
+    }
+
+    public function testAnEmptyWaitingFileAndAnEmptyResultAreMisses(): void
+    {
+        $store = new PreparedSvgStore($this->root.'/waiting', scanIntervalInSeconds: 0);
+        $token = $store->put('<svg/>', 'a.svg');
+        $store->remember($token, 'base', '<svg>x</svg>');
+        file_put_contents($this->root.'/waiting/'.$token.'.base.result', '');
+
+        self::assertNull($store->result($token, 'base'));
+
+        file_put_contents($this->root.'/waiting/'.$token.'.svg', '');
+
+        self::assertNull($store->find($token));
+    }
+
+    public function testAResultRemovedMeanwhileIsNotCreatedAgainByItsRefresh(): void
+    {
+        $store = new PreparedSvgStore($this->root.'/waiting', scanIntervalInSeconds: 0);
+        $token = $store->put('<svg/>', 'a.svg');
+        $store->remember($token, 'base', '<svg>x</svg>');
+        unlink($this->root.'/waiting/'.$token.'.base.result');
+
+        self::assertNull($store->result($token, 'base'));
+        self::assertFileDoesNotExist($this->root.'/waiting/'.$token.'.base.result');
+    }
+
+    public function testANameRemovedMeanwhileIsNotCreatedAgainByTheRefresh(): void
+    {
+        $store = new PreparedSvgStore($this->root.'/waiting', scanIntervalInSeconds: 0);
+        $token = $store->put('<svg/>', 'a.svg');
+        $this->age($token, 100);
+        // The name is gone, as when a purge removed it meanwhile: it is not created again.
+        unlink($this->root.'/waiting/'.$token.'.name');
+
+        $file = $store->find($token);
+
+        self::assertSame('', $file?->name);
+        self::assertFileDoesNotExist($this->root.'/waiting/'.$token.'.name');
     }
 }
