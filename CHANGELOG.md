@@ -9,17 +9,27 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Added
 
-- **Three levels of optimization round the points of an SVG file**: on the
-  screen that prepares it, after "None", "No visible difference", "Slight loss
-  of detail" and "Visible loss of detail" keep each point of the paths and
-  polygons within 1/4000, 1/1000 and 1/400 of the diagonal of the drawing.
-  The decimals kept are the fewest that hold that tolerance; a point written
-  relative to the one before starts from that point as rounded, so no error
-  adds up along a path. A `transform` that enlarges the drawing keeps more
-  decimals; a pattern, a marker, a symbol, a nested `svg` or a content in
-  units of its bounding box is left as it is. On the same 548 files, after
-  the base optimization: 30 %, 41 % and 48 % lighter, 39 %, 52 % and 63 %
-  once compressed.
+- **Three levels of optimization round the points of an SVG file and remove
+  those the drawing does not need**: they keep every point within 1/4000 (No
+  visible difference), 1/1000 (Slight loss of detail) or 1/400 (Visible loss
+  of detail) of the diagonal of the `viewBox`, on each axis. The base optimization alone
+  stays the default. Only `d` and `points` change. The decimals kept are the
+  fewest that hold the tolerance, and a point written relative to the one
+  before starts from that point as rounded, so no error adds up along a path.
+  A curve that stays within the tolerance of its chord becomes a line, and the
+  points of a run of lines within the tolerance of a longer line are removed;
+  arcs, smooth curves, movetos and closepaths stay. A shape that draws the
+  ends or corners of its strokes (a round or square cap, a marker) is only
+  rounded. A `transform` that enlarges the drawing tightens the tolerance; a
+  pattern, a marker, a symbol, a nested `svg`, a content in units of its
+  bounding box, an unreadable `transform` or a `transform` in CSS leaves the
+  drawing as it is. On 548
+  files (the icons and illustrations of Flexy, the flags of the back office, a
+  sample of Bootstrap Icons), after the base optimization: 36.5 %, 59.0 % and
+  69.0 % lighter, 39.9 %, 61.6 % and 70.3 % once compressed. The largest
+  illustration of Flexy goes from 375 KB to 178, 66 and 25 KB. A level takes
+  at most 1.3 s on the heaviest real file. Applied to its own result, a level
+  can still remove points.
 
 ### Changed
 

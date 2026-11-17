@@ -32,6 +32,12 @@ use TheliaCMS\Media\Svg\Optimization\SvgDocument;
  * drawn at a scale of its own (pattern, marker, symbol, nested svg, units of
  * the bounding box) is left as it is, and so is a drawing whose styles
  * transform it.
+ *
+ * Simplifying also takes points out where the drawing hardly turns (see
+ * StraightRuns), within what the rounding leaves of the tolerance, so that
+ * both together keep every point within it. A shape whose line ends or
+ * corners are drawn (a round or square cap, a marker) keeps all its points.
+
  */
 final readonly class PathRounding
 {
@@ -49,9 +55,14 @@ final readonly class PathRounding
     // The property itself, not text-transform.
     private const string STYLE_TRANSFORM = '/(?<![\w-])transform\s*:/i';
 
+    private const string STYLE_DRAWN_ENDS = '/(?<![\w-])(?:stroke-linecap\s*:\s*(?!butt\b)|marker(?:-start|-mid|-end)?\s*:\s*(?!none\b))/i';
+
+    private const array DRAWN_END_ATTRIBUTES = ['stroke-linecap' => 'butt', 'marker' => 'none', 'marker-start' => 'none', 'marker-mid' => 'none', 'marker-end' => 'none'];
+
     public function __construct(
         private PathData $paths = new PathData(),
         private ShorterPathNotation $notation = new ShorterPathNotation(),
+        private StraightRuns $runs = new StraightRuns(),
     ) {
     }
 
@@ -62,13 +73,53 @@ final readonly class PathRounding
      */
     public function round(string $svg, float $share): string
     {
-        $document = SvgDocument::load($svg);
-        $decimals = null === $document ? null : $this->decimals($document, $share);
+        return $this->rewritten($svg, $share, false);
+    }
 
-        if (null === $document || null === $decimals) {
+    /**
+     * The drawing with fewer points and rounded, or as it was when nothing
+     * comes out lighter.
+     *
+     * @param float $share tolerance, as a share of the diagonal of the viewBox
+     */
+    public function simplify(string $svg, float $share): string
+    {
+        return $this->rewritten($svg, $share, true);
+    }
+
+    private function rewritten(string $svg, float $share, bool $simplifying): string
+    {
+        $document = SvgDocument::load($svg);
+        $tolerance = null === $document ? null : $this->tolerance($document, $share);
+
+        if (null === $document || null === $tolerance) {
             return $svg;
         }
 
+        $decimals = (int) ceil(-log10(2 * $tolerance));
+        $best = $this->rewrittenAt($document, $decimals, $tolerance, $simplifying) ?? $svg;
+
+        // The fewest decimals can leave less than half of the tolerance to
+        // take points out; one decimal more leaves most of it.
+        $finer = $simplifying && 0.5 * 10 ** -$decimals * \M_SQRT2 > $tolerance / 2 ? SvgDocument::load($svg) : null;
+        $other = null === $finer ? null : $this->rewrittenAt($finer, $decimals + 1, $tolerance, true);
+
+        if (null !== $other && \strlen($other) < \strlen($best)) {
+            $best = $other;
+        }
+
+        return \strlen($best) < \strlen($svg) ? $best : $svg;
+    }
+
+    /**
+     * The drawing with its points rounded to the given decimals and, given
+     * a tolerance, fewer of them; null when no path came out shorter.
+     */
+    private function rewrittenAt(\DOMDocument $document, int $decimals, float $tolerance, bool $simplifying): ?string
+    {
+        // Rounding to k decimals moves a point by half a unit of the k-th
+        // on each axis; taking points out has what remains.
+        $straightening = !$simplifying || $this->styleDrawsEnds($document) ? 0.0 : $tolerance - 0.5 * 10 ** -$decimals * \M_SQRT2;
         $changed = false;
 
         foreach ($document->getElementsByTagName('*') as $element) {
@@ -83,7 +134,8 @@ final readonly class PathRounding
             }
 
             $data = $element->getAttribute($attribute);
-            $rounded = 'd' === $attribute ? $this->roundedPath($data, $decimals) : $this->roundedPoints($data, $decimals);
+            $budget = $straightening > 0.0 && !$this->drawsEnds($element) ? $straightening : 0.0;
+            $rounded = 'd' === $attribute ? $this->roundedPath($data, $decimals, $tolerance, $budget) : $this->roundedPoints($data, $decimals, $budget);
 
             if (null !== $rounded && \strlen($rounded) < \strlen($data)) {
                 $element->setAttribute($attribute, $rounded);
@@ -91,20 +143,14 @@ final readonly class PathRounding
             }
         }
 
-        if (!$changed) {
-            return $svg;
-        }
-
-        $rounded = SvgDocument::serialize($document);
-
-        return \strlen($rounded) < \strlen($svg) ? $rounded : $svg;
+        return $changed ? SvgDocument::serialize($document) : null;
     }
 
     /**
-     * The fewest decimals whose rounding stays within the tolerance; null
-     * when the drawing cannot be measured.
+     * The tolerance in units of the drawing; null when the drawing cannot
+     * be measured.
      */
-    private function decimals(\DOMDocument $document, float $share): ?int
+    private function tolerance(\DOMDocument $document, float $share): ?float
     {
         $root = $document->documentElement;
         $box = $root instanceof \DOMElement ? preg_split('/[\s,]+/', trim($root->getAttribute('viewBox')), -1, \PREG_SPLIT_NO_EMPTY) : false;
@@ -121,12 +167,39 @@ final readonly class PathRounding
 
         $tolerance = $share * hypot((float) $box[2], (float) $box[3]) / max(1.0, $enlargement);
 
-        if (!is_finite($tolerance) || $tolerance <= 0.0) {
-            return null;
+        return is_finite($tolerance) && $tolerance > 0.0 ? $tolerance : null;
+    }
+
+    private function styleDrawsEnds(\DOMDocument $document): bool
+    {
+        foreach ($document->getElementsByTagName('style') as $style) {
+            if (1 === preg_match(self::STYLE_DRAWN_ENDS, $style->textContent)) {
+                return true;
+            }
         }
 
-        // Rounding to k decimals moves a value by half a unit of the k-th.
-        return (int) ceil(-log10(2 * $tolerance));
+        return false;
+    }
+
+    /**
+     * Whether the shape, or a group around it, draws the ends or the
+     * corners of its lines: taking a point out would move what is drawn.
+     */
+    private function drawsEnds(\DOMElement $element): bool
+    {
+        for ($node = $element; $node instanceof \DOMElement; $node = $node->parentNode) {
+            foreach (self::DRAWN_END_ATTRIBUTES as $attribute => $none) {
+                if ($node->hasAttribute($attribute) && $none !== strtolower(trim($node->getAttribute($attribute)))) {
+                    return true;
+                }
+            }
+
+            if (1 === preg_match(self::STYLE_DRAWN_ENDS, $node->getAttribute('style'))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -220,53 +293,81 @@ final readonly class PathRounding
         return false;
     }
 
-    private function roundedPath(string $data, int $decimals): ?string
+    private function roundedPath(string $data, int $decimals, float $tolerance, float $straightening): ?string
     {
-        $segments = $this->paths->segments($data);
+        $drawn = $this->absolute($data);
 
-        if (null === $segments) {
+        if (null === $drawn) {
             return null;
         }
 
+        if ($straightening > 0.0) {
+            $drawn = $this->runs->straighten($drawn, $straightening);
+        }
+
         $rounded = [];
-        $current = [0.0, 0.0];
-        $start = $current;
+        $previousEnd = null;
+        // The control point a smooth curve mirrors, as drawn and as rounded,
+        // and the end of the segment before it.
+        $mirrored = null;
+        $origin = [0.0, 0.0];
+        $roundedOrigin = [0.0, 0.0];
 
-        foreach ($segments as $segment) {
-            $command = strtoupper($segment->command);
+        foreach ($drawn as $position => $segment) {
+            $roles = str_split(self::ROLES[$segment['command']]);
             $arguments = [];
-            $next = $current;
 
-            foreach (str_split(self::ROLES[$command]) as $index => $role) {
-                $text = $segment->arguments[$index];
+            foreach ($segment['values'] as $index => $value) {
+                $arguments[] = match ($roles[$index]) {
+                    'n' => (string) $value,
+                    'r' => $this->roundedRadius((float) $value, $decimals),
+                    default => $this->rounded((float) $value, $decimals),
+                };
+            }
 
-                if ('n' === $role) {
-                    $arguments[] = $text;
+            $end = [$this->rounded($segment['end'][0], $decimals), $this->rounded($segment['end'][1], $decimals)];
+            $command = $segment['command'];
 
-                    continue;
+            // A smooth curve mirrors a control point it does not write: once
+            // rounded, its neighbours can move that point out of the
+            // tolerance, and along a chain of them further. It is then written
+            // with that point, from where the chain starts again.
+            $control = $roundedControl = $segment['end'];
+
+            if ('S' === $command || 'T' === $command) {
+                $pair = 'S' === $command ? ['C', 'S'] : ['Q', 'T'];
+                $follows = null !== $mirrored && \in_array($mirrored['after'], $pair, true);
+                $implicit = $follows ? [2 * $origin[0] - $mirrored['drawn'][0], 2 * $origin[1] - $mirrored['drawn'][1]] : $origin;
+                $roundedImplicit = $follows ? [2 * $roundedOrigin[0] - $mirrored['rounded'][0], 2 * $roundedOrigin[1] - $mirrored['rounded'][1]] : $roundedOrigin;
+
+                if (max(abs($implicit[0] - $roundedImplicit[0]), abs($implicit[1] - $roundedImplicit[1])) > $tolerance) {
+                    $command = 'S' === $command ? 'C' : 'Q';
+                    array_unshift($arguments, $this->rounded($implicit[0], $decimals), $this->rounded($implicit[1], $decimals));
+                    $roundedImplicit = [(float) $arguments[0], (float) $arguments[1]];
                 }
 
-                $value = (float) $text;
+                $control = 'S' === $segment['command'] ? [(float) $segment['values'][0], (float) $segment['values'][1]] : $implicit;
+                $roundedControl = 'S' === $segment['command'] ? [(float) $arguments[\count($arguments) - 4], (float) $arguments[\count($arguments) - 3]] : $roundedImplicit;
+            } elseif ('C' === $command || 'Q' === $command) {
+                $at = 'C' === $command ? 2 : 0;
+                $control = [(float) $segment['values'][$at], (float) $segment['values'][$at + 1]];
+                $roundedControl = [(float) $arguments[$at], (float) $arguments[$at + 1]];
+            }
 
-                if ('r' === $role) {
-                    $arguments[] = $this->roundedRadius($value, $decimals);
+            $mirrored = \in_array($command, ['C', 'S', 'Q', 'T'], true) ? ['after' => $segment['command'], 'drawn' => $control, 'rounded' => $roundedControl] : null;
+            $origin = $segment['end'];
+            $roundedOrigin = [(float) $end[0], (float) $end[1]];
 
-                    continue;
-                }
+            // A line that the rounding brought down to nothing leaves, unless
+            // a smooth curve follows: it would then mirror the curve before.
+            $next = $drawn[$position + 1]['command'] ?? '';
 
-                $axis = 'x' === $role ? 0 : 1;
-                $value += $segment->isRelative() ? $current[$axis] : 0.0;
-                $next[$axis] = $value;
-                $arguments[] = $this->rounded($value, $decimals);
+            if ($straightening > 0.0 && \in_array($segment['command'], ['L', 'H', 'V'], true) && $end === $previousEnd && !\in_array($next, ['S', 'T'], true)) {
+                continue;
             }
 
             $rounded[] = new PathSegment('Z' === $command ? 'z' : $command, $arguments);
-
-            if ('M' === $command) {
-                $start = $next;
-            }
-
-            $current = 'Z' === $command ? $start : $next;
+            $previousEnd = $end;
         }
 
         $absolute = $this->paths->write($rounded);
@@ -274,19 +375,79 @@ final readonly class PathRounding
         return $this->notation->shorterData($absolute) ?? $absolute;
     }
 
-    private function roundedPoints(string $list, int $decimals): ?string
+    /**
+     * The segments of a path with every position absolute: their values in
+     * the order of their arguments, where they end and their control points.
+     *
+     * @return list<array{command: string, values: list<float|string>, end: array{float, float}, controls: list<array{float, float}>}>|null
+     */
+    private function absolute(string $data): ?array
     {
-        $points = $this->paths->pointList($list);
+        $segments = $this->paths->segments($data);
 
-        if (null === $points) {
+        if (null === $segments) {
             return null;
+        }
+
+        $drawn = [];
+        $current = [0.0, 0.0];
+        $start = $current;
+
+        foreach ($segments as $segment) {
+            $command = strtoupper($segment->command);
+            $values = [];
+            $points = [];
+            $next = $current;
+
+            foreach (str_split(self::ROLES[$command]) as $index => $role) {
+                $text = $segment->arguments[$index];
+
+                if ('n' === $role || 'r' === $role) {
+                    $values[] = 'n' === $role ? $text : (float) $text;
+
+                    continue;
+                }
+
+                $axis = 'x' === $role ? 0 : 1;
+                $next[$axis] = (float) $text + ($segment->isRelative() ? $current[$axis] : 0.0);
+                $values[] = $next[$axis];
+
+                if ('y' === $role) {
+                    $points[] = $next;
+                }
+            }
+
+            if ('M' === $command) {
+                $start = $next;
+            }
+
+            $current = 'Z' === $command ? $start : $next;
+            $controls = \in_array($command, ['C', 'S', 'Q'], true) ? \array_slice($points, 0, -1) : [];
+            $drawn[] = ['command' => $command, 'values' => $values, 'end' => $current, 'controls' => $controls];
+        }
+
+        return $drawn;
+    }
+
+    private function roundedPoints(string $list, int $decimals, float $straightening): ?string
+    {
+        $listed = $this->paths->pointList($list);
+
+        if (null === $listed) {
+            return null;
+        }
+
+        $points = array_map(static fn (array $point): array => [(float) $point[0], (float) $point[1]], $listed);
+
+        if ($straightening > 0.0) {
+            $points = $this->runs->straightenedPoints($points, $straightening);
         }
 
         $numbers = [];
 
         foreach ($points as [$x, $y]) {
-            $numbers[] = $this->rounded((float) $x, $decimals);
-            $numbers[] = $this->rounded((float) $y, $decimals);
+            $numbers[] = $this->rounded($x, $decimals);
+            $numbers[] = $this->rounded($y, $decimals);
         }
 
         return implode(' ', $numbers);

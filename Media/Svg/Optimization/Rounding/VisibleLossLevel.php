@@ -46,6 +46,6 @@ final readonly class VisibleLossLevel implements SvgOptimizationLevel
 
     public function apply(string $svg): string
     {
-        return $this->rounding->round($svg, self::TOLERANCE);
+        return $this->rounding->simplify($svg, self::TOLERANCE);
     }
 }
