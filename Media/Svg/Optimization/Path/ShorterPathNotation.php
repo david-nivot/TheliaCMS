@@ -19,7 +19,8 @@ namespace TheliaCMS\Media\Svg\Optimization\Path;
  * forms, and a lineto that keeps one coordinate as a horizontal or vertical
  * one. No value changes: the positions are computed exactly, the path
  * written is read back and compared with the one read, and the data is
- * replaced only when it comes out shorter.
+ * replaced only when it comes out shorter. A path holding more numbers than
+ * the ceiling of PathData is left as written.
  */
 final readonly class ShorterPathNotation
 {

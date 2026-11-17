@@ -31,7 +31,7 @@ final readonly class NoVisibleDifferenceLevel implements SvgOptimizationLevel
 
     public function name(): string
     {
-        return 'round-fine';
+        return 'lossy-fine';
     }
 
     public function label(): string

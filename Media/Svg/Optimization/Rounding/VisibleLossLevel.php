@@ -31,7 +31,7 @@ final readonly class VisibleLossLevel implements SvgOptimizationLevel
 
     public function name(): string
     {
-        return 'round-coarse';
+        return 'lossy-coarse';
     }
 
     public function label(): string

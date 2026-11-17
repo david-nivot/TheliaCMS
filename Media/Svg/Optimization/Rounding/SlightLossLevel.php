@@ -31,7 +31,7 @@ final readonly class SlightLossLevel implements SvgOptimizationLevel
 
     public function name(): string
     {
-        return 'round-medium';
+        return 'lossy-medium';
     }
 
     public function label(): string

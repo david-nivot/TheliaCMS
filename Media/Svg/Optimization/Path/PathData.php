@@ -20,11 +20,21 @@ namespace TheliaCMS\Media\Svg\Optimization\Path;
  * the SVG grammar allows: the letter of a repeated command left out,
  * no separator where a sign or a second decimal point ends a number, and
  * the arc flags glued. Null as soon as anything is not a plain number or a
- * command is unknown.
+ * command is unknown, and for data holding more numbers than the ceiling.
  */
 final readonly class PathData
 {
     public const string NUMBER = '[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?';
+
+    /**
+     * The most numbers a path data or point list may hold, a close counted
+     * as one, counted before it is read: past it, the data counts as
+     * unreadable and stays as written. A segment holds one of them at least,
+     * so the ceiling bounds the segments too. At the ceiling, a level peaks
+     * at some 50 MB of memory and the base at 30 MB; the longest real path
+     * measured holds 37,400 numbers (8,100 segments).
+     */
+    public const int MAXIMUM_NUMBERS = 40_000;
 
     private const array ARITY = ['M' => 2, 'L' => 2, 'H' => 1, 'V' => 1, 'C' => 6, 'S' => 4, 'Q' => 4, 'T' => 2, 'A' => 7, 'Z' => 0];
 
@@ -35,6 +45,10 @@ final readonly class PathData
      */
     public function segments(string $data): ?array
     {
+        if ($this->exceedsCeiling($data)) {
+            return null;
+        }
+
         $segments = [];
         $command = '';
         $arguments = [];
@@ -104,6 +118,10 @@ final readonly class PathData
      */
     public function pointList(string $list): ?array
     {
+        if ($this->exceedsCeiling($list)) {
+            return null;
+        }
+
         $numbers = preg_split('/[\s,]+/', trim($list), -1, \PREG_SPLIT_NO_EMPTY);
 
         if (false === $numbers || [] === $numbers || 1 === \count($numbers) % 2) {
@@ -121,6 +139,17 @@ final readonly class PathData
         }
 
         return $points;
+    }
+
+    /**
+     * Whether the data holds more numbers and closes than the ceiling; they
+     * are counted without being kept.
+     */
+    public function exceedsCeiling(string $data): bool
+    {
+        $count = preg_match_all('/'.self::NUMBER.'|[zZ]/', $data);
+
+        return false === $count || $count > self::MAXIMUM_NUMBERS;
     }
 
     public function isNumber(string $value): bool

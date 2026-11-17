@@ -16,23 +16,33 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   SVG file they are opt-in, behind a Lossy optimization switch: the base
   optimization alone stays the default, and the three levels are then
   previewed side by side, each with its weight and gain. A drawing with more
-  than 500,000 bytes of path data is refused the mode. Only `d` and `points`
+  than 500,000 bytes of path data, or a path of more than 40,000 numbers, is
+  refused the mode. Only `d` and `points`
   change. The decimals kept are the fewest that hold the tolerance, and a point written relative to the one
   before starts from that point as rounded, so no error adds up along a path.
   A curve that stays within the tolerance of its chord becomes a line, and the
   points of a run of lines within the tolerance of a longer line are removed;
   arcs, smooth curves, movetos and closepaths stay. A shape that draws the
   ends or corners of its strokes (a round or square cap, a marker) is only
-  rounded. A `transform` that enlarges the drawing tightens the tolerance; a
-  pattern, a marker, a symbol, a nested `svg`, a content in units of its
-  bounding box, an unreadable `transform` or a `transform` in CSS leaves the
-  drawing as it is, and so do more than 500,000 bytes of path data. On 548
-  files (the icons and illustrations of Flexy, the flags of the back office, a
-  sample of Bootstrap Icons), after the base optimization: 36.5 %, 59.0 % and
-  69.0 % lighter, 39.9 %, 61.6 % and 70.3 % once compressed. The largest
-  illustration of Flexy goes from 375 KB to 178, 66 and 25 KB. A level takes
-  at most 1.3 s on the heaviest real file. Applied to its own result, a level
-  can still remove points. The choice is explained in
+  rounded, and so is a shape drawn through a `use` that sets them. The
+  enlargements of the `transform` attributes from a shape up to the root, or
+  through each `use` that draws it and each element a clip path or a mask
+  applies to, multiply and tighten the tolerance; a pattern, a marker, a
+  symbol, a nested `svg`, a content in units of its bounding box, a clip path
+  or a mask a style sheet applies, a path a text or a motion follows, an
+  unreadable `transform` or a `transform` in CSS leaves the drawing as it is,
+  and so do more than 500,000 bytes of path data or a path of more than
+  40,000 numbers. An arc is checked along its length once rounded, its radii
+  included, and keeps more decimals, or its own values, where rounding would
+  move it past the tolerance; an arc too small to be measured with a float
+  keeps its path as written. Taking points out stops after 1,000,000
+  distances measured, over both precisions tried, so a drawing built against
+  it is only rounded. On 548 files (the icons and illustrations of Flexy, the flags of
+  the back office, a sample of Bootstrap Icons), after the base optimization:
+  36.5 %, 59.3 % and 69.3 % lighter, 39.9 %, 61.8 % and 70.6 % once
+  compressed. The largest illustration of Flexy goes from 375 KB to 178, 66
+  and 25 KB. A level takes at most 1.1 s on the heaviest real file. Applied to
+  its own result, a level can still remove points. The choice is explained in
   [ADR 20](docs/adr/0020-a-level-of-optimization-keeps-every-point-within-a-share-of-the-drawing.md).
 
 ### Changed
@@ -47,7 +57,8 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   weighed over the whole path, and a line that keeps a coordinate becomes a
   horizontal or vertical one. No value changes: the positions are computed
   exactly, the path written is read back and compared with the one read, and
-  the data stays as it was unless it comes out shorter. On 548 files (the
+  the data stays as it was unless it comes out shorter, or holds more than
+  40,000 numbers. On 548 files (the
   icons and illustrations of Flexy, the flags of the back office, a sample of
   Bootstrap Icons) the total weighs 14 % less, 17 % less once compressed; the
   illustrations of Flexy, 31 % and 39 %.

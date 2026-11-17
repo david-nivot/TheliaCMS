@@ -68,6 +68,18 @@ final class PathDataTest extends TestCase
         yield 'not a number' => ['M0 0L1 #'];
     }
 
+    public function testDataPastTheCeilingIsNotRead(): void
+    {
+        $paths = new PathData();
+        // Numbers and closes count: a close holds no number.
+        $atTheCeiling = 'M0 0'.str_repeat('h1z', intdiv(PathData::MAXIMUM_NUMBERS - 2, 2));
+
+        self::assertNotNull($paths->segments($atTheCeiling));
+        self::assertNull($paths->segments($atTheCeiling.'z'));
+        self::assertNotNull($paths->pointList(str_repeat('1 ', PathData::MAXIMUM_NUMBERS)));
+        self::assertNull($paths->pointList(str_repeat('1 ', PathData::MAXIMUM_NUMBERS + 2)));
+    }
+
     #[DataProvider('writtenPaths')]
     public function testSegmentsAreWrittenInTheShortestNotation(string $data, string $expected): void
     {

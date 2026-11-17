@@ -27,6 +27,9 @@ namespace TheliaCMS\Media\Svg\Optimization\Rounding;
  * run, and so does a smooth curve and the curve whose control point it
  * mirrors, which are left as they are.
  *
+ * Every distance measured is counted in a budget: past it, the rest of the
+ * drawing keeps its points.
+ *
  * @phpstan-type Point array{float, float}
  * @phpstan-type Drawn array{command: string, values: list<float|string>, end: Point, controls: list<Point>}
  */
@@ -43,7 +46,7 @@ final readonly class StraightRuns
      *
      * @return list<Drawn>
      */
-    public function straighten(array $segments, float $tolerance): array
+    public function straighten(array $segments, float $tolerance, DistanceBudget $budget): array
     {
         $straightened = [];
         $count = \count($segments);
@@ -63,7 +66,7 @@ final readonly class StraightRuns
                 ++$end;
             }
 
-            array_push($straightened, ...$this->straightenedRun($segments[$index - 1]['end'], \array_slice($segments, $index, $end - $index + 1), $tolerance));
+            array_push($straightened, ...$this->straightenedRun($segments[$index - 1]['end'], \array_slice($segments, $index, $end - $index + 1), $tolerance, $budget));
             $index = $end + 1;
         }
 
@@ -77,7 +80,7 @@ final readonly class StraightRuns
      *
      * @return list<Point>
      */
-    public function straightenedPoints(array $points, float $tolerance): array
+    public function straightenedPoints(array $points, float $tolerance, DistanceBudget $budget): array
     {
         if (\count($points) < 3) {
             return $points;
@@ -85,7 +88,7 @@ final readonly class StraightRuns
 
         $kept = [];
 
-        foreach ($this->spans($points, array_fill(0, \count($points), []), $tolerance) as [$from, $to]) {
+        foreach ($this->spans($points, array_fill(0, \count($points), []), $tolerance, $budget) as [$from, $to]) {
             $kept[] = $points[$from];
         }
 
@@ -110,7 +113,7 @@ final readonly class StraightRuns
      *
      * @return list<Drawn>
      */
-    private function straightenedRun(array $start, array $run, float $tolerance): array
+    private function straightenedRun(array $start, array $run, float $tolerance, DistanceBudget $budget): array
     {
         $vertices = [$start];
         $controls = [[]];
@@ -122,7 +125,7 @@ final readonly class StraightRuns
 
         $straightened = [];
 
-        foreach ($this->spans($vertices, $controls, $tolerance) as [$from, $to, $isLine]) {
+        foreach ($this->spans($vertices, $controls, $tolerance, $budget) as [$from, $to, $isLine]) {
             $kept = $run[$to - 1];
 
             if (!$isLine || ($to === $from + 1 && \in_array($kept['command'], self::LINES, true))) {
@@ -140,20 +143,37 @@ final readonly class StraightRuns
     /**
      * The spans of the run, in order: a span that holds within the
      * tolerance of the line between its ends is drawn as that line; a span
-     * of one segment that does not stays as it is.
+     * of one segment that does not stays as it is, and so does each segment
+     * of a span the budget can no longer measure.
      *
      * @param list<Point>       $vertices
      * @param list<list<Point>> $controls the control points of the segment that ends on each vertex
      *
      * @return list<array{int, int, bool}>
      */
-    private function spans(array $vertices, array $controls, float $tolerance): array
+    private function spans(array $vertices, array $controls, float $tolerance, DistanceBudget $budget): array
     {
         $spans = [];
         $pending = [[0, \count($vertices) - 1]];
+        // The control points up to each vertex, to price a span before it is measured.
+        $controlsUpTo = [];
+        $sum = 0;
+
+        foreach ($controls as $vertex => $points) {
+            $sum += \count($points);
+            $controlsUpTo[$vertex] = $sum;
+        }
 
         while ([] !== $pending) {
             [$from, $to] = array_pop($pending);
+
+            if (!$budget->spend($to - $from - 1 + $controlsUpTo[$to] - $controlsUpTo[$from])) {
+                for ($vertex = $from; $vertex < $to; ++$vertex) {
+                    $spans[] = [$vertex, $vertex + 1, false];
+                }
+
+                continue;
+            }
             $farthest = 0.0;
             $split = null;
             $splitDistance = -1.0;

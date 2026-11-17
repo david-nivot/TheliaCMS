@@ -17,8 +17,11 @@ namespace TheliaCMS\Tests\Unit\Media\Svg\Optimization\Rounding;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use TheliaCMS\Media\Svg\Optimization\Path\PathData;
+use TheliaCMS\Media\Svg\Optimization\Path\PathSegment;
+use TheliaCMS\Media\Svg\Optimization\Rounding\DistanceBudget;
 use TheliaCMS\Media\Svg\Optimization\Rounding\PathRounding;
 use TheliaCMS\Media\Svg\Optimization\Rounding\SlightLossLevel;
+use TheliaCMS\Media\Svg\Optimization\Rounding\StraightRuns;
 
 final class PathSimplificationTest extends TestCase
 {
@@ -45,6 +48,8 @@ final class PathSimplificationTest extends TestCase
         yield 'a line that wavers then turns' => [$wavy];
         yield 'curves that hardly bend, and a few that do' => [$bumpy];
         yield 'relative commands, a closed shape' => ['m1.234 1.234l3.01.012 3.004-.011 2.998.014 3 2 .01 3.01-.012 2.99z'];
+        // After a close, a relative moveto starts from the start of the subpath.
+        yield 'a relative moveto after a close' => ['m1.234 1.234h5.012v5.013h-5.011zm10.01.012l3.01.012 3.004-.011 2.998.014 3 2'];
     }
 
     #[DataProvider('drawings')]
@@ -102,19 +107,19 @@ final class PathSimplificationTest extends TestCase
     /**
      * @return iterable<string, array{string}>
      */
-    public static function rewritings(): iterable
+    public static function shapes(): iterable
     {
-        yield 'rounding alone' => ['round'];
-        yield 'simplifying' => ['simplify'];
+        yield 'points that may leave' => [''];
+        yield 'ends drawn, every point kept' => [' stroke-linecap="round"'];
     }
 
-    #[DataProvider('rewritings')]
-    public function testASmoothCurveWhoseMirroredPointTheRoundingMovesTooFarWritesIt(string $rewriting): void
+    #[DataProvider('shapes')]
+    public function testASmoothCurveWhoseMirroredPointTheRoundingMovesTooFarWritesIt(string $attributes): void
     {
         // Each end rounds 0.04 the other way, and the control point each
         // smooth curve mirrors drifts further: 0.04, 0.12, 0.2.
         $data = 'M0 0Q.5 1.04 1 .04T2 .06T3 .04T4 .06T5 .04';
-        $output = (new PathRounding())->{$rewriting}($this->svg('<path d="'.$data.'"/>'), self::SHARE);
+        $output = (new PathRounding())->simplify($this->svg('<path'.$attributes.' d="'.$data.'"/>'), self::SHARE);
 
         self::assertSame(1, preg_match('/ d="([^"]*)"/', $output, $match));
         self::assertGreaterThan(1, preg_match_all('/[Qq]/', $match[1]), $match[1]);
@@ -143,6 +148,16 @@ final class PathSimplificationTest extends TestCase
         yield 'a cap in a style attribute' => ['<g style="stroke:#000;stroke-linecap:round"><path d="%s"/></g>', ''];
         yield 'a marker at the end' => ['<path marker-end="url(#m)" d="%s"/>', ''];
         yield 'markers in a style sheet' => ['<path d="%s"/>', '<style>path{marker:url(#m)}</style>'];
+        yield 'a cap on a use' => ['<defs><path id="p" d="%s"/></defs><use href="#p" stroke-linecap="round"/>', ''];
+        yield 'a cap on the group around a use of a group' => ['<defs><g id="g"><path d="%s"/></g></defs><g stroke-linecap="square"><use xlink:href="#g" xmlns:xlink="http://www.w3.org/1999/xlink"/></g>', ''];
+    }
+
+    public function testTheDotsAUseDrawsWithRoundCapsStay(): void
+    {
+        $output = (new PathRounding())->simplify($this->svg('<defs><path id="p" d="M5 5h0M10 10h0"/></defs><use href="#p" stroke="#000" stroke-linecap="round"/>'), self::SHARE);
+
+        self::assertSame(1, preg_match('/ d="([^"]*)"/', $output, $match));
+        self::assertSame(['M', 'H', 'M', 'H'], array_map(static fn (PathSegment $segment): string => strtoupper($segment->command), (new PathData())->segments($match[1]) ?? []), $match[1]);
     }
 
     #[DataProvider('drawnEnds')]
@@ -170,11 +185,64 @@ final class PathSimplificationTest extends TestCase
         self::assertSame($svg, (new PathRounding())->simplify($svg, self::SHARE));
     }
 
-    public function testRoundingAloneKeepsEveryPoint(): void
+    public function testPastTheBudgetOfDistancesNoPointLeaves(): void
     {
-        $output = (new PathRounding())->round($this->svg('<path d="M0 0L5 .05L10 0"/>'), self::SHARE);
+        $svg = $this->svg('<path d="M0 0L5 .05L10 0"/><polyline points="0 0 5 .05 10 0"/>');
+
+        self::assertStringContainsString('d="M0 0H10"', (new PathRounding(distanceBudget: 1))->simplify($svg, self::SHARE));
+        $output = (new PathRounding(distanceBudget: 0))->simplify($svg, self::SHARE);
 
         self::assertStringContainsString('d="M0 0 5 .1 10 0"', $output);
+        self::assertStringContainsString('points="0 0 5 .1 10 0"', $output);
+    }
+
+    public function testBothPrecisionsTriedShareTheBudget(): void
+    {
+        // A point .1 from the line: one decimal leaves too little of the
+        // tolerance to take it out, two decimals leave enough. Each
+        // precision measures one distance.
+        $svg = $this->svg('<path d="M0 0L5.0012 .1003L10.0004 0"/>');
+
+        self::assertStringContainsString('d="M0 0H10"', (new PathRounding(distanceBudget: 2))->simplify($svg, self::SHARE));
+        self::assertStringContainsString('d="M0 0 5 .1 10 0"', (new PathRounding(distanceBudget: 1))->simplify($svg, self::SHARE));
+    }
+
+    public function testTheWorstCaseOfRemovalStopsAtTheBudget(): void
+    {
+        // A square drawn over and over: each split of Ramer-Douglas-Peucker
+        // takes off one corner, and the distances measured grow with the
+        // square of the corners (two million here without a budget). The
+        // run ends on a point almost in line, which the last split reaches
+        // only once the budget is spent.
+        $square = [[10.0, 0.0], [10.0, 10.0], [0.0, 10.0], [0.0, 0.0]];
+        $segments = [['command' => 'M', 'values' => [0.0, 0.0], 'end' => [0.0, 0.0], 'controls' => []]];
+
+        for ($turn = 0; $turn < 500; ++$turn) {
+            foreach ($square as $corner) {
+                $segments[] = ['command' => 'L', 'values' => $corner, 'end' => $corner, 'controls' => []];
+            }
+        }
+
+        foreach ([[5.0, .01], [10.0, 0.0]] as $point) {
+            $segments[] = ['command' => 'L', 'values' => $point, 'end' => $point, 'controls' => []];
+        }
+
+        $budget = new DistanceBudget(50_000);
+        $straightened = (new StraightRuns())->straighten($segments, .05, $budget);
+
+        self::assertLessThanOrEqual(50_000, $budget->spent());
+        self::assertSame($segments, $straightened, 'Past the budget, even the point almost in line stays.');
+    }
+
+    public function testAPathPastTheBudgetIsStillRoundedWithinTheTolerance(): void
+    {
+        $data = 'M0 0'.str_repeat('h10.0123v10.0123h-10.0123v-10.0123', 100).'L5 .05L10 0';
+        $output = (new PathRounding(distanceBudget: 1_000))->simplify($this->svg('<path d="'.$data.'"/>'), self::SHARE);
+
+        self::assertSame(1, preg_match('/ d="([^"]*)"/', $output, $match));
+        self::assertSame($this->pointCount($this->samples($data)), $this->pointCount($this->samples($match[1])), 'Every point stays.');
+        self::assertLessThanOrEqual(self::TOLERANCE + 1e-9, $this->farthest($this->samples($data), $this->samples($match[1])));
+        self::assertLessThanOrEqual(self::TOLERANCE + 1e-9, $this->farthest($this->samples($match[1]), $this->samples($data)));
     }
 
     public function testALevelTakesPointsOut(): void

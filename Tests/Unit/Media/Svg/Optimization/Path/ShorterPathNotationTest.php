@@ -60,6 +60,15 @@ final class ShorterPathNotationTest extends TestCase
         yield 'already the shortest' => ['M0 0h1v1z'];
         yield 'unreadable' => ['M0 0L1'];
         yield 'more digits than a float keeps' => ['M1.2345678901234567 0L 2 2 L 3 3'];
+        // Written shorter as 1e-31, which the exact reading refuses: the path
+        // read back is not the same, and the data stays as written.
+        yield 'a number written in a form that does not read back' => ['M.1e-30 0'];
+        yield 'more numbers than the ceiling' => ['M0 0'.str_repeat(' h1', PathData::MAXIMUM_NUMBERS - 1)];
+    }
+
+    public function testDataUpToTheCeilingIsShortened(): void
+    {
+        self::assertNotNull((new ShorterPathNotation())->shorterData('M0 0'.str_repeat(' h1', PathData::MAXIMUM_NUMBERS - 2)));
     }
 
     #[DataProvider('paths')]
