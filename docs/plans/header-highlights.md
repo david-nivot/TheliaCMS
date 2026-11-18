@@ -130,7 +130,7 @@ Both draw on `layout.header.bottom`; handlers are concatenated in the order of t
 
 ### Z8. Schema, setting, version
 
-- (i-b): no schema change, no setting, no SQL. A version bump with a CHANGELOG entry (release rule: `Config/module.xml` + dated `[Unreleased]`, see the "Auto Release" row of `/home/dfoulhoux/workzone/thelia-cms-ai/.claude/CLAUDE.md`). `Config/update/` holds SQL for versions that changed a schema only (`2.6.0`, `2.7.0`, `2.10.0`, `2.13.0`).
+- (i-b): no schema change, no setting, no SQL. A version bump with a CHANGELOG entry (release rule: `Config/module.xml` + dated `[Unreleased]`, see the "Auto Release" row of `.claude/CLAUDE.md`). `Config/update/` holds SQL for versions that changed a schema only (`2.6.0`, `2.7.0`, `2.10.0`, `2.13.0`).
 - (i-a): `Config/schema.xml` + `Config/TheliaMain.sql` + `Config/update/<version>.sql` rejouable, caches and `var/propel/<env>` removed, test base replayed (pitfalls rows in the host `CLAUDE.md`).
 - Recommendation: (i-b) in step 3, no SQL.
 

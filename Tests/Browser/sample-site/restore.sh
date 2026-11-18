@@ -4,6 +4,10 @@
 # to the save first. DDEV host; run from the root of the Thelia install:
 #
 #     local/modules/TheliaCMS/Tests/Browser/sample-site/restore.sh [directory]
+#
+# On a host where the module is linked by a Composer `path` repository:
+#
+#     modules-dev/TheliaCMS/Tests/Browser/sample-site/restore.sh [directory]
 set -euo pipefail
 directory="${1:-var/theliacms-sample-site}"
 [ -f "$directory/db.sql.gz" ] || { echo "No $directory/db.sql.gz: run save.sh first." >&2; exit 1; }

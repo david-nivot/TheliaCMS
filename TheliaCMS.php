@@ -59,6 +59,8 @@ use TheliaCMS\Seo\CmsPageHreflangListener;
 use TheliaCMS\Seo\CmsPageSeoElement;
 use TheliaCMS\Seo\PageCanonicalListener;
 use TheliaCMS\Seo\StandInPageCanonicalListener;
+use TheliaCMS\Settings\CmsSettings;
+use TheliaCMS\Vitrine\ShowcasePriceDisplay;
 // The class CmsPageIndex extends. Importing it costs nothing when TntSearch is
 // absent, and without the import the guard below would name TheliaCMS\BaseIndex.
 use TntSearch\Index\BaseIndex;
@@ -224,6 +226,10 @@ class TheliaCMS extends BaseModule
         // seeded on activation alone, the right would stay denied to every
         // profile but the super administrator.
         $this->seedAdminResources();
+
+        // A site already in showcase mode hides its prices from this version on,
+        // without a save of the settings.
+        (new ShowcasePriceDisplay())->follow((new CmsSettings())->siteMode());
     }
 
     /**

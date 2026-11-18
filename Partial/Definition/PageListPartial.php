@@ -14,9 +14,11 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Partial\Definition;
 
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Domain\Localization\Service\LangService;
 use TheliaCMS\Content\HeadingChoice;
+use TheliaCMS\Page\Field\FieldDefinitions;
 use TheliaCMS\Page\Field\FieldFormatter;
 use TheliaCMS\Page\PageCard;
 use TheliaCMS\Page\PageListQuery;
@@ -41,12 +43,20 @@ final readonly class PageListPartial implements PartialDefinitionInterface, Desc
     /** The order a list runs in when it names a field the type no longer has. */
     private const string SORT_FIELD = 'field';
 
+    /** The choice of `type` that lists the pages of every template; no page type code holds a star. */
+    public const string ANY_TYPE = '*';
+
+    /** The choices of `scope`: right under the parent, or at any depth under it. */
+    public const string SCOPE_CHILDREN = 'children';
+    public const string SCOPE_BRANCH = 'branch';
+
     public function __construct(
         private PageTypeRepository $types,
         private PublishedPageRepository $pages,
         private FieldFormatter $formatter,
         private TranslatorInterface $translator,
         private LangService $langService,
+        private UrlGeneratorInterface $urls,
         private HeadingChoice $heading = new HeadingChoice(),
     ) {
     }
@@ -58,12 +68,12 @@ final readonly class PageListPartial implements PartialDefinitionInterface, Desc
 
     public function label(): string
     {
-        return $this->trans('Pages of a type');
+        return $this->trans('List of pages');
     }
 
     public function description(): string
     {
-        return $this->trans('The pages of a type, listed as they are on every visit.');
+        return $this->trans('The pages of a template, or the pages under a page, listed as they are on every visit.');
     }
 
     public function themeTemplate(): string
@@ -79,7 +89,7 @@ final readonly class PageListPartial implements PartialDefinitionInterface, Desc
     public function props(): array
     {
         $locale = $this->langService->getLocale();
-        $types = [];
+        $types = [self::ANY_TYPE => $this->trans('Any template')];
 
         foreach ($this->types->allDetails() as $code => $details) {
             $title = $details->title($locale);
@@ -88,6 +98,11 @@ final readonly class PageListPartial implements PartialDefinitionInterface, Desc
 
         return [
             PartialProp::choice('type', $this->trans('Page template'), $types, PageTypeCode::DEFAULT),
+            PartialProp::reference('parent', $this->trans('Under the page'), source: $this->urls->generate('admin.cms.partials.sources.pages'), required: false, help: $this->trans('Only the pages under this one: the news under "News", the articles of a rubric. Leave empty for the whole site.'), searchable: true),
+            PartialProp::choice('scope', $this->trans('Pages listed'), [
+                self::SCOPE_CHILDREN => $this->trans('Right under it'),
+                self::SCOPE_BRANCH => $this->trans('At any depth under it'),
+            ], self::SCOPE_CHILDREN, help: $this->trans('With a page above: its own pages only, or the pages of its sub-pages too.')),
             PartialProp::text('title', $this->trans('Heading'), max: 120, help: $this->trans('Shown above the list. Leave empty for none.')),
             ...$this->heading->partialProps(),
             PartialProp::choice('sort', $this->trans('Order'), [
@@ -108,30 +123,47 @@ final readonly class PageListPartial implements PartialDefinitionInterface, Desc
 
     public function context(array $props, string $locale): array
     {
-        $type = PageTypeCode::orDefault((string) ($props['type'] ?? ''));
+        $anyType = self::ANY_TYPE === ($props['type'] ?? null);
+        $type = $anyType ? null : PageTypeCode::orDefault((string) ($props['type'] ?? ''));
+        $parent = (int) ($props['parent'] ?? 0);
         $sort = (string) ($props['sort'] ?? PageListQuery::SORT_RECENT);
 
         if (self::SORT_FIELD === $sort) {
             $sort = '' !== trim((string) ($props['field'] ?? '')) ? trim((string) $props['field']) : PageListQuery::SORT_RECENT;
         }
 
-        $cards = $this->pages->ofType($type, $locale, new PageListQuery(
+        $query = new PageListQuery(
             sort: $sort,
             descending: 'desc' === ($props['direction'] ?? 'asc'),
             limit: max(1, (int) ($props['limit'] ?? 6)),
-        ));
-        $fields = $this->types->fieldsOf($type);
-        $details = $this->types->details($type);
+        );
+
+        $cards = match (true) {
+            $parent > 0 => $this->pages->under($parent, self::SCOPE_BRANCH === ($props['scope'] ?? null), $type, $locale, $query),
+            null === $type => $this->pages->under(0, true, null, $locale, $query),
+            default => $this->pages->ofType($type, $locale, $query),
+        };
+        /** @var array<string, FieldDefinitions> $fields read once per type */
+        $fields = [];
+
+        foreach ($cards as $card) {
+            $fields[$card->pageType] ??= $this->types->fieldsOf($card->pageType);
+        }
+
+        $details = null === $type ? null : $this->types->details($type);
 
         return [
-            'type' => ['code' => $type, 'title' => $details->title($locale), 'description' => $details->description($locale)],
+            // `any` for a list of every template: a class name, and no title of a type.
+            'type' => null === $details
+                ? ['code' => 'any', 'title' => null, 'description' => null]
+                : ['code' => $type, 'title' => $details->title($locale), 'description' => $details->description($locale)],
             'title' => '' !== trim((string) ($props['title'] ?? '')) ? trim((string) $props['title']) : null,
             // The level and the look of the heading, and the level of the
             // titles of the cards, one below it.
             'heading' => $this->heading->forTemplate($props),
             'pages' => array_map(fn (PageCard $card): array => [
                 'card' => $card,
-                'fields' => $this->formatter->rows($fields, $card->fields, $locale),
+                'fields' => $this->formatter->rows($fields[$card->pageType], $card->fields, $locale),
             ], $cards),
             'empty_message' => $this->trans('No page to show yet.', $locale),
         ];

@@ -1274,8 +1274,15 @@ never the files. The front matter of a skill and how it reaches the prompt:
 ## Showcase mode, maintenance and the 404
 
 A **showcase site** answers 404 on `/cart`, `/order` and `/checkout`, and moves
-CMS to the top of the back-office menu. Nothing else changes, and switching back
-undoes it: the shop is one save away.
+CMS to the top of the back-office menu. It also shows no price, no cart and no
+currency: saving showcase mode sets the Thelia setting `price_display_mode` to
+`on_request`, which the core (3.4 and later) reads to leave the prices out of
+its front API and to refuse an add to the cart, Flexy (1.3.3 and later) to draw
+no price, cart, currency, price filter nor sort by price, and SEOne to leave the
+offers out of the structured data of a product. The value the shop had is kept
+and put back when the site is a shop again; a value changed by hand meanwhile
+is left as it is. Nothing else changes, and switching back undoes it: the shop
+is one save away.
 
 Saving showcase mode also creates the **Editor** profile: pages, menus, media,
 forms and news, and none of the shop, none of these settings and no free HTML.
@@ -1551,11 +1558,24 @@ the list. Each card carries its `fields`:
 {% endfor %}
 ```
 
-An editor places the same list in a page with the **Pages of a type** section
+An editor places the same list in a page with the **List of pages** section
 (`Partial:cms-page-list`), rendered on every visit: a page published later
 shows in it without republishing the page that lists it. A theme takes the
 markup over with `cms/partials/page-list.html.twig`. From PHP, the list comes
 from `PublishedPageRepository::ofType($type, $locale, $query)`.
+
+The section can also list the pages **under a page**: `parent` (a page, picked
+by a search of the titles) with `scope` `children` (right under it, the
+default) or `branch` (at any depth under it), and `type` `*` for the pages of
+every template. This is the list of a section of a site: the news under
+"News" (`branch`, the news filed under a page per year), the articles of a
+rubric (`children`). A page under one that is offline is listed all the same.
+A sort on a field reads the fields of the template chosen; with every
+template, it falls back to the most recent first, and the card of a page
+gives the fields of its own template. With `type` `*`, `type.code` is `any`
+and `type.title` is null in the template. From PHP:
+`PublishedPageRepository::under($parentId, $wholeBranch, $type, $locale, $query)`,
+`$type` null for every template, `$parentId` 0 for the root.
 
 The image of a card is given its `width`, `height`, `srcset` and `sizes` by
 `cms_image_attributes(card.image, sizes)`, the attributes a published page gets

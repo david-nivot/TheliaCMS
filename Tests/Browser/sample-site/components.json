@@ -1,0 +1,1035 @@
+{
+  "format": "thelia-cms",
+  "version": 4,
+  "components": [
+    {
+      "code": "BikeSpecSheet",
+      "label": "Bike spec sheet",
+      "description": "The technical sheet of a tested bike: model name, price, weight, four to six specifications (frame, drivetrain, brakes, tyres…), a score out of 5 and a one-sentence verdict, with an optional photo. Use it in a bike review or a test article to sum up the model tested.",
+      "props": [
+        {
+          "name": "title",
+          "type": "text",
+          "label": "Model name",
+          "required": true,
+          "max": 120
+        },
+        {
+          "name": "title_level",
+          "type": "choice",
+          "label": "Heading level",
+          "choices": {
+            "h2": "Level 2",
+            "h3": "Level 3",
+            "h4": "Level 4"
+          },
+          "default": "h2"
+        },
+        {
+          "name": "title_style",
+          "type": "choice",
+          "label": "Heading style",
+          "choices": {
+            "level": "Same as the level",
+            "h1": "Style 1",
+            "h2": "Style 2",
+            "h3": "Style 3",
+            "h4": "Style 4",
+            "h5": "Style 5",
+            "h6": "Style 6"
+          },
+          "default": "level"
+        },
+        {
+          "name": "image",
+          "type": "image",
+          "label": "Photo of the bike"
+        },
+        {
+          "name": "image_alt",
+          "type": "text",
+          "label": "Description of the photo",
+          "help": "One sentence saying what the photo shows.",
+          "max": 200
+        },
+        {
+          "name": "price_label",
+          "type": "text",
+          "label": "Price label",
+          "max": 40,
+          "default": "Price"
+        },
+        {
+          "name": "price",
+          "type": "text",
+          "label": "Price",
+          "max": 40
+        },
+        {
+          "name": "weight_label",
+          "type": "text",
+          "label": "Weight label",
+          "max": 40,
+          "default": "Weight"
+        },
+        {
+          "name": "weight",
+          "type": "text",
+          "label": "Weight",
+          "max": 40
+        },
+        {
+          "name": "specs",
+          "type": "items",
+          "label": "Specifications",
+          "min": 4,
+          "max": 6,
+          "items": [
+            {
+              "name": "label",
+              "type": "text",
+              "label": "Part",
+              "required": true,
+              "max": 60
+            },
+            {
+              "name": "value",
+              "type": "text",
+              "label": "Detail",
+              "required": true,
+              "max": 200
+            }
+          ]
+        },
+        {
+          "name": "rating_label",
+          "type": "text",
+          "label": "Score label",
+          "max": 60,
+          "default": "Our score"
+        },
+        {
+          "name": "rating",
+          "type": "integer",
+          "label": "Score",
+          "min": 0,
+          "max": 5,
+          "default": 4
+        },
+        {
+          "name": "rating_scale",
+          "type": "text",
+          "label": "Text after the score",
+          "help": "For instance: out of 5.",
+          "max": 40,
+          "default": "out of 5"
+        },
+        {
+          "name": "verdict_label",
+          "type": "text",
+          "label": "Verdict label",
+          "max": 60,
+          "default": "Verdict"
+        },
+        {
+          "name": "verdict",
+          "type": "text",
+          "label": "Verdict",
+          "help": "One sentence.",
+          "max": 300
+        }
+      ],
+      "sample": {
+        "title": "Ridgeline Gravel 2",
+        "title_level": "h2",
+        "title_style": "level",
+        "image": null,
+        "image_alt": "A green gravel bike leaning against a wooden fence.",
+        "price_label": "Price",
+        "price": "$2,499",
+        "weight_label": "Weight",
+        "weight": "9.2 kg (20.3 lb)",
+        "specs": [
+          {
+            "label": "Frame",
+            "value": "Carbon, sizes XS to XL"
+          },
+          {
+            "label": "Drivetrain",
+            "value": "Shimano GRX 600, 2 × 11 speeds"
+          },
+          {
+            "label": "Brakes",
+            "value": "Hydraulic disc brakes, 160 mm rotors"
+          },
+          {
+            "label": "Tyres",
+            "value": "WTB Riddler, 700 × 40 mm, tubeless ready"
+          },
+          {
+            "label": "Wheels",
+            "value": "Aluminium rims, 24 mm inner width"
+          }
+        ],
+        "rating_label": "Our score",
+        "rating": 4,
+        "rating_scale": "out of 5",
+        "verdict_label": "Verdict",
+        "verdict": "A light and comfortable gravel bike that climbs well, held back only by its basic wheels."
+      },
+      "template": "<section class=\"bike-spec\">{% if props.title is not empty %}{{ cms_component('cms:heading', {text: props.title, level: props.title_level, style: props.title_style}) }}{% endif %}<div class=\"bike-spec__body{% if props.image %} bike-spec__body--media{% endif %}\">{% if props.image %}<div class=\"bike-spec__media\" data-cms-sizes=\"(min-width: 48rem) 40vw, 100vw\"><img class=\"bike-spec__image\" src=\"{{ props.image }}\" alt=\"{{ props.image_alt }}\"></div>{% endif %}<div class=\"bike-spec__sheet\">{% if props.price is not empty or props.weight is not empty %}<dl class=\"bike-spec__key\">{% if props.price is not empty %}<div class=\"bike-spec__key-item\"><dt class=\"bike-spec__key-label\">{{ props.price_label }}</dt><dd class=\"bike-spec__key-value\">{{ props.price }}</dd></div>{% endif %}{% if props.weight is not empty %}<div class=\"bike-spec__key-item\"><dt class=\"bike-spec__key-label\">{{ props.weight_label }}</dt><dd class=\"bike-spec__key-value\">{{ props.weight }}</dd></div>{% endif %}</dl>{% endif %}{% if props.specs is not empty %}<dl class=\"bike-spec__specs\">{% for spec in props.specs %}<div class=\"bike-spec__row\"><dt class=\"bike-spec__row-label\">{{ spec.label }}</dt><dd class=\"bike-spec__row-value\">{{ spec.value }}</dd></div>{% endfor %}</dl>{% endif %}{% if props.rating is not null or props.verdict is not empty %}<div class=\"bike-spec__review\">{% if props.rating is not null %}<div class=\"bike-spec__rating\"><p class=\"bike-spec__review-label\">{{ props.rating_label }}</p><p class=\"bike-spec__score\"><span class=\"bike-spec__score-value\">{{ props.rating }}</span> {{ props.rating_scale }}</p><div class=\"bike-spec__meter\" aria-hidden=\"true\">{% for i in [1, 2, 3, 4, 5] %}<span class=\"bike-spec__dot{% if i <= props.rating %} bike-spec__dot--on{% endif %}\"></span>{% endfor %}</div></div>{% endif %}{% if props.verdict is not empty %}<div class=\"bike-spec__verdict\"><p class=\"bike-spec__review-label\">{{ props.verdict_label }}</p><p class=\"bike-spec__verdict-text\">{{ props.verdict }}</p></div>{% endif %}</div>{% endif %}</div></div></section>",
+      "css": ".bike-spec__body { display: grid; gap: 1.5rem; }\n.bike-spec__media { margin: 0; }\n.bike-spec__image { display: block; width: 100%; height: auto; border-radius: 0.5rem; }\n.bike-spec__sheet { display: grid; gap: 1.5rem; min-width: 0; }\n.bike-spec__key { display: flex; flex-wrap: wrap; gap: 1rem 2.5rem; margin: 0; }\n.bike-spec__key-item { margin: 0; }\n.bike-spec__key-label { color: var(--cms-color-text-subtle); font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; }\n.bike-spec__key-value { margin: 0.25rem 0 0; color: var(--cms-color-text); font-size: 1.75rem; font-weight: 700; line-height: 1.2; }\n.bike-spec__specs { margin: 0; border-top: 2px solid var(--cms-color-accent); }\n.bike-spec__row { display: grid; gap: 0.25rem; padding: 0.75rem 0; border-bottom: 1px solid var(--cms-color-border); }\n.bike-spec__row-label { color: var(--cms-color-text-subtle); font-weight: 600; }\n.bike-spec__row-value { margin: 0; color: var(--cms-color-text); overflow-wrap: anywhere; }\n.bike-spec__review { display: grid; gap: 1.25rem; padding: 1.25rem; border-radius: 0.5rem; background: var(--cms-color-accent-surface); color: var(--cms-color-text); }\n.bike-spec__review p { margin: 0; color: var(--cms-color-text); }\n.bike-spec__review .bike-spec__review-label { color: var(--cms-color-text-subtle); font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; }\n.bike-spec__score { margin-top: 0.25rem; }\n.bike-spec__score-value { font-size: 2rem; font-weight: 700; line-height: 1; }\n.bike-spec__meter { display: flex; gap: 0.375rem; margin-top: 0.5rem; }\n.bike-spec__dot { width: 1rem; height: 1rem; border-radius: 50%; border: 2px solid var(--cms-color-accent); background: transparent; }\n.bike-spec__dot--on { background: var(--cms-color-accent); }\n.bike-spec__review .bike-spec__verdict-text { margin-top: 0.25rem; font-size: 1.125rem; font-weight: 600; }\n@media (min-width: 48rem) {\n.bike-spec__body--media { grid-template-columns: 2fr 3fr; align-items: start; gap: 2.5rem; }\n.bike-spec__row { grid-template-columns: 10rem 1fr; gap: 1rem; }\n.bike-spec__review { grid-template-columns: auto 1fr; gap: 2rem; align-items: start; }\n}",
+      "provenance": null,
+      "status": "ready"
+    },
+    {
+      "code": "Carousel",
+      "label": "Carrousel",
+      "description": "A row of pictures, each with an optional caption, that scrolls sideways and snaps on each picture, with no script. Use it for a gallery of a few pictures a visitor swipes through.",
+      "props": [
+        {
+          "name": "title",
+          "type": "text",
+          "label": "Titre",
+          "max": 120
+        },
+        {
+          "name": "title_level",
+          "type": "choice",
+          "label": "Niveau du titre",
+          "choices": {
+            "h2": "Niveau 2, une partie de la page",
+            "h3": "Niveau 3, sous un titre de niveau 2",
+            "h4": "Niveau 4, sous un titre de niveau 3"
+          },
+          "default": "h2"
+        },
+        {
+          "name": "title_style",
+          "type": "choice",
+          "label": "Apparence du titre",
+          "choices": {
+            "level": "Selon son niveau",
+            "h1": "Titre 1 du thème",
+            "h2": "Titre 2 du thème",
+            "h3": "Titre 3 du thème",
+            "h4": "Titre 4 du thème",
+            "h5": "Titre 5 du thème",
+            "h6": "Titre 6 du thème"
+          },
+          "default": "level"
+        },
+        {
+          "name": "slides",
+          "type": "items",
+          "label": "Images",
+          "min": 2,
+          "max": 12,
+          "items": [
+            {
+              "name": "image",
+              "type": "image",
+              "label": "Image"
+            },
+            {
+              "name": "alt",
+              "type": "text",
+              "label": "Texte alternatif",
+              "required": true,
+              "max": 160
+            },
+            {
+              "name": "caption",
+              "type": "text",
+              "label": "Légende",
+              "max": 160
+            }
+          ]
+        }
+      ],
+      "sample": {
+        "title": "Dans l’atelier",
+        "title_level": "h2",
+        "title_style": "level",
+        "slides": [
+          {
+            "image": null,
+            "alt": "Découpe du cuir sur l’établi",
+            "caption": "La découpe"
+          },
+          {
+            "image": null,
+            "alt": "Couture d’une anse à la main",
+            "caption": "La couture"
+          },
+          {
+            "image": null,
+            "alt": "Contrôle final d’un sac",
+            "caption": "Le contrôle"
+          }
+        ]
+      },
+      "template": "<section class=\"carousel\">{% if props.title is not empty %}{{ cms_component('cms:heading', {text: props.title, level: props.title_level, style: props.title_style}) }}{% endif %}<div class=\"carousel__viewport\" tabindex=\"0\" role=\"region\"{% if props.title is not empty %} aria-label=\"{{ props.title }}\"{% endif %}><ul class=\"carousel__track\" data-cms-sizes=\"(min-width: 48rem) 40vw, 85vw\">{% for slide in props.slides %}<li class=\"carousel__slide\">{% if slide.image %}<img class=\"carousel__image\" src=\"{{ slide.image }}\" alt=\"{{ slide.alt }}\">{% endif %}{% if slide.caption is not empty %}<p class=\"carousel__caption\">{{ slide.caption }}</p>{% endif %}</li>{% endfor %}</ul></div></section>",
+      "css": ".carousel__title { margin: 0 0 1rem; color: var(--cms-color-text); }\n.carousel__viewport { position: relative; overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; }\n.carousel__viewport:focus-visible { outline: 2px solid var(--cms-color-text); outline-offset: 2px; }\n.carousel__track { display: flex; gap: 1rem; margin: 0; padding: 0 0 0.5rem; list-style: none; }\n.carousel__slide { flex: 0 0 85%; scroll-snap-align: start; }\n.carousel__image { display: block; width: 100%; height: auto; border-radius: 0.5rem; }\n.carousel__caption { margin: 0.5rem 0 0; color: var(--cms-color-text-muted); }\n@media (min-width: 48rem) { .carousel__slide { flex-basis: 40%; } }",
+      "provenance": null,
+      "status": "ready"
+    },
+    {
+      "code": "Faq",
+      "label": "Questions fréquentes",
+      "description": "A list of questions that open to show their answer. Use it for the questions a visitor asks before an order, a booking or a visit.",
+      "props": [
+        {
+          "name": "title",
+          "type": "text",
+          "label": "Titre",
+          "max": 120
+        },
+        {
+          "name": "title_level",
+          "type": "choice",
+          "label": "Niveau du titre",
+          "choices": {
+            "h2": "Niveau 2, une partie de la page",
+            "h3": "Niveau 3, sous un titre de niveau 2",
+            "h4": "Niveau 4, sous un titre de niveau 3"
+          },
+          "default": "h2"
+        },
+        {
+          "name": "title_style",
+          "type": "choice",
+          "label": "Apparence du titre",
+          "choices": {
+            "level": "Selon son niveau",
+            "h1": "Titre 1 du thème",
+            "h2": "Titre 2 du thème",
+            "h3": "Titre 3 du thème",
+            "h4": "Titre 4 du thème",
+            "h5": "Titre 5 du thème",
+            "h6": "Titre 6 du thème"
+          },
+          "default": "level"
+        },
+        {
+          "name": "questions",
+          "type": "items",
+          "label": "Questions",
+          "min": 2,
+          "max": 12,
+          "items": [
+            {
+              "name": "question",
+              "type": "text",
+              "label": "Question",
+              "required": true,
+              "max": 160
+            },
+            {
+              "name": "answer",
+              "type": "html",
+              "label": "Réponse",
+              "required": true
+            }
+          ]
+        }
+      ],
+      "sample": {
+        "title": "Questions fréquentes",
+        "title_level": "h2",
+        "title_style": "level",
+        "questions": [
+          {
+            "question": "Combien de temps dure la fabrication ?",
+            "answer": "<p>Trois semaines en moyenne, un peu plus en décembre.</p>"
+          },
+          {
+            "question": "Puis-je retourner un sac ?",
+            "answer": "<p>Oui, pendant 30 jours, sans frais.</p>"
+          },
+          {
+            "question": "Les cuirs sont-ils d’origine animale ?",
+            "answer": "<p>Non, nous travaillons uniquement des cuirs végétaux.</p>"
+          }
+        ]
+      },
+      "template": "<section class=\"faq\">{% if props.title is not empty %}{{ cms_component('cms:heading', {text: props.title, level: props.title_level, style: props.title_style}) }}{% endif %}<div class=\"faq__list\">{% for item in props.questions %}<details class=\"faq__item\"><summary class=\"faq__question\">{{ item.question }}</summary><div class=\"faq__answer\">{{ item.answer }}</div></details>{% endfor %}</div></section>",
+      "css": ".faq__title { margin: 0 0 1rem; color: var(--cms-color-text); }\n.faq__item { padding: 0.75rem 0; border-bottom: 1px solid var(--cms-color-border); }\n.faq__question { cursor: pointer; font-weight: 700; color: var(--cms-color-text); }\n.faq__answer { padding-top: 0.5rem; color: var(--cms-color-text-muted); }",
+      "provenance": null,
+      "status": "ready"
+    },
+    {
+      "code": "ImageText",
+      "label": "Image et texte",
+      "description": "A picture beside a heading and a text, on the left or on the right of it. Use it to present a person, a place, a product or a story with one picture.",
+      "props": [
+        {
+          "name": "title",
+          "type": "text",
+          "label": "Titre",
+          "max": 120
+        },
+        {
+          "name": "title_level",
+          "type": "choice",
+          "label": "Niveau du titre",
+          "choices": {
+            "h2": "Niveau 2, une partie de la page",
+            "h3": "Niveau 3, sous un titre de niveau 2",
+            "h4": "Niveau 4, sous un titre de niveau 3"
+          },
+          "default": "h2"
+        },
+        {
+          "name": "title_style",
+          "type": "choice",
+          "label": "Apparence du titre",
+          "choices": {
+            "level": "Selon son niveau",
+            "h1": "Titre 1 du thème",
+            "h2": "Titre 2 du thème",
+            "h3": "Titre 3 du thème",
+            "h4": "Titre 4 du thème",
+            "h5": "Titre 5 du thème",
+            "h6": "Titre 6 du thème"
+          },
+          "default": "level"
+        },
+        {
+          "name": "text",
+          "type": "html",
+          "label": "Texte"
+        },
+        {
+          "name": "image",
+          "type": "image",
+          "label": "Image"
+        },
+        {
+          "name": "side",
+          "type": "choice",
+          "label": "Côté de l’image",
+          "choices": {
+            "left": "À gauche",
+            "right": "À droite"
+          },
+          "default": "left"
+        },
+        {
+          "name": "link_label",
+          "type": "text",
+          "label": "Texte du lien",
+          "max": 60
+        },
+        {
+          "name": "link",
+          "type": "url",
+          "label": "Lien"
+        }
+      ],
+      "sample": {
+        "title": "Un atelier au cœur de Lyon",
+        "title_level": "h2",
+        "title_style": "level",
+        "text": "<p>Depuis 2012, nous façonnons à la main des sacs en cuir végétal, dans un atelier ouvert aux visites.</p><p>Chaque pièce passe entre les mains de trois artisans.</p>",
+        "image": null,
+        "side": "left",
+        "link_label": "Découvrir l’atelier",
+        "link": "/atelier"
+      },
+      "template": "<section class=\"imagetext imagetext--{{ props.side }}\">{% if props.image %}<div class=\"imagetext__media\"><img class=\"imagetext__image\" src=\"{{ props.image }}\" alt=\"{{ props.title }}\" data-cms-sizes=\"(min-width: 48rem) 50vw, 100vw\"></div>{% endif %}<div class=\"imagetext__body\">{% if props.title is not empty %}{{ cms_component('cms:heading', {text: props.title, level: props.title_level, style: props.title_style}) }}{% endif %}<div class=\"imagetext__text\">{{ props.text }}</div>{% if props.link is not empty %}<a class=\"imagetext__link\" href=\"{{ props.link }}\">{{ props.link_label }}</a>{% endif %}</div></section>",
+      "css": ".imagetext { display: grid; gap: 1.5rem; align-items: center; }\n.imagetext__image { display: block; width: 100%; height: auto; border-radius: 0.5rem; }\n.imagetext__title { margin: 0 0 0.75rem; color: var(--cms-color-text); }\n.imagetext__text { color: var(--cms-color-text); }\n.imagetext__link { display: inline-block; margin-top: 1rem; font-weight: 700; color: var(--cms-color-accent); }\n@media (min-width: 48rem) { .imagetext { grid-template-columns: 1fr 1fr; gap: 3rem; } .imagetext--right .imagetext__media { order: 2; } }",
+      "provenance": null,
+      "status": "ready"
+    },
+    {
+      "code": "KeyFigures",
+      "label": "Chiffres clés",
+      "description": "A row of key figures, each a big number with a short label and an optional note. Use it for results, numbers of a company or milestones the page states.",
+      "props": [
+        {
+          "name": "title",
+          "type": "text",
+          "label": "Titre",
+          "max": 120
+        },
+        {
+          "name": "title_level",
+          "type": "choice",
+          "label": "Niveau du titre",
+          "choices": {
+            "h2": "Niveau 2, une partie de la page",
+            "h3": "Niveau 3, sous un titre de niveau 2",
+            "h4": "Niveau 4, sous un titre de niveau 3"
+          },
+          "default": "h2"
+        },
+        {
+          "name": "title_style",
+          "type": "choice",
+          "label": "Apparence du titre",
+          "choices": {
+            "level": "Selon son niveau",
+            "h1": "Titre 1 du thème",
+            "h2": "Titre 2 du thème",
+            "h3": "Titre 3 du thème",
+            "h4": "Titre 4 du thème",
+            "h5": "Titre 5 du thème",
+            "h6": "Titre 6 du thème"
+          },
+          "default": "level"
+        },
+        {
+          "name": "figures",
+          "type": "items",
+          "label": "Chiffres",
+          "min": 2,
+          "max": 6,
+          "items": [
+            {
+              "name": "value",
+              "type": "text",
+              "label": "Valeur",
+              "required": true,
+              "max": 20
+            },
+            {
+              "name": "label",
+              "type": "text",
+              "label": "Libellé",
+              "required": true,
+              "max": 80
+            },
+            {
+              "name": "note",
+              "type": "text",
+              "label": "Précision",
+              "max": 120
+            }
+          ]
+        }
+      ],
+      "sample": {
+        "title": "L’atelier en chiffres",
+        "title_level": "h2",
+        "title_style": "level",
+        "figures": [
+          {
+            "value": "12",
+            "label": "ans d’existence",
+            "note": ""
+          },
+          {
+            "value": "4 500",
+            "label": "sacs livrés",
+            "note": "depuis la création"
+          },
+          {
+            "value": "98 %",
+            "label": "clients satisfaits",
+            "note": "enquête 2025"
+          }
+        ]
+      },
+      "template": "<section class=\"figures\">{% if props.title is not empty %}{{ cms_component('cms:heading', {text: props.title, level: props.title_level, style: props.title_style}) }}{% endif %}<ul class=\"figures__list\">{% for figure in props.figures %}<li class=\"figure\"><span class=\"figure__value\">{{ figure.value }}</span><span class=\"figure__label\">{{ figure.label }}</span>{% if figure.note is not empty %}<span class=\"figure__note\">{{ figure.note }}</span>{% endif %}</li>{% endfor %}</ul></section>",
+      "css": ".figures__title { margin: 0 0 1.5rem; color: var(--cms-color-text); }\n.figures__list { display: grid; gap: 1.5rem; margin: 0; padding: 0; list-style: none; }\n.figure { display: flex; flex-direction: column; gap: 0.25rem; }\n.figure__value { font-size: 2.5rem; font-weight: 700; line-height: 1; color: var(--cms-color-text); }\n.figure__label { font-weight: 700; color: var(--cms-color-text); }\n.figure__note { color: var(--cms-color-text-muted); }\n@media (min-width: 48rem) { .figures__list { grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); } }",
+      "provenance": null,
+      "status": "ready"
+    },
+    {
+      "code": "Quote",
+      "label": "Citation",
+      "description": "A quote with the name and the role of the person quoted, and an optional portrait. Use it for a testimonial, a pull quote or a line from an interview.",
+      "props": [
+        {
+          "name": "quote",
+          "type": "text",
+          "label": "Citation",
+          "required": true,
+          "max": 400
+        },
+        {
+          "name": "author",
+          "type": "text",
+          "label": "Auteur",
+          "required": true,
+          "max": 80
+        },
+        {
+          "name": "role",
+          "type": "text",
+          "label": "Fonction",
+          "max": 120
+        },
+        {
+          "name": "portrait",
+          "type": "image",
+          "label": "Portrait"
+        }
+      ],
+      "sample": {
+        "quote": "Nous avons gagné une heure par jour dès la première semaine.",
+        "author": "Claire Martin",
+        "role": "Directrice de l’atelier Fil & Cie",
+        "portrait": null
+      },
+      "template": "<section class=\"quote\"><figure class=\"quote__figure\"><blockquote class=\"quote__text\"><p>{{ props.quote }}</p></blockquote><figcaption class=\"quote__caption\">{% if props.portrait %}<img class=\"quote__portrait\" src=\"{{ props.portrait }}\" alt=\"{{ props.author }}\">{% endif %}<span class=\"quote__author\">{{ props.author }}</span>{% if props.role is not empty %}<span class=\"quote__role\">{{ props.role }}</span>{% endif %}</figcaption></figure></section>",
+      "css": ".quote__figure { margin: 0; padding: 2rem 1.5rem; border-radius: 0.5rem; background: var(--cms-color-surface); }\n.quote__text { margin: 0 0 1rem; font-size: 1.375rem; line-height: 1.4; color: var(--cms-color-text); }\n.quote__text p { margin: 0; }\n.quote__caption { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem; }\n.quote__portrait { width: 3rem; height: 3rem; border-radius: 50%; object-fit: cover; }\n.quote__author { font-weight: 700; color: var(--cms-color-text); }\n.quote__role { color: var(--cms-color-text-muted); }\n@media (min-width: 48rem) { .quote__figure { padding: 3rem; } .quote__text { font-size: 1.75rem; } }",
+      "provenance": null,
+      "status": "ready"
+    },
+    {
+      "code": "RideCalendar",
+      "label": "Upcoming club rides",
+      "description": "An agenda of the club's next three to six outings, each a card with its name, date, starting point, distance, level (easy, medium or hard, shown as a word and a three-step gauge) and a sign-up button. Use it on a club or events page to announce the coming rides and let visitors register.",
+      "props": [
+        {
+          "name": "title",
+          "type": "text",
+          "label": "Heading",
+          "max": 120
+        },
+        {
+          "name": "title_level",
+          "type": "choice",
+          "label": "Heading level",
+          "choices": {
+            "h2": "Level 2",
+            "h3": "Level 3",
+            "h4": "Level 4"
+          },
+          "default": "h2"
+        },
+        {
+          "name": "title_style",
+          "type": "choice",
+          "label": "Heading style",
+          "choices": {
+            "level": "Same as its level",
+            "h1": "Style 1",
+            "h2": "Style 2",
+            "h3": "Style 3",
+            "h4": "Style 4",
+            "h5": "Style 5",
+            "h6": "Style 6"
+          },
+          "default": "level"
+        },
+        {
+          "name": "date_label",
+          "type": "text",
+          "label": "Label of the date",
+          "max": 40,
+          "default": "Date"
+        },
+        {
+          "name": "start_label",
+          "type": "text",
+          "label": "Label of the starting point",
+          "max": 40,
+          "default": "Start"
+        },
+        {
+          "name": "distance_label",
+          "type": "text",
+          "label": "Label of the distance",
+          "max": 40,
+          "default": "Distance"
+        },
+        {
+          "name": "level_label",
+          "type": "text",
+          "label": "Label of the level",
+          "max": 40,
+          "default": "Level"
+        },
+        {
+          "name": "level_easy",
+          "type": "text",
+          "label": "Word for an easy level",
+          "max": 40,
+          "default": "Easy"
+        },
+        {
+          "name": "level_medium",
+          "type": "text",
+          "label": "Word for a medium level",
+          "max": 40,
+          "default": "Medium"
+        },
+        {
+          "name": "level_hard",
+          "type": "text",
+          "label": "Word for a hard level",
+          "max": 40,
+          "default": "Hard"
+        },
+        {
+          "name": "button_label",
+          "type": "text",
+          "label": "Text of the sign-up button",
+          "help": "The same on every ride; screen readers also hear the name of the ride.",
+          "max": 60,
+          "default": "Sign up"
+        },
+        {
+          "name": "rides",
+          "type": "items",
+          "label": "Rides",
+          "min": 3,
+          "max": 6,
+          "items": [
+            {
+              "name": "title",
+              "type": "text",
+              "label": "Name of the ride",
+              "required": true,
+              "max": 120
+            },
+            {
+              "name": "date",
+              "type": "text",
+              "label": "Date and time",
+              "required": true,
+              "max": 80
+            },
+            {
+              "name": "start",
+              "type": "text",
+              "label": "Starting point",
+              "max": 120
+            },
+            {
+              "name": "distance",
+              "type": "text",
+              "label": "Distance",
+              "help": "With its unit, such as 65 km.",
+              "max": 40
+            },
+            {
+              "name": "level",
+              "type": "choice",
+              "label": "Level",
+              "choices": {
+                "easy": "Easy",
+                "medium": "Medium",
+                "hard": "Hard"
+              },
+              "default": "medium"
+            },
+            {
+              "name": "link",
+              "type": "url",
+              "label": "Sign-up link"
+            }
+          ]
+        }
+      ],
+      "sample": {
+        "title": "Our next rides",
+        "title_level": "h2",
+        "title_style": "level",
+        "date_label": "Date",
+        "start_label": "Start",
+        "distance_label": "Distance",
+        "level_label": "Level",
+        "level_easy": "Easy",
+        "level_medium": "Medium",
+        "level_hard": "Hard",
+        "button_label": "Sign up",
+        "rides": [
+          {
+            "title": "Vineyard morning loop",
+            "date": "Saturday, May 17, 8:00 a.m.",
+            "start": "Club house, 12 River Street",
+            "distance": "45 km",
+            "level": "easy",
+            "link": "/rides/vineyard-loop"
+          },
+          {
+            "title": "Three hills challenge",
+            "date": "Sunday, May 25, 7:30 a.m.",
+            "start": "Town hall square",
+            "distance": "92 km",
+            "level": "hard",
+            "link": "/rides/three-hills"
+          },
+          {
+            "title": "Lakeside gravel ride",
+            "date": "Saturday, June 7, 9:00 a.m.",
+            "start": "North Lake car park",
+            "distance": "60 km",
+            "level": "medium",
+            "link": "/rides/lakeside-gravel"
+          },
+          {
+            "title": "Summer evening spin",
+            "date": "Wednesday, June 18, 6:30 p.m.",
+            "start": "Club house, 12 River Street",
+            "distance": "35 km",
+            "level": "easy",
+            "link": "/rides/evening-spin"
+          }
+        ]
+      },
+      "template": "<section class=\"rides\">{% if props.title is not empty %}{{ cms_component('cms:heading', {text: props.title, level: props.title_level, style: props.title_style}) }}{% endif %}<ul class=\"rides__list\">{% for ride in props.rides %}{% set level = ride.level|default('medium') %}<li class=\"ride\"><h3 class=\"ride__title\">{{ ride.title }}</h3><dl class=\"ride__facts\"><div class=\"ride__fact ride__fact--date\"><dt>{{ props.date_label }}</dt><dd>{{ ride.date }}</dd></div>{% if ride.start is not empty %}<div class=\"ride__fact ride__fact--start\"><dt>{{ props.start_label }}</dt><dd>{{ ride.start }}</dd></div>{% endif %}{% if ride.distance is not empty %}<div class=\"ride__fact\"><dt>{{ props.distance_label }}</dt><dd>{{ ride.distance }}</dd></div>{% endif %}<div class=\"ride__fact\"><dt>{{ props.level_label }}</dt><dd class=\"ride__level\"><span class=\"ride__gauge ride__gauge--{{ level }}\" aria-hidden=\"true\"><span></span><span></span><span></span></span><span>{% if level == 'easy' %}{{ props.level_easy }}{% elseif level == 'hard' %}{{ props.level_hard }}{% else %}{{ props.level_medium }}{% endif %}</span></dd></div></dl>{% if ride.link is not empty and props.button_label is not empty %}<a class=\"ride__button\" href=\"{{ ride.link }}\">{{ props.button_label }}<span class=\"ride__sr\"> {{ ride.title }}</span></a>{% endif %}</li>{% endfor %}</ul></section>",
+      "css": ".rides__list { display: grid; gap: 1.25rem; margin: 0; padding: 0; list-style: none; }\n.ride { display: flex; flex-direction: column; gap: 1rem; padding: 1.5rem; background: var(--cms-color-surface); border-top: 4px solid var(--cms-color-accent); border-radius: 0.5rem; }\n.ride__title { margin: 0; font-size: 1.25rem; color: var(--cms-color-text); }\n.ride__facts { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem 1rem; margin: 0; }\n.ride__fact { min-width: 0; }\n.ride__fact--date { grid-column: 1 / -1; }\n.ride__fact--start { grid-column: 1 / -1; }\n.ride__fact dt { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--cms-color-text-subtle); }\n.ride__fact dd { margin: 0.15rem 0 0; font-weight: 600; color: var(--cms-color-text); overflow-wrap: anywhere; }\n.ride__level { display: flex; align-items: center; gap: 0.5rem; }\n.ride__gauge { display: inline-flex; gap: 3px; }\n.ride__gauge span { display: block; width: 0.5rem; height: 0.9rem; border-radius: 2px; background: var(--cms-color-border); }\n.ride__gauge--easy span:nth-child(1) { background: var(--cms-color-accent); }\n.ride__gauge--medium span:nth-child(-n+2) { background: var(--cms-color-accent); }\n.ride__gauge--hard span { background: var(--cms-color-accent); }\n.ride__button { position: relative; margin-top: auto; align-self: flex-start; display: inline-block; padding: 0.65rem 1.25rem; border-radius: 999px; background: var(--cms-color-accent); color: var(--cms-color-on-accent); font-weight: 600; text-decoration: none; transition: box-shadow 0.2s ease; }\n.ride__button:hover { text-decoration: underline; box-shadow: 0 0 0 3px var(--cms-color-accent-strong); }\n.ride__button:focus-visible { text-decoration: underline; box-shadow: 0 0 0 3px var(--cms-color-accent-strong); }\n.ride__sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }\n@media (min-width: 48rem) { .rides__list { grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); } }",
+      "provenance": null,
+      "status": "ready"
+    },
+    {
+      "code": "RouteCard",
+      "label": "Route card",
+      "description": "A card summing up a hiking or cycling route: its name, distance, elevation gain, difficulty (easy, medium or hard, shown as a word and a three-step gauge), estimated duration and a link to download its GPX track. Use it on a page that presents an outing, a trail or a tour.",
+      "props": [
+        {
+          "name": "title",
+          "type": "text",
+          "label": "Route name",
+          "required": true,
+          "max": 120
+        },
+        {
+          "name": "title_level",
+          "type": "choice",
+          "label": "Heading level",
+          "choices": {
+            "h2": "Level 2",
+            "h3": "Level 3",
+            "h4": "Level 4"
+          },
+          "default": "h2"
+        },
+        {
+          "name": "title_style",
+          "type": "choice",
+          "label": "Heading style",
+          "choices": {
+            "level": "Same as the level",
+            "h1": "Heading 1",
+            "h2": "Heading 2",
+            "h3": "Heading 3",
+            "h4": "Heading 4",
+            "h5": "Heading 5",
+            "h6": "Heading 6"
+          },
+          "default": "level"
+        },
+        {
+          "name": "distance_label",
+          "type": "text",
+          "label": "Distance label",
+          "max": 60,
+          "default": "Distance"
+        },
+        {
+          "name": "distance",
+          "type": "text",
+          "label": "Distance",
+          "help": "The number only, such as 18.4",
+          "max": 20
+        },
+        {
+          "name": "distance_unit",
+          "type": "text",
+          "label": "Distance unit",
+          "max": 20,
+          "default": "km"
+        },
+        {
+          "name": "elevation_label",
+          "type": "text",
+          "label": "Elevation gain label",
+          "max": 60,
+          "default": "Elevation gain"
+        },
+        {
+          "name": "elevation",
+          "type": "text",
+          "label": "Elevation gain",
+          "help": "The number only, such as 640",
+          "max": 20
+        },
+        {
+          "name": "elevation_unit",
+          "type": "text",
+          "label": "Elevation unit",
+          "max": 20,
+          "default": "m"
+        },
+        {
+          "name": "difficulty_label",
+          "type": "text",
+          "label": "Difficulty label",
+          "max": 60,
+          "default": "Difficulty"
+        },
+        {
+          "name": "difficulty",
+          "type": "choice",
+          "label": "Difficulty",
+          "choices": {
+            "easy": "Easy",
+            "medium": "Medium",
+            "hard": "Hard"
+          },
+          "default": "easy"
+        },
+        {
+          "name": "difficulty_easy",
+          "type": "text",
+          "label": "Word for easy",
+          "max": 40,
+          "default": "Easy"
+        },
+        {
+          "name": "difficulty_medium",
+          "type": "text",
+          "label": "Word for medium",
+          "max": 40,
+          "default": "Medium"
+        },
+        {
+          "name": "difficulty_hard",
+          "type": "text",
+          "label": "Word for hard",
+          "max": 40,
+          "default": "Hard"
+        },
+        {
+          "name": "duration_label",
+          "type": "text",
+          "label": "Duration label",
+          "max": 60,
+          "default": "Estimated time"
+        },
+        {
+          "name": "duration",
+          "type": "text",
+          "label": "Estimated duration",
+          "max": 40
+        },
+        {
+          "name": "gpx_label",
+          "type": "text",
+          "label": "GPX link text",
+          "help": "Say where the link leads, such as: Download the GPX track of the route",
+          "max": 120
+        },
+        {
+          "name": "gpx",
+          "type": "url",
+          "label": "GPX track address"
+        }
+      ],
+      "sample": {
+        "title": "Gorges Loop Trail",
+        "title_level": "h2",
+        "title_style": "level",
+        "distance_label": "Distance",
+        "distance": "18.4",
+        "distance_unit": "km",
+        "elevation_label": "Elevation gain",
+        "elevation": "640",
+        "elevation_unit": "m",
+        "difficulty_label": "Difficulty",
+        "difficulty": "medium",
+        "difficulty_easy": "Easy",
+        "difficulty_medium": "Medium",
+        "difficulty_hard": "Hard",
+        "duration_label": "Estimated time",
+        "duration": "5 h 30 min",
+        "gpx_label": "Download the GPX track of the Gorges Loop Trail",
+        "gpx": "/files/gorges-loop-trail.gpx"
+      },
+      "template": "<div class=\"route\">{% if props.title is not empty %}{{ cms_component('cms:heading', {text: props.title, level: props.title_level, style: props.title_style}) }}{% endif %}{% set level = props.difficulty|default('easy') %}{% set word = level == 'hard' ? props.difficulty_hard : (level == 'medium' ? props.difficulty_medium : props.difficulty_easy) %}<dl class=\"route__facts\">{% if props.distance is not empty %}<div class=\"route__fact\"><dt class=\"route__label\">{{ props.distance_label }}</dt><dd class=\"route__value\">{{ props.distance }} <span class=\"route__unit\">{{ props.distance_unit }}</span></dd></div>{% endif %}{% if props.elevation is not empty %}<div class=\"route__fact\"><dt class=\"route__label\">{{ props.elevation_label }}</dt><dd class=\"route__value\">{{ props.elevation }} <span class=\"route__unit\">{{ props.elevation_unit }}</span></dd></div>{% endif %}{% if word is not empty %}<div class=\"route__fact\"><dt class=\"route__label\">{{ props.difficulty_label }}</dt><dd class=\"route__value route__difficulty route__difficulty--{{ level }}\"><span class=\"route__gauge\" aria-hidden=\"true\"><span class=\"route__bar\"></span><span class=\"route__bar\"></span><span class=\"route__bar\"></span></span><span class=\"route__word\">{{ word }}</span></dd></div>{% endif %}{% if props.duration is not empty %}<div class=\"route__fact\"><dt class=\"route__label\">{{ props.duration_label }}</dt><dd class=\"route__value\">{{ props.duration }}</dd></div>{% endif %}</dl>{% if props.gpx is not empty and props.gpx_label is not empty %}<a class=\"route__gpx\" href=\"{{ props.gpx }}\">{{ props.gpx_label }}</a>{% endif %}</div>",
+      "css": ".route { padding: 1.5rem; background: var(--cms-color-surface); border: 1px solid var(--cms-color-border); border-radius: 0.75rem; color: var(--cms-color-text); }\n.route__facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 1rem 0 0; padding: 0; }\n.route__fact { padding-top: 0.75rem; border-top: 2px solid var(--cms-color-accent); }\n.route__label { margin: 0; font-size: 0.875rem; color: var(--cms-color-text-subtle); }\n.route__value { margin: 0.25rem 0 0; font-size: 1.375rem; font-weight: 700; color: var(--cms-color-text); overflow-wrap: anywhere; }\n.route__unit { font-size: 1rem; font-weight: 400; color: var(--cms-color-text-muted); }\n.route__difficulty { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }\n.route__gauge { display: inline-flex; align-items: flex-end; gap: 0.2rem; }\n.route__bar { display: block; width: 0.4rem; border-radius: 2px; background: var(--cms-color-border); }\n.route__bar:nth-child(1) { height: 0.6rem; }\n.route__bar:nth-child(2) { height: 0.9rem; }\n.route__bar:nth-child(3) { height: 1.2rem; }\n.route__difficulty--easy .route__bar:nth-child(1) { background: var(--cms-color-accent); }\n.route__difficulty--medium .route__bar:nth-child(-n+2) { background: var(--cms-color-accent); }\n.route__difficulty--hard .route__bar { background: var(--cms-color-accent); }\n.route__gpx { display: inline-block; margin-top: 1.5rem; padding: 0.75rem 1.25rem; border-radius: 0.5rem; background: var(--cms-color-accent); color: var(--cms-color-on-accent); font-weight: 600; text-decoration: underline; transition: background-color 0.2s; }\n.route__gpx:hover { background: var(--cms-color-accent-strong); }\n.route__gpx:focus-visible { background: var(--cms-color-accent-strong); outline: 2px solid var(--cms-color-accent); outline-offset: 3px; }\n@media (min-width: 48rem) { .route { padding: 2rem; } .route__facts { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.5rem; } }",
+      "provenance": null,
+      "status": "ready"
+    },
+    {
+      "code": "Steps",
+      "label": "Étapes",
+      "description": "The steps of a process in order, each a short title and a sentence. Use it for how an order, a booking or a service goes.",
+      "props": [
+        {
+          "name": "title",
+          "type": "text",
+          "label": "Titre",
+          "max": 120
+        },
+        {
+          "name": "title_level",
+          "type": "choice",
+          "label": "Niveau du titre",
+          "choices": {
+            "h2": "Niveau 2, une partie de la page",
+            "h3": "Niveau 3, sous un titre de niveau 2",
+            "h4": "Niveau 4, sous un titre de niveau 3"
+          },
+          "default": "h2"
+        },
+        {
+          "name": "title_style",
+          "type": "choice",
+          "label": "Apparence du titre",
+          "choices": {
+            "level": "Selon son niveau",
+            "h1": "Titre 1 du thème",
+            "h2": "Titre 2 du thème",
+            "h3": "Titre 3 du thème",
+            "h4": "Titre 4 du thème",
+            "h5": "Titre 5 du thème",
+            "h6": "Titre 6 du thème"
+          },
+          "default": "level"
+        },
+        {
+          "name": "steps",
+          "type": "items",
+          "label": "Étapes",
+          "min": 2,
+          "max": 8,
+          "items": [
+            {
+              "name": "title",
+              "type": "text",
+              "label": "Étape",
+              "required": true,
+              "max": 80
+            },
+            {
+              "name": "text",
+              "type": "text",
+              "label": "Ce qui se passe",
+              "max": 300
+            }
+          ]
+        }
+      ],
+      "sample": {
+        "title": "Comment commander",
+        "title_level": "h2",
+        "title_style": "level",
+        "steps": [
+          {
+            "title": "Vous choisissez",
+            "text": "Modèle, couleur et finition en quelques clics."
+          },
+          {
+            "title": "Nous fabriquons",
+            "text": "Votre sac est assemblé à la main sous trois semaines."
+          },
+          {
+            "title": "Nous livrons",
+            "text": "Colissimo suivi, retours gratuits pendant 30 jours."
+          }
+        ]
+      },
+      "template": "<section class=\"steps\">{% if props.title is not empty %}{{ cms_component('cms:heading', {text: props.title, level: props.title_level, style: props.title_style}) }}{% endif %}<ol class=\"steps__list\">{% for step in props.steps %}<li class=\"step\"><h3 class=\"step__title\">{{ step.title }}</h3>{% if step.text is not empty %}<p class=\"step__text\">{{ step.text }}</p>{% endif %}</li>{% endfor %}</ol></section>",
+      "css": ".steps__list { display: grid; gap: 1.5rem; padding: 0; list-style: none; counter-reset: step; }\n.step { counter-increment: step; padding-top: 1rem; border-top: 2px solid var(--cms-color-accent); }\n.step__title { margin: 0 0 0.5rem; }\n.step__title::before { content: counter(step) \". \"; }\n.step__text { margin: 0; color: var(--cms-color-text-muted); }\n@media (min-width: 48rem) { .steps__list { grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); } }",
+      "provenance": null,
+      "status": "ready"
+    }
+  ]
+}

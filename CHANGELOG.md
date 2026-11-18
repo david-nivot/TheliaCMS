@@ -54,6 +54,24 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   and the answer came back refused with the same words. It is now disabled
   and tied to the warning that says why; « Do not add this file » stays.
 
+## [2.33.0] - 2026-11-18
+
+### Added
+
+- **A list of pages under a page**: the section, renamed **List of pages**
+  (formerly "Pages of a type"), can list the pages under a page picked by a
+  search of the titles, right under it (the articles of a rubric) or at any
+  depth under it (the news filed under a page per year), and the pages of
+  every template. A section saved before keeps listing its template as it did.
+  `PublishedPageRepository::under()` gives the same list to PHP.
+- **A showcase site shows no price**: saving showcase mode sets the Thelia
+  setting `price_display_mode` to `on_request`, and saving shop mode puts back
+  the value the shop had (a value changed by hand meanwhile is left alone).
+  The core 3.4 then leaves the prices out and refuses an add to the cart,
+  Flexy 1.3.3 draws no price, cart, currency, price filter nor sort by price,
+  and SEOne leaves the offers out of the structured data. The update of the
+  module does it for a site already in showcase mode.
+
 ## [2.32.0] - 2026-11-16
 
 ### Fixed
@@ -3629,7 +3647,8 @@ the published pages.
 - The breadcrumb of a page filed under a draft one offered a link to that page,
   which answers 404, both to the reader and in the `BreadcrumbList`.
 
-[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.32.0...HEAD
+[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.33.0...HEAD
+[2.33.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.33.0
 [2.32.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.32.0
 [2.31.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.31.0
 [2.30.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.30.0
