@@ -3,6 +3,10 @@
 # files of the images it made. DDEV host; run from the root of the Thelia install:
 #
 #     local/modules/TheliaCMS/Tests/Browser/sample-site/save.sh [directory]
+#
+# On a host where the module is linked by a Composer `path` repository:
+#
+#     modules-dev/TheliaCMS/Tests/Browser/sample-site/save.sh [directory]
 set -euo pipefail
 directory="${1:-var/theliacms-sample-site}"
 [ -f "$directory/manifest.json" ] || { echo "No $directory/manifest.json: run seed.php first." >&2; exit 1; }

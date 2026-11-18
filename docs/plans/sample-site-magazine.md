@@ -1,9 +1,12 @@
 # Plan: a richer magazine sample site, and a showcase site that sells nothing
 
-Status: lot 1 merged on 2026-11-18 (#210; a `scope` prop was added: right
-under the page or the whole branch, "Actualités" holding its news under a page
-per year). Lot 2 in progress, lot 3 not started. Decisions D1 to D3 taken by
-the maintainer on 2026-11-18: D1 (a), D2 revised to (d) the same day, D3 (a).
+Status (2026-11-18): lots 1, 2 and 3 are done. Lot 1 merged (#210; a `scope`
+prop was added: right under the page or the whole branch, "Actualités" holding
+its news under a page per year). Lot 2 delivered: the showcase site is
+`price_display_mode` = `on_request` (D2 (d)), Flexy 1.3.3. Lot 3 is in the
+working tree of the module (`seed.php`, `components.json`, `docs/developing.md`),
+not committed. Decisions D1 to D3 taken by the maintainer on 2026-11-18: D1 (a),
+D2 revised to (d) the same day, D3 (a).
 
 ## What is asked
 
@@ -133,8 +136,8 @@ cart, and the page source of a product holds no `offers`; switching back to
   type" block with `parent` = the page (limit 48; Brèves holds 30).
 - Articles, by kind, built from a handful of recipes (no extra draw of the
   random generator, so the tree, the dates and the statuses stay as today):
-  - gear test: heading, chapo, `cms:image`, text, BikeSpecSheet, verdict;
-  - advice: heading, text, Steps, Faq;
+  - gear test: chapo, `cms:image`, text, BikeSpecSheet, verdict;
+  - advice: text, Steps, Faq;
   - portrait: ImageText, Quote, text;
   - route: RouteCard, Carousel of library images, text;
   - news (event): chapo, `cms:image`, text, RideCalendar on the autumn
@@ -178,71 +181,45 @@ Hours of development, review and tests included.
   may need a prop the component does not have (then a recipe changes, not the
   component).
 
-## Resuming (written 2026-11-18, end of lot 1)
+## Resuming (rewritten 2026-11-18, lot 3 done)
 
 ### State checked on 2026-11-18
 
-- Module clone `local/modules/TheliaCMS`: branch `feat/page-list-by-parent`
-  from `origin/main` 964e8bf, lot 1 **committed locally** as 4ed2c9e (not
-  pushed, no PR). Lot 1 files:
-  `CHANGELOG.md`, `Generation/Admin/SectionChoices.php`, `I18n/en_US.php`,
-  `I18n/fr_FR.php`, `Page/PublishedPageRepository.php`,
-  `Partial/Admin/CatalogueSourceController.php`,
-  `Partial/Catalogue/PickablePages.php`, `Partial/Definition/PageListPartial.php`,
-  `README.md`, `Tests/Integration/Page/PageListUnderPageTest.php`,
-  `Tests/Integration/Security/WriteRoutesTest.php`,
-  `docs/evaluation/components/README.md`,
-  `templates/backOffice/default-twig/documentation/_{en_US,fr_FR}.html.twig`.
-  Gates green (unit 1985, integration 1712 then `WriteRoutesTest` again after
-  the route was declared, PHPStan, style). Browser proof done and its page
-  deleted.
-- Also uncommitted in the same working tree, **not part of lot 1**: the
-  magazine seed (`Tests/Browser/sample-site/seed.php`, `docs/developing.md`)
-  and this plan. They belong with lot 3 (or a `test/` branch of their own).
-- Host dev database: magazine v2 (showcase mode, news template, menus),
-  components 1 to 6 and 9 to 11, modules Page and TheliaBlocks deactivated.
-  Saved in `var/theliacms-sample-site-v2/` (taken before the deactivation).
-- Flexy clone `~/workzone/thelias/flexy-templates`: on `main`, up to date;
-  `origin/1.3` = 263eca7 (1.3.2). The host runs Flexy 1.3.2 from Composer
-  (`templates/frontOffice/flexy`, ignored by git: never edit it, a change goes
-  through the clone).
-- SEOne clone `~/workzone/thelias/SEOne`: `main`, 7 commits behind
-  `origin/main` (local 1.6.0, released 1.8.0): fast-forward before work.
+- Host (Thelia `main`, core 3.4.0, Flexy 1.3.3, DDEV,
+  https://thelia-cms-ai.ddev.site). The module is `modules-dev/TheliaCMS`, linked
+  by a Composer `path` repository (`vendor/thelia/modules/TheliaCMS`): the
+  commands that read `local/modules/TheliaCMS/...` in this plan read
+  `modules-dev/TheliaCMS/...` there, and the module is never copied into
+  `local/modules/` (it would load twice).
+- Branch `test/sample-site-showcase` = `origin/main` + the seed commit. Lot 3,
+  not committed: `Tests/Browser/sample-site/seed.php` (recipes, listing pages,
+  home page, French by default, components import, modules Page and
+  TheliaBlocks deactivated, `price_display_mode`), `Tests/Browser/sample-site/components.json`
+  (the 9 components, `format`, `version` and `components` only), `docs/developing.md`
+  (section "A sample site to check the page list on") and this plan.
+- Proof: on a fresh database (the demo before the seed, brought to the schema
+  of the core 3.4.0) the seed ends without error twice with the same tree,
+  dates and statuses as the seed before the recipes; `thelia_cms:render-published
+  --all --dry-run --url https://thelia-cms-ai.ddev.site/` ends without error;
+  `/`, Actualités, a gear test, a route, a portrait, Brèves answer 200 and the
+  home page is the magazine's.
+- Changed against the plan: the spec sheet is on the gear tests whose title
+  starts with "Essai", not on every article of the gear rubrics (a comparison,
+  a size guide or "Notre test de …" has no bike to describe), and its bike is
+  read from the title (road, gravel, mountain, kids, e-mountain, cargo); no
+  recipe opens with a heading: the title band of the page already shows the
+  title; the ride calendar is on the one news of the autumn programme; "Bien
+  débuter" uses the advice recipe; the introductions of the listing pages say
+  "most recent first"; the gear test "… à moins de 1 500 €" is now "… abordable",
+  a showcase site printing no price. No component was changed: BikeSpecSheet
+  keeps its `price` prop, which the recipes leave empty and its template then
+  leaves out.
 
-### Lot 2, verified starting points
+### Left to do
 
-- Flexy: `components/Organisms/HeaderNav/Base.html.twig` draws
-  `<twig:Organisms:CurrencySelect:Base />` (l. 6) and
-  `<twig:Organisms:CartButton:Base />` (l. 41) with no condition; Twig
-  functions live in `src/Twig/FlexyBundleExtension.php` (`hasCustomerAccount()`
-  is the only header conditional). Price printers found by grep: ProductCard
-  (Base, Search, Order), PseSelector, RangeSlider, Summary (Mini, Checkout,
-  Order), CartItem, CartButton, QuickOrderTable, OrderCard, Payment,
-  DeliveryMode, GiftWrapping; settle which are reachable on a showcase site
-  (cart, order and checkout answer 404 there: `Vitrine/ShopRoutesListener.php`).
-- Module: `Settings/CmsSettings.php` `save()` writes the mode (`SITE_MODE`);
-  `Settings/Admin/CmsSettingsController.php` `save()`; module `update()` in
-  `TheliaCMS.php` to write the core variable once from the stored mode.
-- SEOne: `Service/ProductStructuredData.php` prints the `offers`.
-- Release paths: Flexy fixes for the 3.3 core go to branch `1.3` (PR, CI of
-  the theme), then a PR raising `<version>` of `template.xml`, then the tag
-  `1.3.3` on its merge commit; SEOne's CI refuses a PR without a version
-  bump. Push, PR, merge, tag, release: one explicit order of the maintainer
-  per gesture.
-- Open before the Flexy PR: the name of the core variable
-  (`shop_sells_online` proposed) to put to the core maintainers.
-
-### Prompt to resume on a blank context
-
-« Reprends TheliaCMS sur l'hôte thelia-cms-ai, lot 2 du plan
-`local/modules/TheliaCMS/docs/plans/sample-site-magazine.md` (vitrine sans
-prix, panier ni devise). Lis le plan EN ENTIER, dont « Resuming ». Décisions
-gelées : D1 (a), D2 (a) variable de configuration du core lue par Flexy,
-D3 (a). Vérifie l'état réel : `git status -sb` et `git log --oneline -1` du
-clone du module, de `~/workzone/thelias/flexy-templates` (branche `1.3`) et de
-`~/workzone/thelias/SEOne` ; signale tout écart avec le plan. Le lot 1 et le
-seed du magazine sont non commités dans le clone du module : ne les mélange
-pas au lot 2 (demande-moi d'abord comment les ranger si ce n'est pas fait).
-Commence par l'inventaire des composants de Flexy qui affichent un prix sur un
-site vitrine, puis code Flexy (branche depuis `origin/1.3`), le module et SEOne,
-tests vus rouges. Push, PR, fusion, tag, release : un ordre par geste. »
+- The maintainer's look at 1440 and 375 px (acceptance of lot 3: Actualités with
+  its images, a gear test with its spec sheet, a route with card and carousel,
+  the home page, the front in French): not done by lot 3, which was proved
+  by HTTP codes and by the markup of the pages.
+- Commit lot 3 (type `feat(hors-ticket)` or as the maintainer decides), push and
+  PR: one order per gesture.

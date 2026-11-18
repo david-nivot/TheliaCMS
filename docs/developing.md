@@ -305,29 +305,71 @@ by default (over forty pages), branches four levels deep, subsections of eight
 pages and more, tags, images, dates over several years, drafts, hidden and
 scheduled pages. `Tests/Browser/sample-site/` makes one on the development
 database of a DDEV host: a cycling magazine started in 2021, written in French,
-about 150 pages, 6 tags and 20 images, a subsection of 30 pages of the media library, part of it in
-English. It is the same on every run (fixed seed). The site around the pages
-comes with it: the CMS set to a showcase site, the folders and contents of the
-shop removed, a `news` page template (brief, writing instructions, a date and a
-place field, a model) that the news are filed under, and the `main` and
-`footer` menus filled (their former entries replaced; the footer stays flat,
-Flexy prints its first level only). The legal pages the module seeded get a
-demonstration text and are published, so the footer has no entry to fix. From
-the root of the host:
+150 pages, 6 tags and 20 images, a subsection of 30 short news, part of it in
+English. It is the same on every run (fixed seed), and it is worth reading:
+
+- Every listing page (Magazine, its rubrics, Actualités, each year, Brèves,
+  Guides, Itinéraires and its regions) holds an introduction and a "Pages of
+  a type" block with `parent` set to the page (48 at most). Actualités lists
+  the news of every year (`type` news, `scope` branch).
+- Every article is made from a recipe by kind: a gear test (chapo, picture,
+  text, spec sheet for the "Essai" ones, verdict), advice (text,
+  steps, FAQ), a portrait (picture and text, quote), a route (route card,
+  carousel, text), news (chapo with the date and place, picture, text; the
+  autumn programme also carries the ride calendar) and short news (a
+  paragraph, a picture one time in two). What a recipe picks is read from the
+  title (`crc32`), never drawn: the generator of random numbers is asked for
+  the same things as before the recipes, so the tree, the dates and the
+  statuses do not change with them.
+- The components the recipes use are the 9 of `components.json` (Quote,
+  ImageText, KeyFigures, Steps, Carousel, Faq, BikeSpecSheet, RouteCard,
+  RideCalendar), brought in by `SiteImporter` before the pages. The file is an
+  export of the site (`thelia_cms:export`) cut down to what `ComponentsStep`
+  reads: `format`, `version` and `components`. To change one, edit it on a
+  site, export, and keep only those three keys (no media, no settings).
+- The home page is the magazine's: the latest news (the block on Actualités)
+  and the three rubrics in columns, in place of the shop welcome the module
+  seeds. French is the default language of the site, the modules Page and
+  TheliaBlocks are deactivated, the CMS is a showcase site and
+  `price_display_mode` is `on_request`, as the settings screen sets it.
+- The site around the pages comes with them: the folders and contents of the
+  shop removed, a `news` page template (brief, writing instructions, a date and
+  a place field, a model) that the news are filed under, and the `main` and
+  `footer` menus filled (their former entries replaced; the footer stays flat,
+  Flexy prints its first level only). The legal pages the module seeded get a
+  demonstration text and are published, so the footer has no entry to fix.
+
+From the root of the host. The paths below are those of a host where the module
+is linked by a Composer `path` repository (`modules-dev/TheliaCMS`); where the
+clone lives in `local/modules/TheliaCMS`, replace `modules-dev/TheliaCMS` with
+`local/modules/TheliaCMS`:
 
 ```bash
-ddev exec php local/modules/TheliaCMS/Tests/Browser/sample-site/seed.php   # once
-local/modules/TheliaCMS/Tests/Browser/sample-site/save.sh                  # keeps it
-local/modules/TheliaCMS/Tests/Browser/sample-site/restore.sh               # puts it back
+ddev exec php modules-dev/TheliaCMS/Tests/Browser/sample-site/seed.php   # once
+modules-dev/TheliaCMS/Tests/Browser/sample-site/save.sh                  # keeps it
+modules-dev/TheliaCMS/Tests/Browser/sample-site/restore.sh               # puts it back
+ddev exec php Thelia cache:pool:clear --all                              # after any seed or import
 ```
 
 - Everything lands in `var/theliacms-sample-site/` (another directory as the
   argument of each script): `manifest.json` lists the ids made, `db.sql.gz` is
   the whole development database after the seed, `images.tar.gz` the files of
-  its images. `seed.php` refuses to run while `manifest.json` exists.
-- `restore.sh` replaces the whole development database, administrators
-  included; it keeps the one it replaces next to the save first. After a new
-  version of the module, `php Thelia module:refresh`.
+  its images. `seed.php` refuses to run while `manifest.json` exists: a new
+  directory for each try. Its last line counts the pages, tags, images and
+  components imported.
+- The seed expects a database of the shop before it (the demo data) at the
+  schema of the core in use: a dump taken on an older core needs the
+  `setup/update/sql/<version>.sql` files replayed and `php Thelia module:refresh`.
+- `restore.sh` replaces the whole development database, administrators and the
+  AI connection included; it keeps the one it replaces next to the save first.
+  After a new version of the module, `php Thelia module:refresh`.
+- A database brought in by hand (a dump of another host through
+  `ddev import-db`) keeps showing the menus of the database it replaced:
+  `cache:clear` and `thelia:cache:clear` leave the cache pools alone. Run
+  `php Thelia cache:pool:clear --all` after the import (`restore.sh` clears
+  `cache.app` itself).
+- On a host, `url_site` is empty: `thelia_cms:render-published --all --dry-run
+  --url https://<host>/` checks that every published page renders.
 - The seed writes through the writers of the module, read by reflection from
   the controllers that hold them (they are private services), then dates each
   page with SQL. A `save()` after that stamps the row with today: anything the
