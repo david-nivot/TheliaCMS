@@ -20,6 +20,12 @@ declare(strict_types=1);
  * changed since their publication, part of them translated into English. Written
  * in French, the language of the site; the same on every run (fixed seed).
  *
+ * The site around the pages comes with them: the CMS set to a showcase site,
+ * the folders and contents of the shop removed (a magazine has only pages), a
+ * "news" page template with its fields and its model, the news filed under it,
+ * and the main and footer menus filled with sample entries. The entries the two
+ * menus held before are replaced.
+ *
  * Run from the root of the Thelia install, on its development database:
  *
  *     php local/modules/TheliaCMS/Tests/Browser/sample-site/seed.php [directory]
@@ -34,11 +40,26 @@ use Symfony\Component\Dotenv\Dotenv;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
+use Thelia\Core\Event\Content\ContentDeleteEvent;
+use Thelia\Core\Event\Folder\FolderDeleteEvent;
+use Thelia\Core\Event\TheliaEvents;
 use Thelia\Core\HttpFoundation\Session\Session;
+use Thelia\Model\ContentQuery;
+use Thelia\Model\FolderQuery;
 use TheliaCMS\Content\Document;
+use TheliaCMS\Generation\Brief;
+use TheliaCMS\Install\MenuSeeder;
+use TheliaCMS\Menu\Admin\MenuItemData;
+use TheliaCMS\Menu\MenuTargetType;
+use TheliaCMS\Menu\MenuTree;
+use TheliaCMS\Model\CmsMenuItemQuery;
+use TheliaCMS\Model\CmsMenuQuery;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Page\Admin\PageDraft;
+use TheliaCMS\Page\Field\FieldDefinitions;
 use TheliaCMS\Page\PageTagColor;
+use TheliaCMS\Settings\CmsSettings;
+use TheliaCMS\Settings\SiteMode;
 
 if (!is_file('vendor/autoload.php') || !is_file('.env')) {
     fwrite(\STDERR, "Run it from the root of the Thelia install.\n");
@@ -73,6 +94,9 @@ $held = static function (string $public, string $property) use ($container): obj
 $pages = $held(TheliaCMS\Page\Admin\CmsPageAdminController::class, 'writer');
 $media = $held(TheliaCMS\Media\Admin\CmsMediaAdminController::class, 'writer');
 $tags = $held(TheliaCMS\Page\Admin\CmsTagAdminController::class, 'writer');
+$types = $held(TheliaCMS\Settings\Admin\PageTypeAdminController::class, 'writer');
+$typeList = $held(TheliaCMS\Settings\Admin\PageTypeAdminController::class, 'pageTypes');
+$menus = $held(TheliaCMS\Menu\Admin\CmsMenuAdminController::class, 'writer');
 
 // Rendering reads the request (address of the shop, language): one made up, as on the command line.
 $request = Request::create('https://thelia-cms-ai.ddev.site/');
@@ -82,7 +106,66 @@ $container->get('request_stack')->push($request);
 // Seeded: the same site on every run.
 $random = new Random\Randomizer(new Random\Engine\Mt19937(2021));
 $connection = Propel\Runtime\Propel::getConnection('TheliaMain');
-$manifest = ['pages' => [], 'tags' => [], 'images' => [], 'image_files' => []];
+$manifest = ['pages' => [], 'tags' => [], 'images' => [], 'image_files' => [], 'models' => [], 'menu_items' => []];
+
+// --- The site ----------------------------------------------------------------
+
+// A magazine sells nothing: the CMS is set as on the settings screen.
+TheliaCMS\TheliaCMS::setConfigValue(CmsSettings::SITE_MODE, SiteMode::Showcase->value);
+$manifest['site_mode'] = SiteMode::Showcase->value;
+
+// Only pages: the folders and contents of the shop go, through the events of
+// the core (their images, documents and addresses with them). The contents
+// first, then the folders from the leaves up.
+$dispatcher = $container->get('event_dispatcher');
+$manifest['removed'] = ['contents' => 0, 'folders' => 0];
+
+foreach (ContentQuery::create()->find() as $content) {
+    $dispatcher->dispatch(new ContentDeleteEvent((int) $content->getId()), TheliaEvents::CONTENT_DELETE);
+    ++$manifest['removed']['contents'];
+}
+
+$leaf = $connection->prepare('SELECT f.id FROM folder f WHERE NOT EXISTS (SELECT 1 FROM folder c WHERE c.parent = f.id) LIMIT 1');
+
+// No row reads as null through the statement of Propel, not false.
+while ($leaf->execute() && 0 < $folderId = (int) $leaf->fetchColumn()) {
+    $dispatcher->dispatch(new FolderDeleteEvent((int) $folderId), TheliaEvents::FOLDER_DELETE);
+    ++$manifest['removed']['folders'];
+
+    if (null !== FolderQuery::create()->findPk((int) $folderId)) {
+        throw new RuntimeException('The core kept the folder #'.$folderId);
+    }
+}
+
+// A template for the news: what the generator is told, two fields, a model.
+if (!$typeList->exists('news')) {
+    $types->add('news');
+}
+
+$newsBrief = new Brief(
+    'Une actualité du magazine : un événement, une annonce de la rédaction ou une brève. Ce qui se passe, où, quand, et ce que le lecteur peut en faire.',
+    'informatif, enthousiaste sans excès',
+    'cyclistes de tous niveaux, lecteurs du magazine',
+);
+$newsFields = FieldDefinitions::fromArray([
+    ['code' => 'event_date', 'kind' => 'date', 'labels' => ['fr_FR' => 'Date de l’événement', 'en_US' => 'Date of the event']],
+    ['code' => 'place', 'kind' => 'text', 'translated' => true, 'labels' => ['fr_FR' => 'Lieu', 'en_US' => 'Place']],
+]);
+$newsInstructions = "- Un chapeau de deux phrases au plus, puis le corps.\n- Dire la date et le lieu dans le chapeau quand la page en a.\n- Finir par ce que le lecteur peut faire : s’inscrire, venir, lire la suite.\n- Pas de FAQ.";
+$types->describe('news', 'fr_FR', 'Actualité', 'Événement, annonce ou brève du magazine.', $newsBrief, $newsFields, null, $newsInstructions);
+$types->describe('news', 'en_US', 'News', 'An event, an announcement or a short news item of the magazine.', $newsBrief, null, null, $newsInstructions);
+
+if (null === $typeList->modelOf('news')) {
+    $model = $pages->createModel('news', 'fr_FR', 'Actualité (modèle)');
+    $pages->saveContent($model, 'fr_FR', Document::richText(
+        '<h2>Le titre de l’actualité</h2>'
+        .'<p><strong>Le chapeau : ce qui se passe, où et quand, en deux phrases.</strong></p>'
+        .'<p>Le corps de l’article : le contexte, les détails pratiques, une citation si la rédaction en a une.</p>'
+        .'<h2>En pratique</h2>'
+        .'<p>Comment participer, s’inscrire ou en savoir plus.</p>'
+    ));
+    $manifest['models'][] = (int) $model->getId();
+}
 
 // --- Tags -------------------------------------------------------------------
 
@@ -196,7 +279,7 @@ $paragraphs = [
 /**
  * Creates one page and returns it.
  *
- * @param array{parent?: CmsPage|null, tag?: string|null, image?: bool, created?: DateTimeImmutable, english?: bool, status?: string, intro?: string, position?: int} $options
+ * @param array{parent?: CmsPage|null, tag?: string|null, image?: bool, created?: DateTimeImmutable, english?: bool, status?: string, intro?: string, position?: int, type?: string, fields?: array<string, string>} $options
  */
 $page = static function (string $title, array $options = []) use ($pages, $images, $tagIds, $paragraphs, $between, $end, $connection, $random, &$manifest): CmsPage {
     $created = $options['created'] ?? new DateTimeImmutable('2021-01-11 09:00:00');
@@ -207,11 +290,11 @@ $page = static function (string $title, array $options = []) use ($pages, $image
         ->setParent(null === ($options['parent'] ?? null) ? 0 : (int) $options['parent']->getId())
         ->setPosition(0)
         ->setVisible('hidden' === $status ? 0 : 1)
-        ->setPageType('default')
+        ->setPageType($options['type'] ?? 'default')
         ->setTagId(null === ($options['tag'] ?? null) ? null : $tagIds[$options['tag']])
         ->setImageId($imageId);
 
-    $pages->saveDraft($row, 'fr_FR', new PageDraft(title: $title));
+    $pages->saveDraft($row, 'fr_FR', new PageDraft(title: $title, fields: $options['fields'] ?? null));
 
     $body = '<h2>'.htmlspecialchars($title).'</h2><p>'.htmlspecialchars($options['intro'] ?? $paragraphs[$random->getInt(0, count($paragraphs) - 1)]).'</p>';
 
@@ -280,7 +363,10 @@ $someStatus = static function () use ($random): string {
     };
 };
 
-$articles = static function (CmsPage $parent, array $titles, string $tag, DateTimeImmutable $from, DateTimeImmutable $to) use ($page, $between, $someStatus, $random): void {
+/**
+ * @param array{type?: string, fields?: callable(string, DateTimeImmutable): array<string, string>} $extra
+ */
+$articles = static function (CmsPage $parent, array $titles, string $tag, DateTimeImmutable $from, DateTimeImmutable $to, array $extra = []) use ($page, $between, $someStatus, $random): void {
     $dated = [];
 
     foreach ($titles as $title) {
@@ -290,9 +376,28 @@ $articles = static function (CmsPage $parent, array $titles, string $tag, DateTi
     usort($dated, static fn (array $one, array $other): int => $one[1] <=> $other[1]);
 
     foreach ($dated as $rank => [$title, $created]) {
-        $page($title, ['parent' => $parent, 'tag' => 0 === $random->getInt(0, 5) ? 'Dossier' : $tag, 'image' => 0 !== $random->getInt(0, 4), 'created' => $created, 'english' => 0 === $random->getInt(0, 3), 'status' => $someStatus(), 'position' => $rank + 1]);
+        // The draws in the same order as before: the type and the fields draw nothing.
+        $options = ['parent' => $parent, 'tag' => 0 === $random->getInt(0, 5) ? 'Dossier' : $tag, 'image' => 0 !== $random->getInt(0, 4), 'created' => $created, 'english' => 0 === $random->getInt(0, 3), 'status' => $someStatus(), 'position' => $rank + 1];
+
+        if (isset($extra['type'])) {
+            $options['type'] = $extra['type'];
+        }
+
+        if (isset($extra['fields'])) {
+            $options['fields'] = $extra['fields']($title, $created);
+        }
+
+        $page($title, $options);
     }
 };
+
+// The fields of a news page, read from its title and date rather than drawn.
+$places = ['Nantes', 'Lyon', 'Strasbourg', 'Annecy', 'Bordeaux', 'Lille', 'Grenoble', 'Rennes'];
+$asNews = ['type' => 'news', 'fields' => static fn (string $title, DateTimeImmutable $created): array => [
+    'event_date' => $created->modify('+3 weeks')->format('Y-m-d'),
+    'place' => $places[crc32($title) % count($places)],
+]];
+$asShortNews = ['type' => 'news'];
 
 $rubric = static fn (string $title, ?CmsPage $parent, int $rank, DateTimeImmutable $created): CmsPage => $page($title, ['parent' => $parent, 'created' => $created, 'english' => true, 'intro' => 'Tous nos articles de la rubrique « '.$title.' », du plus ancien au plus récent.', 'position' => $rank]);
 
@@ -325,11 +430,12 @@ $events = [
 
 foreach ($events as $year => $titles) {
     $yearPage = $rubric((string) $year, $news, 2027 - $year, new DateTimeImmutable($year.'-01-05 09:00:00'));
-    $articles($yearPage, $titles, 'Événement', new DateTimeImmutable($year.'-01-06'), min($end, new DateTimeImmutable($year.'-12-20')));
+    $articles($yearPage, $titles, 'Événement', new DateTimeImmutable($year.'-01-06'), min($end, new DateTimeImmutable($year.'-12-20')), $asNews);
 }
 
 // A section larger than a branch of the tree shows: the tree leads to the list of all of them.
-$articles($rubric('Brèves', $news, 7, $t2021), [
+$shortNews = $rubric('Brèves', $news, 7, $t2021);
+$articles($shortNews, [
     'Un nouveau tronçon de voie verte ouvre en Bretagne', 'La prime au vélo cargo reconduite', 'Le salon du vélo ancien revient en mars',
     'Une piste cyclable suspendue à l’étude', 'Le prix des pneus en hausse cette année', 'Ouverture d’un atelier solidaire en centre-ville',
     'Le tour cyclotouriste des lacs complet en deux jours', 'Un record de passages au compteur du pont', 'La fête du vélo change de date',
@@ -340,20 +446,98 @@ $articles($rubric('Brèves', $news, 7, $t2021), [
     'Le vélo-école ouvre ses inscriptions', 'Le prix des antivols connectés baisse', 'Les trains acceptent plus de vélos cet été',
     'Un nouveau record de l’heure amateur', 'La bourse aux vélos de printemps', 'Les rues scolaires se multiplient',
     'Le réseau express vélo s’étend', 'Une exposition sur l’histoire du cycle', 'Le baromètre des villes cyclables publié',
-], 'Événement', $t2021, $end);
+], 'Événement', $t2021, $end, $asShortNews);
 
 $guides = $rubric('Guides', null, 12, new DateTimeImmutable('2022-01-10 09:00:00'));
-$articles($rubric('Bien débuter', $guides, 1, new DateTimeImmutable('2022-01-10 09:00:00')), ['Choisir la taille de son cadre', 'Les réglages de base avant de partir', 'Le vocabulaire du cycliste', 'Le vélotaf, mode d’emploi'], 'Dossier', new DateTimeImmutable('2022-01-10'), $end);
+$starting = $rubric('Bien débuter', $guides, 1, new DateTimeImmutable('2022-01-10 09:00:00'));
+$articles($starting, ['Choisir la taille de son cadre', 'Les réglages de base avant de partir', 'Le vocabulaire du cycliste', 'Le vélotaf, mode d’emploi'], 'Dossier', new DateTimeImmutable('2022-01-10'), $end);
 $routes = $rubric('Itinéraires', $guides, 2, new DateTimeImmutable('2022-01-10 09:00:00'));
 
 foreach (['Montagne' => ['Trois cols des Alpes pour débuter', 'Les Vosges en deux jours'], 'Littoral' => ['La Vélodyssée en famille', 'Le tour d’une île à vélo'], 'Vélotourisme' => ['Partir une semaine en sacoches'], 'Ville' => ['Traverser Paris par les berges', 'Lyon à vélo en un week-end']] as $rank => $titles) {
     $articles($rubric($rank, $routes, array_search($rank, ['Montagne', 'Littoral', 'Vélotourisme', 'Ville'], true) + 1, new DateTimeImmutable('2022-01-10 09:00:00')), $titles, 'Itinéraire', new DateTimeImmutable('2022-01-10'), $end);
 }
 
-$page('La rédaction', ['created' => $t2021, 'english' => true, 'position' => 13]);
-$page('Nous écrire', ['created' => $t2021, 'english' => true, 'position' => 14]);
+$team = $page('La rédaction', ['created' => $t2021, 'english' => true, 'position' => 13]);
+$contact = $page('Nous écrire', ['created' => $t2021, 'english' => true, 'position' => 14]);
 $page('Archives de l’ancien blog', ['created' => $t2021, 'status' => 'hidden', 'position' => 15]);
 $page('Le guide des itinéraires : précommande', ['created' => new DateTimeImmutable('2026-10-28 10:00:00'), 'status' => 'scheduled', 'tag' => 'Événement', 'image' => true, 'position' => 16]);
 
+// --- Menus ------------------------------------------------------------------
+
+// The two menus of the module, filled: as soon as one holds an entry, it takes
+// the header (main) or footer (footer) links of the theme over. An entry to a
+// page has no label of its own: the title of the page is shown, in each language.
+// Any other entry is labelled in French and English: an entry left without a
+// label in the language read is left out. Flexy prints the first level of the
+// footer menu only, so that one stays flat.
+(new MenuSeeder())->seed();
+
+/** Empties a shared menu, then files its entries: [type, target, labels by locale, url, children]. */
+$fill = static function (string $code, array $entries) use ($menus, &$manifest): void {
+    $menu = CmsMenuQuery::findShared($code) ?? throw new RuntimeException('No shared menu "'.$code.'".');
+
+    foreach (CmsMenuItemQuery::create()->filterByMenuId($menu->getId())->filterByParent(MenuTree::ROOT)->find() as $item) {
+        $menus->deleteItem($menu, $item);
+    }
+
+    $file = static function (array $entries, int $parent) use (&$file, $menus, $menu, &$manifest): void {
+        foreach ($entries as [$type, $target, $labels, $url, $children]) {
+            $item = null;
+
+            foreach ($labels ?? ['fr_FR' => null] as $locale => $label) {
+                $item = $menus->saveItem($menu, $item, $locale, new MenuItemData(
+                    type: $type,
+                    targetId: null === $target ? null : (int) $target->getId(),
+                    url: $url,
+                    label: $label,
+                    parent: $parent,
+                    openNewTab: MenuTargetType::Url === $type,
+                ));
+            }
+
+            $manifest['menu_items'][] = (int) $item->getId();
+            $file($children, (int) $item->getId());
+        }
+    };
+
+    $file($entries, MenuTree::ROOT);
+};
+
+$toPage = static fn (CmsPage $target, array $children = []): array => [MenuTargetType::Page, $target, null, null, $children];
+
+// The legal pages the module seeded on its activation, when the host still has them.
+$legal = static function (string $title) use ($connection): ?CmsPage {
+    $statement = $connection->prepare('SELECT p.id FROM cms_page p JOIN cms_page_i18n i ON i.id = p.id AND i.locale = \'fr_FR\' WHERE p.parent = 0 AND p.model = 0 AND p.deleted_at IS NULL AND i.title = :title ORDER BY p.id LIMIT 1');
+    $statement->execute(['title' => $title]);
+    $id = (int) $statement->fetchColumn();
+
+    return 0 === $id ? null : TheliaCMS\Model\CmsPageQuery::create()->findPk($id);
+};
+$legalPages = array_values(array_filter(array_map($legal, ['Mentions légales', 'Politique de confidentialité', 'Cookies', 'Déclaration d’accessibilité'])));
+
+// Seeded as drafts whose sample text the module refuses to publish: an entry to
+// them would wait in the menu, "to fix". A text of the magazine replaces it.
+foreach ($legalPages as $legalPage) {
+    foreach (['fr_FR' => 'Texte de démonstration du magazine, écrit pour le jeu de test : il ne vaut pas mention légale.', 'en_US' => 'Demonstration text of the magazine, written for the sample site: it is not a legal notice.'] as $locale => $text) {
+        $pages->saveContent($legalPage, $locale, Document::richText('<p>'.htmlspecialchars($text).'</p>'));
+        $pages->publish($legalPage, $locale);
+    }
+}
+
+$legalEntries = array_map($toPage, $legalPages);
+
+$fill('main', [
+    $toPage($magazine, [$toPage($gear), $toPage($advice), $toPage($portraits)]),
+    $toPage($news, [$toPage($shortNews)]),
+    $toPage($guides, [$toPage($starting), $toPage($routes)]),
+    $toPage($team),
+]);
+$fill('footer', [
+    $toPage($team),
+    $toPage($contact),
+    [MenuTargetType::Url, null, ['fr_FR' => 'La lettre d’information', 'en_US' => 'Newsletter'], 'https://example.com/lettre', []],
+    ...$legalEntries,
+]);
+
 file_put_contents($manifestPath, json_encode($manifest, \JSON_PRETTY_PRINT));
-printf("%d pages, %d tags, %d images. Ids in %s\n", count($manifest['pages']), count($manifest['tags']), count($manifest['images']), $manifestPath);
+printf("%d pages, %d tags, %d images, a news template, %d menu entries; %d contents and %d folders of the shop removed; showcase site. Ids in %s\n", count($manifest['pages']), count($manifest['tags']), count($manifest['images']), count($manifest['menu_items']), $manifest['removed']['contents'], $manifest['removed']['folders'], $manifestPath);

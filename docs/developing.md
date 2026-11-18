@@ -306,7 +306,14 @@ pages and more, tags, images, dates over several years, drafts, hidden and
 scheduled pages. `Tests/Browser/sample-site/` makes one on the development
 database of a DDEV host: a cycling magazine started in 2021, written in French,
 about 150 pages, 6 tags and 20 images, a subsection of 30 pages of the media library, part of it in
-English. It is the same on every run (fixed seed). From the root of the host:
+English. It is the same on every run (fixed seed). The site around the pages
+comes with it: the CMS set to a showcase site, the folders and contents of the
+shop removed, a `news` page template (brief, writing instructions, a date and a
+place field, a model) that the news are filed under, and the `main` and
+`footer` menus filled (their former entries replaced; the footer stays flat,
+Flexy prints its first level only). The legal pages the module seeded get a
+demonstration text and are published, so the footer has no entry to fix. From
+the root of the host:
 
 ```bash
 ddev exec php local/modules/TheliaCMS/Tests/Browser/sample-site/seed.php   # once
