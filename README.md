@@ -1274,8 +1274,15 @@ never the files. The front matter of a skill and how it reaches the prompt:
 ## Showcase mode, maintenance and the 404
 
 A **showcase site** answers 404 on `/cart`, `/order` and `/checkout`, and moves
-CMS to the top of the back-office menu. Nothing else changes, and switching back
-undoes it: the shop is one save away.
+CMS to the top of the back-office menu. It also shows no price, no cart and no
+currency: saving showcase mode sets the Thelia setting `price_display_mode` to
+`on_request`, which the core (3.4 and later) reads to leave the prices out of
+its front API and to refuse an add to the cart, Flexy (1.3.3 and later) to draw
+no price, cart, currency, price filter nor sort by price, and SEOne to leave the
+offers out of the structured data of a product. The value the shop had is kept
+and put back when the site is a shop again; a value changed by hand meanwhile
+is left as it is. Nothing else changes, and switching back undoes it: the shop
+is one save away.
 
 Saving showcase mode also creates the **Editor** profile: pages, menus, media,
 forms and news, and none of the shop, none of these settings and no free HTML.
