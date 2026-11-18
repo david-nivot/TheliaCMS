@@ -1,7 +1,7 @@
 # Plan: dimensions and framing of the Image section, section forms put back in order (N8)
 
 Status: proposed, not coded. Read on `main` at 0dc0f1e (via `git show`), TheliaLibrary 2.2.1 read in
-`~/workzone/thelias/thelia-cms-ai/vendor/thelia/modules/TheliaLibrary` (read only).
+`vendor/thelia/modules/TheliaLibrary` of the host (read only).
 One branch from `main` (`feat/image-dimensions`), both parts together (decision (c) of the maintainer).
 
 ## Decided by the maintainer (not reopened here)
