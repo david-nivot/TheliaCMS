@@ -18,7 +18,8 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   prefix of its own (`s<hash>-<rank>-`), so that two copies of an icon in a
   page do not draw with each other's definitions, and a definition of a page
   does not catch a reference of the theme (a round flag of the language
-  selector); the prefix is drawn from the markup, and a page saved again
+  selector); a definition written outside an SVG loses its tag, for the same
+  reason; the prefix is drawn from the markup, and a page saved again
   unchanged is written the same. A reference is kept only towards an id of
   the same SVG: a paint, a mask or a gradient from another file or another
   SVG of the page is dropped, and so is a mask or a clipping path asked for

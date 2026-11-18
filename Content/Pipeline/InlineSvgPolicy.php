@@ -21,10 +21,11 @@ use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
  * theme draws (`ux_icon()`) and the icons of the media library.
  *
  * Shapes, and the definitions that paint or cut them: gradients, masks and
- * clipping paths. Nothing that loads, links, runs or styles the rest of the
- * page: no `use`, `image`, `a`, `foreignObject`, `style`, `script`, `filter`
- * or `animate*`, and no event handler. A paint, a mask, a clipping path or the
- * `href` of a gradient points to an element of the same SVG, never to a file.
+ * clipping paths. Nothing that loads, runs or styles the rest of the page:
+ * no `use`, `image`, `foreignObject`, `style`, `script`, `filter` or
+ * `animate*`, and no event handler; an `a` stays a link, under the rules of
+ * every link. A paint, a mask, a clipping path or the `href` of a gradient
+ * points to an element of the same SVG, never to a file.
  *
  * Two copies of an icon in a page would share their ids, and the second would
  * draw with the definitions of the first, which may be hidden with its menu:
@@ -91,6 +92,12 @@ final readonly class InlineSvgPolicy
 
     /** The elements whose content a mask or a clipping path must not mask or clip again. */
     private const array CUTTERS = ['mask', 'clippath'];
+
+    /** The elements that only define, and draw nothing outside an SVG. */
+    private const array DEFINITIONS = ['defs', 'mask', 'clippath', 'lineargradient', 'radialgradient', 'stop'];
+
+    /** A tag of a definition, read where the markup is not inside an SVG. */
+    private const string DEFINITION_TAG = '/<\/?(?:defs|mask|clippath|lineargradient|radialgradient|stop)(?:\s[^>]*)?>/';
 
     /** The references that mask or clip, dropped inside a mask or a clipping path. */
     private const array CUTTING_REFERENCES = ['mask', 'clip-path'];
@@ -219,6 +226,11 @@ final readonly class InlineSvgPolicy
      * outside the filter, or a page draws in another SVG, cannot resolve to
      * it.
      *
+     * A definition written outside an SVG, or after the tag of HTML that ends
+     * one, loses its tag (what it holds stays): it draws nothing there, and
+     * its id would catch the reference of a drawing the theme renders further
+     * down the page.
+     *
      * The prefix is drawn from the markup and the rank of the SVG in it, so
      * that the same markup is written the same way each time it is saved, and
      * cleaning twice changes nothing.
@@ -228,7 +240,7 @@ final readonly class InlineSvgPolicy
      */
     public function clean(string $html): string
     {
-        if (1 !== preg_match('/<svg[\s>]/', $html)) {
+        if (1 !== preg_match('/<(?:svg|'.implode('|', self::DEFINITIONS).')[\s>]/', $html)) {
             return $html;
         }
 
@@ -326,12 +338,20 @@ final readonly class InlineSvgPolicy
         $rank = 0;
 
         foreach (self::segments($html) as [$start, $end]) {
-            $written .= substr($html, $position, $start - $position);
+            $written .= self::withoutDefinitions(substr($html, $position, $start - $position));
             $written .= self::rewriteSvg(substr($html, $start, $end - $start), $prefixOf(++$rank));
             $position = $end;
         }
 
-        return $written.substr($html, $position);
+        return $written.self::withoutDefinitions(substr($html, $position));
+    }
+
+    /**
+     * Markup outside any SVG without the tags of the definitions it holds.
+     */
+    private static function withoutDefinitions(string $html): string
+    {
+        return (string) preg_replace(self::DEFINITION_TAG, '', $html);
     }
 
     /**

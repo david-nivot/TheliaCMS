@@ -207,6 +207,34 @@ final class InlineSvgPolicyTest extends TestCase
         self::assertMatchesRegularExpression('/<mask id="s[0-9a-f]{8}-2-m">/', $html);
     }
 
+    /**
+     * A definition written outside an SVG, or after the tag of HTML that ends
+     * one, draws nothing in a browser, but its id would catch the reference of
+     * a drawing the theme renders further down the page (a round flag of Flexy
+     * cites `circleFlagsFr0`) and draw it unmasked. A page drops its tag, and
+     * keeps what it holds.
+     */
+    #[DataProvider('definitionsOutsideAnSvg')]
+    public function testADefinitionOutsideAnSvgLosesItsTagAndItsId(string $markup): void
+    {
+        $html = (string) $this->sanitizer->html($markup);
+
+        self::assertDoesNotMatchRegularExpression('/<(?:defs|mask|clippath|lineargradient|radialgradient|stop)[\s>]/', $html);
+        self::assertStringNotContainsString('id="circleFlagsFr0"', $html);
+        self::assertStringContainsString('Caption', $html, 'What the tag held stays.');
+        self::assertSame($html, $this->sanitizer->html($html));
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function definitionsOutsideAnSvg(): iterable
+    {
+        yield 'a mask in the page' => ['<div><mask id="circleFlagsFr0"><rect width="1" height="1" fill="black"/>Caption</mask></div>'];
+        yield 'definitions in the page' => ['<defs><lineargradient id="circleFlagsFr0"><stop offset="0" stop-color="red"/></lineargradient><clippath id="c"></clippath><radialgradient id="r"></radialgradient></defs><p>Caption</p>'];
+        yield 'a mask after the tag that ends an SVG' => ['<svg viewBox="0 0 8 8"><path d="M0 0"/><p>Caption</p><mask id="circleFlagsFr0"><rect width="1" height="1"/></mask></svg>'];
+    }
+
     /** Ids a former cleaning prefixed twice are read back whole: cleaning again changes nothing. */
     public function testIdsPrefixedSeveralTimesAreReadBackWhole(): void
     {

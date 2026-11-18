@@ -52,7 +52,12 @@ which a page would fetch from a third party on every visit.
 - **An SVG ends where a browser ends it.** The parser of PHP 8.3 keeps the
   HTML a writer left inside an open `svg` (a `<p>`, a `<div>`), where a
   browser leaves the SVG at that tag: `clean()` ends the SVG there too, so
-  that the HTML keeps its ids and the next SVG takes a rank of its own. It
+  that the HTML keeps its ids and the next SVG takes a rank of its own. A
+  definition (`defs`, a gradient, `stop`, `mask`, `clipPath`) written
+  outside an SVG, or after the tag that ends one, loses its tag and keeps
+  what it holds: a browser draws nothing of it there, and its id would catch
+  the reference of a drawing the theme renders further down the page (a
+  round flag drawn without its mask). It
   reads one SVG at a time, a tag after another, and copies the rest of the
   page as it is: a page of a megabyte costs it a few megabytes of memory.
 - **Still out:** `use` and `symbol` (a shape reused through nested `use` can
@@ -92,6 +97,15 @@ which a page would fetch from a third party on every visit.
 - No id written in an SVG of a page is the id the file holds: a style sheet
   of the theme, an anchor or a script that would aim at one misses. None is
   known; a class reaches the drawing instead.
+- The prefix holds inside the markup cleaned at once. A markup cleaned on
+  its own (the chapo, the description, a section drawn by `cms_section()` or
+  the content of an item by `cms_item_content()`) is not compared with the
+  others: the same markup drawn twice in a page by two calls holds the same
+  ids, and if the first copy is hidden, the second draws nothing. No theme
+  known does it.
+- An id written on an element of the page outside an SVG keeps its name, as
+  it did before: under the id of a definition of the theme, it can still
+  catch the reference of a drawing that comes after it.
 - A drawing that holds `use`, a style sheet or text stays an image. Taking
   `use` in would need a ceiling on its depth and count, and a review of its
   own.
