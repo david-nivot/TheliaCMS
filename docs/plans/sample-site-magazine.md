@@ -1,12 +1,7 @@
 # Plan: a richer magazine sample site, and a showcase site that sells nothing
 
-Status (2026-11-18): lots 1, 2 and 3 are done. Lot 1 merged (#210; a `scope`
-prop was added: right under the page or the whole branch, "Actualités" holding
-its news under a page per year). Lot 2 delivered: the showcase site is
-`price_display_mode` = `on_request` (D2 (d)), Flexy 1.3.3. Lot 3 is in the
-working tree of the module (`seed.php`, `components.json`, `docs/developing.md`),
-not committed. Decisions D1 to D3 taken by the maintainer on 2026-11-18: D1 (a),
-D2 revised to (d) the same day, D3 (a).
+Status: closed on 2026-11-18, lots 1, 2 and 3 merged. Decisions D1 to D3 taken
+by the maintainer on 2026-11-18: D1 (a), D2 revised to (d) the same day, D3 (a).
 
 ## What is asked
 
@@ -168,42 +163,22 @@ Hours of development, review and tests included.
 | Contingency (lot 2 crosses three repositories and two release paths) | 2 h |
 | **Total** | **14 h** |
 
-## Unclear points
+## Closed (2026-11-18)
 
-- The cache of the block: whether `PartialCache` is emptied by a page
-  publication today, or only by its TTL.
-- Flexy: which components really print a price on a showcase site (the 15
-  found by `grep` include the checkout ones, unreachable there); the list is
-  settled when lot 2 starts.
-- The core variable: a name the core may later take for its own catalogue
-  mode; to ask the core maintainers before the Flexy PR.
-- The components of the site carry props written for the bench; some recipes
-  may need a prop the component does not have (then a recipe changes, not the
-  component).
+### Delivered
 
-## Resuming (rewritten 2026-11-18, lot 3 done)
-
-### State checked on 2026-11-18
-
-- Host (Thelia `main`, core 3.4.0, Flexy 1.3.3, DDEV,
-  at its DDEV address). The module is `modules-dev/TheliaCMS`, linked
-  by a Composer `path` repository (`vendor/thelia/modules/TheliaCMS`): the
-  commands that read `local/modules/TheliaCMS/...` in this plan read
-  `modules-dev/TheliaCMS/...` there, and the module is never copied into
-  `local/modules/` (it would load twice).
-- Branch `test/sample-site-showcase` = `origin/main` + the seed commit. Lot 3,
-  not committed: `Tests/Browser/sample-site/seed.php` (recipes, listing pages,
-  home page, French by default, components import, modules Page and
-  TheliaBlocks deactivated, `price_display_mode`), `Tests/Browser/sample-site/components.json`
-  (the 9 components, `format`, `version` and `components` only), `docs/developing.md`
-  (section "A sample site to check the page list on") and this plan.
-- Proof: on a fresh database (the demo before the seed, brought to the schema
-  of the core 3.4.0) the seed ends without error twice with the same tree,
-  dates and statuses as the seed before the recipes; `thelia_cms:render-published
-  --all --dry-run --url <the address of the host>/` ends without error;
-  `/`, Actualités, a gear test, a route, a portrait, Brèves answer 200 and the
-  home page is the magazine's.
-- Changed against the plan: the spec sheet is on the gear tests whose title
+- Lot 1: the "Pages of a type" block lists the pages under a page (`parent`,
+  and a `scope` prop: right under the page or the whole branch), #210.
+- Lot 2: a showcase site sets `price_display_mode` = `on_request` (D2 (d)) and
+  puts the former value back when it leaves showcase (TheliaCMS 2.33.0); Flexy
+  reads that variable on branch `1.3` (1.3.3: no price, cart nor currency) and
+  leaves the currency selector and the cart button out of the header on
+  `main`; SEOne needs nothing on the core 3.4.
+- Lot 3: `Tests/Browser/sample-site/seed.php` makes the magazine (recipes,
+  listing pages by parent, its own home page, French by default, the 9
+  components of `components.json`), #214. How to run it:
+  `docs/developing.md`, section "A sample site to check the page list on".
+- Changed against the plan (lot 3): the spec sheet is on the gear tests whose title
   starts with "Essai", not on every article of the gear rubrics (a comparison,
   a size guide or "Notre test de …" has no bike to describe), and its bike is
   read from the title (road, gravel, mountain, kids, e-mountain, cargo); no
@@ -215,11 +190,28 @@ Hours of development, review and tests included.
   keeps its `price` prop, which the recipes leave empty and its template then
   leaves out.
 
-### Left to do
+### Settled on the way
 
-- The maintainer's look at 1440 and 375 px (acceptance of lot 3: Actualités with
+- Which components of Flexy print a price on a showcase site: settled by lot 2
+  (Flexy 1.3.3).
+- The name of the core variable: none was added, the core already had
+  `price_display_mode`.
+- Props missing from the components of the site: the recipes were changed, no
+  component was.
+
+### Still open
+
+- The maintainer's look at 1440 and 375 px of the seeded site (Actualités with
   its images, a gear test with its spec sheet, a route with card and carousel,
-  the home page, the front in French): not done by lot 3, which was proved
-  by HTTP codes and by the markup of the pages.
-- Commit lot 3 (type `feat(hors-ticket)` or as the maintainer decides), push and
-  PR: one order per gesture.
+  the home page, the front in French). Lot 3 was proved by HTTP codes, the
+  markup of the pages and screenshots of four pages.
+- The cache of the block: whether `PartialCache` is emptied by a page
+  publication, or only by its TTL. An integration test settles it.
+- BikeSpecSheet offers a `price` prop to the editor of a showcase site; the
+  seed leaves it empty. Hide it on `on_request`, or drop it.
+- No English version of an "Essai" article comes out of the draws: the English
+  spec sheet shows nowhere on the sample site.
+- `seed.php` writes `manifest.json` last: a run that fails late leaves a
+  seeded database without a manifest, to be put back from a fresh one.
+- Flexy 1.3.3 keeps a hidden "View my cart" link to `/checkout/cart` on the
+  product page, an address that answers 404 on a showcase site.
