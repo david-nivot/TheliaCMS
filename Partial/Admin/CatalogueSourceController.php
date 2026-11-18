@@ -21,12 +21,13 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use TheliaCMS\Partial\Catalogue\PickableCategories;
 use TheliaCMS\Partial\Catalogue\PickableItem;
+use TheliaCMS\Partial\Catalogue\PickablePages;
 use TheliaCMS\Partial\Catalogue\PickableProducts;
 use TheliaCMS\TheliaCMS;
 
 /**
- * The searched sources of the "Product" and "Category" blocks, too long to
- * list at once: `?q=` answers what matches the text an editor typed, `?id=`
+ * The searched sources of the "Product" and "Category" blocks, and of the page
+ * a list of pages is set under, too long to list at once: `?q=` answers what matches the text an editor typed, `?id=`
  * the item already chosen, online or not. Both answer the list of
  * `{id, name}` every reference source answers.
  *
@@ -40,6 +41,7 @@ final readonly class CatalogueSourceController
     public function __construct(
         private PickableProducts $products,
         private PickableCategories $categories,
+        private PickablePages $pages,
         private TranslatorInterface $translator,
     ) {
     }
@@ -54,6 +56,13 @@ final readonly class CatalogueSourceController
     public function categories(Request $request): Response
     {
         return $this->answer($request, $this->categories->find(...), $this->categories->search(...));
+    }
+
+    /** The pages of the CMS, searched the same way: a site holds hundreds of them. */
+    #[Route('/admin/cms/partials/sources/pages', name: 'admin.cms.partials.sources.pages', methods: ['GET'])]
+    public function pages(Request $request): Response
+    {
+        return $this->answer($request, $this->pages->find(...), $this->pages->search(...));
     }
 
     /**

@@ -1551,11 +1551,24 @@ the list. Each card carries its `fields`:
 {% endfor %}
 ```
 
-An editor places the same list in a page with the **Pages of a type** section
+An editor places the same list in a page with the **List of pages** section
 (`Partial:cms-page-list`), rendered on every visit: a page published later
 shows in it without republishing the page that lists it. A theme takes the
 markup over with `cms/partials/page-list.html.twig`. From PHP, the list comes
 from `PublishedPageRepository::ofType($type, $locale, $query)`.
+
+The section can also list the pages **under a page**: `parent` (a page, picked
+by a search of the titles) with `scope` `children` (right under it, the
+default) or `branch` (at any depth under it), and `type` `*` for the pages of
+every template. This is the list of a section of a site: the news under
+"News" (`branch`, the news filed under a page per year), the articles of a
+rubric (`children`). A page under one that is offline is listed all the same.
+A sort on a field reads the fields of the template chosen; with every
+template, it falls back to the most recent first, and the card of a page
+gives the fields of its own template. With `type` `*`, `type.code` is `any`
+and `type.title` is null in the template. From PHP:
+`PublishedPageRepository::under($parentId, $wholeBranch, $type, $locale, $query)`,
+`$type` null for every template, `$parentId` 0 for the root.
 
 The image of a card is given its `width`, `height`, `srcset` and `sizes` by
 `cms_image_attributes(card.image, sizes)`, the attributes a published page gets
