@@ -69,7 +69,7 @@ final readonly class SectionChoices
         'Layouts:ReinsuranceModule:Base' => ['family' => self::TRUST, 'icon' => 'shield-check', 'label' => 'Reassurance', 'summary' => 'Delivery, returns, payment: an icon and a short line each.'],
         'Organisms:ArticleCard:Base' => ['family' => self::SITE, 'icon' => 'newspaper', 'label' => 'Article card', 'summary' => 'A news item as a card: title, date, excerpt and link.'],
         'Partial:cms-form' => ['family' => self::SITE, 'icon' => 'ui-checks', 'label' => 'Form', 'summary' => 'A form of the site, shown as it is on every visit.'],
-        'Partial:cms-page-list' => ['family' => self::SITE, 'icon' => 'list-ul', 'label' => 'Pages of a type', 'summary' => 'The pages of a type, listed as they are on every visit.'],
+        'Partial:cms-page-list' => ['family' => self::SITE, 'icon' => 'list-ul', 'label' => 'List of pages', 'summary' => 'The pages of a template, or the pages under a page, listed as they are on every visit.'],
     ];
 
     public function __construct(

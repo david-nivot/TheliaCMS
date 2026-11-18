@@ -188,11 +188,56 @@ final readonly class PublishedPageRepository
             return [];
         }
 
-        $query ??= new PageListQuery();
-        $now ??= new \DateTimeImmutable();
+        return $this->listed($pageType, null, $locale, $query ?? new PageListQuery(), $now ?? new \DateTimeImmutable());
+    }
 
-        $pages = CmsPageQuery::create()
-            ->filterByPageType($pageType)
+    /**
+     * The pages online under a page (0 for the root of the site): right under
+     * it, or at any depth when `$wholeBranch`, of one type or of any
+     * (`$pageType` null). What the list
+     * of a section of a site shows: the news under "News", the articles of a
+     * rubric. A page under one that is offline is listed all the same: the
+     * list names what can be read, not the way to it.
+     *
+     * A sort on a field reads the fields of `$pageType`; with pages of any
+     * type, it falls back to the most recent first.
+     *
+     * @return list<PageCard>
+     */
+    public function under(int $parentId, bool $wholeBranch, ?string $pageType, string $locale, ?PageListQuery $query = null, ?\DateTimeInterface $now = null): array
+    {
+        if ($parentId < 0 || (null !== $pageType && !PageTypeCode::isValid($pageType))) {
+            return [];
+        }
+
+        // Under the root at any depth is the whole site: no list of ids to build.
+        $ids = 0 === $parentId && $wholeBranch ? null : ($wholeBranch ? $this->descendantIds($parentId) : $this->childIds($parentId));
+
+        if ([] === $ids) {
+            return [];
+        }
+
+        return $this->listed($pageType, $ids, $locale, $query ?? new PageListQuery(), $now ?? new \DateTimeImmutable());
+    }
+
+    /**
+     * @param list<int>|null $ids the pages to pick from, or null for every page
+     *
+     * @return list<PageCard>
+     */
+    private function listed(?string $pageType, ?array $ids, string $locale, PageListQuery $query, \DateTimeInterface $now): array
+    {
+        $select = CmsPageQuery::create();
+
+        if (null !== $pageType) {
+            $select->filterByPageType($pageType);
+        }
+
+        if (null !== $ids) {
+            $select->filterById($ids, Criteria::IN);
+        }
+
+        $pages = $select
             ->filterByModel(0)
             ->filterByDeletedAt(null, Criteria::ISNULL)
             ->filterByVisible(1)
@@ -205,7 +250,8 @@ final readonly class PublishedPageRepository
             ->withColumn(CmsPageContentTableMap::COL_PUBLISHED_AT, 'content_published_at')
             ->find();
 
-        $definitions = null;
+        /** @var array<string, FieldDefinitions> $definitionsByType */
+        $definitionsByType = [];
         $rows = [];
 
         foreach ($pages as $page) {
@@ -213,7 +259,8 @@ final readonly class PublishedPageRepository
                 continue;
             }
 
-            $definitions ??= $this->fields->definitionsOf($page);
+            $type = PageTypeCode::orDefault($page->getPageType());
+            $definitions = $definitionsByType[$type] ??= $this->fields->definitionsOf($page);
             $values = $this->fields->valuesOf($page, $locale, $definitions);
 
             if (!$query->matches($values, $definitions)) {
@@ -225,6 +272,7 @@ final readonly class PublishedPageRepository
 
             $rows[] = [
                 'page' => $page,
+                'type' => $type,
                 'title' => (string) $page->getTitle(),
                 'position' => (int) $page->getPosition(),
                 'published_at' => \is_string($publishedAt) ? new \DateTimeImmutable($publishedAt) : null,
@@ -232,15 +280,16 @@ final readonly class PublishedPageRepository
             ];
         }
 
-        if (null === $definitions) {
+        if ([] === $rows) {
             return [];
         }
 
-        usort($rows, static fn (array $a, array $b): int => $query->compare($a, $b, $definitions));
+        $sortedBy = null === $pageType ? FieldDefinitions::none() : $definitionsByType[$pageType];
+        usort($rows, static fn (array $a, array $b): int => $query->compare($a, $b, $sortedBy));
         $rows = \array_slice($rows, $query->offset, $query->limit);
         $this->preloadAddresses(array_column($rows, 'page'), $locale);
 
-        return array_map(function (array $row) use ($locale, $pageType): PageCard {
+        return array_map(function (array $row) use ($locale): PageCard {
             $page = $row['page'];
 
             return new PageCard(
@@ -248,7 +297,7 @@ final readonly class PublishedPageRepository
                 locale: $locale,
                 title: $row['title'],
                 url: (string) $page->getUrl($locale),
-                pageType: $pageType,
+                pageType: $row['type'],
                 chapo: $this->nullIfBlank($page->getChapo()),
                 description: $this->nullIfBlank($page->getDescription()),
                 image: $this->imageOf($page, $locale),
@@ -259,6 +308,35 @@ final readonly class PublishedPageRepository
                 fields: $row['values'],
             );
         }, $rows);
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function childIds(int $parentId): array
+    {
+        return array_map(intval(...), CmsPageQuery::create()->filterByParent($parentId)->select(['Id'])->find()->toArray());
+    }
+
+    /**
+     * The pages under this one at any depth, the bin included: the list
+     * leaves those out on its own.
+     *
+     * @return list<int>
+     */
+    private function descendantIds(int $parentId): array
+    {
+        $ids = [];
+        $frontier = [$parentId];
+
+        while ([] !== $frontier) {
+            $children = array_map(intval(...), CmsPageQuery::create()->filterByParent($frontier, Criteria::IN)->select(['Id'])->find()->toArray());
+            // A page written by hand under one of its own children would loop.
+            $frontier = array_values(array_diff($children, $ids, [$parentId]));
+            array_push($ids, ...$frontier);
+        }
+
+        return $ids;
     }
 
     /**

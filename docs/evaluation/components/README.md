@@ -234,7 +234,7 @@ dev site, before the seed: 6 components.
 | `cms:image` | Module | One picture on its own with an optional caption |
 | `cms:richtext` | Module | Paragraphs, headings and lists as markup, for text that fits no other section |
 | `Partial:cms-form` | Partial | A form of the site, rendered live |
-| `Partial:cms-page-list` | Partial | Pages of a type, rendered live |
+| `Partial:cms-page-list` | Partial | List of pages (of a template, or under a page), rendered live |
 
 By origin: 4 module, 2 partial, **0 theme**, 0 site. The active theme (Flexy)
 has no `config/theliacms.yaml`, so it opens no component to pages. Only

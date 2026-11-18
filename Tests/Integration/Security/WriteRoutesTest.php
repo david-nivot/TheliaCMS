@@ -83,6 +83,7 @@ final class WriteRoutesTest extends AdminScreenTestCase
         'admin.cms.partials.sources.forms',
         'admin.cms.partials.sources.icons',
         'admin.cms.partials.sources.menus',
+        'admin.cms.partials.sources.pages',
         'admin.cms.partials.sources.products',
         'admin.cms.scripts.create',
         'admin.cms.scripts.edit',

@@ -7,6 +7,15 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **A list of pages under a page**: the section, renamed **List of pages**
+  (formerly "Pages of a type"), can list the pages under a page picked by a
+  search of the titles, right under it (the articles of a rubric) or at any
+  depth under it (the news filed under a page per year), and the pages of
+  every template. A section saved before keeps listing its template as it did.
+  `PublishedPageRepository::under()` gives the same list to PHP.
+
 ## [2.32.0] - 2026-11-16
 
 ### Fixed
