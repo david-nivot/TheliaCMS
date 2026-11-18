@@ -110,8 +110,9 @@ $types = $held(TheliaCMS\Settings\Admin\PageTypeAdminController::class, 'writer'
 $typeList = $held(TheliaCMS\Settings\Admin\PageTypeAdminController::class, 'pageTypes');
 $menus = $held(TheliaCMS\Menu\Admin\CmsMenuAdminController::class, 'writer');
 
-// Rendering reads the request (address of the shop, language): one made up, as on the command line.
-$request = Request::create('https://thelia-cms-ai.ddev.site/');
+// Rendering reads the request (address of the shop, language): one made up, as on the command line,
+// at the address DDEV gives the host, or else at the DEFAULT_URI of its .env.
+$request = Request::create(rtrim(getenv('DDEV_PRIMARY_URL') ?: ($_SERVER['DEFAULT_URI'] ?? 'http://localhost'), '/').'/');
 $request->setSession(new Session(new MockArraySessionStorage()));
 $container->get('request_stack')->push($request);
 

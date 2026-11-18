@@ -186,7 +186,7 @@ Hours of development, review and tests included.
 ### State checked on 2026-11-18
 
 - Host (Thelia `main`, core 3.4.0, Flexy 1.3.3, DDEV,
-  https://thelia-cms-ai.ddev.site). The module is `modules-dev/TheliaCMS`, linked
+  at its DDEV address). The module is `modules-dev/TheliaCMS`, linked
   by a Composer `path` repository (`vendor/thelia/modules/TheliaCMS`): the
   commands that read `local/modules/TheliaCMS/...` in this plan read
   `modules-dev/TheliaCMS/...` there, and the module is never copied into
@@ -200,7 +200,7 @@ Hours of development, review and tests included.
 - Proof: on a fresh database (the demo before the seed, brought to the schema
   of the core 3.4.0) the seed ends without error twice with the same tree,
   dates and statuses as the seed before the recipes; `thelia_cms:render-published
-  --all --dry-run --url https://thelia-cms-ai.ddev.site/` ends without error;
+  --all --dry-run --url <the address of the host>/` ends without error;
   `/`, Actualités, a gear test, a route, a portrait, Brèves answer 200 and the
   home page is the magazine's.
 - Changed against the plan: the spec sheet is on the gear tests whose title
