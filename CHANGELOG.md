@@ -15,6 +15,13 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   depth under it (the news filed under a page per year), and the pages of
   every template. A section saved before keeps listing its template as it did.
   `PublishedPageRepository::under()` gives the same list to PHP.
+- **A showcase site shows no price**: saving showcase mode sets the Thelia
+  setting `price_display_mode` to `on_request`, and saving shop mode puts back
+  the value the shop had (a value changed by hand meanwhile is left alone).
+  The core 3.4 then leaves the prices out and refuses an add to the cart,
+  Flexy 1.3.3 draws no price, cart, currency, price filter nor sort by price,
+  and SEOne leaves the offers out of the structured data. The update of the
+  module does it for a site already in showcase mode.
 
 ## [2.32.0] - 2026-11-16
 

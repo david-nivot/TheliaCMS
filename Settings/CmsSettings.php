@@ -18,6 +18,7 @@ use Symfony\Bundle\FrameworkBundle\Routing\Attribute\AsRoutingConditionService;
 use TheliaCMS\Http\PageCachePolicy;
 use TheliaCMS\Page\TrashRetention;
 use TheliaCMS\TheliaCMS;
+use TheliaCMS\Vitrine\ShowcasePriceDisplay;
 
 /**
  * The settings of the module, read as values rather than as strings.
@@ -152,6 +153,8 @@ final readonly class CmsSettings
         ?int $httpCacheTtl,
     ): void {
         TheliaCMS::setConfigValue(self::SITE_MODE, $mode->value);
+        // A showcase site shows no price, no cart and no currency (core, theme, SEO).
+        (new ShowcasePriceDisplay())->follow($mode);
         TheliaCMS::setConfigValue(self::NOT_FOUND_PAGE, (string) ($notFoundPageId ?? ''));
         TheliaCMS::setConfigValue(self::MAINTENANCE_ACTIVE, $maintenanceActive ? '1' : '0');
         TheliaCMS::setConfigValue(self::MAINTENANCE_ALLOWLIST, trim($maintenanceAllowlist));
