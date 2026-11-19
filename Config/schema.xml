@@ -47,6 +47,14 @@
         -->
         <column defaultValue="0" name="model" required="true" type="TINYINT" size="4"/>
         <!--
+            The kind of content a hidden page (`model = 2`) is: the code a module
+            declared with TheliaCMS\Content\Kind\ContentKind, `header` for the
+            header zone. NULL on a page and on the model of a type. Hidden
+            pages carry no address, are in no list, no search, no menu, and are
+            written on the content screen of a page (ADR 20).
+        -->
+        <column name="content_kind" size="32" type="VARCHAR"/>
+        <!--
             Whether the template opens the page on the heading band of the
             theme: title, summary, breadcrumb. 0 for a page that opens on its
             own sections, a home page: the title stays its level 1 heading,
@@ -143,6 +151,9 @@
         <index name="idx_cms_page_page_type">
             <index-column name="page_type"/>
         </index>
+        <index name="idx_cms_page_content_kind">
+            <index-column name="content_kind"/>
+        </index>
 
         <foreign-key foreignTable="cms_tag" name="fk_cms_page_tag" onDelete="SET NULL" onUpdate="RESTRICT">
             <reference foreign="id" local="tag_id"/>
@@ -172,6 +183,7 @@
         <column name="published_html" type="CLOB"/>
         <column name="published_at" type="TIMESTAMP"/>
         <column name="draft_updated_by" type="INTEGER"/>
+        <column defaultValue="0" name="draft_version" required="true" type="INTEGER"/>
         <column name="draft_provenance" type="CLOB"/>
         <column name="published_provenance" type="CLOB"/>
         <column name="translated_from" size="5" type="VARCHAR"/>
@@ -250,6 +262,7 @@
         <column name="published_html" type="CLOB"/>
         <column name="published_at" type="TIMESTAMP"/>
         <column name="draft_updated_by" type="INTEGER"/>
+        <column defaultValue="0" name="draft_version" required="true" type="INTEGER"/>
         <column name="draft_provenance" type="CLOB"/>
         <column name="published_provenance" type="CLOB"/>
         <column name="translated_from" size="5" type="VARCHAR"/>

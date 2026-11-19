@@ -29,6 +29,7 @@ use Thelia\Model\Lang;
 use TheliaCMS\Catalogue\Admin\ContentTargets;
 use TheliaCMS\Content\Document;
 use TheliaCMS\Content\Editing\ContentSteps;
+use TheliaCMS\Content\Editing\StaleDraftException;
 use TheliaCMS\Content\InvalidDocumentException;
 use TheliaCMS\Content\Section;
 use TheliaCMS\Content\SectionCatalog;
@@ -47,6 +48,7 @@ use TheliaCMS\Generation\ReferenceFile;
 use TheliaCMS\Generation\ReferenceFileRefusal;
 use TheliaCMS\Generation\ReferenceFileRefusedException;
 use TheliaCMS\Http\Admin\AdminControllerSupport;
+use TheliaCMS\Http\Admin\DraftNotice;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Page\Admin\CmsPageAdminRepository;
 use TheliaCMS\Page\Admin\CmsPageWriter;
@@ -93,6 +95,7 @@ final readonly class CmsPageComponentController
         private ContentSteps $steps,
         private GenerationRunner $runner,
         private ReferenceFileJudgeSetting $judgeSetting,
+        private DraftNotice $notice,
     ) {
     }
 
@@ -184,7 +187,13 @@ final readonly class CmsPageComponentController
         try {
             $section = new Section($current->freeSectionId($component->name()), $component->name(), $definition->normalizeProps($definition->sample()));
             $document = $current->withSectionAppended($section);
-            $this->steps->record($this->contentTargets->forPage($page, $locale), 'component', $section->id, fn () => $this->writer->saveContent($page, $locale, $document));
+            $this->steps->record($this->contentTargets->forPage($page, $locale), 'component', $section->id, fn () => $this->writer->saveContent($page, $locale, $document, null, DraftNotice::posted($request)));
+        } catch (StaleDraftException $stale) {
+            // The component is kept in the catalogue all the same: only its
+            // place in a draft that moved is refused.
+            $this->support->flash($request, 'danger', $this->notice->refused($stale));
+
+            return new RedirectResponse($screen);
         } catch (InvalidDocumentException $exception) {
             foreach ($exception->translated($this->translator) as $problem) {
                 $this->support->flash($request, 'danger', $problem);

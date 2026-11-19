@@ -56,11 +56,15 @@ final readonly class SubmissionFlash
 
     /**
      * Said when the form was refused as a whole rather than field by field:
-     * too many attempts, or a form that has been closed since it was rendered.
+     * too many attempts, a form that has been closed since it was rendered, or
+     * a check of another module (SubmissionCheckEvent).
+     *
+     * @param array<string, mixed> $entered what was typed, given back to the
+     *                                      form when it is worth typing again
      */
-    public function refused(string $formCode, string $message): void
+    public function refused(string $formCode, string $message, array $entered = []): void
     {
-        $this->write($formCode, ['refused' => $message]);
+        $this->write($formCode, [] === $entered ? ['refused' => $message] : ['refused' => $message, 'entered' => $entered]);
     }
 
     /**

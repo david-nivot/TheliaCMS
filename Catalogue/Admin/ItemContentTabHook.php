@@ -103,7 +103,7 @@ class ItemContentTabHook extends BaseHook
             'title' => $this->trans('CMS content', [], TheliaCMS::DOMAIN_NAME),
             'content' => $this->twig->render('@TheliaCMSModule/backOffice/default-twig/catalogue/tab.html.twig', [
                 'languages' => $this->languages($type, $id),
-                'may_publish' => $this->securityContext->isGranted(['ADMIN'], [CmsResources::PAGE], [], [AccessManager::UPDATE]),
+                'may_publish' => $this->securityContext->isGranted(['ADMIN'], [CmsResources::PAGE_PUBLISH], [], [AccessManager::UPDATE]),
             ]),
         ]);
     }

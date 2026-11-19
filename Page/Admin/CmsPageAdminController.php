@@ -29,7 +29,10 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Model\Lang;
+use TheliaCMS\Content\Editing\StaleDraftException;
+use TheliaCMS\Content\Kind\ContentKinds;
 use TheliaCMS\Http\Admin\AdminControllerSupport;
+use TheliaCMS\Http\Admin\DraftNotice;
 use TheliaCMS\Media\Admin\CmsMediaWriter;
 use TheliaCMS\Media\CmsMediaLibrary;
 use TheliaCMS\Media\MediaKind;
@@ -45,7 +48,6 @@ use TheliaCMS\Page\PageTypeRepository;
 use TheliaCMS\Page\ReservedSlugException;
 use TheliaCMS\Security\CmsResources;
 use TheliaCMS\TheliaCMS;
-use TheliaCMS\Zone\HeaderZone;
 use Twig\Environment;
 
 /**
@@ -83,6 +85,8 @@ final readonly class CmsPageAdminController
         private PageOnlineMessage $onlineMessage,
         private PublicationRefusal $refusals,
         private PageParentCheck $parents,
+        private ContentKinds $kinds,
+        private DraftNotice $notice,
     ) {
     }
 
@@ -92,6 +96,7 @@ final readonly class CmsPageAdminController
         return new Response($this->twig->render(self::LIST_TEMPLATE, [
             ...$this->listing->present(PageFilters::fromRequest($request), $this->editLang($request)),
             'native_content_count' => $this->nativeContents->bannerCount(),
+            'may_publish' => $this->mayPublish(),
         ]));
     }
 
@@ -226,16 +231,23 @@ final readonly class CmsPageAdminController
     #[Route('/{id}', name: 'edit', requirements: ['id' => '\d+'], methods: ['GET', 'POST'])]
     public function edit(Request $request, int $id): Response
     {
-        return $this->handleForm($request, $this->livePageOrFail($id));
+        $page = $this->livePageOrFail($id);
+
+        // A content of a kind has no settings screen: it is written on its content screen.
+        if (null !== $this->kinds->of($page)) {
+            return $this->support->redirectInLanguage('admin.cms.pages.content.edit', $this->editLang($request)->getId(), ['id' => $id]);
+        }
+
+        return $this->handleForm($request, $page);
     }
 
     #[Route('/{id}/publish', name: 'publish', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function publish(Request $request, int $id): Response
     {
-        $this->denyUnless(AccessManager::UPDATE);
+        $this->support->denyUnlessMayPublish();
         $lang = $this->editLang($request);
 
-        $this->publishPage($request, $this->livePageOrFail($id), $lang->getLocale());
+        $this->publishPage($request, $this->livePageOrFail($id), $lang->getLocale(), DraftNotice::posted($request));
 
         return $this->backToEdit($request, $id, $lang);
     }
@@ -243,14 +255,14 @@ final readonly class CmsPageAdminController
     #[Route('/{id}/unpublish', name: 'unpublish', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function unpublish(Request $request, int $id): Response
     {
-        $this->denyUnless(AccessManager::UPDATE);
+        $this->support->denyUnlessMayPublish();
         $lang = $this->editLang($request);
 
         $page = $this->livePageOrFail($id);
         $this->writer->unpublish($page, $lang->getLocale());
 
-        // The header zone has no settings screen of its own: it is written on the content screen.
-        return HeaderZone::MODEL === $page->getModel()
+        // A content of a kind has no settings screen of its own: it is written on the content screen.
+        return null !== $this->kinds->of($page)
             ? $this->support->redirectInLanguage('admin.cms.pages.content.edit', $lang->getId(), ['id' => $id])
             : $this->backToEdit($request, $id, $lang);
     }
@@ -261,8 +273,12 @@ final readonly class CmsPageAdminController
         $this->denyUnless(AccessManager::UPDATE);
         $lang = $this->editLang($request);
 
-        if ($this->writer->removeProvenance($this->livePageOrFail($id), $lang->getLocale())) {
-            $this->support->flash($request, 'success', $this->support->translate('The AI mark has been removed from this page in this language.'));
+        try {
+            if ($this->writer->removeProvenance($this->livePageOrFail($id), $lang->getLocale(), DraftNotice::posted($request))) {
+                $this->support->flash($request, 'success', $this->support->translate('The AI mark has been removed from this page in this language.'));
+            }
+        } catch (StaleDraftException $stale) {
+            $this->support->flash($request, 'danger', $this->notice->refused($stale));
         }
 
         return $this->backToEdit($request, $id, $lang);
@@ -271,16 +287,14 @@ final readonly class CmsPageAdminController
     #[Route('/{id}/visibility', name: 'visibility', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function toggleVisibility(Request $request, int $id): Response
     {
-        $this->denyUnless(AccessManager::UPDATE);
+        $this->support->denyUnlessMayPublish();
 
         $page = $this->livePageOrFail($id);
 
         try {
             $this->writer->toggleVisibility($page);
         } catch (ModelPageSettingException) {
-            $this->support->flash($request, 'danger', $this->support->translate(HeaderZone::MODEL === $page->getModel()
-                ? 'The header zone is never online as a page: it is drawn in the header of the site once published.'
-                : 'This page is the model of its template: it is never online.'));
+            $this->support->flash($request, 'danger', $this->kinds->of($page)?->notAPage() ?? $this->support->translate('This page is the model of its template: it is never online.'));
         }
 
         return $this->backToList($request, $id);
@@ -291,7 +305,7 @@ final readonly class CmsPageAdminController
     {
         $this->denyUnless(AccessManager::UPDATE);
 
-        $this->writer->move($this->livePageOrFail($id), 'up' === $direction ? -1 : 1);
+        $this->writer->move($this->ordinaryPageOrFail($id), 'up' === $direction ? -1 : 1);
 
         return $this->backToList($request, $id);
     }
@@ -303,7 +317,7 @@ final readonly class CmsPageAdminController
         $lang = $this->editLang($request);
 
         $copy = $this->writer->duplicate(
-            $this->livePageOrFail($id),
+            $this->ordinaryPageOrFail($id),
             $lang->getLocale(),
             $this->support->translate('(copy)'),
         );
@@ -314,9 +328,10 @@ final readonly class CmsPageAdminController
     #[Route('/{id}/set-as-home', name: 'set_as_home', requirements: ['id' => '\\d+'], methods: ['POST'])]
     public function setAsHome(Request $request, int $id): Response
     {
-        $this->denyUnless(AccessManager::UPDATE);
+        // What the root of the site shows changes with it.
+        $this->support->denyUnlessMayPublish();
 
-        $this->writer->setAsHome($this->livePageOrFail($id));
+        $this->writer->setAsHome($this->ordinaryPageOrFail($id));
 
         return $this->backToList($request);
     }
@@ -331,9 +346,7 @@ final readonly class CmsPageAdminController
         try {
             $this->writer->moveToTrash($page);
         } catch (ModelPageSettingException) {
-            $this->support->flash($request, 'danger', $this->support->translate(HeaderZone::MODEL === $page->getModel()
-                ? 'The header zone cannot be deleted: unpublish it in each language to draw nothing.'
-                : 'This page is the model of its template: it is deleted with its template, under CMS > Page templates, never moved to the bin.'));
+            $this->support->flash($request, 'danger', $this->deletionRefusal($page));
         }
 
         return $this->backToList($request);
@@ -354,13 +367,15 @@ final readonly class CmsPageAdminController
             'live_count' => $this->pages->countLive(),
             'edit_locale' => $lang->getLocale(),
             'edit_language_id' => $lang->getId(),
+            'may_publish' => $this->mayPublish(),
         ]));
     }
 
     #[Route('/{id}/restore', name: 'restore', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function restore(Request $request, int $id): Response
     {
-        $this->denyUnless(AccessManager::UPDATE);
+        // The bin keeps the published content: the branch comes back online.
+        $this->support->denyUnlessMayPublish();
         $lang = $this->editLang($request);
 
         $page = $this->pages->findDeleted($id);
@@ -396,7 +411,7 @@ final readonly class CmsPageAdminController
 
                 // The settings are committed above: a publication refused below leaves them saved.
                 if (!$wasNew && $this->asksToPublish($request, $page)) {
-                    $this->publishPage($request, $page, $locale);
+                    $this->publishPage($request, $page, $locale, DraftNotice::posted($request));
                 }
 
                 return $this->backToEdit($request, (int) $page->getId(), $lang);
@@ -414,6 +429,7 @@ final readonly class CmsPageAdminController
         }
 
         $type = $this->pageTypes->details((string) $page->getPageType());
+        $lastChange = $page->isNew() ? ['author' => null, 'at' => null, 'version' => 0] : $this->pages->lastChange($page, $locale);
 
         return new Response($this->twig->render(self::EDIT_TEMPLATE, [
             // The list the editor came from, and what carries it to the next
@@ -441,6 +457,9 @@ final readonly class CmsPageAdminController
             'document_max_files' => max(1, (int) \ini_get('max_file_uploads')),
             'may_change' => $this->mayChange(),
             'may_publish' => $this->mayPublish(),
+            // Posted by the forms that publish or answer for the draft.
+            'draft_version' => $lastChange['version'],
+            'draft_notice' => $this->notice->banner($lastChange['author'], $lastChange['at']),
             'may_change_documents' => $this->support->isGranted(CmsResources::PAGE, AccessManager::UPDATE),
             'may_delete_documents' => $this->support->isGranted(CmsResources::PAGE, AccessManager::DELETE),
             // The browser keeps the script until its version changes.
@@ -452,10 +471,10 @@ final readonly class CmsPageAdminController
      * Puts the saved content of the page online and says what came of it: the
      * warnings of `warn` mode, the refusals otherwise. Whether it went online.
      */
-    private function publishPage(Request $request, CmsPage $page, string $locale): bool
+    private function publishPage(Request $request, CmsPage $page, string $locale, int $readVersion): bool
     {
         try {
-            $warnings = $this->writer->publish($page, $locale);
+            $warnings = $this->writer->publish($page, $locale, $readVersion);
 
             foreach ($warnings as $warning) {
                 $this->support->flash($request, 'warning', $warning);
@@ -464,6 +483,8 @@ final readonly class CmsPageAdminController
             $this->support->flash($request, 'success', $this->onlineMessage->say($page, $locale));
 
             return true;
+        } catch (StaleDraftException $stale) {
+            $this->support->flash($request, 'danger', $this->notice->refused($stale));
         } catch (\Throwable $throwable) {
             foreach ($this->refusals->messages($throwable) ?? throw $throwable as $message) {
                 $this->support->flash($request, 'danger', $message);
@@ -487,10 +508,9 @@ final readonly class CmsPageAdminController
         return $this->support->isGranted(CmsResources::PAGE, AccessManager::UPDATE);
     }
 
-    /** Taken from the right to change until the right to publish is its own. */
     private function mayPublish(): bool
     {
-        return $this->support->isGranted(CmsResources::PAGE, AccessManager::UPDATE);
+        return $this->support->mayPublish();
     }
 
     private function isHome(CmsPage $page): bool
@@ -560,6 +580,7 @@ final readonly class CmsPageAdminController
             'page_type_choices' => array_map(strval(...), array_keys($typeLabels)),
             'page_type_labels' => $typeLabels,
             'is_model' => 1 === $page->getModel(),
+            'may_publish' => $this->mayPublish(),
             'is_home' => $this->isHome($page),
             'field_definitions' => $definitions,
             'field_locale' => $locale,
@@ -657,11 +678,36 @@ final readonly class CmsPageAdminController
     {
         $page = $this->pages->findLive($id);
 
+        // `findLive()` answers none for a hidden content whose kind no active module declares.
         if (!$page instanceof CmsPage) {
             throw new NotFoundHttpException();
         }
 
         return $page;
+    }
+
+    /**
+     * An ordinary page, for the actions of the list: a content of a kind or the
+     * model of a type is none of them.
+     */
+    private function ordinaryPageOrFail(int $id): CmsPage
+    {
+        return $this->pages->findOrdinary($id) ?? throw new NotFoundHttpException();
+    }
+
+    /**
+     * Why a page that is not an ordinary one is not moved to the bin from the
+     * list: a content of a kind is sent there by the module that owns it.
+     */
+    private function deletionRefusal(CmsPage $page): string
+    {
+        $kind = $this->kinds->of($page);
+
+        if (null === $kind) {
+            return $this->support->translate('This page is the model of its template: it is deleted with its template, under CMS > Page templates, never moved to the bin.');
+        }
+
+        return $kind->deletionRefusal() ?? $this->support->translate('This content is deleted from the screens of the module that owns it, never from the pages.');
     }
 
     private function denyUnless(string $access): void

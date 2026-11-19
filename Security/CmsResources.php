@@ -27,6 +27,16 @@ namespace TheliaCMS\Security;
 final class CmsResources
 {
     public const string PAGE = 'admin.cms.page';
+
+    /**
+     * Putting pages and catalogue contents online, taking them offline, and
+     * what else decides whether a page shows on the site (visibility, the
+     * publication window, the bin, the home page). Apart from changing them:
+     * an editor may write a page without being allowed to put it online.
+     * Checked on UPDATE: split from the pages, it starts with the access a
+     * profile had there, and a profile that only read the pages had VIEW.
+     */
+    public const string PAGE_PUBLISH = 'admin.cms.page.publish';
     public const string MENU = 'admin.cms.menu';
     public const string FORM = 'admin.cms.form';
 
@@ -52,6 +62,7 @@ final class CmsResources
     {
         return [
             self::PAGE,
+            self::PAGE_PUBLISH,
             self::MENU,
             self::FORM,
             self::FORM_ANSWERS,
@@ -75,6 +86,7 @@ final class CmsResources
     public static function splitFrom(): array
     {
         return [
+            self::PAGE_PUBLISH => self::PAGE,
             self::FORM_ANSWERS => self::FORM,
             self::FORM_ANSWERS_EXPORT => self::FORM,
         ];

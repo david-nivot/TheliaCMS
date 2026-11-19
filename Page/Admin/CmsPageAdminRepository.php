@@ -19,6 +19,7 @@ use Propel\Runtime\Propel;
 use Thelia\Model\Map\AdminTableMap;
 use Thelia\Model\RewritingUrlQuery;
 use TheliaCMS\Content\Document;
+use TheliaCMS\Content\Kind\ContentKinds;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Model\CmsPageContentQuery;
 use TheliaCMS\Model\CmsPageI18nQuery;
@@ -43,6 +44,7 @@ final readonly class CmsPageAdminRepository
 {
     public function __construct(
         private CmsSettings $settings,
+        private ContentKinds $kinds,
     ) {
     }
 
@@ -109,8 +111,10 @@ final readonly class CmsPageAdminRepository
      */
     public function trash(string $locale, ?PageFilters $filters = null): array
     {
+        // The contents a module declared are binned by that module and brought back by it.
         $query = CmsPageQuery::create()
             ->filterByDeletedAt(null, Criteria::ISNOTNULL)
+            ->filterByModel(0)
             ->joinWithI18n($locale, Criteria::LEFT_JOIN)
             ->orderByDeletedAt(Criteria::DESC);
 
@@ -145,6 +149,7 @@ final readonly class CmsPageAdminRepository
     {
         return (int) CmsPageQuery::create()
             ->filterByDeletedAt(null, Criteria::ISNOTNULL)
+            ->filterByModel(0)
             ->count();
     }
 
@@ -212,7 +217,7 @@ final readonly class CmsPageAdminRepository
 
     /**
      * A page of the list whose pages are asked for, with the pages above it:
-     * live, and neither a model nor the header zone, which hold no page.
+     * live, and neither a model nor a content of a kind, which hold no page.
      */
     public function section(int $id, string $locale): ?PageSection
     {
@@ -237,17 +242,53 @@ final readonly class CmsPageAdminRepository
         );
     }
 
+    /**
+     * A page out of the bin, as the screens of the pages open it. A hidden
+     * content whose kind no active module declares is none: it is shown,
+     * written and published nowhere, so every screen that opens a page by its
+     * number answers 404 for it through this one guard.
+     */
     public function findLive(int $id): ?CmsPage
     {
-        return CmsPageQuery::create()
+        $page = CmsPageQuery::create()
             ->filterById($id)
             ->filterByDeletedAt(null, Criteria::ISNULL)
             ->findOne();
+
+        return $page instanceof CmsPage && !$this->kinds->isOrphan($page) ? $page : null;
+    }
+
+    /**
+     * An ordinary page out of the bin: what the actions of the list (move,
+     * duplicate, home page) are allowed to act on, never a model or a content
+     * of a kind, which the list does not show.
+     */
+    public function findOrdinary(int $id): ?CmsPage
+    {
+        $page = $this->findLive($id);
+
+        return $page instanceof CmsPage && 0 === $page->getModel() ? $page : null;
+    }
+
+    /**
+     * What the content screen of a content of a kind says about it: written,
+     * published, or changed since. A content is not a page of the site, so
+     * its visibility and its dates, which say whether a page is shown, do not
+     * enter into it.
+     */
+    public function statusOfContent(CmsPage $page, string $locale): PageStatus
+    {
+        $content = CmsPageContentQuery::create()
+            ->filterByPageId($page->getId())
+            ->filterByLocale($locale)
+            ->findOne();
+
+        return PageStatus::resolveContent($content);
     }
 
     /**
      * The pages a selection of the list names, in one query: live pages only,
-     * and none of the models or the header zone, which the list never shows.
+     * and none of the models or the contents of a kind, which the list never shows.
      * Any other id is left out.
      *
      * @param list<int> $ids
@@ -327,6 +368,7 @@ final readonly class CmsPageAdminRepository
         return CmsPageQuery::create()
             ->filterById($id)
             ->filterByDeletedAt(null, Criteria::ISNOTNULL)
+            ->filterByModel(0)
             ->findOne();
     }
 
@@ -371,6 +413,26 @@ final readonly class CmsPageAdminRepository
             ->filterByLocale($locale)
             ->where('(CmsPageContent.DraftProvenance IS NOT NULL OR CmsPageContent.PublishedProvenance IS NOT NULL)')
             ->exists();
+    }
+
+    /**
+     * The last change of the page in this language, settings and content
+     * alike, for the banner of its settings: who made it (the page is signed
+     * on every write of its content), when, and the version of the draft the
+     * screen reads (0 while none was written).
+     *
+     * @return array{author: int|null, at: \DateTimeInterface|null, version: int}
+     */
+    public function lastChange(CmsPage $page, string $locale): array
+    {
+        $content = CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($locale)->findOne();
+        $dates = array_filter([$page->getUpdatedAt(), $content?->getUpdatedAt()]);
+
+        return [
+            'author' => $page->getUpdatedBy(),
+            'at' => [] === $dates ? null : max($dates),
+            'version' => (int) $content?->getDraftVersion(),
+        ];
     }
 
     /**

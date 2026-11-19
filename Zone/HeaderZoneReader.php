@@ -20,8 +20,8 @@ use TheliaCMS\Model\CmsPageContentQuery;
 /**
  * The published document of the header zone in a language, in one query.
  *
- * It names `model = 2` on purpose: the one read of pages that wants the zone,
- * where every other leaves it out. Not `PublishedPageRepository::find()`,
+ * It names `model = 2` and the kind `header` on purpose: the one read of
+ * pages that wants the zone, where every other leaves it out. Not `PublishedPageRepository::find()`,
  * which reads the page, its tag, its fields and its images: this runs on
  * every page view of the site.
  */
@@ -34,6 +34,7 @@ final readonly class HeaderZoneReader
             ->filterByPublishedAt(null, Criteria::ISNOTNULL)
             ->useCmsPageQuery()
                 ->filterByModel(HeaderZone::MODEL)
+                ->filterByContentKind(HeaderZone::KIND)
                 ->filterByDeletedAt(null, Criteria::ISNULL)
             ->endUse()
             ->select(['PublishedHtml'])

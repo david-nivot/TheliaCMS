@@ -17,6 +17,7 @@ namespace TheliaCMS\ImportExport\Step;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Thelia\Model\RewritingUrlQuery;
 use TheliaCMS\Content\Document;
+use TheliaCMS\Content\Kind\ContentKinds;
 use TheliaCMS\ImportExport\ImportReport;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Model\CmsPageQuery;
@@ -65,9 +66,12 @@ final readonly class PageAddresses
                 continue;
             }
 
+            // A hidden content of a kind has no address and is never the page a file is read onto.
             $page = CmsPageQuery::create()
                 ->filterByDeletedAt(null, Criteria::ISNULL)
-                ->findPk((int) $existing->getViewId());
+                ->filterByModel(ContentKinds::MODEL, Criteria::NOT_EQUAL)
+                ->filterById((int) $existing->getViewId())
+                ->findOne();
 
             if ($page instanceof CmsPage) {
                 return $page;

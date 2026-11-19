@@ -76,6 +76,7 @@ final class ContentActivityLogTest extends AdminScreenTestCase
 
         $this->logInAs((new FixtureFactory($this->getPropelConnection()))->restrictedAdmin([
             CmsResources::PAGE => [AccessManager::VIEW, AccessManager::UPDATE],
+            CmsResources::PAGE_PUBLISH => [AccessManager::VIEW, AccessManager::UPDATE],
         ]));
 
         $pageBase = \sprintf('/admin/cms/pages/%d/content', $pageId);
@@ -119,9 +120,9 @@ final class ContentActivityLogTest extends AdminScreenTestCase
 
     private function post(string $url, string $screen): void
     {
-        $token = $this->tokenOfTheScripts($this->screen($screen));
+        $shown = $this->screen($screen);
 
-        self::assertSame(302, $this->send('POST', $url, ['_token' => $token]));
+        self::assertSame(302, $this->send('POST', $url, ['_token' => $this->tokenOfTheScripts($shown), 'draft_version' => $this->draftVersionOf($shown)]));
     }
 
     /**

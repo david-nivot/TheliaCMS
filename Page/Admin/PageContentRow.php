@@ -18,6 +18,7 @@ use Propel\Runtime\Connection\ConnectionInterface;
 use Symfony\Component\Clock\Clock;
 use TheliaCMS\Content\Editing\ContentRow;
 use TheliaCMS\Content\Editing\ContentSnapshot;
+use TheliaCMS\Content\Editing\DraftLock;
 use TheliaCMS\Generation\PageHeader;
 use TheliaCMS\Model\CmsPageContent;
 use TheliaCMS\Model\CmsPageI18nQuery;
@@ -67,18 +68,34 @@ final readonly class PageContentRow implements ContentRow
         return $this->content->getUpdatedAt();
     }
 
-    public function saveDraft(string $document, string $html, ?int $updatedBy, ?string $provenance): void
+    public function draftVersion(): int
+    {
+        return (int) $this->content->getDraftVersion();
+    }
+
+    public function draftAuthor(): ?int
+    {
+        return $this->content->getDraftUpdatedBy();
+    }
+
+    public function claimDraft(ConnectionInterface $connection, ?int $readVersion): int
+    {
+        return DraftLock::claim($connection, 'cms_page_content', $this->content->isNew() ? null : (int) $this->content->getId(), $readVersion);
+    }
+
+    public function saveDraft(string $document, string $html, ?int $updatedBy, ?string $provenance, int $version, ConnectionInterface $connection): void
     {
         $this->content
             ->setDraftDocument($document)
             ->setDraftHtml($html)
-            ->setDraftUpdatedBy($updatedBy);
+            ->setDraftUpdatedBy($updatedBy)
+            ->setDraftVersion($version);
 
         if (null !== $provenance) {
             $this->content->setDraftProvenance($provenance);
         }
 
-        $this->content->save();
+        $this->content->save($connection);
     }
 
     public function replaceDraftProvenance(?string $provenance): void

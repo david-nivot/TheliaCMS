@@ -25,6 +25,7 @@ use TheliaCMS\Catalogue\Admin\ContentTargets;
 use TheliaCMS\Catalogue\CatalogueItemType;
 use TheliaCMS\Content\Editing\ContentWriter;
 use TheliaCMS\Content\Editing\PublishedRendering;
+use TheliaCMS\Content\Kind\ContentKinds;
 use TheliaCMS\Http\ConsoleRequest;
 use TheliaCMS\Model\CmsItemContentQuery;
 use TheliaCMS\Model\CmsPage;
@@ -61,6 +62,7 @@ final class RenderPublishedCommand extends Command
         private readonly ContentWriter $content,
         private readonly ContentTargets $targets,
         private readonly ConsoleRequest $request,
+        private readonly ContentKinds $kinds,
     ) {
         parent::__construct();
     }
@@ -173,7 +175,10 @@ final class RenderPublishedCommand extends Command
             $query->filterById(array_map('intval', $pageIds), Criteria::IN);
         }
 
-        return iterator_to_array($query->find(), false);
+        $pages = iterator_to_array($query->find(), false);
+
+        // Every page leaves out the hidden contents whose kind no active module declares: a module that is off is no failure.
+        return [] === $pageIds ? array_values(array_filter($pages, fn (CmsPage $page): bool => !$this->kinds->isOrphan($page))) : $pages;
     }
 
     /**

@@ -37,7 +37,7 @@
     {% set ai_translation = cms_ai_available('theliacms.page_translation') %}
     {% set ai_component = cms_ai_available('theliacms.component') %}
     {# The records a section picks are named in the language being edited. #}
-    <div class="cms-content" data-cms-content data-cms-picker-locale="{{ subject.locale }}"
+    <div class="cms-content" data-cms-content data-cms-draft-version="{{ draft_version }}" data-cms-picker-locale="{{ subject.locale }}"
          data-cms-content-labels="{{ {
              working: 'Writing…'|trans({}, 'theliacms'),
              failed: 'The request failed (%status%). Nothing was changed.'|trans({}, 'theliacms'),
@@ -101,6 +101,7 @@
                                   {%- if attribute(steps, move ~ '_section') %} data-cms-step-section="{{ attribute(steps, move ~ '_section') }}"{% endif %}
                                   data-testid="cms-content-{{ move }}">
                                 <input type="hidden" name="_token" value="{{ assignToken() }}">
+                                {{ include('@TheliaCMSModule/backOffice/default-twig/content/_draft_version.html.twig') }}
                                 <button type="submit" class="btn btn-sm btn-outline-secondary" title="{{ step ?: nothing }}" aria-label="{{ step ?: name }}"{% if not step %} disabled{% endif %}>
                                     <i class="bi {{ move == 'undo' ? 'bi-arrow-counterclockwise' : 'bi-arrow-clockwise' }}" aria-hidden="true"></i>
                                 </button>
@@ -112,6 +113,7 @@
                 {% if may_publish and subject.publishable %}
                     <form method="post" action="{{ subject.url('publish') }}" class="d-inline" data-testid="cms-content-publish" data-cms-publish>
                         <input type="hidden" name="_token" value="{{ assignToken() }}">
+                        {{ include('@TheliaCMSModule/backOffice/default-twig/content/_draft_version.html.twig') }}
                         {# Not `disabled`: a disabled button leaves the tab order and says nothing. The script and the server refuse the click. #}
                         <button type="submit" class="btn btn-sm btn-success" title="{{ subject.publishHint }}" aria-describedby="cms-content-publish-hint"{% if not subject.hasContent %} aria-disabled="true"{% endif %}>
                             {{ 'Publish'|trans({}, 'theliacms') }}
@@ -196,6 +198,7 @@
                         </p>
                     {% endif %}
                 </div>
+                {{ include('@TheliaCMSModule/backOffice/default-twig/content/_draft_notice.html.twig') }}
                 {% if not may_generate %}
                     <div class="alert alert-secondary small" role="status" data-testid="cms-content-no-right">
                         {{ 'Your profile may read this screen and publish, not ask the generator to write.'|trans({}, 'theliacms') }}
@@ -250,6 +253,7 @@
                                     <div data-testid="cms-content-retranslate">
                                         {% form_theme translation.retranslate_form with bo_form_themes only %}
                                         {{ form_start(translation.retranslate_form, { attr: { 'data-cms-generate': '', novalidate: 'novalidate', 'data-cms-confirm': 'Write this language again from the %language% version? The current draft is kept with the previous drafts.'|trans({ '%language%': translation.label }, 'theliacms') } }) }}
+                                            {{ include('@TheliaCMSModule/backOffice/default-twig/content/_draft_version.html.twig') }}
                                             <input type="hidden" name="_token" value="{{ assignToken() }}">
                                             {{ form_widget(translation.retranslate_form.source, { attr: { hidden: 'hidden' } }) }}
                                             {% do translation.retranslate_form.source.setRendered %}
@@ -310,6 +314,7 @@
                     {% endif %}
                     {% form_theme brief_form with bo_form_themes|merge(['@TheliaCMSModule/backOffice/default-twig/content/_reference_file_theme.html.twig']) only %}
                     {{ form_start(brief_form, { attr: { 'data-cms-generate': '', novalidate: 'novalidate' }|merge(replaces_draft ? { 'data-cms-confirm': 'Replace the whole draft? Its %count% section(s) will be lost.'|trans({ '%count%': subject.document.sections|length }, 'theliacms') } : {}) }) }}
+                        {{ include('@TheliaCMSModule/backOffice/default-twig/content/_draft_version.html.twig') }}
                         <input type="hidden" name="_token" value="{{ assignToken() }}">
                         {{ form_row(brief_form.text) }}
                         <div class="row g-2">
@@ -377,6 +382,7 @@
                             <p class="text-muted small">{{ 'On the whole draft: the sections the change does not concern are kept as they are.'|trans({}, 'theliacms') }}</p>
                             {% form_theme change_form with bo_form_themes|merge(['@TheliaCMSModule/backOffice/default-twig/content/_reference_file_theme.html.twig']) only %}
                             {{ form_start(change_form, { attr: { 'data-cms-generate': '', novalidate: 'novalidate' } }) }}
+                                {{ include('@TheliaCMSModule/backOffice/default-twig/content/_draft_version.html.twig') }}
                                 <input type="hidden" name="_token" value="{{ assignToken() }}">
                                 {{ form_row(change_form.text, { label: false }) }}
                                 {{ form_row(change_form.reference, { attr: { 'data-testid': 'cms-content-change-reference' } }) }}
@@ -416,6 +422,7 @@
                                                 {% if not loop.first %}
                                                     <form method="post" action="{{ subject.url('move') }}" class="cms-content__item-move-form" data-cms-move data-testid="cms-section-move-up-{{ section.id }}">
                                                         <input type="hidden" name="_token" value="{{ assignToken() }}">
+                                                        {{ include('@TheliaCMSModule/backOffice/default-twig/content/_draft_version.html.twig') }}
                                                         <input type="hidden" name="section" value="{{ section.id }}">
                                                         <input type="hidden" name="direction" value="up">
                                                         <button type="submit" class="btn btn-sm btn-link text-secondary p-0" title="{{ 'Move this section up'|trans({}, 'theliacms') }}" aria-label="{{ 'Move section %rank% up'|trans({ '%rank%': section.rank }, 'theliacms') }}">
@@ -426,6 +433,7 @@
                                                 {% if not loop.last %}
                                                     <form method="post" action="{{ subject.url('move') }}" class="cms-content__item-move-form" data-cms-move data-testid="cms-section-move-down-{{ section.id }}">
                                                         <input type="hidden" name="_token" value="{{ assignToken() }}">
+                                                        {{ include('@TheliaCMSModule/backOffice/default-twig/content/_draft_version.html.twig') }}
                                                         <input type="hidden" name="section" value="{{ section.id }}">
                                                         <input type="hidden" name="direction" value="down">
                                                         <button type="submit" class="btn btn-sm btn-link text-secondary p-0" title="{{ 'Move this section down'|trans({}, 'theliacms') }}" aria-label="{{ 'Move section %rank% down'|trans({ '%rank%': section.rank }, 'theliacms') }}">
@@ -437,6 +445,7 @@
                                                 {% if section.duplicable %}
                                                     <form method="post" action="{{ subject.url('duplicate') }}" class="cms-content__item-move-form" data-cms-duplicate data-testid="cms-section-duplicate-{{ section.id }}">
                                                         <input type="hidden" name="_token" value="{{ assignToken() }}">
+                                                        {{ include('@TheliaCMSModule/backOffice/default-twig/content/_draft_version.html.twig') }}
                                                         <input type="hidden" name="section" value="{{ section.id }}">
                                                         <button type="submit" class="btn btn-sm btn-link text-secondary p-0" title="{{ 'Duplicate this section'|trans({}, 'theliacms') }}" aria-label="{{ 'Duplicate section %rank%'|trans({ '%rank%': section.rank }, 'theliacms') }}">
                                                             <i class="bi bi-copy" aria-hidden="true"></i>
@@ -445,6 +454,7 @@
                                                 {% endif %}
                                                 <form method="post" action="{{ subject.url('remove') }}" class="cms-content__item-remove-form" data-cms-remove data-testid="cms-section-remove-{{ section.id }}">
                                                     <input type="hidden" name="_token" value="{{ assignToken() }}">
+                                                    {{ include('@TheliaCMSModule/backOffice/default-twig/content/_draft_version.html.twig') }}
                                                     <input type="hidden" name="section" value="{{ section.id }}">
                                                     <button type="submit" class="btn btn-sm btn-link text-danger p-0" title="{{ 'Remove this section'|trans({}, 'theliacms') }}" aria-label="{{ 'Remove section %rank%'|trans({ '%rank%': section.rank }, 'theliacms') }}">
                                                         <i class="bi bi-trash" aria-hidden="true"></i>
@@ -490,6 +500,7 @@
                                             <p class="cms-content__add-hint">{{ 'Rewrite this section'|trans({}, 'theliacms') }}</p>
                                             {% form_theme section.form with bo_form_themes|merge(['@TheliaCMSModule/backOffice/default-twig/content/_reference_file_theme.html.twig']) only %}
                                             {{ form_start(section.form, { attr: { 'data-cms-generate': '', novalidate: 'novalidate' } }) }}
+                                                {{ include('@TheliaCMSModule/backOffice/default-twig/content/_draft_version.html.twig') }}
                                                 <input type="hidden" name="_token" value="{{ assignToken() }}">
                                                 {{ form_widget(section.form.section) }}
                                                 {{ form_row(section.form.text, { label: false }) }}
@@ -540,6 +551,7 @@
                                     <span class="text-muted">{{ '%count% section(s)'|trans({ '%count%': draft.sections }, 'theliacms') }}</span>
                                     <form method="post" action="{{ subject.url('restore') }}" data-cms-restore data-testid="cms-content-restore-{{ draft.id }}">
                                         <input type="hidden" name="_token" value="{{ assignToken() }}">
+                                        {{ include('@TheliaCMSModule/backOffice/default-twig/content/_draft_version.html.twig') }}
                                         <input type="hidden" name="revision" value="{{ draft.id }}">
                                         <button type="submit" class="btn btn-sm btn-outline-secondary">
                                             <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> {{ 'Put it back'|trans({}, 'theliacms') }}
@@ -635,6 +647,7 @@
                         <p class="cms-content__empty-hint">{{ 'The generator can write this language from one of them: the same sections, their texts written for the new reader. Or write it from a brief of its own on the left.'|trans({}, 'theliacms') }}</p>
                         {% form_theme translate_form with bo_form_themes only %}
                         {{ form_start(translate_form, { attr: { 'data-cms-generate': '', novalidate: 'novalidate', class: 'cms-content__translate' } }) }}
+                            {{ include('@TheliaCMSModule/backOffice/default-twig/content/_draft_version.html.twig') }}
                             <input type="hidden" name="_token" value="{{ assignToken() }}">
                             {% if subject.translationSources|length > 1 %}
                                 {{ form_row(translate_form.source) }}
@@ -684,6 +697,7 @@
                                     <li>
                                         <form method="post" action="{{ subject.url('add') }}" data-cms-add data-testid="cms-content-add-{{ component.name }}">
                                             <input type="hidden" name="_token" value="{{ assignToken() }}">
+                                            {{ include('@TheliaCMSModule/backOffice/default-twig/content/_draft_version.html.twig') }}
                                             <input type="hidden" name="component" value="{{ component.name }}">
                                             <button type="submit" class="cms-content__add-choice" title="{{ component.name }}">
                                                 <span class="cms-content__add-icon" aria-hidden="true"><i class="bi bi-{{ component.icon }}"></i></span>

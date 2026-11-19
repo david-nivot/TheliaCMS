@@ -169,9 +169,9 @@ final class PublishAccessibilityScreensTest extends AdminScreenTestCase
      */
     private function publishFromTheScripts(string $base, string $query = ''): Crawler
     {
-        $token = $this->tokenOfTheScripts($this->screen($base.$query));
+        $shown = $this->screen($base.$query);
 
-        self::assertSame(302, $this->send('POST', $base.'/publish', ['_token' => $token]));
+        self::assertSame(302, $this->send('POST', $base.'/publish', ['_token' => $this->tokenOfTheScripts($shown), 'draft_version' => $this->draftVersionOf($shown)]));
 
         return $this->screen($base.$query);
     }
@@ -188,9 +188,9 @@ final class PublishAccessibilityScreensTest extends AdminScreenTestCase
     {
         $edit = \sprintf('/admin/cms/pages/%d', $page->getId());
         $action = $edit.'/publish';
-        $token = $this->tokenOfTheForm($this->screen($edit), $action);
+        $screen = $this->screen($edit);
 
-        self::assertSame(302, $this->send('POST', $action, ['_token' => $token]));
+        self::assertSame(302, $this->send('POST', $action, ['_token' => $this->tokenOfTheForm($screen, $action), 'draft_version' => $this->draftVersionOf($screen)]));
     }
 
     private function pageHolding(LibraryImage $image): CmsPage

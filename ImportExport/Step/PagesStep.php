@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace TheliaCMS\ImportExport\Step;
 
 use Propel\Runtime\Connection\ConnectionInterface;
+use TheliaCMS\Content\Kind\ContentKinds;
 use TheliaCMS\Content\Pipeline\PublishedContentSanitizer;
 use TheliaCMS\Content\ProvenanceMark;
 use TheliaCMS\ImportExport\ImportOptions;
@@ -43,6 +44,7 @@ final readonly class PagesStep
         private SearchTextExtractor $searchText,
         private PublishedContentSanitizer $sanitizer,
         private HeaderZone $zones,
+        private ContentKinds $kinds,
         private PageAuthorship $authorship,
     ) {
     }
@@ -73,8 +75,19 @@ final readonly class PagesStep
                 continue;
             }
 
-            $isZone = true === ($page['zone'] ?? false);
+            $kindCode = self::kindOf($page);
+            $isZone = HeaderZone::KIND === $kindCode;
+            $isKind = null !== $kindCode && !$isZone;
             $demotedZone = false;
+
+            // A kind no active module declares has no screen to be written on:
+            // its content would sit in the database, shown nowhere.
+            if ($isKind && !$this->kinds->has((string) $kindCode)) {
+                $report->warn(\sprintf('Page "%s" is a content of the kind "%s", which no active module declares: it was not imported.', $uid, $kindCode));
+                $report->skipped('pages');
+
+                continue;
+            }
 
             // The site has one zone: a second in the file comes in as an
             // ordinary draft page, as a second model does.
@@ -85,11 +98,13 @@ final readonly class PagesStep
             }
 
             $parentUid = null === ($page['parent'] ?? null) ? null : (string) $page['parent'];
-            $parentId = !$isZone && null !== $parentUid ? ($pageIds[$parentUid] ?? 0) : 0;
+            $parentId = !$isZone && !$isKind && null !== $parentUid ? ($pageIds[$parentUid] ?? 0) : 0;
 
             // The zone has no address to be found by: it is the page of the
-            // site that is one, whatever the file calls it.
-            $existing = $isZone ? $this->zones->find($connection) : $this->addresses->existing($translations, $parentId);
+            // site that is one, whatever the file calls it. A content of
+            // another kind has none either, and nothing of the site to be
+            // found by: it comes in as a new one, and replaces nothing.
+            $existing = $isZone ? $this->zones->find($connection) : ($isKind ? null : $this->addresses->existing($translations, $parentId));
             $zoneImported = $zoneImported || $isZone;
 
             if (null !== $existing && !$options->replace) {
@@ -100,15 +115,16 @@ final readonly class PagesStep
             }
 
             $model = $existing ?? new CmsPage();
-            $isModel = $this->taxonomy->isModel($page, $existing, $report, $connection);
+            $isModel = !$isKind && $this->taxonomy->isModel($page, $existing, $report, $connection);
             $model
                 ->setParent($parentId)
-                ->setPosition($isZone ? 0 : (int) ($page['position'] ?? 0))
-                // The model of a type, the header zone and a zone left over are
+                ->setPosition($isZone || $isKind ? 0 : (int) ($page['position'] ?? 0))
+                // The model of a type, a hidden content and a zone left over are
                 // never online as pages, whatever the file says.
-                ->setVisible(!$isModel && !$isZone && !$demotedZone && ($page['visible'] ?? true) ? 1 : 0)
+                ->setVisible(!$isModel && !$isZone && !$isKind && !$demotedZone && ($page['visible'] ?? true) ? 1 : 0)
                 ->setPageType($this->taxonomy->pageTypeOf($page, $report, $connection, $knownTypes))
-                ->setModel($isModel ? 1 : ($isZone ? HeaderZone::MODEL : 0))
+                ->setModel($isModel ? 1 : ($isZone || $isKind ? ContentKinds::MODEL : 0))
+                ->setContentKind($isZone || $isKind ? $kindCode : null)
                 // A file written before the setting existed keeps what the page has, or the band.
                 ->setTitleBand(\array_key_exists('title_band', $page) ? (($page['title_band'] ?? true) ? 1 : 0) : ($existing?->getTitleBand() ?? 1))
                 ->setFields(self::fieldsJson($page['fields'] ?? null))
@@ -141,8 +157,8 @@ final readonly class PagesStep
 
             $this->importPageContents($model, $document->carriesDocuments() ? $page['contents'] ?? [] : [], $mediaMap, $options, $report, $connection, $demotedZone);
 
-            // The zone has no address: it is drawn in a header, not served.
-            foreach ($isZone ? [] : $translations as $locale => $translation) {
+            // A hidden content has no address: it is drawn where its kind says, not served.
+            foreach ($isZone || $isKind ? [] : $translations as $locale => $translation) {
                 $this->addresses->refresh($model, (string) $locale, $translation['slug'] ?? null, $report);
             }
 
@@ -150,6 +166,23 @@ final readonly class PagesStep
         }
 
         return $pageIds;
+    }
+
+    /**
+     * The kind of content a page of the file is: `kind`, or `header` for the
+     * `zone: true` of a file written before the kinds, null for a page.
+     *
+     * @param array<string, mixed> $page
+     */
+    private static function kindOf(array $page): ?string
+    {
+        if (true === ($page['zone'] ?? false)) {
+            return HeaderZone::KIND;
+        }
+
+        $kind = $page['kind'] ?? null;
+
+        return \is_string($kind) && '' !== $kind ? $kind : null;
     }
 
     /**
@@ -192,6 +225,9 @@ final readonly class PagesStep
                 ->setDraftDocument($this->content->document($content['draft_document'] ?? null, $mediaMap, $report, 'The draft of '.$where))
                 ->setDraftHtml($this->content->html($content['draft_html'] ?? null, $mediaMap, $options, $report, 'The draft of '.$where))
                 ->setDraftProvenance(ProvenanceMark::normalize($content['draft_provenance'] ?? null))
+                // A draft replaced moves its version: a screen open on the one it
+                // replaces is refused rather than writing over the import.
+                ->setDraftVersion($model->isNew() ? 0 : (int) $model->getDraftVersion() + 1)
                 ->setPublishedDocument($this->content->document($published['published_document'] ?? null, $mediaMap, $report, 'The published version of '.$where))
                 ->setPublishedHtml($publishedHtml)
                 ->setPublishedProvenance(ProvenanceMark::normalize($published['published_provenance'] ?? null))
@@ -212,8 +248,8 @@ final readonly class PagesStep
             // Without this, an imported site answers nothing at all on its own
             // search page: the index is built at publish time, and importing is
             // not publishing.
-            // The zone is in no search: it is no page of the site.
-            if (null !== $model->getPublishedAt() && HeaderZone::MODEL !== $page->getModel()) {
+            // A hidden content is in no search: it is no page of the site.
+            if (null !== $model->getPublishedAt() && ContentKinds::MODEL !== $page->getModel()) {
                 $this->index($page, $locale, $publishedHtml, $connection);
             }
         }

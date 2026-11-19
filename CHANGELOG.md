@@ -9,6 +9,31 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Added
 
+- **A module declares a kind of content.** A service that implements
+  `TheliaCMS\Content\Kind\ContentKind` (tagged `thelia_cms.content_kind` by
+  autoconfiguration) declares a family of contents with no address, such as the
+  size guides of a shop: each is written on the content screen of the pages
+  (draft, versions, translations, one publication per language, the rights of
+  the pages and the right to publish) and is in no list of pages, the search,
+  the sitemap, a menu or a page picker. The kind says where the screen links
+  back to, what publishing says, what is noted at the top, which keys of the
+  shared cache to drop, how the activity log names it and whether it may go to
+  the bin. Modules write them through `TheliaCMS\Page\Kind\KindContents`:
+  `create()`, `find()`, `all()`, `publishedHtml()`, `moveToBin()` (deleted by the
+  purge of the bin, not listed in it) and `adopt()`, which turns an ordinary page
+  with no page under it into a content in place (same id, texts, versions and
+  translations; its addresses, redirections, lines of the search and entries of
+  the menus go). A content whose module is deactivated shows nowhere and its
+  screen answers 404. The export file (format 5) carries the kind of a
+  content, which an import never matches on an address nor puts in the tree.
+  `binned()` and `restore()` bring a content back from the bin; `adopt()` also
+  refuses a page that holds a published version while offline, the page of a
+  missing address or of maintenance and the privacy policy of a form, and clears
+  its publication dates. A content has no settings screen and is never moved,
+  copied nor made the home page from the list; `thelia_cms:render-published --all`
+  leaves out a content whose module is off, and `thelia_cms:publish` refuses it
+  by name. See ADR 20.
+
 - **Three levels of optimization round the points of an SVG file and remove
   those the drawing does not need**: they keep every point within 1/4000 (No
   visible difference), 1/1000 (Slight loss of detail) or 1/400 (Visible loss
@@ -47,6 +72,17 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Changed
 
+- **The header zone is the first kind of content**: its page carries
+  `cms_page.content_kind = 'header'` (the update gives it to the zone of every
+  site), and its screen, log entries and phrases are unchanged. A hidden page
+  with no declared kind is no longer treated as the zone.
+- **A hidden page gets no address back by the reactivation of the module**
+  (the header zone had one), nor by an import: a file never reads a page onto
+  a content of a kind. The count of pages published on the dashboard leaves
+  them out, and moving a page orders it among ordinary pages only.
+- **The bin of the pages and its count leave out the contents of a kind**: they
+  are binned and brought back by the module that owns them.
+
 - **The files waiting on the screen that prepares an SVG, and the stages of
   their preparation, weigh 200 MB at most together**, 100 MB each: past that,
   the files used least recently leave first, never the one being prepared,
@@ -65,6 +101,72 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   icons and illustrations of Flexy, the flags of the back office, a sample of
   Bootstrap Icons) the total weighs 14 % less, 17 % less once compressed; the
   illustrations of Flexy, 31 % and 39 %.
+
+## [2.37.0] - 2026-11-19
+
+### Added
+
+- **Two editors on one draft no longer overwrite each other**: a draft carries
+  a version (`draft_version` on `cms_page_content` and `cms_item_content`,
+  update `2.37.0`), moved by every save. The content screen and the settings
+  of a page post the version they read, and a save, a section added, removed,
+  moved or duplicated, a restore, Undo, Redo, a publication or the removal of
+  the AI mark made on a draft that moved since is refused: the screen says who
+  changed it and when, and keeps what was typed. A generation asked on a draft
+  that moved costs no call; one whose draft moved while the model wrote keeps
+  its answer among the previous drafts instead of replacing the other
+  editor's work.
+- **A banner on the content screen and the settings of a page** when someone
+  else changed the page within the hour: "Changed by X, N minutes ago".
+
+### Changed
+
+- **A request that writes a draft from the back office must post the version
+  it read** (`draft_version`): one without it is refused as stale. A tab left
+  open from before the update is refused once, then works after a reload.
+- **`thelia_cms:render` and the drafts drawn again after a component of the
+  site changed** leave a draft saved while they rendered it as it is, and count
+  it among the drafts left unchanged.
+- **A site import that replaces a draft moves its version**: a screen open on
+  the draft it replaced is refused rather than writing over the import.
+
+## [2.36.0] - 2026-11-19
+
+### Added
+
+- **A form takes the check of another module, a captcha for one**: the
+  `cms.form.fields` theme hook is rendered inside every form, where the module
+  adds the field its check reads, and `SubmissionCheckEvent` is dispatched for
+  a message the trap, the stamp and the fields have let through, before the
+  rate limit, the stamp and the storage. A listener refuses it with the
+  sentence shown above the form; what was typed is kept. Nothing changes for a
+  site where no module listens.
+
+## [2.35.0] - 2026-11-19
+
+### Added
+
+- **Publishing is a right of its own**: `admin.cms.page.publish` (checked on
+  update) decides what shows on the site, apart from changing the pages. An
+  editor without it writes pages, their content and their settings; someone
+  with it puts a page or the content of a catalogue item online, takes it
+  offline, shows or hides a page (one by one or in bulk), changes its
+  publication dates, brings it back from the bin or makes it the home page. The
+  screens offer none of these gestures without the right: the publish and
+  unpublish buttons, "Save and publish", the visibility and the dates of the
+  settings (shown disabled), "Show" and "Hide" on the list, the publication
+  options of the bulk menu, "Restore" in the bin, "Set as home page". A
+  reviewer may hold the right to publish without the right to change. The
+  seeded Editor profile has it. `thelia_cms:publish` and the site import run
+  from the console, outside any profile, as before.
+
+### Changed
+
+- **An update keeps what each profile could publish**: the new right is split
+  off `admin.cms.page`, so on the update each profile gets the access it had on
+  the pages. A profile that could change the pages still publishes; a profile
+  that could only read them gets read access on the new right, which publishes
+  nothing.
 
 ## [2.34.0] - 2026-11-19
 
@@ -3763,7 +3865,10 @@ the published pages.
 - The breadcrumb of a page filed under a draft one offered a link to that page,
   which answers 404, both to the reader and in the `BreadcrumbList`.
 
-[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.34.0...HEAD
+[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.37.0...HEAD
+[2.37.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.37.0
+[2.36.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.36.0
+[2.35.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.35.0
 [2.34.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.34.0
 [2.33.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.33.0
 [2.32.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.32.0

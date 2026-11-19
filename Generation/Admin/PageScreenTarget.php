@@ -23,6 +23,7 @@ use TheliaCMS\Content\Editing\ContentWriter;
 use TheliaCMS\Content\Editing\TranslationFreshness;
 use TheliaCMS\Content\Editing\TranslationLink;
 use TheliaCMS\Content\Editing\TranslationSource;
+use TheliaCMS\Content\Kind\ContentKinds;
 use TheliaCMS\Content\Site\SiteComponentPermission;
 use TheliaCMS\Generation\Alongside;
 use TheliaCMS\Generation\GenerationRequest;
@@ -45,7 +46,6 @@ use TheliaCMS\Page\Admin\PlaceholderPageContentException;
 use TheliaCMS\Page\PageTypeCode;
 use TheliaCMS\Page\PageTypeRepository;
 use TheliaCMS\Preview\PreviewLink;
-use TheliaCMS\Zone\Admin\ZoneScreenNotes;
 use TheliaCMS\Zone\HeaderZone;
 
 /**
@@ -94,7 +94,7 @@ final readonly class PageScreenTarget implements ContentScreenTarget
         private PageTypeRepository $pageTypes,
         private SiteComponentPermission $componentPermission,
         private PageOnlineMessage $onlineMessage,
-        private ZoneScreenNotes $zoneNotes,
+        private ContentKinds $kinds,
         private array $returnQuery = [],
     ) {
     }
@@ -118,13 +118,15 @@ final readonly class PageScreenTarget implements ContentScreenTarget
     {
         $locale = $this->locale();
         $this->page->setLocale($locale);
-        $status = $this->pages->statusOf($this->page, $locale);
+        $kind = $this->kinds->of($this->page);
+        // The header zone keeps the state it has always shown, read from the visibility of its page
+        // (hidden, so "unpublished" once online); the other kinds read the content alone.
+        $status = null === $kind || HeaderZone::KIND === $kind->code() ? $this->pages->statusOf($this->page, $locale) : $this->pages->statusOfContent($this->page, $locale);
         $parameters = $this->parameters();
         $routes = ['screen' => $this->screenUrl()];
-        $isZone = HeaderZone::MODEL === $this->page->getModel();
 
-        if ($isZone) {
-            // A page is taken offline from its settings, which the zone has not.
+        if (null !== $kind) {
+            // A page is taken offline from its settings, which a content of a kind has not.
             $routes['unpublish'] = $this->urls->generate('admin.cms.pages.unpublish', $this->parameters());
         }
 
@@ -132,30 +134,35 @@ final readonly class PageScreenTarget implements ContentScreenTarget
             $routes[$action] = $this->urls->generate($name, $parameters);
         }
 
+        $row = $this->contentTarget()->row();
+
         return new ContentSubject(
             target: $this->generationTarget(),
             locale: $locale,
             languageId: (int) $this->lang->getId(),
             statusLabel: $status->label(),
             statusBadgeClass: $status->badgeClass(),
-            backUrl: $isZone ? $this->urls->generate('admin.cms.pages.list', [EditLanguage::PARAMETER => $this->lang->getId()]) : $this->urls->generate('admin.cms.pages.edit', $parameters),
-            // The zone has no settings tab: its settings are those of a page.
-            backLabel: $this->support->translate($isZone ? 'Back to pages' : 'Back to settings'),
+            backUrl: null === $kind ? $this->urls->generate('admin.cms.pages.edit', $parameters) : $kind->backUrl($this->page, (int) $this->lang->getId()),
+            // A content of a kind has no settings tab: its settings are those of a page.
+            backLabel: null === $kind ? $this->support->translate('Back to settings') : $kind->backLabel(),
             draftPreviewUrl: $this->previewLinks->contentUrlFor((int) $this->page->getId(), $locale),
-            previewUrl: $isZone ? null : ($this->page->getUrl($locale) ?: null),
+            previewUrl: null === $kind ? ($this->page->getUrl($locale) ?: null) : null,
             document: $this->draftDocument(),
-            publishHint: $this->support->translate($isZone ? 'Publishing puts the draft online in the header of every page of the site, in this language.' : 'Publishing puts the draft online at the address of the page.'),
+            publishHint: null === $kind ? $this->support->translate('Publishing puts the draft online at the address of the page.') : $kind->publishHint(),
             routes: $routes,
             testId: 'cms-page-content',
             translationSources: $this->translationSources(),
             publishable: 1 !== $this->page->getModel(),
-            // The zone is no page: its draft is read alone, the page it would be
-            // shown on is every page of the site.
-            draftPagePreviewUrl: $isZone ? null : $this->previewLinks->urlFor((int) $this->page->getId(), $locale),
+            // A content of a kind is no page: its draft is read alone, the page it
+            // would be shown on is the business of the module that draws it.
+            draftPagePreviewUrl: null === $kind ? $this->previewLinks->urlFor((int) $this->page->getId(), $locale) : null,
             template: $this->template($locale),
             previousDrafts: $this->writer->previousDrafts($this->contentTarget()),
             translationLink: $this->translationLink(),
-            notes: $isZone ? $this->zoneNotes->for($this->page) : [],
+            notes: $kind?->notes($this->page, $locale) ?? [],
+            draftVersion: $row->draftVersion(),
+            draftAuthor: $row->draftAuthor(),
+            draftChangedAt: $row->updatedAt(),
         );
     }
 
@@ -248,8 +255,10 @@ final readonly class PageScreenTarget implements ContentScreenTarget
 
     public function online(): string
     {
-        if (HeaderZone::MODEL === $this->page->getModel()) {
-            return $this->support->translate('The header zone is online in this language: it is drawn in the header of every page of the site.');
+        $kind = $this->kinds->of($this->page);
+
+        if (null !== $kind) {
+            return $kind->onlineMessage();
         }
 
         return $this->onlineMessage->say($this->page, $this->locale());

@@ -73,6 +73,17 @@ final readonly class ContentVersions
     }
 
     /**
+     * Keeps a document that never was the draft among the kept drafts: the
+     * answer of a generation whose save was refused.
+     */
+    public function keepAside(ContentTarget $target, ContentSnapshot $snapshot): void
+    {
+        $target->revisions()->add($target->key(), $snapshot, self::DRAFT_LABEL, $this->securityContext->getAdminUser()?->getId());
+
+        $this->prune($target, self::DRAFT_LABEL, self::DRAFT_RETENTION);
+    }
+
+    /**
      * The drafts kept for this content in this language, the latest first.
      *
      * @return list<array{id: int, date: \DateTimeInterface|null, sections: int}>

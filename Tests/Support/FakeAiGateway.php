@@ -45,6 +45,8 @@ final class FakeAiGateway implements AiGatewayInterface
     /** @var list<AiRequest> every request received, in order */
     public array $requests = [];
 
+    private ?\Closure $meanwhile = null;
+
     /**
      * @param array<string, mixed>|null $data
      * @param list<AiToolCall>          $toolCalls
@@ -191,8 +193,25 @@ final class FakeAiGateway implements AiGatewayInterface
     /**
      * @return AiResponse|list<StreamEvent>|\Throwable|array{cut: list<StreamEvent>, failure: AiProviderUnavailableException}
      */
+    /**
+     * Runs once, when the next answer is handed out: what happens on the site
+     * while the model writes (another editor saving the draft, say).
+     */
+    public function meanwhile(\Closure $sideEffect): self
+    {
+        $this->meanwhile = $sideEffect;
+
+        return $this;
+    }
+
     private function next(): AiResponse|array|\Throwable
     {
+        if (null !== $this->meanwhile) {
+            $sideEffect = $this->meanwhile;
+            $this->meanwhile = null;
+            $sideEffect();
+        }
+
         if ([] === $this->queue) {
             throw new \LogicException(\sprintf('The fake gateway has no answer left for request %d.', \count($this->requests)));
         }

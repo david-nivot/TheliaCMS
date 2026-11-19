@@ -30,4 +30,7 @@ enum DraftRendering
 
     /** The language holds no draft document. */
     case NoDraft;
+
+    /** The draft was saved while it was being rendered: the save wrote its own rendering, nothing was written. */
+    case ChangedMeanwhile;
 }

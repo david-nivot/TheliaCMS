@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace TheliaCMS\Tests\Integration\Catalogue;
 
 use Propel\Runtime\ActiveQuery\Criteria;
+use Thelia\Core\Security\AccessManager;
 use Thelia\Domain\Ai\AiGatewayInterface;
 use Thelia\Model\Content;
 use Thelia\Model\Lang;
@@ -32,6 +33,7 @@ use TheliaCMS\Model\CmsItemContentQuery;
 use TheliaCMS\Model\CmsItemRevisionQuery;
 use TheliaCMS\Model\CmsPageGenerationQuery;
 use TheliaCMS\Preview\ItemPreviewLink;
+use TheliaCMS\Security\CmsResources;
 use TheliaCMS\Tests\Integration\Security\AdminScreenTestCase;
 use TheliaCMS\Tests\Support\FakeAiGateway;
 use TheliaLibrary\Model\LibraryImage;
@@ -110,6 +112,29 @@ final class ItemContentScreenTest extends AdminScreenTestCase
 
         $row->reload();
         self::assertNull($row->getPublishedAt(), 'Taken offline from the tab.');
+    }
+
+    public function testTheTabOffersNoUnpublishWithoutTheRightToPublish(): void
+    {
+        $content = $this->content();
+        $this->getService(ContentWriter::class)->saveContent($this->itemTarget(CatalogueItemType::Content, (int) $content->getId(), $this->locale()), Document::richText('<p>Online.</p>'));
+        $this->getService(ContentWriter::class)->publish($this->itemTarget(CatalogueItemType::Content, (int) $content->getId(), $this->locale()));
+        $tab = '/admin/content/update/'.$content->getId();
+
+        $this->logInAs((new FixtureFactory($this->getPropelConnection()))->restrictedAdmin([
+            'admin.content' => [AccessManager::VIEW, AccessManager::UPDATE],
+            CmsResources::PAGE => [AccessManager::VIEW, AccessManager::UPDATE],
+            CmsResources::PAGE_PUBLISH => [AccessManager::VIEW],
+        ]));
+        self::assertGreaterThan(0, $this->screen($tab)->filter('[data-testid="cms-item-content-edit"]')->count(), 'The tab is there.');
+        self::assertSame(0, $this->screen($tab)->filter('[data-testid="cms-item-content-unpublish"]')->count(), 'No unpublish without the right to publish.');
+
+        $this->logInAs((new FixtureFactory($this->getPropelConnection()))->restrictedAdmin([
+            'admin.content' => [AccessManager::VIEW, AccessManager::UPDATE],
+            CmsResources::PAGE => [AccessManager::VIEW],
+            CmsResources::PAGE_PUBLISH => [AccessManager::VIEW, AccessManager::UPDATE],
+        ]));
+        self::assertSame(1, $this->screen($tab)->filter('[data-testid="cms-item-content-unpublish"]')->count(), 'Unpublish with it.');
     }
 
     public function testASectionOfTheItemIsDuplicatedRightAfterItself(): void
@@ -213,7 +238,7 @@ final class ItemContentScreenTest extends AdminScreenTestCase
         $screen = $this->screen(\sprintf('%s?edit_language_id=%d', $this->url($content), $target->getId()));
         $token = $this->tokenOfTheForm($screen, $this->url($content).'/generate');
 
-        self::assertSame(302, $this->send('POST', \sprintf('%s/translate?edit_language_id=%d', $this->url($content), $target->getId()), ['_token' => $token, 'cms_translate' => ['source' => $this->locale()]]));
+        self::assertSame(302, $this->send('POST', \sprintf('%s/translate?edit_language_id=%d', $this->url($content), $target->getId()), ['_token' => $token, 'cms_translate' => ['source' => $this->locale()], 'draft_version' => $this->draftVersionOf($screen)]));
 
         $row = CmsItemContentQuery::create()->filterByItemType('content')->filterByItemId($id)->filterByLocale($target->getLocale())->findOne();
         self::assertStringContainsString('By the model.', (string) $row?->getDraftHtml());

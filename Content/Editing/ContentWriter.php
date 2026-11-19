@@ -64,9 +64,17 @@ final readonly class ContentWriter
      * a section rewritten by hand is still part of a document the model wrote,
      * and nothing here can tell when that stops being true.
      *
+     * Every save moves the version of the draft. A screen hands in the version
+     * it read, and the save is refused when the draft moved since; a writer
+     * that hands in none (the command line, an import) writes whatever the
+     * draft holds.
+     *
+     * @param int|null $readVersion the version of the draft the change was made on
+     *
      * @throws InvalidDocumentException when the document cannot be stored
+     * @throws StaleDraftException      when the draft moved since the version read
      */
-    public function saveContent(ContentTarget $target, Document $document, ?AiProvenance $provenance = null): void
+    public function saveContent(ContentTarget $target, Document $document, ?AiProvenance $provenance = null, ?int $readVersion = null): void
     {
         $document = $this->validator->validate($document);
 
@@ -75,14 +83,43 @@ final readonly class ContentWriter
         // opens the content next, so a script left in it would run there.
         $html = $this->sanitizer->html($this->normalizer->html($this->renderer->render($document, $target->key()->locale)), $this->mayPublishCustomCode());
 
-        $target->row()->saveDraft(
-            $document->toJson(),
-            $html,
-            $this->securityContext->getAdminUser()?->getId(),
-            null === $provenance ? null : ProvenanceMark::encode($provenance),
-        );
+        $connection = Propel::getConnection('TheliaMain');
+        $connection->beginTransaction();
+
+        try {
+            $row = $target->row();
+            $version = $row->claimDraft($connection, $readVersion);
+            $row->saveDraft(
+                $document->toJson(),
+                $html,
+                $this->securityContext->getAdminUser()?->getId(),
+                null === $provenance ? null : ProvenanceMark::encode($provenance),
+                $version + 1,
+                $connection,
+            );
+            $connection->commit();
+        } catch (\Throwable $throwable) {
+            $connection->rollBack();
+
+            throw $throwable;
+        }
 
         $target->afterSaved();
+    }
+
+    /**
+     * Keeps a document among the kept drafts without making it the draft: the
+     * answer of a generation whose save was refused, the draft having moved
+     * while the model wrote. Put back like any kept draft.
+     *
+     * @throws InvalidDocumentException when the document cannot be stored
+     */
+    public function keepAside(ContentTarget $target, Document $document, ?AiProvenance $provenance = null): void
+    {
+        $document = $this->validator->validate($document);
+        $html = $this->sanitizer->html($this->normalizer->html($this->renderer->render($document, $target->key()->locale)), $this->mayPublishCustomCode());
+
+        $this->versions->keepAside($target, new ContentSnapshot($document->toJson(), $html, null === $provenance ? null : ProvenanceMark::encode($provenance)));
     }
 
     /**
@@ -109,10 +146,13 @@ final readonly class ContentWriter
      * Puts a kept draft back as the draft, the current one kept in its
      * place: a restore is undone the same way.
      *
+     * @param int|null $readVersion the version of the draft the restore was asked on
+     *
      * @throws \InvalidArgumentException when the revision is not a kept draft of this content in this language
      * @throws InvalidDocumentException  when the kept document no longer passes
+     * @throws StaleDraftException       when the draft moved since the version read
      */
-    public function restoreDraft(ContentTarget $target, int $revisionId): void
+    public function restoreDraft(ContentTarget $target, int $revisionId, ?int $readVersion = null): void
     {
         $restorable = $this->versions->restorable($target, $revisionId);
 
@@ -120,10 +160,22 @@ final readonly class ContentWriter
             throw $target->notAKeptDraft($revisionId);
         }
 
-        $this->keepDraft($target);
-        $this->saveContent($target, $restorable->document);
-        // The draft put back brings its own mark, or none.
-        $target->row()->replaceDraftProvenance($restorable->provenance);
+        $connection = Propel::getConnection('TheliaMain');
+        $connection->beginTransaction();
+
+        try {
+            // Refused before the current draft is kept: a stale restore keeps nothing.
+            $target->row()->claimDraft($connection, $readVersion);
+            $this->keepDraft($target);
+            $this->saveContent($target, $restorable->document, null, $readVersion);
+            // The draft put back brings its own mark, or none.
+            $target->row()->replaceDraftProvenance($restorable->provenance);
+            $connection->commit();
+        } catch (\Throwable $throwable) {
+            $connection->rollBack();
+
+            throw $throwable;
+        }
     }
 
     /**
@@ -187,8 +239,9 @@ final readonly class ContentWriter
      *
      * @throws \Throwable               the refusals of the family, the empty-content, heading and accessibility exceptions
      * @throws InvalidDocumentException when the draft is not a document the catalogue accepts
+     * @throws StaleDraftException      when the draft moved since the version the publisher read
      */
-    public function publish(ContentTarget $target): array
+    public function publish(ContentTarget $target, ?int $readVersion = null): array
     {
         $connection = Propel::getConnection('TheliaMain');
         $connection->beginTransaction();
@@ -197,6 +250,8 @@ final readonly class ContentWriter
             $withCustomCode = $this->mayPublishCustomCode();
 
             $row = $target->row();
+            // What goes online is the draft its publisher read, or nothing.
+            $row->claimDraft($connection, $readVersion);
             ['html' => $html, 'warnings' => $warnings] = $this->publishableHtml($target, $row, $withCustomCode);
             $wasOnline = $row->isOnline();
 

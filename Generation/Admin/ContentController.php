@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Generation\Admin;
 
+use Propel\Runtime\Propel;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -28,11 +29,13 @@ use TheliaCMS\Catalogue\CatalogueItemType;
 use TheliaCMS\Content\Document;
 use TheliaCMS\Content\Editing\ContentSteps;
 use TheliaCMS\Content\Editing\ContentWriter;
+use TheliaCMS\Content\Editing\StaleDraftException;
 use TheliaCMS\Content\Editing\StepOutcome;
 use TheliaCMS\Content\Editing\TranslationSource;
 use TheliaCMS\Content\InvalidDocumentException;
 use TheliaCMS\Generation\Alongside;
 use TheliaCMS\Generation\Brief;
+use TheliaCMS\Generation\GenerationException;
 use TheliaCMS\Generation\GenerationRequest;
 use TheliaCMS\Generation\Guardrail\ReferenceFileJudgeSetting;
 use TheliaCMS\Generation\HeaderOutcome;
@@ -40,6 +43,7 @@ use TheliaCMS\Generation\ReferenceFile;
 use TheliaCMS\Generation\ReferenceFileRefusal;
 use TheliaCMS\Generation\ReferenceFileRefusedException;
 use TheliaCMS\Http\Admin\AdminControllerSupport;
+use TheliaCMS\Http\Admin\DraftNotice;
 use TheliaCMS\Security\CmsResources;
 
 /**
@@ -76,6 +80,7 @@ final readonly class ContentController
         private TranslatorInterface $translator,
         private ContentSteps $steps,
         private ReferenceFileJudgeSetting $judgeSetting,
+        private DraftNotice $notice,
     ) {
     }
 
@@ -230,7 +235,11 @@ final readonly class ContentController
         $target = $this->resolver->resolve($request, $id, $type);
         $this->denyUnlessMayChange();
 
-        $problems = $this->steps->record($target->contentTarget(), 'add', null, fn (): array => $this->sectionUpdate->add($request, $target->subject(), $target->draftDocument(), $this->saver($target)));
+        try {
+            $problems = $this->steps->record($target->contentTarget(), 'add', null, fn (): array => $this->sectionUpdate->add($request, $target->subject(), $target->draftDocument(), $this->saver($target, DraftNotice::posted($request))));
+        } catch (StaleDraftException $stale) {
+            return $this->stale($request, $target, $stale);
+        }
 
         return $this->afterHand($request, $target, $problems, 'The section is added at the end of the draft, with example text: edit it by hand.');
     }
@@ -247,8 +256,10 @@ final readonly class ContentController
         $this->denyUnlessMayChange();
 
         try {
-            $this->steps->record($target->contentTarget(), 'restore', null, fn () => $this->writer->restoreDraft($target->contentTarget(), $request->request->getInt('revision')));
+            $this->steps->record($target->contentTarget(), 'restore', null, fn () => $this->writer->restoreDraft($target->contentTarget(), $request->request->getInt('revision'), DraftNotice::posted($request)));
             $this->support->flash($request, 'success', $this->support->translate('The previous draft is back. The one it replaces is kept in its place.'));
+        } catch (StaleDraftException $stale) {
+            return $this->stale($request, $target, $stale);
         } catch (\InvalidArgumentException|InvalidDocumentException) {
             $this->support->flash($request, 'danger', $this->support->translate('This draft is no longer available.'));
         }
@@ -342,10 +353,12 @@ final readonly class ContentController
     public function publish(Request $request, int $id, ?string $type = null): Response
     {
         $target = $this->resolver->resolve($request, $id, $type);
-        $this->denyUnlessMayChange();
+        $this->support->denyUnlessMayPublish();
 
         try {
-            $warnings = $this->writer->publish($target->contentTarget());
+            $warnings = $this->writer->publish($target->contentTarget(), DraftNotice::posted($request));
+        } catch (StaleDraftException $stale) {
+            return $this->stale($request, $target, $stale);
         } catch (InvalidDocumentException $exception) {
             foreach ($exception->translated($this->translator) as $problem) {
                 $this->support->flash($request, 'danger', $problem);
@@ -384,7 +397,7 @@ final readonly class ContentController
     public function unpublish(Request $request, int $id, ?string $type = null): Response
     {
         $target = $this->resolver->resolve($request, $id, $type);
-        $this->denyUnlessMayChange();
+        $this->support->denyUnlessMayPublish();
 
         $this->writer->unpublish($target->contentTarget());
         $this->support->flash($request, 'success', $this->support->translate('The content is offline: the draft is kept.'));
@@ -407,18 +420,22 @@ final readonly class ContentController
             return $this->back($target);
         }
 
-        $save = $this->saver($target);
+        $save = $this->saver($target, DraftNotice::posted($request));
         $subject = $target->subject();
 
         $section = 'apply' === $change ? SectionUpdate::postedSection($request) : (string) $request->request->get('section', '');
 
-        $problems = $this->steps->record($target->contentTarget(), $change, $section, fn (): array => match ($change) {
-            'apply' => $this->sectionUpdate->apply($request, $subject, $current, $save),
-            'remove' => $this->sectionUpdate->remove($request, $subject, $current, $save),
-            'move' => $this->sectionUpdate->move($request, $subject, $current, $save),
-            'duplicate' => $this->sectionUpdate->duplicate($request, $subject, $current, $save),
-            default => throw new \LogicException(\sprintf('"%s" is not a change by hand.', $change)),
-        });
+        try {
+            $problems = $this->steps->record($target->contentTarget(), $change, $section, fn (): array => match ($change) {
+                'apply' => $this->sectionUpdate->apply($request, $subject, $current, $save),
+                'remove' => $this->sectionUpdate->remove($request, $subject, $current, $save),
+                'move' => $this->sectionUpdate->move($request, $subject, $current, $save),
+                'duplicate' => $this->sectionUpdate->duplicate($request, $subject, $current, $save),
+                default => throw new \LogicException(\sprintf('"%s" is not a change by hand.', $change)),
+            });
+        } catch (StaleDraftException $stale) {
+            return $this->stale($request, $target, $stale);
+        }
 
         return $this->afterHand($request, $target, $problems, $done);
     }
@@ -455,13 +472,16 @@ final readonly class ContentController
         return $this->runner->refuse($request, $this->support->translate($refused->refusal->message()), $target->screenUrl());
     }
 
-    private function playStep(Request $request, int $id, ?string $type, bool $redo): RedirectResponse
+    private function playStep(Request $request, int $id, ?string $type, bool $redo): Response
     {
         $target = $this->resolver->resolve($request, $id, $type);
         $this->denyUnlessMayChange();
+        $read = DraftNotice::posted($request);
 
         try {
-            $outcome = $redo ? $this->steps->redo($target->contentTarget()) : $this->steps->undo($target->contentTarget());
+            $outcome = $redo ? $this->steps->redo($target->contentTarget(), $read) : $this->steps->undo($target->contentTarget(), $read);
+        } catch (StaleDraftException $stale) {
+            return $this->stale($request, $target, $stale);
         } catch (InvalidDocumentException $exception) {
             foreach ($exception->translated($this->translator) as $problem) {
                 $this->support->flash($request, 'danger', $problem);
@@ -499,13 +519,36 @@ final readonly class ContentController
 
     private function run(Request $request, ContentScreenTarget $target, GenerationRequest $generation, ?TranslationSource $source = null): Response
     {
+        // The version the screen read when the editor asked: the answer comes
+        // minutes later, and replaces only the draft that was asked about.
+        $read = DraftNotice::posted($request);
+
+        // A screen already stale pays for no call.
+        try {
+            $target->contentTarget()->row()->claimDraft(Propel::getConnection('TheliaMain'), $read);
+        } catch (StaleDraftException $stale) {
+            return $this->runner->refuse($request, $this->notice->refused($stale), $target->screenUrl());
+        }
+
         return $this->runner->respond(
             $request,
             $target->prepare($generation),
-            function (Document $document, ?AiProvenance $provenance, Alongside $alongside) use ($target, $generation, $source): ?HeaderOutcome {
-                // The draft the answer replaces is kept first: it can be put back.
-                $this->writer->keepDraft($target->contentTarget());
-                $this->steps->record($target->contentTarget(), $generation->kind, $generation->sectionId, fn () => $this->writer->saveContent($target->contentTarget(), $document, $provenance));
+            function (Document $document, ?AiProvenance $provenance, Alongside $alongside) use ($target, $generation, $source, $read): ?HeaderOutcome {
+                $content = $target->contentTarget();
+
+                try {
+                    // Refused before the current draft is kept: it is not the one replaced.
+                    $content->row()->claimDraft(Propel::getConnection('TheliaMain'), $read);
+                    // The draft the answer replaces is kept first: it can be put back.
+                    $this->writer->keepDraft($content);
+                    $this->steps->record($content, $generation->kind, $generation->sectionId, fn () => $this->writer->saveContent($content, $document, $provenance, $read));
+                } catch (StaleDraftException $stale) {
+                    // A paid answer is not lost: kept among the previous drafts.
+                    $this->writer->keepAside($content, $document, $provenance);
+
+                    throw GenerationException::because($this->notice->refused($stale).' '.$this->support->translate('The answer of the generator is kept among the previous drafts: put it back from there.'), $stale);
+                }
+
                 $header = $target->saveAlongside($alongside);
 
                 if (null !== $source && null !== $generation->sourceLocale) {
@@ -518,9 +561,21 @@ final readonly class ContentController
         );
     }
 
-    private function saver(ContentScreenTarget $target): \Closure
+    private function saver(ContentScreenTarget $target, int $readVersion): \Closure
     {
-        return fn (Document $document) => $this->writer->saveContent($target->contentTarget(), $document);
+        return fn (Document $document) => $this->writer->saveContent($target->contentTarget(), $document, null, $readVersion);
+    }
+
+    /**
+     * A write refused because the draft moved since the screen read it: the
+     * screen again, as it is now, with who changed it and when, answered 409
+     * so that the script of the screen keeps what the editor typed.
+     */
+    private function stale(Request $request, ContentScreenTarget $target, StaleDraftException $stale): Response
+    {
+        $this->support->flash($request, 'danger', $this->notice->refused($stale));
+
+        return new Response($this->screen->render($request, $target->subject()), Response::HTTP_CONFLICT);
     }
 
     private function documentOrFail(Request $request, ContentScreenTarget $target): ?Document

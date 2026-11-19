@@ -176,9 +176,9 @@ final class PageTemplateScreenTest extends AdminScreenTestCase
         $page->setPageType(self::TYPE)->save();
 
         $action = \sprintf('/admin/cms/pages/%d/content/publish', $page->getId());
-        $token = $this->tokenOfTheForm($this->screen(\sprintf('/admin/cms/pages/%d/content', $page->getId())), $action);
+        $screen = $this->screen(\sprintf('/admin/cms/pages/%d/content', $page->getId()));
 
-        self::assertSame(302, $this->send('POST', $action, ['_token' => $token]));
+        self::assertSame(302, $this->send('POST', $action, ['_token' => $this->tokenOfTheForm($screen, $action), 'draft_version' => $this->draftVersionOf($screen)]));
         self::assertStringContainsString('Personnes', $this->client->followRedirect()->filter('[role="alert"], .alert')->text(''));
         self::assertNull(CmsPageContentQuery::create()->filterByPageId($page->getId())->findOne()?->getPublishedAt());
     }

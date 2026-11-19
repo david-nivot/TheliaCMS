@@ -25,7 +25,9 @@ use TheliaCMS\Content\Document;
 use TheliaCMS\Content\DocumentRenderer;
 use TheliaCMS\Content\DocumentValidator;
 use TheliaCMS\Content\Editing\ContentWriter;
+use TheliaCMS\Content\Editing\DraftLock;
 use TheliaCMS\Content\Editing\PublishedRendering;
+use TheliaCMS\Content\Editing\StaleDraftException;
 use TheliaCMS\Content\Editing\TranslationFreshness;
 use TheliaCMS\Content\InvalidDocumentException;
 use TheliaCMS\Content\Pipeline\PageContentNormalizer;
@@ -37,6 +39,7 @@ use TheliaCMS\Model\CmsPageContent;
 use TheliaCMS\Model\CmsPageContentQuery;
 use TheliaCMS\Model\CmsPageI18nQuery;
 use TheliaCMS\Model\CmsPageQuery;
+use TheliaCMS\Model\Map\CmsPageContentTableMap;
 use TheliaCMS\Model\Map\CmsPageI18nTableMap;
 use TheliaCMS\Model\Map\CmsPageTableMap;
 use TheliaCMS\Page\CmsUrlService;
@@ -164,9 +167,9 @@ final readonly class CmsPageWriter
      *
      * @throws InvalidDocumentException when the document cannot be stored
      */
-    public function saveContent(CmsPage $page, string $locale, Document $document, ?AiProvenance $provenance = null): void
+    public function saveContent(CmsPage $page, string $locale, Document $document, ?AiProvenance $provenance = null, ?int $readVersion = null): void
     {
-        $this->content->saveContent($this->targets->forPage($page, $locale), $document, $provenance);
+        $this->content->saveContent($this->targets->forPage($page, $locale), $document, $provenance, $readVersion);
     }
 
     /**
@@ -244,9 +247,9 @@ final readonly class CmsPageWriter
      * @throws \InvalidArgumentException when the revision is not a kept draft of this page in this language
      * @throws InvalidDocumentException  when the kept document no longer passes
      */
-    public function restoreDraft(CmsPage $page, string $locale, int $revisionId): void
+    public function restoreDraft(CmsPage $page, string $locale, int $revisionId, ?int $readVersion = null): void
     {
-        $this->content->restoreDraft($this->targets->forPage($page, $locale), $revisionId);
+        $this->content->restoreDraft($this->targets->forPage($page, $locale), $revisionId, $readVersion);
     }
 
     /**
@@ -299,7 +302,25 @@ final readonly class CmsPageWriter
             return DraftRendering::KeptForCustomCode;
         }
 
-        $content->setDraftHtml($html)->save();
+        // Written on the version the document was read at, without moving it:
+        // the document is the same. A save in between wrote the rendering of
+        // its own document, which this one must not replace.
+        $connection = Propel::getConnection('TheliaMain');
+        $connection->beginTransaction();
+
+        try {
+            DraftLock::claim($connection, CmsPageContentTableMap::TABLE_NAME, (int) $content->getId(), (int) $content->getDraftVersion());
+            $content->setDraftHtml($html)->save($connection);
+            $connection->commit();
+        } catch (StaleDraftException) {
+            $connection->rollBack();
+
+            return DraftRendering::ChangedMeanwhile;
+        } catch (\Throwable $throwable) {
+            $connection->rollBack();
+
+            throw $throwable;
+        }
 
         return DraftRendering::Rendered;
     }
@@ -338,9 +359,9 @@ final readonly class CmsPageWriter
      * @throws MissingPageFieldsException      when a field the type requires is empty
      * @throws InvalidDocumentException        when the draft is not a document the catalogue accepts
      */
-    public function publish(CmsPage $page, string $locale): array
+    public function publish(CmsPage $page, string $locale, ?int $readVersion = null): array
     {
-        return $this->content->publish($this->targets->forPage($page, $locale));
+        return $this->content->publish($this->targets->forPage($page, $locale), $readVersion);
     }
 
     /**
@@ -375,9 +396,16 @@ final readonly class CmsPageWriter
      * reviewed the text and answers for it. The previous drafts keep theirs,
      * so putting one back brings its mark back.
      *
+     * The editor answers for the draft they read: one that moved since (a
+     * generation finished in between, say) keeps its mark.
+     *
+     * @param int|null $readVersion the version of the draft the editor read
+     *
      * @return bool false when the page carried no mark in this language
+     *
+     * @throws StaleDraftException when the draft moved since the version read
      */
-    public function removeProvenance(CmsPage $page, string $locale): bool
+    public function removeProvenance(CmsPage $page, string $locale, ?int $readVersion = null): bool
     {
         $content = CmsPageContentQuery::create()
             ->filterByPageId($page->getId())
@@ -390,9 +418,20 @@ final readonly class CmsPageWriter
 
         $wasOnline = null !== $content->getPublishedProvenance();
 
-        $content->setDraftProvenance(null)
-            ->setPublishedProvenance(null)
-            ->save();
+        $connection = Propel::getConnection('TheliaMain');
+        $connection->beginTransaction();
+
+        try {
+            DraftLock::claim($connection, CmsPageContentTableMap::TABLE_NAME, (int) $content->getId(), $readVersion);
+            $content->setDraftProvenance(null)
+                ->setPublishedProvenance(null)
+                ->save($connection);
+            $connection->commit();
+        } catch (\Throwable $throwable) {
+            $connection->rollBack();
+
+            throw $throwable;
+        }
         $this->authorship->sign([(int) $page->getId()]);
 
         if ($wasOnline) {
@@ -418,11 +457,11 @@ final readonly class CmsPageWriter
      *
      * @return list<int> the pages actually binned, deepest first
      *
-     * @throws ModelPageSettingException when the page is the model of its type or the header zone
+     * @throws ModelPageSettingException when the page is the model of its type or a content of a kind
      */
     public function moveToTrash(CmsPage $page): array
     {
-        // The model of a type goes with its type, the header zone is not a page to remove.
+        // The model of a type goes with its type, a content of a kind is not a page to remove.
         if (0 !== $page->getModel()) {
             throw ModelPageSettingException::trash((int) $page->getId());
         }
@@ -787,7 +826,7 @@ final readonly class CmsPageWriter
     }
 
     /**
-     * @throws ModelPageSettingException when the page is the model of its type or the header zone
+     * @throws ModelPageSettingException when the page is the model of its type or a content of a kind
      */
     public function toggleVisibility(CmsPage $page): void
     {
@@ -808,8 +847,8 @@ final readonly class CmsPageWriter
     /**
      * Puts several pages on the site, or takes them off it: a state set, not a
      * toggle, so a selection that mixes both ends up in the one asked. A page
-     * already in that state is not written, nor the model of a type or the
-     * header zone, which are never online as pages.
+     * already in that state is not written, nor the model of a type or a
+     * content of a kind, which are never online as pages.
      *
      * @param list<CmsPage> $pages
      *
@@ -923,6 +962,7 @@ final readonly class CmsPageWriter
         $siblings = CmsPageQuery::create()
             ->filterByParent($page->getParent())
             ->filterByDeletedAt(null, Criteria::ISNULL)
+            ->filterByModel(0)
             ->orderByPosition()
             ->find();
 

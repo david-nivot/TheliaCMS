@@ -22,6 +22,7 @@ final class CmsAdminResourcesCompiler extends AbstractAdminResourcesCompiler
     {
         return [
             'PAGE' => CmsResources::PAGE,
+            'PAGE_PUBLISH' => CmsResources::PAGE_PUBLISH,
             'MENU' => CmsResources::MENU,
             'FORM' => CmsResources::FORM,
             'FORM_ANSWERS' => CmsResources::FORM_ANSWERS,

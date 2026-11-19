@@ -24,6 +24,7 @@ use TheliaCMS\Catalogue\CatalogueItemType;
 use TheliaCMS\Catalogue\ItemContentRepository;
 use TheliaCMS\Content\Editing\ContentWriter;
 use TheliaCMS\Content\Editing\TranslationFreshness;
+use TheliaCMS\Content\Kind\ContentKinds;
 use TheliaCMS\Content\Site\SiteComponentPermission;
 use TheliaCMS\Generation\GenerationTargets;
 use TheliaCMS\Http\Admin\AdminControllerSupport;
@@ -36,7 +37,6 @@ use TheliaCMS\Page\Admin\PageOnlineMessage;
 use TheliaCMS\Page\PageTypeRepository;
 use TheliaCMS\Preview\ItemPreviewLink;
 use TheliaCMS\Preview\PreviewLink;
-use TheliaCMS\Zone\Admin\ZoneScreenNotes;
 
 /**
  * Finds what the content screen is about from its address: a page by its id
@@ -64,7 +64,7 @@ final readonly class ContentTargetResolver
         private PageTypeRepository $pageTypes,
         private SiteComponentPermission $componentPermission,
         private PageOnlineMessage $onlineMessage,
-        private ZoneScreenNotes $zoneNotes,
+        private ContentKinds $kinds,
     ) {
     }
 
@@ -86,6 +86,7 @@ final readonly class ContentTargetResolver
     {
         $page = $this->pages->findLive($id);
 
+        // `findLive()` answers none for a hidden content whose kind no active module declares.
         if (!$page instanceof CmsPage) {
             throw new NotFoundHttpException();
         }
@@ -106,7 +107,7 @@ final readonly class ContentTargetResolver
             $this->pageTypes,
             $this->componentPermission,
             $this->onlineMessage,
-            $this->zoneNotes,
+            $this->kinds,
             PageFilters::returnQuery($request),
         );
     }

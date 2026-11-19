@@ -276,6 +276,46 @@ changed since by another tab, another editor, an import or a command refuses it
 and nothing is written. A new change drops what Redo could still play. Imports
 and commands keep no step.
 
+**Two editors on one draft.** A draft carries a version (`draft_version`),
+moved by every write of its content, whoever makes it: the screens, the
+generator, a restore, `thelia_cms:generate`, an import. Every form of the
+content screen that writes the draft or publishes it, and the publish and
+"Remove the AI mark" forms of the settings, post the version the screen read;
+the writer locks the row, compares, and refuses a write made on a version that
+moved since (`StaleDraftException`), so two saves of the same second cannot
+both pass. A refused write writes nothing: the content screen answers 409 with
+the draft as it is now and who changed it and when, and its script keeps what
+was typed in the open form. A request that posts no version is refused the
+same way. Publishing and removing the AI mark do not move the version (the
+text is the same); drawing a draft again (`thelia_cms:render`, a component of
+the site promoted) writes only on the version it read and leaves a draft saved
+meanwhile as it is. A generation asked on a stale screen costs no call; one
+whose draft moved while the model wrote keeps its answer among the previous
+drafts. The settings of a page (title, address, fields, SEO) are not a draft
+and carry no version: a banner says when someone else changed the page within
+the hour, on the settings and on the content screen. Nothing is locked: an
+editor is never kept out of a page. Whoever writes a draft with SQL moves
+`draft_version` with it.
+
+```mermaid
+sequenceDiagram
+    participant A as Editor A
+    participant D as Draft
+    participant B as Editor B
+    A->>D: opens the screen
+    D-->>A: version 3
+    B->>D: opens the screen
+    D-->>B: version 3
+    B->>D: saves on version 3
+    D-->>B: saved, version 4
+    A->>D: saves on version 3
+    D-->>A: refused: B changed it N minutes ago, the typed text stays in the form
+    A->>D: reloads
+    D-->>A: version 4, with the changes of B
+    A->>D: saves on version 4
+    D-->>A: saved, version 5
+```
+
 Each section is also **edited by hand**, on the same screen, in a form read
 from the schema of its component: a field per prop, rows added and removed for
 a list, a picker on the media library for an image or a video (thumbnails, search,
@@ -541,6 +581,26 @@ switched off. The screen takes the settings right; the choice is stored in
 `module_config` under `disabled_sections`. Where the toolkit answers (debug
 mode or `THEME_TOOLKIT`, Flexy theme), a button opens it on the page that renders every
 component offered.
+
+## Contents of a kind, for module authors
+
+A module can declare a family of contents with no address (the size guides of a
+shop): written on the content screen of the pages, with a draft, versions,
+translations and one publication per language, and shown in no list of pages,
+search, sitemap or menu. The header zone is the first of them.
+
+1. Implement `TheliaCMS\Content\Kind\ContentKind` in a service of your module
+   (it is tagged by autoconfiguration): a code of 1 to 32 lowercase letters,
+   digits or `_`, where the screen links back to, its phrases, the cache keys
+   its publication drops, its name in the activity log.
+2. Inject `TheliaCMS\Page\Kind\KindContents` to `create()`, `find()`, `all()`,
+   `publishedHtml()`, `moveToBin()`, `binned()`, `restore()` or `adopt()` (a
+   page of the site taken in place).
+3. Send the editor to `/admin/cms/pages/{id}/content`: no screen, route or right
+   is added; the rights are those of the pages.
+
+The decision and its limits are in
+[ADR 20](docs/adr/0020-a-module-declares-a-kind-of-content.md).
 
 ## Documents of a page
 
@@ -903,6 +963,29 @@ A page that shows a form is never kept by a shared cache: it is served
 There is no captcha. A captcha sends the visitor to a third party and gets in
 the way of anyone using assistive technology, and on the volume a showcase site
 sees it catches less than the three checks above.
+
+A site that has to have one anyway plugs it in from another module, without
+touching this one:
+
+- the `cms.form.fields` theme hook (`FormPartial::FIELDS_HOOK`) is rendered
+  inside every form, with the code of the form as its `form` parameter: that
+  is where the module adds the field its check reads. A theme overriding
+  `cms/partials/form.html.twig` keeps the `theme_hook(fields_hook, …)` line;
+- `TheliaCMS\Form\SubmissionCheckEvent` is dispatched once the trap and the
+  stamp have let a message through and its fields are valid, before it counts
+  against the rate limit, spends its stamp and is kept. A listener reads the
+  request and calls `refuse()` with the sentence shown above the form, which
+  keeps what was typed:
+
+```php
+#[AsEventListener(event: SubmissionCheckEvent::class)]
+public function check(SubmissionCheckEvent $event): void
+{
+    if (!$this->verifier->verify($event->request->request->getString('my-token'))) {
+        $event->refuse('We could not check that you are not a robot. Please send your message again.');
+    }
+}
+```
 
 ### Answers
 
@@ -1320,12 +1403,13 @@ that an editor sees belongs there too (the icons, for one: sections "Icons" and
 
 ## Permissions
 
-Nine resources, seeded on activation with no access granted. Open them per
+Ten resources, seeded on activation with no access granted. Open them per
 profile under **Configuration > Administrators**.
 
 | Resource | Covers |
 |---|---|
-| `admin.cms.page` | the page tree, the content screen, editing a section by hand, publication |
+| `admin.cms.page` | the page tree, the content screen, editing a section by hand, the settings of a page |
+| `admin.cms.page.publish` | what shows on the site (update): publishing and unpublishing a page or the content of a catalogue item, showing or hiding a page, its publication dates, restoring it from the bin, setting the home page. Apart from changing the pages, so an editor may write without putting online; the seeded Editor profile has it |
 | `admin.cms.generate` | asking the generator to write, from a brief or for a change, a component of the site included (which also takes `admin.cms.settings` and `admin.cms.custom-code`). It costs money, so it is a right of its own; the seeded Editor profile has it |
 | `admin.cms.menu` | the menus and their entries |
 | `admin.cms.media` | the media library |
@@ -1335,8 +1419,8 @@ profile under **Configuration > Administrators**.
 | `admin.cms.form.answers` | the answers a form received: reading them (view), changing their status (update) and deleting them (delete). Personal data, so apart from building the forms |
 | `admin.cms.form.answers.export` | exporting the answers (view), which hands over every one of them at once |
 
-A right split off an older one (the two rights on the answers came out of
-`admin.cms.form`) is given, when the update creates it, the access each profile
+A right split off an older one (the right to publish came out of
+`admin.cms.page`, the two rights on the answers out of `admin.cms.form`) is given, when the update creates it, the access each profile
 had on the older right: an update never takes away what a profile could do.
 
 Every route under `/admin/cms` is guarded by the resource of its section, so a
