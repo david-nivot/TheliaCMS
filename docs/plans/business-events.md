@@ -1,6 +1,6 @@
 # Plan: business events through the webhooks of the core (F3)
 
-Status: decided (2026-11-19, by the maintainer), not started. Read on `main` at e9331e8 (2.38.0),
+Status: decided (2026-11-19, by the maintainer); step 1 done on `feat/f3-business-events`. Read on `main` at e9331e8 (2.38.0),
 core 3.5.0 in the test host. Wave 5 of the roadmap, lot F3 ("Événements métier"), size S. The
 second step (read-only API resources) is F8-F3-bis, wave 6, and stays out of this plan. Each step
 updates this plan in its own commit.
@@ -108,6 +108,24 @@ AT = `Api/Bridge/Propel/Service/ApiResourcePropelTransformerService.php`.
    with `DeliverWebhook` (an inline transport would send a real request: read how the core's own
    tests of WP avoid it). Settles how the resource gets the URL of a page published from the
    command, which has no request of its own.
+   **Done (2026-11-19).** `Webhook/PagePayload.php` (no `#[ApiResource]`, kept out of the
+   services by `TC::configureServices()`) goes through WB unchanged:
+   `Tests/Integration/Webhook/PagePayloadTest.php`, each assertion seen red under a sabotage (no
+   address, no home rule, date read in another locale). Found on the way:
+   - AT fills a property from the getter of the same name on the model: `id`, `locale`, `title`
+     (i18n at the current locale) and `type` (`#[Column(propelFieldName: 'pageType')]`) come from
+     `CmsPage`; `afterModelToResource()` adds the address and `publishedAt`, no listener needed.
+   - A property named `url` would be filled by `CmsPage::getUrl()` (`UrlRewritingTrait`), which
+     throws without the URL singleton and ignores the home page answering on "/": the property
+     is `$address`, serialized as `url`.
+   - The address is the sitemap's, moved out of `SitemapThemeHook::urlOf()` into
+     `Page/PublicAddress.php`, which both use. It is null when the URL singleton does not exist;
+     `thelia_cms:publish` creates it (`Http/ConsoleRequest.php:48`) and publishes inside
+     `around()`.
+   - In tests the `async` transport is `sync://` (`thelia.messenger.inline_transport_dsn`): a
+     delivery is sent at once. The core's tests replace `thelia.webhook.http_client` by a
+     `MockHttpClient` (`tests/Integration/Domain/Webhook/WebhookPublishingTest.php:61`); steps 3
+     and 4 do the same.
 2. **Catalog**: the compiler pass that merges the three names with their class and groups; a test
    that the catalog holds the core's five and the module's three, and that a second module's
    entry survives.
@@ -138,7 +156,5 @@ no migration.
 
 ## Not checked
 
-- That AT accepts a class without `#[ApiResource]` (read in AT, proven in step 1).
-- How the core's tests keep `DeliverWebhook` from sending a real request.
 - The fields a form can hold beyond text (a file field would send its name only, never its
   content): to read in `Form/` at step 4.

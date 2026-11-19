@@ -427,6 +427,8 @@ class TheliaCMS extends BaseModule
                 __DIR__.'/Content/Editing/TranslationSource.php',
                 __DIR__.'/Content/Editing/TranslationLink.php',
                 __DIR__.'/Generation/TranslationBackfillOutcome.php',
+                // Payloads of the webhooks: built by the transformer of the core.
+                __DIR__.'/Webhook/*Payload.php',
                 // Built per call by ContentTargets, around the page or the item they serve.
                 __DIR__.'/Page/Admin/PageContentTarget.php',
                 __DIR__.'/Page/Admin/PageContentRow.php',
