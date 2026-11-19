@@ -32,6 +32,7 @@ use TheliaCMS\Page\Field\PageFields;
 use TheliaCMS\Page\PageAuthorship;
 use TheliaCMS\Page\PageInvalidator;
 use TheliaCMS\Search\SearchTextExtractor;
+use TheliaCMS\Webhook\PageWebhooks;
 
 /**
  * Builds the `ContentTarget` of a page or of a catalogue item for the shared
@@ -53,6 +54,7 @@ final readonly class ContentTargets
         private CmsUrlService $urls,
         private PageAuthorship $authorship,
         private ContentKinds $kinds,
+        private PageWebhooks $webhooks,
     ) {
     }
 
@@ -79,7 +81,7 @@ final readonly class ContentTargets
 
     private function pageTarget(CmsPage $page, string $locale): PageContentTarget
     {
-        return new PageContentTarget($page, $locale, $this->activityLog, $this->invalidator, $this->fields, $this->placeholders, $this->searchText, $this->pageRevisions, $this->urls, $this->authorship);
+        return new PageContentTarget($page, $locale, $this->activityLog, $this->invalidator, $this->fields, $this->placeholders, $this->searchText, $this->pageRevisions, $this->urls, $this->authorship, $this->webhooks);
     }
 
     public function forItem(CatalogueItem $item): ItemContentTarget

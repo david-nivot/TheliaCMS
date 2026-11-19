@@ -1,6 +1,6 @@
 # Plan: business events through the webhooks of the core (F3)
 
-Status: decided (2026-11-19, by the maintainer); steps 1 and 2 done on `feat/f3-business-events`. Read on `main` at e9331e8 (2.38.0),
+Status: decided (2026-11-19, by the maintainer); steps 1 to 3 done on `feat/f3-business-events`. Read on `main` at e9331e8 (2.38.0),
 core 3.5.0 in the test host. Wave 5 of the roadmap, lot F3 ("Événements métier"), size S. The
 second step (read-only API resources) is F8-F3-bis, wave 6, and stays out of this plan. Each step
 updates this plan in its own commit.
@@ -140,6 +140,17 @@ AT = `Api/Bridge/Propel/Service/ApiResourcePropelTransformerService.php`.
    delivery with the expected envelope in each mode; nothing for a refused publication, an
    unpublish of a page already offline, a content of a kind, an article; nothing without a
    subscription.
+   **Done (2026-11-19).** `Webhook/PageWebhooks.php` publishes through WP, given to PT by CT;
+   PT calls it last in `afterPublished()` and, when the page was online, in
+   `afterUnpublished()`. `Tests/Integration/Webhook/PageWebhooksTest.php` (10 tests), each seen
+   red under a sabotage: no call, no `$wasOnline` guard, no locale given back, KT calling PT's
+   `afterPublished()`, the event sent before the draft is claimed (the refused publication).
+   The article and the subscriber of another event were not sabotaged: nothing in IT or WP to
+   break for them. Full suites on this step: unit 2273, integration 1842 (7 skipped, 1
+   incomplete, as before), 4 min 23. The dev container declares both events
+   (`php Thelia debug:container --parameter=thelia.webhook.events`). Found on the way: PT already
+   sets the page at the locale published (PT:145, :159); `PageWebhooks` gives the caller its page
+   back at the locale it had.
 4. **Form event**: publication from SS; tests: full payload with the answers, `identifiers` with
    the submission id, nothing for a form that keeps no answers or a refused check.
 5. **Documentation**: `docs/webhooks.md` (events, payloads with an example of each, the language
