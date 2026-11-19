@@ -1317,12 +1317,13 @@ that an editor sees belongs there too (the icons, for one: sections "Icons" and
 
 ## Permissions
 
-Nine resources, seeded on activation with no access granted. Open them per
+Ten resources, seeded on activation with no access granted. Open them per
 profile under **Configuration > Administrators**.
 
 | Resource | Covers |
 |---|---|
-| `admin.cms.page` | the page tree, the content screen, editing a section by hand, publication |
+| `admin.cms.page` | the page tree, the content screen, editing a section by hand, the settings of a page |
+| `admin.cms.page.publish` | what shows on the site (update): publishing and unpublishing a page or the content of a catalogue item, showing or hiding a page, its publication dates, restoring it from the bin, setting the home page. Apart from changing the pages, so an editor may write without putting online; the seeded Editor profile has it |
 | `admin.cms.generate` | asking the generator to write, from a brief or for a change, a component of the site included (which also takes `admin.cms.settings` and `admin.cms.custom-code`). It costs money, so it is a right of its own; the seeded Editor profile has it |
 | `admin.cms.menu` | the menus and their entries |
 | `admin.cms.media` | the media library |
@@ -1332,8 +1333,8 @@ profile under **Configuration > Administrators**.
 | `admin.cms.form.answers` | the answers a form received: reading them (view), changing their status (update) and deleting them (delete). Personal data, so apart from building the forms |
 | `admin.cms.form.answers.export` | exporting the answers (view), which hands over every one of them at once |
 
-A right split off an older one (the two rights on the answers came out of
-`admin.cms.form`) is given, when the update creates it, the access each profile
+A right split off an older one (the right to publish came out of
+`admin.cms.page`, the two rights on the answers out of `admin.cms.form`) is given, when the update creates it, the access each profile
 had on the older right: an update never takes away what a profile could do.
 
 Every route under `/admin/cms` is guarded by the resource of its section, so a

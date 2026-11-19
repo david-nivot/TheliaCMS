@@ -342,7 +342,7 @@ final readonly class ContentController
     public function publish(Request $request, int $id, ?string $type = null): Response
     {
         $target = $this->resolver->resolve($request, $id, $type);
-        $this->denyUnlessMayChange();
+        $this->support->denyUnlessMayPublish();
 
         try {
             $warnings = $this->writer->publish($target->contentTarget());
@@ -384,7 +384,7 @@ final readonly class ContentController
     public function unpublish(Request $request, int $id, ?string $type = null): Response
     {
         $target = $this->resolver->resolve($request, $id, $type);
-        $this->denyUnlessMayChange();
+        $this->support->denyUnlessMayPublish();
 
         $this->writer->unpublish($target->contentTarget());
         $this->support->flash($request, 'success', $this->support->translate('The content is offline: the draft is kept.'));

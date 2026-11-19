@@ -92,6 +92,7 @@ final readonly class CmsPageAdminController
         return new Response($this->twig->render(self::LIST_TEMPLATE, [
             ...$this->listing->present(PageFilters::fromRequest($request), $this->editLang($request)),
             'native_content_count' => $this->nativeContents->bannerCount(),
+            'may_publish' => $this->mayPublish(),
         ]));
     }
 
@@ -232,7 +233,7 @@ final readonly class CmsPageAdminController
     #[Route('/{id}/publish', name: 'publish', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function publish(Request $request, int $id): Response
     {
-        $this->denyUnless(AccessManager::UPDATE);
+        $this->support->denyUnlessMayPublish();
         $lang = $this->editLang($request);
 
         $this->publishPage($request, $this->livePageOrFail($id), $lang->getLocale());
@@ -243,7 +244,7 @@ final readonly class CmsPageAdminController
     #[Route('/{id}/unpublish', name: 'unpublish', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function unpublish(Request $request, int $id): Response
     {
-        $this->denyUnless(AccessManager::UPDATE);
+        $this->support->denyUnlessMayPublish();
         $lang = $this->editLang($request);
 
         $page = $this->livePageOrFail($id);
@@ -271,7 +272,7 @@ final readonly class CmsPageAdminController
     #[Route('/{id}/visibility', name: 'visibility', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function toggleVisibility(Request $request, int $id): Response
     {
-        $this->denyUnless(AccessManager::UPDATE);
+        $this->support->denyUnlessMayPublish();
 
         $page = $this->livePageOrFail($id);
 
@@ -314,7 +315,8 @@ final readonly class CmsPageAdminController
     #[Route('/{id}/set-as-home', name: 'set_as_home', requirements: ['id' => '\\d+'], methods: ['POST'])]
     public function setAsHome(Request $request, int $id): Response
     {
-        $this->denyUnless(AccessManager::UPDATE);
+        // What the root of the site shows changes with it.
+        $this->support->denyUnlessMayPublish();
 
         $this->writer->setAsHome($this->livePageOrFail($id));
 
@@ -354,13 +356,15 @@ final readonly class CmsPageAdminController
             'live_count' => $this->pages->countLive(),
             'edit_locale' => $lang->getLocale(),
             'edit_language_id' => $lang->getId(),
+            'may_publish' => $this->mayPublish(),
         ]));
     }
 
     #[Route('/{id}/restore', name: 'restore', requirements: ['id' => '\d+'], methods: ['POST'])]
     public function restore(Request $request, int $id): Response
     {
-        $this->denyUnless(AccessManager::UPDATE);
+        // The bin keeps the published content: the branch comes back online.
+        $this->support->denyUnlessMayPublish();
         $lang = $this->editLang($request);
 
         $page = $this->pages->findDeleted($id);
@@ -487,10 +491,9 @@ final readonly class CmsPageAdminController
         return $this->support->isGranted(CmsResources::PAGE, AccessManager::UPDATE);
     }
 
-    /** Taken from the right to change until the right to publish is its own. */
     private function mayPublish(): bool
     {
-        return $this->support->isGranted(CmsResources::PAGE, AccessManager::UPDATE);
+        return $this->support->mayPublish();
     }
 
     private function isHome(CmsPage $page): bool
@@ -560,6 +563,7 @@ final readonly class CmsPageAdminController
             'page_type_choices' => array_map(strval(...), array_keys($typeLabels)),
             'page_type_labels' => $typeLabels,
             'is_model' => 1 === $page->getModel(),
+            'may_publish' => $this->mayPublish(),
             'is_home' => $this->isHome($page),
             'field_definitions' => $definitions,
             'field_locale' => $locale,

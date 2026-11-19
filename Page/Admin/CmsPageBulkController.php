@@ -65,7 +65,7 @@ final readonly class CmsPageBulkController
             return $this->backToList($request, $lang, 'warning', $this->support->translate('Choose what to do with the selected pages.'));
         }
 
-        $this->support->denyUnless(CmsResources::PAGE, $action->access(), 'You are not allowed to change CMS pages.');
+        $this->support->denyUnless($action->resource(), $action->access(), CmsResources::PAGE_PUBLISH === $action->resource() ? 'You are not allowed to publish CMS pages.' : 'You are not allowed to change CMS pages.');
 
         $pages = $this->pages->selected(array_map(intval(...), $request->request->all('pages')), $lang->getLocale());
 

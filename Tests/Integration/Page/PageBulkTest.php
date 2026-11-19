@@ -141,12 +141,34 @@ final class PageBulkTest extends AdminScreenTestCase
         $page = $this->createPage('Bulkpage kept');
         $this->logInAs((new FixtureFactory($this->getPropelConnection()))->restrictedAdmin([
             CmsResources::PAGE => [AccessManager::VIEW, AccessManager::UPDATE],
+            CmsResources::PAGE_PUBLISH => [AccessManager::VIEW, AccessManager::UPDATE],
         ]));
 
         self::assertSame(403, $this->bulk('trash', [$page], ['confirmed' => '1']));
         self::assertNull($this->reloaded($page)->getDeletedAt());
 
-        self::assertSame(302, $this->bulk('hide', [$page]), 'Hiding takes the right to change pages only.');
+        self::assertSame(302, $this->bulk('hide', [$page]), 'Hiding takes the right to publish, not the right to delete.');
+    }
+
+    public function testWhatShowsOnTheSiteTakesTheRightToPublish(): void
+    {
+        $page = $this->createPage('Bulkpage written');
+        $this->logInAs((new FixtureFactory($this->getPropelConnection()))->restrictedAdmin([
+            CmsResources::PAGE => [AccessManager::VIEW, AccessManager::UPDATE],
+            // Split from the pages, a profile that only read them has VIEW here.
+            CmsResources::PAGE_PUBLISH => [AccessManager::VIEW],
+        ]));
+
+        $menu = $this->screen(self::LIST.'?q='.self::SEARCH)->filter('#cms-pages-bulk-action option')->each(static fn (Crawler $option): string => (string) $option->attr('value'));
+        self::assertSame([], array_values(array_intersect(['show', 'hide', 'publish', 'unpublish'], $menu)), 'What the profile may not do is not offered.');
+        self::assertContains('trash', $menu, 'The menu itself is still there.');
+
+        foreach (['show', 'hide', 'publish', 'unpublish'] as $action) {
+            self::assertSame(403, $this->bulk($action, [$page], ['confirmed' => '1']), $action);
+        }
+
+        self::assertSame(1, $this->reloaded($page)->getVisible());
+        self::assertTrue($this->isOnline($page), 'Still online.');
     }
 
     public function testChangingThePagesTakesTheRightToChangeThem(): void

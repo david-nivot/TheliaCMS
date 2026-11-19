@@ -192,14 +192,18 @@
                         <label class="visually-hidden" for="cms-pages-bulk-action">{{ 'With the selected pages'|trans({}, 'theliacms') }}</label>
                         <select class="form-select form-select-sm w-auto" id="cms-pages-bulk-action" name="action" data-cms-pages-bulk-action>
                             <option value="">{{ 'With the selected pages…'|trans({}, 'theliacms') }}</option>
-                            <option value="show">{{ 'Show on the site'|trans({}, 'theliacms') }}</option>
-                            <option value="hide">{{ 'Hide from the site'|trans({}, 'theliacms') }}</option>
+                            {% if may_publish %}
+                                <option value="show">{{ 'Show on the site'|trans({}, 'theliacms') }}</option>
+                                <option value="hide">{{ 'Hide from the site'|trans({}, 'theliacms') }}</option>
+                            {% endif %}
                             {% if bulk.tags is not empty %}
                                 <option value="tag">{{ 'Set the tag'|trans({}, 'theliacms') }}</option>
                             {% endif %}
                             <option value="trash">{{ 'Move to the bin…'|trans({}, 'theliacms') }}</option>
-                            <option value="publish">{{ 'Publish in “%language%”…'|trans({ '%language%': bulk.language }, 'theliacms') }}</option>
-                            <option value="unpublish">{{ 'Unpublish in “%language%”'|trans({ '%language%': bulk.language }, 'theliacms') }}</option>
+                            {% if may_publish %}
+                                <option value="publish">{{ 'Publish in “%language%”…'|trans({ '%language%': bulk.language }, 'theliacms') }}</option>
+                                <option value="unpublish">{{ 'Unpublish in “%language%”'|trans({ '%language%': bulk.language }, 'theliacms') }}</option>
+                            {% endif %}
                         </select>
                         {% if bulk.tags is not empty %}
                             <span data-cms-pages-bulk-tag>
@@ -392,12 +396,14 @@
                                                aria-label="{{ 'Edit the content of %title%'|trans({ '%title%': row.title }, 'theliacms') }}">
                                                 <i class="bi bi-pencil-square" aria-hidden="true"></i>
                                             </a>
-                                            <form method="post" action="{{ row.visibility_url }}">
-                                                <input type="hidden" name="_token" value="{{ assignToken() }}">
-                                                <button class="btn btn-sm btn-outline-secondary" type="submit">
-                                                    {{ row.visible ? 'Hide'|trans({}, 'theliacms') : 'Show'|trans({}, 'theliacms') }}
-                                                </button>
-                                            </form>
+                                            {% if may_publish %}
+                                                <form method="post" action="{{ row.visibility_url }}">
+                                                    <input type="hidden" name="_token" value="{{ assignToken() }}">
+                                                    <button class="btn btn-sm btn-outline-secondary" type="submit">
+                                                        {{ row.visible ? 'Hide'|trans({}, 'theliacms') : 'Show'|trans({}, 'theliacms') }}
+                                                    </button>
+                                                </form>
+                                            {% endif %}
                                             <form method="post" action="{{ row.delete_url }}"
                                                   onsubmit="return confirm('{{ 'Move this page and everything under it to the bin?'|trans({}, 'theliacms')|e('js') }}')">
                                                 <input type="hidden" name="_token" value="{{ assignToken() }}">

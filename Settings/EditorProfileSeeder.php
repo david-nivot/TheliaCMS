@@ -63,6 +63,7 @@ final readonly class EditorProfileSeeder
      */
     private const array FULL_ACCESS = [
         CmsResources::PAGE,
+        CmsResources::PAGE_PUBLISH,
         CmsResources::MENU,
         CmsResources::MEDIA,
         CmsResources::FORM,

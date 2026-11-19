@@ -76,6 +76,7 @@ final class ContentActivityLogTest extends AdminScreenTestCase
 
         $this->logInAs((new FixtureFactory($this->getPropelConnection()))->restrictedAdmin([
             CmsResources::PAGE => [AccessManager::VIEW, AccessManager::UPDATE],
+            CmsResources::PAGE_PUBLISH => [AccessManager::VIEW, AccessManager::UPDATE],
         ]));
 
         $pageBase = \sprintf('/admin/cms/pages/%d/content', $pageId);

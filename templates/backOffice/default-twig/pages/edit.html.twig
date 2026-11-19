@@ -59,7 +59,7 @@
                         <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="bi bi-copy" aria-hidden="true"></i> {{ 'Duplicate'|trans({}, 'theliacms') }}</button>
                     </form>
                 {% endif %}
-                {% if not is_home and not is_model %}
+                {% if not is_home and not is_model and may_publish %}
                     <form method="post" action="{{ path('admin.cms.pages.set_as_home', { id: page.id, edit_language_id: edit_language_id }|merge(return_query)) }}" class="d-inline" data-testid="cms-page-set-as-home">
                         <input type="hidden" name="_token" value="{{ assignToken() }}">
                         <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="bi bi-house" aria-hidden="true"></i> {{ 'Set as home page'|trans({}, 'theliacms') }}</button>

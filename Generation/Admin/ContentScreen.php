@@ -79,8 +79,7 @@ final readonly class ContentScreen
     {
         $mayGenerate = $this->securityContext->isGranted(['ADMIN'], [CmsResources::GENERATE], [], [AccessManager::UPDATE]);
         $mayChange = $this->securityContext->isGranted(['ADMIN'], [CmsResources::PAGE], [], [AccessManager::UPDATE]);
-        // The right to change the content, until the right to publish is its own.
-        $mayPublish = $mayChange;
+        $mayPublish = $this->securityContext->isGranted(['ADMIN'], [CmsResources::PAGE_PUBLISH], [], [AccessManager::UPDATE]);
         $document = $subject->document;
         $lastBrief = $this->lastBrief($subject);
 
