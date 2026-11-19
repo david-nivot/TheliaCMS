@@ -19,7 +19,7 @@ use TheliaCMS\TheliaCMS;
 use TheliaCMS\Zone\HeaderZone;
 
 /**
- * A site on 2.35.0 moving to the kinds of content: `cms_page.content_kind`
+ * A site on 2.37.0 moving to the kinds of content: `cms_page.content_kind`
  * and its index are added, the header zone becomes the kind `header`, and the
  * update can be played twice (a fresh install plays it after `TheliaMain.sql`,
  * which has the column already).
@@ -64,7 +64,7 @@ final class ContentKindMigrationTest extends CmsIntegrationTestCase
     }
 
     /**
-     * Sabotage: delete the final `UPDATE` of `Config/update/2.37.0.sql`: the
+     * Sabotage: delete the final `UPDATE` of `Config/update/2.38.0.sql`: the
      * zone keeps a NULL kind and the first assertions after the update are
      * red. Delete the `AND content_kind IS NULL`: the zone given another kind
      * is turned back into the header, and the last assertion is red. Delete
@@ -79,13 +79,13 @@ final class ContentKindMigrationTest extends CmsIntegrationTestCase
         $this->zoneMadeHere = $existed ? null : $zone;
         $page = (int) $this->createPage('Page ordinaire de la montée', published: false)->getId();
 
-        $this->backTo235();
-        self::assertFalse($this->columnExists(), 'The site is as 2.35.0 left it.');
+        $this->backTo237();
+        self::assertFalse($this->columnExists(), 'The site is as 2.37.0 left it.');
         self::assertFalse($this->indexExists());
 
         $module = new TheliaCMS();
-        $module->update('2.36.0', '2.37.0', $this->getPropelConnection());
-        $module->update('2.36.0', '2.37.0', $this->getPropelConnection());
+        $module->update('2.37.0', '2.38.0', $this->getPropelConnection());
+        $module->update('2.37.0', '2.38.0', $this->getPropelConnection());
 
         $column = $this->rows("SHOW COLUMNS FROM cms_page LIKE 'content_kind'");
         self::assertCount(1, $column);
@@ -97,18 +97,18 @@ final class ContentKindMigrationTest extends CmsIntegrationTestCase
 
         // A zone the update meets with no kind (a dump restored from before it): the update gives it.
         $this->getPropelConnection()->exec(\sprintf('UPDATE cms_page SET content_kind = NULL WHERE id = %d', $zone));
-        $module->update('2.36.0', '2.37.0', $this->getPropelConnection());
+        $module->update('2.37.0', '2.38.0', $this->getPropelConnection());
         self::assertSame('header', $this->kindOf($zone));
 
         // A hidden page already of another kind is not turned into the zone.
         $this->getPropelConnection()->exec(\sprintf("UPDATE cms_page SET content_kind = 'test_guide' WHERE id = %d", $zone));
-        $module->update('2.36.0', '2.37.0', $this->getPropelConnection());
+        $module->update('2.37.0', '2.38.0', $this->getPropelConnection());
         self::assertSame('test_guide', $this->kindOf($zone));
 
         $this->getPropelConnection()->exec(\sprintf("UPDATE cms_page SET content_kind = 'header' WHERE id = %d", $zone));
     }
 
-    private function backTo235(): void
+    private function backTo237(): void
     {
         $connection = $this->getPropelConnection();
         $connection->exec('ALTER TABLE cms_page DROP INDEX idx_cms_page_content_kind');

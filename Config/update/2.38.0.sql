@@ -1,4 +1,4 @@
--- 2.37.0: a hidden page (`model = 2`) says what kind of content it is, so a
+-- 2.38.0: a hidden page (`model = 2`) says what kind of content it is, so a
 -- module can declare its own (ADR 20). The header zone, the only hidden page
 -- there was, becomes the kind `header`: same row, same id, same texts.
 --
