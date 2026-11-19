@@ -19,8 +19,9 @@ decision supersedes it with a new file.
 | [11](0011-a-catalogue-item-carries-a-document.md) | A catalogue item carries a document |
 | [12](0012-content-does-not-depend-on-generation.md) | Content does not depend on Generation |
 | [13](0013-videos-are-converted-in-the-background.md) | Videos are converted in the background, under the same id |
-| [14](0014-an-icon-is-a-named-svg-of-the-library.md) | An icon is a named SVG of the library |
+| [14](0014-an-icon-is-a-named-svg-of-the-library.md) | An icon is a named SVG of the library (partly superseded by ADR 19) |
 | [15](0015-a-component-of-the-site-draws-another-by-its-code.md) | A component of the site draws another by its code |
 | [16](0016-a-called-component-reads-the-stored-values-of-its-caller.md) | A called component reads the stored values of its caller |
 | [17](0017-a-heading-of-the-site-is-drawn-at-any-depth.md) | A heading of the site is drawn at any depth |
 | [18](0018-a-heading-takes-a-style-of-the-theme.md) | A heading takes a style of the theme, apart from its level |
+| [19](0019-an-inline-svg-keeps-its-definitions-under-ids-of-its-own.md) | An inline SVG keeps its definitions, under ids of its own |

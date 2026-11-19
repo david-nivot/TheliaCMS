@@ -29,11 +29,15 @@ a section" (`templates/backOffice/default-twig/documentation/`).
 
 ## What a file must hold
 
-`IconEligibility` reads `PublishedContentSanitizer::SVG_ELEMENTS` and does not
-copy it: `svg`, `g`, `path`, `circle`, `ellipse`, `rect`, `line`, `polyline`,
-`polygon`, with the attributes the filter lists, and no `fill` or `stroke` that
-points to a gradient or a pattern. Anything else is returned as an obstacle in
-an editor's words. The filter is not widened for icons.
+What a page keeps of an inline SVG (ADR 19): shapes, `defs`, gradients,
+masks and clipping paths, with references to ids of the same file only.
+`IconEligibility` asks `InlineSvgPolicy::validate()`, which reads the very
+rules the publication filter applies, and turns everything a page would not
+keep into a reason in an editor's words, all at once: a reused shape (`use`),
+a style sheet, text, an old `xlink:href`, a reference to a shape the file
+does not hold… Such a file stays addable as an image. The same check refuses
+a new file for an existing icon: the button that would replace it is
+disabled, tied to the warning that says why.
 
 ## The `icon` prop
 

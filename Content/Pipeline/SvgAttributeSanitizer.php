@@ -18,18 +18,14 @@ use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
 use Symfony\Component\HtmlSanitizer\Visitor\AttributeSanitizer\AttributeSanitizerInterface;
 
 /**
- * Holds the paint and the namespace of an icon to what draws one: a colour,
- * `none` or `currentColor`, never a `url(…)` that would load a gradient or a
- * filter from another host, and the one SVG namespace.
+ * Holds each value of an inline SVG to the form `InlineSvgPolicy` gives its
+ * attribute: a paint is a color or a reference to an element of the same SVG,
+ * never a `url(…)` that would load a file; a transform is a list of
+ * transforms; the `href` of a gradient points inside the SVG, while that of a
+ * link is left to the link rules.
  */
 final readonly class SvgAttributeSanitizer implements AttributeSanitizerInterface
 {
-    public const string NAMESPACE = 'http://www.w3.org/2000/svg';
-
-    private const string PAINT = '/^(?:[a-z]+|#[0-9a-f]{3,8}|(?:rgb|rgba|hsl|hsla)\(\s*[0-9.,%\s\/]+\))$/i';
-
-    private const string TRANSFORM = '/^(?:(?:matrix|translate|scale|rotate|skewX|skewY)\([0-9eE.,+\-\s]*\)\s*,?\s*)+$/';
-
     public function getSupportedElements(): ?array
     {
         return null;
@@ -37,17 +33,11 @@ final readonly class SvgAttributeSanitizer implements AttributeSanitizerInterfac
 
     public function getSupportedAttributes(): array
     {
-        return ['fill', 'stroke', 'transform', 'xmlns'];
+        return ['fill', 'stroke', 'transform', 'xmlns', 'mask', 'clip-path', 'gradienttransform', 'stop-color', 'href', 'shape-rendering'];
     }
 
     public function sanitizeAttribute(string $element, string $attribute, string $value, HtmlSanitizerConfig $config): ?string
     {
-        $value = trim($value);
-
-        return match ($attribute) {
-            'xmlns' => self::NAMESPACE === $value ? $value : null,
-            'transform' => 1 === preg_match(self::TRANSFORM, $value) ? $value : null,
-            default => 1 === preg_match(self::PAINT, $value) ? $value : null,
-        };
+        return InlineSvgPolicy::acceptsValue($element, $attribute, $value) ? trim($value) : null;
     }
 }

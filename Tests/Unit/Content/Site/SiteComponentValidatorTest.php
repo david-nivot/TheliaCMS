@@ -179,6 +179,26 @@ final class SiteComponentValidatorTest extends TestCase
         (new SiteComponentValidator())->validate(PriceTable::component('<section class="price-table" style="--speed: 20s; animation: pan var(--speed) linear infinite">{{ props.title }}</section>', '@keyframes pan { to { transform: translateX(-50%); } }'));
     }
 
+    /**
+     * A drawing the page keeps whole, written in the template: a round flag,
+     * a gradient that inherits another, a clipping path, a transform. None of
+     * its attributes is named as taken out, whatever its value looks like.
+     */
+    public function testAnSvgThePageKeepsIsNotNamedAsTakenOut(): void
+    {
+        $template = '<div class="flag"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" shape-rendering="geometricPrecision" aria-hidden="true"><defs><linearGradient id="a" gradientTransform="rotate(45)"><stop offset="0" stop-color="#000"></stop></linearGradient><radialGradient id="b" href="#a"></radialGradient><mask id="m"><circle cx="12" cy="12" r="12" fill="#fff"></circle></mask><clipPath id="c"><rect width="12" height="24"></rect></clipPath></defs><g mask="url(#m)" clip-path="url(#c)" transform="translate(1 1)"><path d="M0 0h24v24H0z" fill="url(#a)" stroke="url(#b)"></path></g></svg>{{ props.title }}</div>';
+
+        self::assertSame($template, (new SiteComponentValidator())->validate(PriceTable::component($template))->template);
+    }
+
+    public function testAReusedShapeIsStillNamedAsTakenOut(): void
+    {
+        $this->expectException(InvalidSiteComponentException::class);
+        $this->expectExceptionMessage('<use>');
+
+        (new SiteComponentValidator())->validate(PriceTable::component('<div class="star"><svg viewBox="0 0 24 24"><defs><path id="s" d="M0 0h8v8H0z"></path></defs><use href="#s"></use></svg>{{ props.title }}</div>'));
+    }
+
     public function testATemplateThePageKeepsWholeIsKept(): void
     {
         $template = '<section class="faq">{% if props.title is not empty %}<h2 id="faq-{{ props.tone }}">{{ props.title }}</h2>{% endif %}{% for plan in props.plans %}<details class="faq__item"{{ plan.featured ? " open" }}><summary aria-label="{{ plan.name }}">{{ plan.name }}</summary><img src="{{ plan.price }}" alt="{{ plan.name }}" loading="lazy" width="80" height="80"><a href="{{ plan.price }}" target="_blank" rel="noopener">{{ plan.price }}</a>{{ plan.details }}</details>{% endfor %}</section>';

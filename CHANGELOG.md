@@ -49,6 +49,38 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   title in any language last among its siblings, by its number; any text of one letter or more
   searches, and `X-Total-Count` says how many matched.
 
+- **An SVG written in a page keeps its gradients, masks and clipping paths.**
+  The publication filter used to keep the plain shapes of an inline SVG only:
+  a round flag of the theme (`circle-flags`) came out square, an icon with a
+  gradient without its colors. It now keeps `defs`, `linearGradient`,
+  `radialGradient`, `stop`, `mask` and `clipPath`, and the `mask`,
+  `clip-path` and `url(#…)` paints that use them. Every id of an SVG gets a
+  prefix of its own (`s<hash>-<rank>-`), so that two copies of an icon in a
+  page do not draw with each other's definitions, and a definition of a page
+  does not catch a reference of the theme (a round flag of the language
+  selector); a definition written outside an SVG loses its tag, for the same
+  reason; the prefix is drawn from the markup, and a page saved again
+  unchanged is written the same. A reference is kept only towards an id of
+  the same SVG: a paint, a mask or a gradient from another file or another
+  SVG of the page is dropped, and so is a mask or a clipping path asked for
+  inside another one. A `style` attribute in the SVG names no address and
+  reads no custom property (`url()`, `var()`), even towards a file of the
+  site. `use`, the `style` element, `filter`, `pattern`, `text` and
+  animations stay out. A component of the site that draws such an SVG in its template is no
+  longer told that the page takes its masks, gradients, transforms or
+  namespace out. The rules
+  live in `InlineSvgPolicy`, which the « Prepare the SVG » screen asks too:
+  a drawing with a gradient, a mask or a clipping path may now become an
+  icon, and a file that cannot is told every reason at once (a reused shape,
+  a style sheet, an old `xlink:href`, a reference to a shape the file does
+  not hold…). `shape-rendering` is kept, and the base optimization removes
+  what an Illustrator export writes on the root and nothing reads (`x`, `y`,
+  and `xml:space` when the drawing has no text): such an export is no longer
+  refused as an icon for them. Pages published before keep what the former
+  filter left until they are rendered again:
+  `php Thelia thelia_cms:render-published --all` (`--dry-run` counts them),
+  and `php Thelia thelia_cms:render` for the drafts. See ADR 19.
+
 ### Removed
 
 - `Menu\Admin\MenuTargetChoices` and `CmsPageAdminRepository::parentChoices()`,
@@ -64,6 +96,18 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   emptied it without a word. The page is now named "In the bin" in its field
   and the save is refused with the reason until it is restored or another one
   is chosen.
+
+- **A transform or a color written to be read for long no longer slows the
+  publication of a page.** The filter read a `transform` (`scale(1)`
+  followed by spaces, repeated) up to the limit PHP sets to going back, and
+  an `rgb(` opened on a hundred thousand spaces for three seconds; a page
+  holding thousands of them took seconds to save. Both are now read in one
+  pass (`InlineSvgPolicy`), and refuse the same values as before.
+
+- **Replacing the file of an icon with a drawing that cannot be one.** The
+  button « Replace the file of the image » stayed active under the warning,
+  and the answer came back refused with the same words. It is now disabled
+  and tied to the warning that says why; « Do not add this file » stays.
 
 ## [2.33.0] - 2026-11-18
 
