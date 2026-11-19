@@ -1,6 +1,6 @@
 # Plan: business events through the webhooks of the core (F3)
 
-Status: decided (2026-11-19, by the maintainer); step 1 done on `feat/f3-business-events`. Read on `main` at e9331e8 (2.38.0),
+Status: decided (2026-11-19, by the maintainer); steps 1 and 2 done on `feat/f3-business-events`. Read on `main` at e9331e8 (2.38.0),
 core 3.5.0 in the test host. Wave 5 of the roadmap, lot F3 ("Événements métier"), size S. The
 second step (read-only API resources) is F8-F3-bis, wave 6, and stays out of this plan. Each step
 updates this plan in its own commit.
@@ -129,6 +129,13 @@ AT = `Api/Bridge/Propel/Service/ApiResourcePropelTransformerService.php`.
 2. **Catalog**: the compiler pass that merges the three names with their class and groups; a test
    that the catalog holds the core's five and the module's three, and that a second module's
    entry survives.
+   **Done (2026-11-19).** `Webhook/WebhookEvents.php` lists the names and their payload,
+   `Webhook/WebhookEventsCompiler.php` merges them into the parameter (`TC::getCompilers()`; a
+   pass added there runs before the optimization that resolves the parameter of WC). Tests:
+   `Tests/Unit/Webhook/WebhookEventsCompilerTest.php` (another module's entry kept, red when the
+   pass sets the parameter) and `Tests/Integration/Webhook/WebhookCatalogTest.php` (the catalog
+   of the container, red without the pass). The two page events only: `cms_form.submitted` joins
+   the list at step 4, with its payload class.
 3. **Page events**: publication from PT; integration tests: an active subscription receives one
    delivery with the expected envelope in each mode; nothing for a refused publication, an
    unpublish of a page already offline, a content of a kind, an article; nothing without a
