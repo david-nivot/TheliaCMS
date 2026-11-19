@@ -1,7 +1,7 @@
 # Plan: the right to publish, then concurrent edits (F4)
 
-Status: decided (2026-11-19, by the maintainer), coded on `feat/f4-publish-right`; step S done,
-step M to come in its own PR. Read on `main` at 758282b (2.34.0). Wave 5 of the roadmap, lot F4
+Status: decided (2026-11-19, by the maintainer); step S done (2.35.0), step M inventoried on
+`feat/f4-concurrent-edits`, its four open points decided ("Decided after the inventory"). Read on `main` at 758282b (2.34.0). Wave 5 of the roadmap, lot F4
 ("Droit de publier, concurrence"), after Q4 (one controller and one writer for the page and the
 item of the catalogue, 2.13.0) and N29 (`may_change` and `may_publish` apart in the templates,
 2.13.0). Each step updates this plan in its own commit.
@@ -160,6 +160,124 @@ Principle, to be read again at the start of the step (line numbers will move):
 Tests: two saves on the same version, the second refused and nothing lost; a save on the current
 version goes through; the banner names the other author; the race proved with two processes
 (model of `SenderBurstTest`).
+
+Documentation, in the PR of the step:
+- Editors: `templates/backOffice/default-twig/documentation/_fr_FR.html.twig` and `_en_US.html.twig`,
+  section `content` (and `troubleshooting` for the refusal): what the banner says, why a save or a
+  publication is refused, how to get the typed text back, where a refused generation went (kept
+  drafts); same ids in both languages (`DocumentationScreenTest`).
+- A drawing of how it works, on the model of `documentation/_brief_flow.html.twig` (inline SVG,
+  geometry drawn once, words given by each language, colours of the back office for the light and
+  dark themes, `summary` for screen readers): two editors on the same draft, the version read, the
+  save that goes through and moves it, the stale save refused with the screen and the banner. Included
+  in both languages of the editor documentation, and the same flow in the README.
+- README (developers): section "Editing a page" (the version, the refusal, the writers outside the
+  content writer: `thelia_cms:render`, the import, the AI mark), the `draft_version` column for whoever
+  writes drafts with SQL.
+- CHANGELOG (`[Unreleased]`, Added and Changed) and the trap table of the module's
+  `.claude/CLAUDE.md` (the two rows the handover of step S left to add).
+
+#### Inventory (read on be085d6, 2.35.0)
+
+Abbreviations of this section: CSC = `Component/Admin/CmsSiteComponentController.php`,
+PCC = `Generation/Admin/CmsPageComponentController.php`, ST = `Content/Editing/ContentSteps.php`.
+
+**Draft writers through CW.** All of them end in `ContentRow::saveDraft()` or
+`replaceDraftProvenance()` (`Page/Admin/PageContentRow.php:71`, :84;
+`Catalogue/Admin/ItemContentRow.php:69`, :82): one place to write with
+`WHERE draft_version = :read`.
+
+| Writer | Entry | Reads the draft it changes |
+|---|---|---|
+| Section by hand: update, remove, move, duplicate, add | CC:194-235 → `byHand()`, `saver()` CC:521 | server side, at the request (`$target->draftDocument()`) |
+| Generation, revision of the draft or of a section, translation | CC:91, :118, :149, :263, :300 → `run()` CC:503: `keepDraft()` then `saveContent()` at the end of the stream | at the start of the stream, saved minutes later |
+| Restore of a kept draft | CC:242 → `CW::restoreDraft()` CW:115 (`keepDraft`, `saveContent`, `replaceDraftProvenance`) | the kept one |
+| Undo, redo | CC:323, :333 → ST `write()` (`saveContent` + `replaceDraftProvenance`, one transaction) | the step |
+| Component prototype kept into the page | PCC:151 `keep()` → PCC:187, section appended | server side, at the request |
+| `thelia_cms:generate` | `Generation/GenerateCommand.php:193`, :209 (`keepDraft` then save) | at the start of the call |
+| Import of the header highlights (console) | `Zone/HeaderHighlightsImporter.php:148`, :151 | none: replaces |
+
+Every screen gesture above, generation included, goes through `ST::record()` (ST:~60), which
+wraps the change (ST:59): a second place where the version read can travel.
+
+**Draft writers outside CW, on an existing draft** (the hypothesis of the estimate counted none):
+
+1. `CmsPageWriter::renderDraftAgain()` (PW:302) writes `draft_html` alone from the stored document,
+   and the timestampable moves `updated_at`. Called by `thelia_cms:render`
+   (`Page/RenderPagesCommand.php:97`) and after a site component is promoted or copied
+   (CSC:401, `renderDraftsUsing()`). Race: it reads the document, renders, writes the HTML; a save in
+   between leaves the HTML of the old document under the new one. It must write on the version it
+   read, without moving it (same document), and report the draft as left when the row moved.
+2. `CmsPageWriter::removeProvenance()` (PW:393), route `remove_ai_mark` (PC:259): clears
+   `draft_provenance` and `published_provenance`. The gesture says "I reviewed the text and answer for
+   it": on a stale screen it removes the mark of a generation the editor never read.
+3. Import of a site with the replace option: `ImportExport/Step/PagesStep.php:190-196`,
+   `ImportExport/Step/CatalogueContentsStep.php:81-87` overwrite the draft and the published version
+   of existing rows (console and import screen). A replacement by intent: it should move the version,
+   so that the screens open on the old draft are refused, not be refused itself.
+
+New rows only, out of the token: `CmsPageWriter::duplicate()` (PW:612-619), `Install/LegalPagesSeeder.php:89`,
+`Install/HomePageSeeder.php:114`, the sample site seed (`Tests/Browser/sample-site/seed.php`, not
+shipped). Raw SQL naming the draft columns (`Media/Icon/IconCitations.php`, `Page/StalePages.php`,
+`Content/Site/SiteComponentUsage.php`, `ImportExport/SiteExporter.php`,
+`ImportExport/Step/ComponentsStep.php`) only reads them (patterns tried: `update `, `insert `,
+`->save(`, `exec(`).
+
+**On the same screens, not a draft:**
+
+- Page settings (PC:227 → `PW::saveDraft()` PW:78, despite its name): title, address, fields, SEO in
+  `cms_page` and `cms_page_i18n`, live as soon as saved; `saveSeo()`, `saveFields()` and
+  `saveTranslatedHeader()` write there too, alongside a generation (`saveAlongside()`). No draft
+  version covers them.
+- Publish (CC:340, PC:233) copies the draft as stored at the click (`PageContentRow::publish()`): a
+  stale screen publishes a draft its publisher has not read.
+
+**Requests sent by script.** Every draft write by script is in
+`templates/backOffice/default-twig/assets/content-editor.js` (CE); none posts anything that names
+the version read (the forms carry `_token`, `section`, `position`, `direction`, `component`,
+`candidate`, `revision`, the last being a kept draft, not a version).
+
+| Request | Routes | On a non-2xx today |
+|---|---|---|
+| Generation stream, CE:1046 (`data-cms-generate`: brief, revise, section, translate) | CC:91, :118, :149, :263 (+ PCC:99, which saves a component candidate, not the draft) | throws on a non-`text/event-stream` answer, banner `labels.network` or the status (CE:1096); what was typed stays |
+| Section saved by hand, `send()` CE:1334 | CC:194 | generic `labels.network` (CE:1357): a refusal would read as a network failure; the text typed stays in the box |
+| Drag of a section, CE:1927 | CC:208 | `window.location.reload()` (CE:1942): no message, the order dropped |
+| Forms of the screen, CE:~2011 (update, remove, move, duplicate, add, restore, undo, redo, component keep; also `requestSubmit()` CE:1554, :2721) | CC:194-243, :323, :333, PCC:151 | `form.submit()` (CE:2031): the same write posted again natively, and the browser shows whatever the server answers |
+
+Consequences for the refusal: it cannot be a bare status. The forms post it again natively, so the
+server answers a refused write with the content screen itself (banner, what was typed kept), with a
+409 status the script reads before falling back; the stream needs an `error` event of its own when the
+save at its end is refused, after minutes of generation.
+
+The other scripts write no draft: `page-tree.js`, `linked-pages.js`, `record-picker.js`,
+`media-picker.js` read, or write the library (`admin.cms.media.add`); `menu-editor.js` writes a menu
+entry; `page-address.js` proposes and checks addresses without writing; `rich-text-brief.js`
+writes the outcome ledger of a text, the text itself going into the field and the section form;
+`component-generator.js` (`admin.cms.components.site.generate`) writes a component candidate;
+`page-documents.js:110` (`XMLHttpRequest`) uploads a page document. No `sendBeacon` nor
+`EventSource` (patterns tried: `XMLHttpRequest`, `sendBeacon`, `EventSource`, `requestSubmit`).
+
+**A guard already in place:** undo and redo compare the stored draft with the step
+(ST:108, :132, `StepOutcome::DraftChanged`, flashed by CC:478 after a redirect).
+
+#### Decided after the inventory (2026-11-19, by the maintainer)
+
+1. Writers outside CW (renderDraftAgain, removeProvenance, import): renderDraftAgain writes on the
+   version read without moving it, and leaves the draft when the row moved; removeProvenance carries
+   the version of the screen and is refused when stale; the import moves the version. Cost: the
+   +0.25 j of the hypothesis.
+2. Generation: the stream saves on the version read when it started, and a refusal at its end keeps
+   the answer as a kept draft (`keepDraft` of the answer) rather than losing minutes of a paid call.
+3. Publish (CC:340, PC:233): carries the version of the screen, refused when stale (same token, same
+   refusal).
+4. Settings of the page: banner only (from the draft version and the authorship stamp of the page);
+   no refusal for `cms_page` and `cms_page_i18n` in step M. A refusal there needs a second counter
+   on `cms_page`: its own step if wanted.
+
+All four as written above.
+
+Estimate read again with the inventory: 1.25 j (design) + 0.25 j (writers outside CW) + 0.5 j
+(contingency: the four script paths above, the native fallback of the forms, the stream) = 2 j for step M.
 
 ## Estimate (pilot days, read on 758282b)
 
