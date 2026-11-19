@@ -2118,4 +2118,12 @@ return [
     'Heading 4 of the theme' => 'Titre 4 du thème',
     'Heading 5 of the theme' => 'Titre 5 du thème',
     'Heading 6 of the theme' => 'Titre 6 du thème',
+    'Your change was not saved: %who% changed this content %when%. Reload the screen to see their version; what you typed is still in the form.' => 'Votre modification n\'a pas été enregistrée : %who% a modifié ce contenu %when%. Rechargez l\'écran pour voir sa version ; ce que vous avez saisi reste dans le formulaire.',
+    'Changed by %who% %when%: they may still be working on it. A save made after theirs is refused rather than written over their changes.' => 'Modifié par %who% %when% : cette personne y travaille peut-être encore. Un enregistrement fait après le sien est refusé plutôt que d\'écraser ses modifications.',
+    'someone else' => 'quelqu\'un d\'autre',
+    'a moment ago' => 'il y a un instant',
+    'less than a minute ago' => 'il y a moins d\'une minute',
+    '%count% minute(s) ago' => 'il y a %count% minute(s)',
+    'on %date%' => 'le %date%',
+    'The answer of the generator is kept among the previous drafts: put it back from there.' => 'La réponse du générateur est gardée parmi les brouillons précédents : remettez-la en place depuis là.',
 ];

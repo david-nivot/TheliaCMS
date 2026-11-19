@@ -124,6 +124,18 @@ abstract class AdminScreenTestCase extends WebIntegrationTestCase
     }
 
     /**
+     * The version of the draft the screen shows, which a write must post back.
+     */
+    protected function draftVersionOf(Crawler $screen): string
+    {
+        $field = $screen->filter('input[name="draft_version"]');
+
+        self::assertGreaterThan(0, $field->count(), 'The screen carries no draft version.');
+
+        return (string) $field->first()->attr('value');
+    }
+
+    /**
      * The token the layout of the back office gives its scripts.
      */
     protected function tokenOfTheScripts(Crawler $screen): string

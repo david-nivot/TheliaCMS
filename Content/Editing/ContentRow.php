@@ -38,8 +38,24 @@ interface ContentRow
     /** The last time the row was saved, edits and publications alike; null for a row never saved. */
     public function updatedAt(): ?\DateTimeInterface;
 
-    /** Stores the draft; a null provenance leaves the mark of the draft as it is. */
-    public function saveDraft(string $document, string $html, ?int $updatedBy, ?string $provenance): void;
+    /** The version of the draft as the row was read: moved by every write of the draft, 0 for a row never saved. */
+    public function draftVersion(): int;
+
+    /** The administrator who wrote the draft last; null when unknown. */
+    public function draftAuthor(): ?int;
+
+    /**
+     * Locks the row for the transaction of `$connection` and reads the version
+     * of its draft (`DraftLock`).
+     *
+     * @param int|null $readVersion the version the writer read; null writes whatever the draft holds
+     *
+     * @throws StaleDraftException when the version read is not the version of the draft
+     */
+    public function claimDraft(ConnectionInterface $connection, ?int $readVersion): int;
+
+    /** Stores the draft at the version given; a null provenance leaves the mark of the draft as it is. */
+    public function saveDraft(string $document, string $html, ?int $updatedBy, ?string $provenance, int $version, ConnectionInterface $connection): void;
 
     /** Replaces the mark of the draft, with none when null. */
     public function replaceDraftProvenance(?string $provenance): void;

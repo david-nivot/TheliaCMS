@@ -194,6 +194,46 @@
         <li>Check the state shown next to the title: it should read <em>Published</em>. <em>Unpublished</em> means the page is hidden or its withdrawal date has passed; <em>Scheduled</em>, that its publication date has not come yet. Both are set in the <em>General</em> tab of the settings.</li>
     </ol>
     <p>The <em>Publish</em> button of the settings screen of the page does the same. <em>Save and publish</em> first saves what is typed in the settings, then publishes the saved content: a required field typed in the <em>Fields</em> tab is taken into account. When the page is hidden or scheduled, the message says so instead of "The page is online." The settings are live as soon as they are saved; only the content has a draft. If publication is refused, the message says why: see <a href="#publication-refused">Publication is refused</a>.</p>
+
+    <h3 id="two-editors">Two people on the same page</h3>
+    <p>Two people can open and edit the same page at the same time, or the CMS content of a catalogue item. Nothing is locked. A save that would write over the other person’s work is refused, and what you typed stays in the form.</p>
+    {{ include('@TheliaCMSModule/backOffice/default-twig/documentation/_concurrent_flow.html.twig', {
+        lang: 'en_US',
+        title: 'Two editors on the same page',
+        summary: 'Editor A opens the page: the screen shows version 3. Editor B opens the same page: the screen also shows version 3. B saves and the draft goes to version 4. A saves from a screen still at version 3: it is refused, nothing is written, the message names B and says when, and A’s text stays in the form. A reloads the screen: it shows version 4, with B’s changes. A makes the change again and saves: the draft goes to version 5.',
+        lanes: ['Editor A', 'The draft', 'Editor B'],
+        steps: [
+            ['Opens the page:', 'the screen shows', 'version 3'],
+            ['Opens the page:', 'the screen shows', 'version 3'],
+            ['Saves', 'a change'],
+            ['Saves from a screen', 'still at version 3'],
+            ['Reloads the screen:', 'version 4, with', 'B’s changes'],
+            ['Makes the change again', 'and saves'],
+        ],
+        states: [
+            ['Version 3'],
+            ['Version 3'],
+            ['Goes to version 4'],
+            ['Refused, nothing is written.', 'The message names B and', 'says when. A’s text stays.'],
+            ['Version 4', 'with B’s changes'],
+            ['Goes to version 5'],
+        ],
+        caption: 'Solid arrows go from the editor to the draft, dashed ones come back; the red dashed arrow is the refusal.',
+    }) }}
+    <ul>
+        <li>When the content screen or the settings screen of a page opens, a yellow banner appears if someone else changed the page within the last hour: "Changed by Camille 5 minutes ago: they may still be working on it. A save made after theirs is refused rather than written over their changes."</li>
+        <li>Each screen remembers the state of the draft it showed. If someone else changed the draft since, your change is refused and nothing is written. This applies to saving a section by hand, adding, removing, moving or duplicating a section, putting back a previous draft, <em>Undo</em> and <em>Redo</em>, <em>Publish</em>, and removing the AI mark. A red message says so: "Your change was not saved: Camille changed this content 2 minutes ago. Reload the screen to see their version; what you typed is still in the form."</li>
+        <li>Asked from a screen whose draft changed since it was shown, the generator refuses at once, and the request costs nothing. If the draft changes while the generator is writing, its answer does not replace the other person’s work: it is kept in <em>Previous drafts</em>, where <em>Put it back</em> puts it in place after you have read what the other person wrote. The message says so: "The answer of the generator is kept among the previous drafts: put it back from there."</li>
+        <li>The settings of a page (title, address, fields, SEO) are saved as they are, with no refusal: only the banner warns, and the last save wins.</li>
+        <li>A tab left open from before an update of the module has its first save refused: reload the screen.</li>
+    </ul>
+    <p>After a refusal:</p>
+    <ol>
+        <li>Copy what you typed: it stays in the open form.</li>
+        <li>Reload the screen.</li>
+        <li>Read the other person’s version.</li>
+        <li>Make your change again, then save once more.</li>
+    </ol>
 </section>
 
 <section id="page-templates">
@@ -412,6 +452,8 @@
         <li>The model declined to write: reword the brief.</li>
     </ul>
     <p>If it lasts, tell whoever looks after the site.</p>
+    <h3 id="change-not-saved">My change was not saved: someone else changed this content</h3>
+    <p>Someone changed the draft since your screen showed it, and the module refused your change rather than write over theirs. Copy what you typed, reload the screen, read their version, then make your change again. The details are in <a href="#two-editors">Two people on the same page</a>.</p>
 </section>
 
 <section id="glossary">

@@ -30,7 +30,9 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Model\Lang;
 use TheliaCMS\Content\Kind\ContentKinds;
+use TheliaCMS\Content\Editing\StaleDraftException;
 use TheliaCMS\Http\Admin\AdminControllerSupport;
+use TheliaCMS\Http\Admin\DraftNotice;
 use TheliaCMS\Media\Admin\CmsMediaWriter;
 use TheliaCMS\Media\CmsMediaLibrary;
 use TheliaCMS\Media\MediaKind;
@@ -84,6 +86,7 @@ final readonly class CmsPageAdminController
         private PublicationRefusal $refusals,
         private PageParentCheck $parents,
         private ContentKinds $kinds,
+        private DraftNotice $notice,
     ) {
     }
 
@@ -244,7 +247,7 @@ final readonly class CmsPageAdminController
         $this->support->denyUnlessMayPublish();
         $lang = $this->editLang($request);
 
-        $this->publishPage($request, $this->livePageOrFail($id), $lang->getLocale());
+        $this->publishPage($request, $this->livePageOrFail($id), $lang->getLocale(), DraftNotice::posted($request));
 
         return $this->backToEdit($request, $id, $lang);
     }
@@ -270,8 +273,12 @@ final readonly class CmsPageAdminController
         $this->denyUnless(AccessManager::UPDATE);
         $lang = $this->editLang($request);
 
-        if ($this->writer->removeProvenance($this->livePageOrFail($id), $lang->getLocale())) {
-            $this->support->flash($request, 'success', $this->support->translate('The AI mark has been removed from this page in this language.'));
+        try {
+            if ($this->writer->removeProvenance($this->livePageOrFail($id), $lang->getLocale(), DraftNotice::posted($request))) {
+                $this->support->flash($request, 'success', $this->support->translate('The AI mark has been removed from this page in this language.'));
+            }
+        } catch (StaleDraftException $stale) {
+            $this->support->flash($request, 'danger', $this->notice->refused($stale));
         }
 
         return $this->backToEdit($request, $id, $lang);
@@ -404,7 +411,7 @@ final readonly class CmsPageAdminController
 
                 // The settings are committed above: a publication refused below leaves them saved.
                 if (!$wasNew && $this->asksToPublish($request, $page)) {
-                    $this->publishPage($request, $page, $locale);
+                    $this->publishPage($request, $page, $locale, DraftNotice::posted($request));
                 }
 
                 return $this->backToEdit($request, (int) $page->getId(), $lang);
@@ -422,6 +429,7 @@ final readonly class CmsPageAdminController
         }
 
         $type = $this->pageTypes->details((string) $page->getPageType());
+        $lastChange = $page->isNew() ? ['author' => null, 'at' => null, 'version' => 0] : $this->pages->lastChange($page, $locale);
 
         return new Response($this->twig->render(self::EDIT_TEMPLATE, [
             // The list the editor came from, and what carries it to the next
@@ -449,6 +457,9 @@ final readonly class CmsPageAdminController
             'document_max_files' => max(1, (int) \ini_get('max_file_uploads')),
             'may_change' => $this->mayChange(),
             'may_publish' => $this->mayPublish(),
+            // Posted by the forms that publish or answer for the draft.
+            'draft_version' => $lastChange['version'],
+            'draft_notice' => $this->notice->banner($lastChange['author'], $lastChange['at']),
             'may_change_documents' => $this->support->isGranted(CmsResources::PAGE, AccessManager::UPDATE),
             'may_delete_documents' => $this->support->isGranted(CmsResources::PAGE, AccessManager::DELETE),
             // The browser keeps the script until its version changes.
@@ -460,10 +471,10 @@ final readonly class CmsPageAdminController
      * Puts the saved content of the page online and says what came of it: the
      * warnings of `warn` mode, the refusals otherwise. Whether it went online.
      */
-    private function publishPage(Request $request, CmsPage $page, string $locale): bool
+    private function publishPage(Request $request, CmsPage $page, string $locale, int $readVersion): bool
     {
         try {
-            $warnings = $this->writer->publish($page, $locale);
+            $warnings = $this->writer->publish($page, $locale, $readVersion);
 
             foreach ($warnings as $warning) {
                 $this->support->flash($request, 'warning', $warning);
@@ -472,6 +483,8 @@ final readonly class CmsPageAdminController
             $this->support->flash($request, 'success', $this->onlineMessage->say($page, $locale));
 
             return true;
+        } catch (StaleDraftException $stale) {
+            $this->support->flash($request, 'danger', $this->notice->refused($stale));
         } catch (\Throwable $throwable) {
             foreach ($this->refusals->messages($throwable) ?? throw $throwable as $message) {
                 $this->support->flash($request, 'danger', $message);

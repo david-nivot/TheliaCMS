@@ -128,7 +128,9 @@ final class PagePublishRightTest extends AdminScreenTestCase
         $this->logInAs($this->adminWith([CmsResources::PAGE => [AccessManager::VIEW], ...self::PUBLISHER]));
         $server = $this->withToken();
 
-        self::assertSame(302, $this->post('/%d/publish', $offline, $server), 'publish');
+        $version = $this->draftVersionOf($this->screen($this->settingsOf($offline)));
+
+        self::assertSame(302, $this->post('/%d/publish', $offline, $server, ['draft_version' => $version]), 'publish');
         self::assertSame(302, $this->post('/%d/visibility', $online, $server), 'visibility');
         self::assertSame(302, $this->post('/%d/unpublish', $online, $server), 'unpublish');
         self::assertSame(302, $this->post('/%d/restore', $binned, $server), 'restore from the bin');
@@ -193,10 +195,11 @@ final class PagePublishRightTest extends AdminScreenTestCase
 
     /**
      * @param array<string, string> $server
+     * @param array<string, string> $fields
      */
-    private function post(string $action, CmsPage $page, array $server): int
+    private function post(string $action, CmsPage $page, array $server, array $fields = []): int
     {
-        return $this->send('POST', '/admin/cms/pages'.\sprintf($action, $page->getId()), [], $server);
+        return $this->send('POST', '/admin/cms/pages'.\sprintf($action, $page->getId()), $fields, $server);
     }
 
     private function settingsOf(CmsPage $page): string

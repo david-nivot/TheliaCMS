@@ -194,6 +194,46 @@
         <li>Vérifiez l’état affiché à côté du titre : il doit indiquer <em>Publiée</em>. Un état <em>Dépubliée</em> veut dire que la page est masquée ou que sa date de retrait est passée ; <em>Programmée</em>, que sa date de mise en ligne n’est pas encore venue. Les deux se règlent dans l’onglet <em>Général</em> des réglages.</li>
     </ol>
     <p>Le bouton <em>Publier</em> de l’écran de réglages de la page fait la même chose. <em>Enregistrer et publier</em> enregistre d’abord ce qui est saisi dans les réglages, puis publie le contenu enregistré : un champ obligatoire saisi dans l’onglet <em>Champs</em> est pris en compte. Quand la page est masquée ou programmée, le message le dit au lieu de « La page est en ligne. » Les réglages sont en ligne dès qu’ils sont enregistrés ; seul le contenu a un brouillon. Si la publication est refusée, le message dit pourquoi : voir <a href="#publication-refused">La publication est refusée</a>.</p>
+
+    <h3 id="two-editors">Deux personnes sur la même page</h3>
+    <p>Deux personnes peuvent ouvrir et modifier la même page en même temps, ou le contenu CMS d’une fiche du catalogue. Rien n’est verrouillé. Un enregistrement qui écraserait le travail de l’autre est refusé, et le vôtre reste dans le formulaire.</p>
+    {{ include('@TheliaCMSModule/backOffice/default-twig/documentation/_concurrent_flow.html.twig', {
+        lang: 'fr_FR',
+        title: 'Deux éditeurs sur la même page',
+        summary: 'L’éditeur A ouvre la page : son écran montre la version 3. L’éditeur B ouvre la même page : son écran montre aussi la version 3. B enregistre et le brouillon passe à la version 4. A enregistre depuis son écran resté à la version 3 : c’est refusé, rien n’est écrit, le message nomme B et dit quand, et le texte de A reste dans le formulaire. A recharge l’écran : il montre la version 4, avec les changements de B. A refait sa modification et enregistre : le brouillon passe à la version 5.',
+        lanes: ['Éditeur A', 'Le brouillon', 'Éditeur B'],
+        steps: [
+            ['Ouvre la page :', 'l’écran montre', 'la version 3'],
+            ['Ouvre la page :', 'l’écran montre', 'la version 3'],
+            ['Enregistre', 'sa modification'],
+            ['Enregistre depuis un écran', 'resté à la version 3'],
+            ['Recharge l’écran :', 'version 4, avec les', 'changements de B'],
+            ['Refait sa modification', 'et enregistre'],
+        ],
+        states: [
+            ['Version 3'],
+            ['Version 3'],
+            ['Passe à la version 4'],
+            ['Refusé, rien n’est écrit.', 'Le message nomme B et dit', 'quand. Le texte de A reste.'],
+            ['Version 4', 'avec les changements de B'],
+            ['Passe à la version 5'],
+        ],
+        caption: 'Les flèches pleines vont de l’éditeur au brouillon, les pointillés reviennent ; le pointillé rouge est le refus.',
+    }) }}
+    <ul>
+        <li>À l’ouverture de l’écran de contenu ou de l’écran de réglages d’une page, un bandeau jaune apparaît quand quelqu’un d’autre a modifié la page dans la dernière heure : « Modifié par Camille il y a 5 minutes : cette personne y travaille peut-être encore. Un enregistrement fait après le sien est refusé plutôt que d’écraser ses modifications. »</li>
+        <li>Chaque écran retient l’état du brouillon qu’il a montré. Si quelqu’un d’autre a changé le brouillon depuis, votre changement est refusé et rien n’est écrit. Cela vaut pour l’enregistrement d’une section à la main, l’ajout, le retrait, le déplacement et la duplication d’une section, le retour à un brouillon précédent, <em>Annuler</em> et <em>Rétablir</em>, <em>Publier</em> et le retrait de la marque IA. Un message rouge le dit : « Votre modification n’a pas été enregistrée : Camille a modifié ce contenu il y a 2 minutes. Rechargez l’écran pour voir sa version ; ce que vous avez saisi reste dans le formulaire. »</li>
+        <li>Demandé depuis un écran dont le brouillon a changé depuis son affichage, le générateur refuse tout de suite, et la demande ne coûte rien. Si le brouillon change pendant que le générateur écrit, sa réponse ne remplace pas le travail de l’autre : elle est gardée dans <em>Brouillons précédents</em>, d’où <em>Rétablir</em> la remet en place après que vous avez lu ce que l’autre a écrit. Le message le dit : « La réponse du générateur est gardée parmi les brouillons précédents : remettez-la en place depuis là. »</li>
+        <li>Les réglages d’une page (titre, adresse, champs, SEO) s’enregistrent tels quels, sans refus : seul le bandeau prévient, et le dernier enregistrement l’emporte.</li>
+        <li>Un onglet resté ouvert d’avant une mise à jour du module voit son premier enregistrement refusé : rechargez l’écran.</li>
+    </ul>
+    <p>Après un refus :</p>
+    <ol>
+        <li>Copiez ce que vous avez saisi : il reste dans le formulaire ouvert.</li>
+        <li>Rechargez l’écran.</li>
+        <li>Lisez la version de l’autre personne.</li>
+        <li>Refaites votre changement, puis enregistrez de nouveau.</li>
+    </ol>
 </section>
 
 <section id="page-templates">
@@ -412,6 +452,8 @@
         <li>Le modèle a refusé de rédiger : reformulez le brief.</li>
     </ul>
     <p>Quand cela dure, prévenez la personne qui s’occupe du site.</p>
+    <h3 id="change-not-saved">Ma modification n’a pas été enregistrée : quelqu’un d’autre a modifié ce contenu</h3>
+    <p>Quelqu’un a changé le brouillon depuis l’affichage de votre écran, et le module a refusé votre changement plutôt que d’effacer le sien. Copiez ce que vous avez saisi, rechargez l’écran, lisez sa version, puis refaites votre changement. Le détail est dans <a href="#two-editors">Deux personnes sur la même page</a>.</p>
 </section>
 
 <section id="glossary">

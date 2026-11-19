@@ -134,6 +134,8 @@ final readonly class PageScreenTarget implements ContentScreenTarget
             $routes[$action] = $this->urls->generate($name, $parameters);
         }
 
+        $row = $this->contentTarget()->row();
+
         return new ContentSubject(
             target: $this->generationTarget(),
             locale: $locale,
@@ -158,6 +160,9 @@ final readonly class PageScreenTarget implements ContentScreenTarget
             previousDrafts: $this->writer->previousDrafts($this->contentTarget()),
             translationLink: $this->translationLink(),
             notes: $kind?->notes($this->page, $locale) ?? [],
+            draftVersion: $row->draftVersion(),
+            draftAuthor: $row->draftAuthor(),
+            draftChangedAt: $row->updatedAt(),
         );
     }
 
