@@ -167,6 +167,7 @@ final class HeadingChoiceTest extends TestCase
     {
         $twig = new Environment(new FilesystemLoader(\dirname(__DIR__, 3).'/templates/front/partials'), ['strict_variables' => false, 'autoescape' => 'html']);
         $twig->addFunction(new TwigFunction('cms_image_attributes', static fn (): array => []));
+        $twig->addFunction(new TwigFunction('theme_hook', static fn (): string => '', ['is_safe' => ['html']]));
 
         return $twig;
     }

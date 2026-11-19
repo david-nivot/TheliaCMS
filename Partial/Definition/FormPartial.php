@@ -39,6 +39,13 @@ final readonly class FormPartial implements PartialDefinitionInterface, Describe
 {
     public const string NAME = 'cms-form';
 
+    /**
+     * Theme hook rendered inside every form, where another module adds the
+     * field its own check reads (SubmissionCheckEvent). Its parameter `form`
+     * is the code of the form.
+     */
+    public const string FIELDS_HOOK = 'cms.form.fields';
+
     public function __construct(
         private FormCatalog $forms,
         private SubmissionFlash $flash,
@@ -103,6 +110,7 @@ final readonly class FormPartial implements PartialDefinitionInterface, Describe
             'stamp' => $this->antiSpam->stamp($form->code),
             'stamp_field' => AntiSpam::STAMP_FIELD,
             'trap_field' => AntiSpam::TRAP_FIELD,
+            'fields_hook' => self::FIELDS_HOOK,
             'errors' => $outcome['errors'] ?? [],
             'entered' => $outcome['entered'] ?? [],
             'sent' => (bool) ($outcome['sent'] ?? false),
