@@ -35,6 +35,7 @@ use Thelia\Model\Resource;
 use Thelia\Model\ResourceQuery;
 use Thelia\Model\RewritingUrlQuery;
 use Thelia\Module\BaseModule;
+use TheliaCMS\Content\Kind\ContentKinds;
 use TheliaCMS\Content\Section\SectionStories;
 use TheliaCMS\Generation\Ai\AiAvailability;
 use TheliaCMS\Http\SharedCache\CmsSharedCacheContributor;
@@ -50,6 +51,7 @@ use TheliaCMS\Model\CmsPageContentQuery;
 use TheliaCMS\Model\CmsPageQuery;
 use TheliaCMS\Notice\NativeContentConsoleNotice;
 use TheliaCMS\Page\CmsUrlService;
+use TheliaCMS\Page\Kind\KindContents;
 use TheliaCMS\Partial\PartialFragmentRenderer;
 use TheliaCMS\Partial\PartialFragmentRendererInterface;
 use TheliaCMS\Search\Tnt\CmsPageIndex;
@@ -278,8 +280,10 @@ class TheliaCMS extends BaseModule
     {
         $urls = new CmsUrlService();
 
+        // A hidden content of a kind (the header zone included) has no address to put back.
         $pages = CmsPageQuery::create()
             ->filterByDeletedAt(null, Criteria::ISNULL)
+            ->filterByModel(ContentKinds::MODEL, Criteria::NOT_EQUAL)
             ->find();
 
         foreach ($pages as $page) {
@@ -429,7 +433,9 @@ class TheliaCMS extends BaseModule
                 // Built by LinkedPagesFinder for the drawer of the pages of an element.
                 __DIR__.'/Page/Admin/LinkedPage.php',
                 __DIR__.'/Page/Admin/LinkedPages.php',
-                __DIR__.'/Zone/ZoneContentTarget.php',
+                __DIR__.'/Page/Admin/KindContentTarget.php',
+                // Raised with the refusal of the kind, never wired by the container.
+                __DIR__.'/Content/Kind/KindContentDeletionRefusedException.php',
                 __DIR__.'/Catalogue/Admin/ItemContentTarget.php',
                 __DIR__.'/Catalogue/Admin/ItemContentRow.php',
                 __DIR__.'/Content/PropSchema.php',
@@ -504,6 +510,19 @@ class TheliaCMS extends BaseModule
         // Public so the tests of the screens can replace it by an answer that
         // needs no AI connection, which the database of the tests has none of.
         $servicesConfigurator->set(AiAvailability::class)
+            ->autowire(true)
+            ->autoconfigure(true)
+            ->public();
+
+        // The API other modules call to write their contents of a kind: nothing of
+        // this module takes it, so a private service would be dropped from the
+        // container. The registry is public for the tests to replace it with
+        // one that holds a kind of their own.
+        $servicesConfigurator->set(KindContents::class)
+            ->autowire(true)
+            ->autoconfigure(true)
+            ->public();
+        $servicesConfigurator->set(ContentKinds::class)
             ->autowire(true)
             ->autoconfigure(true)
             ->public();

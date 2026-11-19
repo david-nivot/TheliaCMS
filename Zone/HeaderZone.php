@@ -18,6 +18,7 @@ use Propel\Runtime\ActiveQuery\Criteria as PropelCriteria;
 use Propel\Runtime\Connection\ConnectionInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Model\LangQuery;
+use TheliaCMS\Content\Kind\ContentKinds;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Model\CmsPageContentQuery;
 use TheliaCMS\Model\CmsPageQuery;
@@ -25,8 +26,9 @@ use TheliaCMS\Page\PageAuthorship;
 use TheliaCMS\TheliaCMS;
 
 /**
- * The header zone: one hidden page of the CMS (`cms_page.model = 2`) whose
- * published document is drawn in the header of every page of the theme.
+ * The header zone: one hidden page of the CMS (`cms_page.model = 2`, kind
+ * `header`) whose published document is drawn in the header of every page of
+ * the theme. It is the first content kind (`HeaderZoneKind`, ADR 20).
  *
  * It is written on the content screen of a page, which gives it drafts,
  * versions and one publication per language for free. Being no page of the
@@ -36,8 +38,11 @@ use TheliaCMS\TheliaCMS;
  */
 final readonly class HeaderZone
 {
-    /** The value of `cms_page.model` that marks the zone: 0 is a page, 1 the model of a type. */
-    public const int MODEL = 2;
+    /** The value of `cms_page.model` of a hidden page, the zone's and every content of a kind: 0 is a page, 1 the model of a type. */
+    public const int MODEL = ContentKinds::MODEL;
+
+    /** The kind of the zone, in `cms_page.content_kind`. */
+    public const string KIND = 'header';
 
     public function __construct(
         private TranslatorInterface $translator,
@@ -49,6 +54,7 @@ final readonly class HeaderZone
     {
         return CmsPageQuery::create()
             ->filterByModel(self::MODEL)
+            ->filterByContentKind(self::KIND)
             ->filterByDeletedAt(null, PropelCriteria::ISNULL)
             ->orderById()
             ->findOne($connection);
@@ -71,7 +77,8 @@ final readonly class HeaderZone
             ->setPosition(0)
             ->setVisible(0)
             ->setPageType('default')
-            ->setModel(self::MODEL);
+            ->setModel(self::MODEL)
+            ->setContentKind(self::KIND);
 
         // Named in every active language, in its own words, so the content screen of each one has a title.
         foreach (LangQuery::create()->filterByActive(true)->find() as $lang) {

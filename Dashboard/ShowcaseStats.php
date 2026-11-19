@@ -120,6 +120,7 @@ final readonly class ShowcaseStats
                     ->filterByPublishedAt(null, Criteria::ISNOTNULL)
                     ->useCmsPageQuery()
                         ->filterByDeletedAt(null, Criteria::ISNULL)
+                        ->filterByModel(0)
                     ->endUse()
                     ->count(),
                 'total' => $total,
@@ -137,6 +138,7 @@ final readonly class ShowcaseStats
             ->filterByPublishedAt(null, Criteria::ISNOTNULL)
             ->useCmsPageQuery()
                 ->filterByDeletedAt(null, Criteria::ISNULL)
+                ->filterByModel(0)
             ->endUse()
             ->groupByPageId()
             ->count();

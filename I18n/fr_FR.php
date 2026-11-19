@@ -1746,6 +1746,7 @@ return [
     'The module HeaderHighlights is active and draws in the same place. Once the zone is published, empty its highlights or deactivate the module, or the header shows both.' => 'Le module HeaderHighlights est actif et s’affiche au même endroit. Une fois la zone publiée, videz ses mises en avant ou désactivez le module, sinon l’en-tête affiche les deux.',
     'The header zone is never online as a page: it is drawn in the header of the site once published.' => 'La zone d’en-tête n’est jamais en ligne comme une page : elle s’affiche dans l’en-tête du site une fois publiée.',
     'The header zone cannot be deleted: unpublish it in each language to draw nothing.' => 'La zone d’en-tête ne se supprime pas : dépubliez-la dans chaque langue pour ne rien afficher.',
+    'This content is deleted from the screens of the module that owns it, never from the pages.' => 'Ce contenu se supprime depuis les écrans du module qui le gère, jamais depuis les pages.',
     'Only JPEG, PNG, WebP and SVG images, or MP4 videos, can be uploaded.' => 'Seules les images JPEG, PNG, WebP et SVG, ou les vidéos MP4, peuvent être envoyées.',
     'JPEG, PNG, WebP or SVG images, or MP4 videos. Several at once.' => 'Images JPEG, PNG, WebP ou SVG, ou vidéos MP4. Plusieurs à la fois.',
     'To prepare' => 'À préparer',

@@ -19,6 +19,7 @@ use Thelia\Model\LangQuery;
 use Thelia\Model\ModuleQuery;
 use TheliaCMS\Catalogue\CatalogueItemKeys;
 use TheliaCMS\Catalogue\CatalogueItemType;
+use TheliaCMS\Content\Kind\ContentKinds;
 use TheliaCMS\Content\Site\SiteComponentRepository;
 use TheliaCMS\Model\CmsForm;
 use TheliaCMS\Model\CmsFormFieldQuery;
@@ -118,7 +119,9 @@ final readonly class SiteExporter
             'page_type' => (string) $page->getPageType(),
             'model' => 1 === $page->getModel(),
             // The header zone: hidden, matched on its kind and not on an address it has not.
-            'zone' => HeaderZone::MODEL === $page->getModel(),
+            'zone' => ContentKinds::MODEL === $page->getModel() && HeaderZone::KIND === $page->getContentKind(),
+            // The kind of a hidden content, `header` for the zone; null for a page.
+            'kind' => ContentKinds::MODEL === $page->getModel() ? $page->getContentKind() : null,
             'title_band' => 0 !== $page->getTitleBand(),
             'fields' => PageFields::decode($page->getFields()),
             'tag' => $page->getCmsTag()?->getName(),

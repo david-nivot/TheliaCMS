@@ -18,10 +18,13 @@ use TheliaCMS\Catalogue\CatalogueItem;
 use TheliaCMS\Catalogue\CatalogueItemType;
 use TheliaCMS\Catalogue\ItemContentRepository;
 use TheliaCMS\Content\Editing\ContentTarget;
+use TheliaCMS\Content\Kind\ContentKinds;
+use TheliaCMS\Content\Kind\UnknownContentKindException;
 use TheliaCMS\Content\Pipeline\PlaceholderContentChecker;
 use TheliaCMS\Http\CachePurger;
 use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Page\Admin\CmsActivityLog;
+use TheliaCMS\Page\Admin\KindContentTarget;
 use TheliaCMS\Page\Admin\PageContentTarget;
 use TheliaCMS\Page\Admin\PageRevisionStore;
 use TheliaCMS\Page\CmsUrlService;
@@ -29,8 +32,6 @@ use TheliaCMS\Page\Field\PageFields;
 use TheliaCMS\Page\PageAuthorship;
 use TheliaCMS\Page\PageInvalidator;
 use TheliaCMS\Search\SearchTextExtractor;
-use TheliaCMS\Zone\HeaderZone;
-use TheliaCMS\Zone\ZoneContentTarget;
 
 /**
  * Builds the `ContentTarget` of a page or of a catalogue item for the shared
@@ -51,18 +52,29 @@ final readonly class ContentTargets
         private ItemRevisionStore $itemRevisions,
         private CmsUrlService $urls,
         private PageAuthorship $authorship,
+        private ContentKinds $kinds,
     ) {
     }
 
     /**
-     * The header zone is a page that goes online in the header of every page
-     * of the site, not at an address: it has a target of its own.
+     * A content of a kind a module declares (the header zone is one) is a page
+     * that goes online where its kind says, not at an address: it has a target
+     * of its own. A hidden content whose kind no active module declares has
+     * none: treated as a page it would be given an address and a line of the
+     * search.
+     *
+     * @throws UnknownContentKindException when the page is a hidden content of a kind no active module declares
      */
     public function forPage(CmsPage $page, string $locale): ContentTarget
     {
-        $target = $this->pageTarget($page, $locale);
+        if ($this->kinds->isOrphan($page)) {
+            throw UnknownContentKindException::forPage((int) $page->getId());
+        }
 
-        return HeaderZone::MODEL === $page->getModel() ? new ZoneContentTarget($target, $page, $locale, $this->activityLog, $this->httpCache) : $target;
+        $target = $this->pageTarget($page, $locale);
+        $kind = $this->kinds->of($page);
+
+        return null === $kind ? $target : new KindContentTarget($target, $page, $kind, $locale, $this->activityLog, $this->httpCache);
     }
 
     private function pageTarget(CmsPage $page, string $locale): PageContentTarget
