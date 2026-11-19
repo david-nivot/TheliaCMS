@@ -11,7 +11,7 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 - **Two editors on one draft no longer overwrite each other**: a draft carries
   a version (`draft_version` on `cms_page_content` and `cms_item_content`,
-  update `2.36.0`), moved by every save. The content screen and the settings
+  update `2.37.0`), moved by every save. The content screen and the settings
   of a page post the version they read, and a save, a section added, removed,
   moved or duplicated, a restore, Undo, Redo, a publication or the removal of
   the AI mark made on a draft that moved since is refused: the screen says who
@@ -32,6 +32,18 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   it among the drafts left unchanged.
 - **A site import that replaces a draft moves its version**: a screen open on
   the draft it replaced is refused rather than writing over the import.
+
+## [2.36.0] - 2026-11-19
+
+### Added
+
+- **A form takes the check of another module, a captcha for one**: the
+  `cms.form.fields` theme hook is rendered inside every form, where the module
+  adds the field its check reads, and `SubmissionCheckEvent` is dispatched for
+  a message the trap, the stamp and the fields have let through, before the
+  rate limit, the stamp and the storage. A listener refuses it with the
+  sentence shown above the form; what was typed is kept. Nothing changes for a
+  site where no module listens.
 
 ## [2.35.0] - 2026-11-19
 
@@ -3756,7 +3768,8 @@ the published pages.
 - The breadcrumb of a page filed under a draft one offered a link to that page,
   which answers 404, both to the reader and in the `BreadcrumbList`.
 
-[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.35.0...HEAD
+[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.36.0...HEAD
+[2.36.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.36.0
 [2.35.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.35.0
 [2.34.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.34.0
 [2.33.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.33.0

@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Tests\Integration\Form;
 
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Session\Session;
@@ -29,6 +30,7 @@ use TheliaCMS\Form\AntiSpam;
 use TheliaCMS\Form\FieldType;
 use TheliaCMS\Form\Front\CmsFormSubmitController;
 use TheliaCMS\Form\Front\SubmissionFlash;
+use TheliaCMS\Form\SubmissionCheckEvent;
 use TheliaCMS\Form\VisitorFingerprint;
 use TheliaCMS\Model\CmsForm;
 use TheliaCMS\Model\CmsFormSubmissionQuery;
@@ -50,6 +52,9 @@ final class FormSubmissionTest extends CmsIntegrationTestCase
 
     private ?Request $pushed = null;
 
+    /** @var list<callable> */
+    private array $listeners = [];
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -66,6 +71,10 @@ final class FormSubmissionTest extends CmsIntegrationTestCase
 
     protected function tearDown(): void
     {
+        foreach ($this->listeners as $listener) {
+            $this->events()->removeListener(SubmissionCheckEvent::class, $listener);
+        }
+
         if (null !== $this->pushed) {
             $this->getService(RequestStack::class)->pop();
             $this->pushed = null;
@@ -117,6 +126,54 @@ final class FormSubmissionTest extends CmsIntegrationTestCase
         self::assertArrayHasKey('email', $outcome['errors'] ?? []);
         self::assertSame('not-an-address', $outcome['entered']['email'] ?? null);
         self::assertSame(0, $this->kept());
+    }
+
+    /**
+     * The check of another module, a captcha for one, is asked about a message
+     * worth keeping and nothing else: a robot caught by the trap and a field
+     * filled in wrongly never spend the token it reads.
+     */
+    public function testAModuleCheckIsAskedOnlyAboutAMessageWorthKeeping(): void
+    {
+        $this->createForm();
+        $asked = [];
+        $this->listen(static function (SubmissionCheckEvent $event) use (&$asked): void {
+            $asked[] = [$event->formCode, $event->request->request->get('check-token')];
+        });
+
+        $this->post([...$this->answers(), AntiSpam::TRAP_FIELD => 'https://spam.example', 'check-token' => 'trapped'], '203.0.113.30');
+        $this->post([...$this->answers(), 'email' => 'not-an-address', 'check-token' => 'mistyped'], '203.0.113.30');
+        $outcome = $this->post([...$this->answers(), 'check-token' => 'worth-keeping'], '203.0.113.30');
+
+        self::assertSame([[self::CODE, 'worth-keeping']], $asked);
+        self::assertTrue($outcome['sent'] ?? false);
+        self::assertSame(1, $this->kept());
+    }
+
+    /**
+     * A refusal is said above the form with what was typed, and spends
+     * nothing: the same display goes through once the check lets it.
+     */
+    public function testAMessageAModuleRefusesKeepsWhatWasTypedAndItsStamp(): void
+    {
+        $this->createForm();
+        $answers = $this->answers();
+        $refuse = static function (SubmissionCheckEvent $event): void {
+            $event->refuse('Try again in a moment.');
+        };
+        $this->listen($refuse);
+
+        $refused = $this->post($answers, '203.0.113.31');
+
+        self::assertSame('Try again in a moment.', $refused['refused'] ?? null);
+        self::assertSame(self::WRITER, $refused['entered']['email'] ?? null);
+        self::assertSame(0, $this->kept());
+        self::assertSame([], $this->mails());
+
+        $this->events()->removeListener(SubmissionCheckEvent::class, $refuse);
+
+        self::assertTrue($this->post($answers, '203.0.113.31')['sent'] ?? false);
+        self::assertSame(1, $this->kept());
     }
 
     public function testAClosedFormRefusesTheMessage(): void
@@ -328,6 +385,20 @@ final class FormSubmissionTest extends CmsIntegrationTestCase
             AntiSpam::TRAP_FIELD => '',
             AntiSpam::STAMP_FIELD => $this->stamp(),
         ];
+    }
+
+    private function listen(callable $listener): void
+    {
+        $this->events()->addListener(SubmissionCheckEvent::class, $listener);
+        $this->listeners[] = $listener;
+    }
+
+    private function events(): EventDispatcherInterface
+    {
+        $events = static::getContainer()->get('event_dispatcher');
+        self::assertInstanceOf(EventDispatcherInterface::class, $events);
+
+        return $events;
     }
 
     private function stamp(?\DateTimeImmutable $servedAt = null): string

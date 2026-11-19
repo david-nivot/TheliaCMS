@@ -1,4 +1,4 @@
--- 2.36.0: a draft carries a version, moved by every write of its content. A
+-- 2.37.0: a draft carries a version, moved by every write of its content. A
 -- screen posts the version it read, and a save made on a version that moved
 -- since is refused instead of overwriting what someone else wrote. The date of
 -- the draft cannot tell two saves of the same second apart, and MySQL rounds

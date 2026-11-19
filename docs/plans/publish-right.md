@@ -280,8 +280,8 @@ Decided while coding (2026-11-19, by the maintainer): the banner shows when the 
 draft (settings: a page) someone else changed within the hour, and after a refusal; a write request of
 a screen that posts no version is refused like a stale one.
 
-Done: `draft_version` on both tables (`Config/update/2.36.0.sql`, replayable, played twice on the
-dev base; `TheliaMain.sql`, `schema.xml`; `module.xml` goes to 2.36.0 with the release, as for every
+Done: `draft_version` on both tables (`Config/update/2.37.0.sql`, replayable, played twice on the
+dev base; `TheliaMain.sql`, `schema.xml`; `module.xml` goes to 2.37.0 with the release, as for every
 SQL step). `DraftLock::claim()` reads the version under `SELECT … FOR UPDATE` and raises
 `StaleDraftException`; `ContentRow::claimDraft()`, every `saveDraft()` moves the version. CW:
 `saveContent()`, `restoreDraft()` (refused before it keeps anything), `publish()` take the version
