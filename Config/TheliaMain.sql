@@ -17,6 +17,7 @@ CREATE TABLE `cms_page`
     `visible` TINYINT(4) DEFAULT 1 NOT NULL,
     `page_type` VARCHAR(50) DEFAULT 'default' NOT NULL,
     `model` TINYINT(4) DEFAULT 0 NOT NULL,
+    `content_kind` VARCHAR(32),
     `title_band` TINYINT(4) DEFAULT 1 NOT NULL,
     `fields` LONGTEXT,
     `image_id` INTEGER,
@@ -34,6 +35,7 @@ CREATE TABLE `cms_page`
     INDEX `idx_cms_page_deleted_at` (`deleted_at`),
     INDEX `idx_cms_page_tag` (`tag_id`),
     INDEX `idx_cms_page_page_type` (`page_type`),
+    INDEX `idx_cms_page_content_kind` (`content_kind`),
     CONSTRAINT `fk_cms_page_tag`
         FOREIGN KEY (`tag_id`)
         REFERENCES `cms_tag` (`id`)

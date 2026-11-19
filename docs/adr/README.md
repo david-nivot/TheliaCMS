@@ -25,3 +25,4 @@ decision supersedes it with a new file.
 | [17](0017-a-heading-of-the-site-is-drawn-at-any-depth.md) | A heading of the site is drawn at any depth |
 | [18](0018-a-heading-takes-a-style-of-the-theme.md) | A heading takes a style of the theme, apart from its level |
 | [19](0019-an-inline-svg-keeps-its-definitions-under-ids-of-its-own.md) | An inline SVG keeps its definitions, under ids of its own |
+| [20](0020-a-module-declares-a-kind-of-content.md) | A module declares a kind of content, written on the content screen of the pages |

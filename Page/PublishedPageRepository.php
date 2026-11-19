@@ -441,8 +441,10 @@ final readonly class PublishedPageRepository
      * zone is drawn by its own reader, neither is a page of the site, even set
      * visible and holding a published version an import brought in.
      */
-    private function isLive(CmsPage $page, \DateTimeInterface $now): bool
+    public function isLive(CmsPage $page, ?\DateTimeInterface $now = null): bool
     {
+        $now ??= new \DateTimeImmutable();
+
         if (null !== $page->getDeletedAt() || 1 !== $page->getVisible() || 0 !== $page->getModel()) {
             return false;
         }

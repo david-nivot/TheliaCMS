@@ -457,11 +457,11 @@ final readonly class CmsPageWriter
      *
      * @return list<int> the pages actually binned, deepest first
      *
-     * @throws ModelPageSettingException when the page is the model of its type or the header zone
+     * @throws ModelPageSettingException when the page is the model of its type or a content of a kind
      */
     public function moveToTrash(CmsPage $page): array
     {
-        // The model of a type goes with its type, the header zone is not a page to remove.
+        // The model of a type goes with its type, a content of a kind is not a page to remove.
         if (0 !== $page->getModel()) {
             throw ModelPageSettingException::trash((int) $page->getId());
         }
@@ -826,7 +826,7 @@ final readonly class CmsPageWriter
     }
 
     /**
-     * @throws ModelPageSettingException when the page is the model of its type or the header zone
+     * @throws ModelPageSettingException when the page is the model of its type or a content of a kind
      */
     public function toggleVisibility(CmsPage $page): void
     {
@@ -847,8 +847,8 @@ final readonly class CmsPageWriter
     /**
      * Puts several pages on the site, or takes them off it: a state set, not a
      * toggle, so a selection that mixes both ends up in the one asked. A page
-     * already in that state is not written, nor the model of a type or the
-     * header zone, which are never online as pages.
+     * already in that state is not written, nor the model of a type or a
+     * content of a kind, which are never online as pages.
      *
      * @param list<CmsPage> $pages
      *
@@ -962,6 +962,7 @@ final readonly class CmsPageWriter
         $siblings = CmsPageQuery::create()
             ->filterByParent($page->getParent())
             ->filterByDeletedAt(null, Criteria::ISNULL)
+            ->filterByModel(0)
             ->orderByPosition()
             ->find();
 

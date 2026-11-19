@@ -44,8 +44,14 @@ final class ExportFormat
      * would import it as an ordinary page, visible, with its published
      * version, and put it at an address. A version 3 file still imports: it
      * holds no zone.
+     *
+     * 5 since the kinds of content a module declares: a page carries `kind`,
+     * the code of its kind (`header` for the zone, which keeps `zone: true`),
+     * null for a page. A reader of version 4 would import such a content as
+     * an ordinary page, visible, at an address. A version 4 file still
+     * imports: its only hidden page is the zone.
      */
-    public const int VERSION = 4;
+    public const int VERSION = 5;
 
     /** The first version whose contents this module can read. */
     public const int FIRST_VERSION_WITH_DOCUMENTS = 2;

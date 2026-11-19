@@ -582,6 +582,26 @@ switched off. The screen takes the settings right; the choice is stored in
 mode or `THEME_TOOLKIT`, Flexy theme), a button opens it on the page that renders every
 component offered.
 
+## Contents of a kind, for module authors
+
+A module can declare a family of contents with no address (the size guides of a
+shop): written on the content screen of the pages, with a draft, versions,
+translations and one publication per language, and shown in no list of pages,
+search, sitemap or menu. The header zone is the first of them.
+
+1. Implement `TheliaCMS\Content\Kind\ContentKind` in a service of your module
+   (it is tagged by autoconfiguration): a code of 1 to 32 lowercase letters,
+   digits or `_`, where the screen links back to, its phrases, the cache keys
+   its publication drops, its name in the activity log.
+2. Inject `TheliaCMS\Page\Kind\KindContents` to `create()`, `find()`, `all()`,
+   `publishedHtml()`, `moveToBin()`, `binned()`, `restore()` or `adopt()` (a
+   page of the site taken in place).
+3. Send the editor to `/admin/cms/pages/{id}/content`: no screen, route or right
+   is added; the rights are those of the pages.
+
+The decision and its limits are in
+[ADR 20](docs/adr/0020-a-module-declares-a-kind-of-content.md).
+
 ## Documents of a page
 
 The **Documents** tab of the edit screen of a page lists the files the page

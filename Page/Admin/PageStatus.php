@@ -62,6 +62,22 @@ enum PageStatus: string
     }
 
     /**
+     * The state of a content of a kind, which is no page of the site: written
+     * (draft), online, or online and changed since. Its visibility and its
+     * dates say whether a page is shown and mean nothing for it.
+     */
+    public static function resolveContent(?CmsPageContent $content): self
+    {
+        if (null === $content?->getPublishedAt()) {
+            return self::Draft;
+        }
+
+        $draftUpdatedAt = $content->getUpdatedAt();
+
+        return null !== $draftUpdatedAt && $draftUpdatedAt > $content->getPublishedAt() ? self::ModifiedSincePublish : self::Published;
+    }
+
+    /**
      * What visitors read in this language: published, or published and
      * changed since, the version online being the published one.
      */

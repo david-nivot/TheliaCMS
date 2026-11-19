@@ -30,6 +30,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Model\Lang;
 use TheliaCMS\Content\Editing\StaleDraftException;
+use TheliaCMS\Content\Kind\ContentKinds;
 use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Http\Admin\DraftNotice;
 use TheliaCMS\Media\Admin\CmsMediaWriter;
@@ -47,7 +48,6 @@ use TheliaCMS\Page\PageTypeRepository;
 use TheliaCMS\Page\ReservedSlugException;
 use TheliaCMS\Security\CmsResources;
 use TheliaCMS\TheliaCMS;
-use TheliaCMS\Zone\HeaderZone;
 use Twig\Environment;
 
 /**
@@ -85,6 +85,7 @@ final readonly class CmsPageAdminController
         private PageOnlineMessage $onlineMessage,
         private PublicationRefusal $refusals,
         private PageParentCheck $parents,
+        private ContentKinds $kinds,
         private DraftNotice $notice,
     ) {
     }
@@ -230,7 +231,14 @@ final readonly class CmsPageAdminController
     #[Route('/{id}', name: 'edit', requirements: ['id' => '\d+'], methods: ['GET', 'POST'])]
     public function edit(Request $request, int $id): Response
     {
-        return $this->handleForm($request, $this->livePageOrFail($id));
+        $page = $this->livePageOrFail($id);
+
+        // A content of a kind has no settings screen: it is written on its content screen.
+        if (null !== $this->kinds->of($page)) {
+            return $this->support->redirectInLanguage('admin.cms.pages.content.edit', $this->editLang($request)->getId(), ['id' => $id]);
+        }
+
+        return $this->handleForm($request, $page);
     }
 
     #[Route('/{id}/publish', name: 'publish', requirements: ['id' => '\d+'], methods: ['POST'])]
@@ -253,8 +261,8 @@ final readonly class CmsPageAdminController
         $page = $this->livePageOrFail($id);
         $this->writer->unpublish($page, $lang->getLocale());
 
-        // The header zone has no settings screen of its own: it is written on the content screen.
-        return HeaderZone::MODEL === $page->getModel()
+        // A content of a kind has no settings screen of its own: it is written on the content screen.
+        return null !== $this->kinds->of($page)
             ? $this->support->redirectInLanguage('admin.cms.pages.content.edit', $lang->getId(), ['id' => $id])
             : $this->backToEdit($request, $id, $lang);
     }
@@ -286,9 +294,7 @@ final readonly class CmsPageAdminController
         try {
             $this->writer->toggleVisibility($page);
         } catch (ModelPageSettingException) {
-            $this->support->flash($request, 'danger', $this->support->translate(HeaderZone::MODEL === $page->getModel()
-                ? 'The header zone is never online as a page: it is drawn in the header of the site once published.'
-                : 'This page is the model of its template: it is never online.'));
+            $this->support->flash($request, 'danger', $this->kinds->of($page)?->notAPage() ?? $this->support->translate('This page is the model of its template: it is never online.'));
         }
 
         return $this->backToList($request, $id);
@@ -299,7 +305,7 @@ final readonly class CmsPageAdminController
     {
         $this->denyUnless(AccessManager::UPDATE);
 
-        $this->writer->move($this->livePageOrFail($id), 'up' === $direction ? -1 : 1);
+        $this->writer->move($this->ordinaryPageOrFail($id), 'up' === $direction ? -1 : 1);
 
         return $this->backToList($request, $id);
     }
@@ -311,7 +317,7 @@ final readonly class CmsPageAdminController
         $lang = $this->editLang($request);
 
         $copy = $this->writer->duplicate(
-            $this->livePageOrFail($id),
+            $this->ordinaryPageOrFail($id),
             $lang->getLocale(),
             $this->support->translate('(copy)'),
         );
@@ -325,7 +331,7 @@ final readonly class CmsPageAdminController
         // What the root of the site shows changes with it.
         $this->support->denyUnlessMayPublish();
 
-        $this->writer->setAsHome($this->livePageOrFail($id));
+        $this->writer->setAsHome($this->ordinaryPageOrFail($id));
 
         return $this->backToList($request);
     }
@@ -340,9 +346,7 @@ final readonly class CmsPageAdminController
         try {
             $this->writer->moveToTrash($page);
         } catch (ModelPageSettingException) {
-            $this->support->flash($request, 'danger', $this->support->translate(HeaderZone::MODEL === $page->getModel()
-                ? 'The header zone cannot be deleted: unpublish it in each language to draw nothing.'
-                : 'This page is the model of its template: it is deleted with its template, under CMS > Page templates, never moved to the bin.'));
+            $this->support->flash($request, 'danger', $this->deletionRefusal($page));
         }
 
         return $this->backToList($request);
@@ -674,11 +678,36 @@ final readonly class CmsPageAdminController
     {
         $page = $this->pages->findLive($id);
 
+        // `findLive()` answers none for a hidden content whose kind no active module declares.
         if (!$page instanceof CmsPage) {
             throw new NotFoundHttpException();
         }
 
         return $page;
+    }
+
+    /**
+     * An ordinary page, for the actions of the list: a content of a kind or the
+     * model of a type is none of them.
+     */
+    private function ordinaryPageOrFail(int $id): CmsPage
+    {
+        return $this->pages->findOrdinary($id) ?? throw new NotFoundHttpException();
+    }
+
+    /**
+     * Why a page that is not an ordinary one is not moved to the bin from the
+     * list: a content of a kind is sent there by the module that owns it.
+     */
+    private function deletionRefusal(CmsPage $page): string
+    {
+        $kind = $this->kinds->of($page);
+
+        if (null === $kind) {
+            return $this->support->translate('This page is the model of its template: it is deleted with its template, under CMS > Page templates, never moved to the bin.');
+        }
+
+        return $kind->deletionRefusal() ?? $this->support->translate('This content is deleted from the screens of the module that owns it, never from the pages.');
     }
 
     private function denyUnless(string $access): void

@@ -1746,6 +1746,7 @@ return [
     'The module HeaderHighlights is active and draws in the same place. Once the zone is published, empty its highlights or deactivate the module, or the header shows both.' => 'The module HeaderHighlights is active and draws in the same place. Once the zone is published, empty its highlights or deactivate the module, or the header shows both.',
     'The header zone is never online as a page: it is drawn in the header of the site once published.' => 'The header zone is never online as a page: it is drawn in the header of the site once published.',
     'The header zone cannot be deleted: unpublish it in each language to draw nothing.' => 'The header zone cannot be deleted: unpublish it in each language to draw nothing.',
+    'This content is deleted from the screens of the module that owns it, never from the pages.' => 'This content is deleted from the screens of the module that owns it, never from the pages.',
     'Only JPEG, PNG, WebP and SVG images, or MP4 videos, can be uploaded.' => 'Only JPEG, PNG, WebP and SVG images, or MP4 videos, can be uploaded.',
     'JPEG, PNG, WebP or SVG images, or MP4 videos. Several at once.' => 'JPEG, PNG, WebP or SVG images, or MP4 videos. Several at once.',
     'To prepare' => 'To prepare',

@@ -7,6 +7,46 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **A module declares a kind of content.** A service that implements
+  `TheliaCMS\Content\Kind\ContentKind` (tagged `thelia_cms.content_kind` by
+  autoconfiguration) declares a family of contents with no address, such as the
+  size guides of a shop: each is written on the content screen of the pages
+  (draft, versions, translations, one publication per language, the rights of
+  the pages and the right to publish) and is in no list of pages, the search,
+  the sitemap, a menu or a page picker. The kind says where the screen links
+  back to, what publishing says, what is noted at the top, which keys of the
+  shared cache to drop, how the activity log names it and whether it may go to
+  the bin. Modules write them through `TheliaCMS\Page\Kind\KindContents`:
+  `create()`, `find()`, `all()`, `publishedHtml()`, `moveToBin()` (deleted by the
+  purge of the bin, not listed in it) and `adopt()`, which turns an ordinary page
+  with no page under it into a content in place (same id, texts, versions and
+  translations; its addresses, redirections, lines of the search and entries of
+  the menus go). A content whose module is deactivated shows nowhere and its
+  screen answers 404. The export file (format 5) carries the kind of a
+  content, which an import never matches on an address nor puts in the tree.
+  `binned()` and `restore()` bring a content back from the bin; `adopt()` also
+  refuses a page that holds a published version while offline, the page of a
+  missing address or of maintenance and the privacy policy of a form, and clears
+  its publication dates. A content has no settings screen and is never moved,
+  copied nor made the home page from the list; `thelia_cms:render-published --all`
+  leaves out a content whose module is off, and `thelia_cms:publish` refuses it
+  by name. See ADR 20.
+
+### Changed
+
+- **The header zone is the first kind of content**: its page carries
+  `cms_page.content_kind = 'header'` (the update gives it to the zone of every
+  site), and its screen, log entries and phrases are unchanged. A hidden page
+  with no declared kind is no longer treated as the zone.
+- **A hidden page gets no address back by the reactivation of the module**
+  (the header zone had one), nor by an import: a file never reads a page onto
+  a content of a kind. The count of pages published on the dashboard leaves
+  them out, and moving a page orders it among ordinary pages only.
+- **The bin of the pages and its count leave out the contents of a kind**: they
+  are binned and brought back by the module that owns them.
+
 ## [2.37.0] - 2026-11-19
 
 ### Added
