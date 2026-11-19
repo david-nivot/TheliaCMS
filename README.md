@@ -730,8 +730,11 @@ Uploads accept JPEG, PNG, WebP and SVG images (10 MB and 25 megapixels at
 most), and MP4 videos (50 MB at most; see [Videos from a phone](#videos-from-a-phone)
 for what a server with ffmpeg takes). An SVG can carry script: it is cleaned
 and optimized on its own screen, which shows the result, before it enters the
-library. Files are dropped on the list or chosen, sent one by one, and a
-refused file is named with why without costing the others. The describe queue
+library. The base optimization is lossless and always applied; three stronger
+levels round the points and remove the ones that lie within a share of the
+diagonal of the drawing (see [ADR 21](docs/adr/0021-a-level-of-optimization-keeps-every-point-within-a-share-of-the-drawing.md)).
+Files are dropped on the list or chosen, sent one by one, and a refused file
+is named with why without costing the others. The describe queue
 then opens on the images just added; a video has nothing to describe.
 
 The images of the catalogue (products, categories, brands, folders, contents)

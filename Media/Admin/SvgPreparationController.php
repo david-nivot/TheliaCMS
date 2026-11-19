@@ -30,11 +30,13 @@ use TheliaCMS\Media\Icon\IconUsageDraft;
 use TheliaCMS\Media\Svg\Color\SvgColoring;
 use TheliaCMS\Media\Svg\Color\SvgColorPreset;
 use TheliaCMS\Media\Svg\Color\SvgPreviewTint;
+use TheliaCMS\Media\Svg\Optimization\Rounding\PathRounding;
 use TheliaCMS\Media\Svg\Optimization\SvgOptimizationLevels;
 use TheliaCMS\Media\Svg\PreparedSvgFile;
 use TheliaCMS\Media\Svg\PreparedSvgStore;
 use TheliaCMS\Media\Svg\SvgChangeWording;
 use TheliaCMS\Media\Svg\SvgPreparation;
+use TheliaCMS\Media\Svg\SvgPreparationResult;
 use TheliaCMS\Page\Admin\EditLanguage;
 use TheliaCMS\Page\Admin\PageDocumentSize;
 use TheliaCMS\Security\CmsResources;
@@ -66,6 +68,9 @@ final readonly class SvgPreparationController
     /** A token is 32 characters of [a-f0-9]; the list builds the address of this screen with this one, then swaps it. */
     public const string TOKEN_PLACEHOLDER = '00000000000000000000000000000000';
 
+    /** "1": the editor asked for the lossy optimization, whose levels are then read; without it, a level received is ignored. */
+    public const string LOSSY_PARAMETER = 'lossy';
+
     private const string TOKEN_REQUIREMENT = '[a-f0-9]{32}';
 
     public function __construct(
@@ -79,6 +84,7 @@ final readonly class SvgPreparationController
         private CmsMediaLibrary $library,
         private EditLanguage $languages,
         private IconUsageDecision $usage,
+        private PathRounding $rounding,
     ) {
     }
 
@@ -122,10 +128,16 @@ final readonly class SvgPreparationController
             return $this->afterExpired($request, $lang, $way);
         }
 
-        $level = $this->levels->get($way->level ?? '')?->name();
-
         try {
-            $draft = $this->usage->prepare($file->content, $level, IconUsageDecision::isAsked($way->replace, $way->picker, $way->icon), $way->coloring, $way->colorsTouched);
+            [$draft, $level, $lossy, $tooDetailed] = $this->drafted(
+                $file->content,
+                '1' === $request->query->getString(self::LOSSY_PARAMETER),
+                $way->level ?? '',
+                IconUsageDecision::isAsked($way->replace, $way->picker, $way->icon),
+                $way->coloring,
+                $way->colorsTouched,
+            );
+            $lossyResults = $lossy ? $this->preparation->prepareLevels($file->content, $draft->result->coloring) : [];
         } catch (UnreadableSvgException $exception) {
             return $this->refused($request, $lang, $file, $exception, $way->picker);
         }
@@ -133,18 +145,51 @@ final readonly class SvgPreparationController
         // The preview and the answer read it back instead of preparing again.
         $this->store->remember($token, self::setting($level, $draft->result->coloring), $draft->result->content);
 
-        return $this->screen($lang, $file, $way, $level, $draft, $way->icon, $way->iconName, null, $way->colorsTouched);
+        foreach ($lossyResults as $name => $lossyResult) {
+            $this->store->remember($token, self::setting($name, $lossyResult->coloring), $lossyResult->content);
+        }
+
+        return $this->screen($lang, $file, $way, $level, $draft, $way->icon, $way->iconName, null, $way->colorsTouched, $lossy, $tooDetailed, $lossyResults);
+    }
+
+    /**
+     * The draft of a file for the level asked, which counts only in the lossy
+     * mode: a level received without it is ignored, and so is the mode itself
+     * for a drawing with more path data than a level works on, even when the
+     * address asks for it.
+     *
+     * @return array{IconUsageDraft, string|null, bool, bool} the draft, the level kept, whether the lossy mode holds, whether the drawing is too detailed for it
+     *
+     * @throws UnreadableSvgException
+     */
+    private function drafted(string $content, bool $lossyAsked, string $levelAsked, bool $icon, SvgColoring $coloring, bool $touched): array
+    {
+        $level = $lossyAsked ? $this->levels->get($levelAsked)?->name() : null;
+        $draft = $this->usage->prepare($content, $level, $icon, $coloring, $touched);
+        // The path data of a level never exceeds that of the base optimization,
+        // and a level leaves a drawing past the ceiling as it is: the result
+        // tells what the base would.
+        $tooDetailed = $this->rounding->exceedsCeiling($draft->result->content);
+
+        if ($tooDetailed && null !== $level) {
+            $level = null;
+            $draft = $this->usage->prepare($content, null, $icon, $coloring, $touched);
+        }
+
+        return [$draft, $level, $lossyAsked && !$tooDetailed && [] !== $this->levels->all(), $tooDetailed];
     }
 
     /**
      * The screen of a file, with what the editor chose for it: shown for a
      * preview, and again with the reason when an answer cannot be taken.
      *
-     * @param bool        $icon     the usage asked for: it holds only where the drawing can be an icon
-     * @param string|null $iconName the name typed; the one drawn from the file name when none was
-     * @param string|null $problem  why the answer was not taken, already in the language of the screen
+     * @param bool                                $icon         the usage asked for: it holds only where the drawing can be an icon
+     * @param string|null                         $iconName     the name typed; the one drawn from the file name when none was
+     * @param string|null                         $problem      why the answer was not taken, already in the language of the screen
+     * @param bool                                $lossy        the lossy mode holds: the levels are offered and previewed
+     * @param array<string, SvgPreparationResult> $lossyResults each level prepared on its own, by name
      */
-    private function screen(Lang $lang, PreparedSvgFile $file, SvgWay $way, ?string $level, IconUsageDraft $draft, bool $icon, ?string $iconName, ?string $problem, bool $colorsTouched): Response
+    private function screen(Lang $lang, PreparedSvgFile $file, SvgWay $way, ?string $level, IconUsageDraft $draft, bool $icon, ?string $iconName, ?string $problem, bool $colorsTouched, bool $lossy, bool $tooDetailed, array $lossyResults): Response
     {
         $locale = $lang->getLocale();
         $result = $draft->result;
@@ -164,6 +209,9 @@ final readonly class SvgPreparationController
             'saved_weight' => PageDocumentSize::human(abs($result->savedBytes()), $locale),
             'levels' => $this->levels->all(),
             'level' => $level ?? '',
+            'lossy' => $lossy,
+            'lossy_too_detailed' => $tooDetailed,
+            'previews' => $this->previews($locale, $file, $level, $result, $lossyResults),
             'presets' => SvgColorPreset::cases(),
             'coloring' => $result->coloring,
             'color_values' => $result->coloring->values(),
@@ -173,6 +221,39 @@ final readonly class SvgPreparationController
             'tints' => SvgPreviewTint::cases(),
             'route_parameters' => $way->parameters($lang->getId()),
         ]), null === $problem ? Response::HTTP_OK : Response::HTTP_UNPROCESSABLE_ENTITY);
+    }
+
+    /**
+     * The versions shown side by side: the base optimization, which is the
+     * lossless one, then each level in the lossy mode. The one checked is
+     * marked; the others are only shown.
+     *
+     * @param array<string, SvgPreparationResult> $lossyResults each level prepared on its own, by name
+     *
+     * @return list<array{key: string, label: string, level: string, result: SvgPreparationResult, weight: string, saved_weight: string, color_values: array<string, string>, selected: bool}>
+     */
+    private function previews(string $locale, PreparedSvgFile $file, ?string $level, SvgPreparationResult $checked, array $lossyResults): array
+    {
+        $base = null === $level ? $checked : $this->preparation->prepare($file->content, null, $checked->coloring);
+
+        if (null !== $level) {
+            $this->store->remember($file->token, self::setting(null, $base->coloring), $base->content);
+        }
+
+        $previews = [['key' => 'lossless', 'label' => 'Lossless', 'level' => '', 'result' => $base, 'selected' => null === $level]];
+
+        foreach ($this->levels->all() as $option) {
+            if (isset($lossyResults[$option->name()])) {
+                $previews[] = ['key' => $option->name(), 'label' => $option->label(), 'level' => $option->name(), 'result' => $lossyResults[$option->name()], 'selected' => $level === $option->name()];
+            }
+        }
+
+        return array_map(static fn (array $preview): array => [
+            ...$preview,
+            'weight' => PageDocumentSize::human($preview['result']->resultBytes, $locale),
+            'saved_weight' => PageDocumentSize::human(abs($preview['result']->savedBytes()), $locale),
+            'color_values' => $preview['result']->coloring->values(),
+        ], $previews);
     }
 
     /**
@@ -199,10 +280,9 @@ final readonly class SvgPreparationController
         if ('skip' === $request->request->getString('action')) {
             $this->store->forget($token);
 
-            return $this->next($request, $lang, $way, null, null, null, false, false);
+            return $this->next($request, $lang, $way, null, null, false, false);
         }
 
-        $level = $this->levels->get($request->request->getString('level'))?->name();
         $asked = SvgColoring::fromValues($request->request->all());
         $touched = SvgWay::colorsTouched($request->request->all(), $asked);
         $locale = $lang->getLocale();
@@ -213,7 +293,7 @@ final readonly class SvgPreparationController
         $iconName = IconName::normalize($request->request->getString('icon_name'));
 
         try {
-            $draft = $this->usage->prepare($file->content, $level, $icon, $asked, $touched);
+            [$draft, $level, $lossy, $tooDetailed] = $this->drafted($file->content, '1' === $request->request->getString(self::LOSSY_PARAMETER), $request->request->getString('level'), $icon, $asked, $touched);
         } catch (UnreadableSvgException $exception) {
             return $this->refused($request, $lang, $file, $exception, $way->picker);
         }
@@ -226,7 +306,13 @@ final readonly class SvgPreparationController
         $problem = $this->usage->problem($draft->judged, $icon, $iconName, $way->replace);
 
         if (null !== $problem) {
-            return $this->screen($lang, $file, $way, $level, $draft, $icon, $iconName, $problem, $touched);
+            try {
+                $lossyResults = $lossy ? $this->preparation->prepareLevels($file->content, $draft->result->coloring) : [];
+            } catch (UnreadableSvgException $exception) {
+                return $this->refused($request, $lang, $file, $exception, $way->picker);
+            }
+
+            return $this->screen($lang, $file, $way, $level, $draft, $icon, $iconName, $problem, $touched, $lossy, $tooDetailed, $lossyResults);
         }
 
         // A second answer sent before the first one ended (a double click)
@@ -270,10 +356,11 @@ final readonly class SvgPreparationController
 
         $this->store->forget($token);
 
-        // The setting is carried to the next files only when the editor says so.
+        // The setting is carried to the next files only when the editor says so,
+        // and never the lossy mode nor its level: those are asked for each file.
         $carried = '1' === $request->request->getString('apply_to_following');
 
-        return $this->next($request, $lang, $way, $added, $carried ? $level : null, $carried ? $coloring : null, $carried && $icon, $carried && $touched);
+        return $this->next($request, $lang, $way, $added, $carried ? $coloring : null, $carried && $icon, $carried && $touched);
     }
 
     #[Route('/{token}/original', name: 'original', requirements: ['token' => self::TOKEN_REQUIREMENT], methods: ['GET'])]
@@ -333,7 +420,7 @@ final readonly class SvgPreparationController
      * The next file of the way that is still there, or the end of the way.
      * A file that waited too long is said, and the way goes on without it.
      */
-    private function next(Request $request, Lang $lang, SvgWay $way, ?int $added, ?string $level, ?SvgColoring $coloring, bool $icon, bool $colorsTouched): Response
+    private function next(Request $request, Lang $lang, SvgWay $way, ?int $added, ?SvgColoring $coloring, bool $icon, bool $colorsTouched): Response
     {
         $images = null === $added ? $way->images : [...$way->images, $added];
         $queue = $way->queue;
@@ -342,7 +429,7 @@ final readonly class SvgPreparationController
             $token = array_shift($queue);
 
             if ($this->store->find($token) instanceof PreparedSvgFile) {
-                return $this->support->redirect('admin.cms.media.svg.show', self::parameters([$token, ...$queue], $images, $way->replace, $lang->getId(), $way->total, $level, $way->picker, $coloring, $icon, $colorsTouched));
+                return $this->support->redirect('admin.cms.media.svg.show', self::parameters([$token, ...$queue], $images, $way->replace, $lang->getId(), $way->total, null, $way->picker, $coloring, $icon, $colorsTouched));
             }
 
             $this->support->flash($request, 'warning', $this->support->translate('This file has expired, send it again.'));
@@ -388,7 +475,7 @@ final readonly class SvgPreparationController
 
         $this->support->flash($request, 'warning', $this->support->translate('This file has expired, send it again.'));
 
-        return $this->next($request, $lang, $way, null, $way->level, $way->coloring, $way->icon, $way->colorsTouched);
+        return $this->next($request, $lang, $way, null, $way->coloring, $way->icon, $way->colorsTouched);
     }
 
     /**

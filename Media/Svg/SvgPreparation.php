@@ -19,10 +19,12 @@ use Psr\Log\NullLogger;
 use TheliaCMS\Media\Svg\Color\SvgColoring;
 use TheliaCMS\Media\Svg\Color\SvgPaletteReader;
 use TheliaCMS\Media\Svg\Color\SvgRecoloring;
+use TheliaCMS\Media\Svg\Optimization\SvgOptimizationLevel;
 use TheliaCMS\Media\Svg\Optimization\SvgOptimizationLevels;
 use TheliaCMS\Media\Svg\Optimization\SvgOptimizer;
 use TheliaLibrary\Exception\UnreadableSvgException;
 use TheliaLibrary\Service\Svg\SvgChange;
+use TheliaLibrary\Service\Svg\SvgChangeKind;
 use TheliaLibrary\Service\Svg\SvgSanitizerInterface;
 
 /**
@@ -36,6 +38,10 @@ use TheliaLibrary\Service\Svg\SvgSanitizerInterface;
  * what it receives and keeps the bytes when nothing is left to remove. The
  * changes told to the editor are those of the first cleaning, the ones that
  * come from the file.
+ *
+ * What comes before the colors (the cleaning changes, the base optimization,
+ * the output of each level) is kept by the bytes of the file, so that a
+ * change of colors redoes the colors and the control only.
  */
 final readonly class SvgPreparation
 {
@@ -46,6 +52,8 @@ final readonly class SvgPreparation
         private SvgPaletteReader $paletteReader = new SvgPaletteReader(),
         private SvgRecoloring $recoloring = new SvgRecoloring(),
         private LoggerInterface $logger = new NullLogger(),
+        // Null: nothing is kept between two preparations.
+        private ?SvgStageCache $stages = null,
     ) {
     }
 
@@ -56,15 +64,129 @@ final readonly class SvgPreparation
      */
     public function prepare(string $original, ?string $levelName = null, SvgColoring $coloring = new SvgColoring()): SvgPreparationResult
     {
-        $cleaned = $this->sanitizer->sanitize($original);
-        $optimized = $this->optimizer->optimize($cleaned->content);
-
+        [$changes, $base] = $this->base($original);
         $level = null === $levelName ? null : $this->levels->get($levelName);
 
-        if (null !== $level) {
-            $optimized = $level->apply($optimized);
+        return $this->finished($original, $changes, null === $level ? $base : $this->leveled($original, $base, $level), $levelName, $coloring);
+    }
+
+    /**
+     * Every level applied on its own to the same base optimization, computed
+     * once: the levels are not compared with one another.
+     *
+     * @return array<string, SvgPreparationResult> by level name, in the order of the levels
+     *
+     * @throws UnreadableSvgException
+     */
+    public function prepareLevels(string $original, SvgColoring $coloring = new SvgColoring()): array
+    {
+        [$changes, $base] = $this->base($original);
+        $results = [];
+
+        foreach ($this->levels->all() as $level) {
+            $results[$level->name()] = $this->finished($original, $changes, $this->leveled($original, $base, $level), $level->name(), $coloring);
         }
 
+        return $results;
+    }
+
+    /**
+     * The changes of the cleaning of the file sent and its base optimization,
+     * kept for the next preparation of the same bytes.
+     *
+     * @return array{list<SvgChange>, string}
+     *
+     * @throws UnreadableSvgException
+     */
+    private function base(string $original): array
+    {
+        $key = SvgStageCache::key($original);
+        $kept = $this->keptBase($key);
+
+        if (null !== $kept) {
+            return $kept;
+        }
+
+        $cleaned = $this->sanitizer->sanitize($original);
+        $base = $this->optimizer->optimize($cleaned->content);
+        $this->stages?->put($key, 'changes', json_encode(array_map(static fn (SvgChange $change): array => [$change->kind->value, $change->subject], $cleaned->changes), \JSON_THROW_ON_ERROR));
+        $this->stages?->put($key, 'base', $base);
+
+        return [$cleaned->changes, $base];
+    }
+
+    /**
+     * What the stages hold for the file, null when nothing usable: an entry
+     * written by another version of the code, or damaged, is a miss, and the
+     * next write replaces it.
+     *
+     * @return array{list<SvgChange>, string}|null
+     */
+    private function keptBase(string $key): ?array
+    {
+        $base = $this->stages?->get($key, 'base');
+
+        if (null === $base) {
+            return null;
+        }
+
+        $encoded = $this->stages->get($key, 'changes');
+
+        if (null === $encoded) {
+            return null;
+        }
+
+        try {
+            $decoded = json_decode($encoded, true, 512, \JSON_THROW_ON_ERROR);
+        } catch (\JsonException) {
+            return null;
+        }
+
+        if (!\is_array($decoded)) {
+            return null;
+        }
+
+        $changes = [];
+
+        foreach ($decoded as $change) {
+            if (!\is_array($change) || !isset($change[0], $change[1]) || !\is_string($change[0]) || !\is_string($change[1])) {
+                return null;
+            }
+
+            $kind = SvgChangeKind::tryFrom($change[0]);
+
+            if (null === $kind) {
+                return null;
+            }
+
+            $changes[] = new SvgChange($kind, $change[1]);
+        }
+
+        return [$changes, $base];
+    }
+
+    /** The output of a level on the base, kept as the base is: before any color. */
+    private function leveled(string $original, string $base, SvgOptimizationLevel $level): string
+    {
+        $key = SvgStageCache::key($original);
+        $stage = 'level-'.$level->name();
+        $kept = $this->stages?->get($key, $stage);
+
+        if (null !== $kept) {
+            return $kept;
+        }
+
+        $output = $level->apply($base);
+        $this->stages?->put($key, $stage, $output);
+
+        return $output;
+    }
+
+    /**
+     * @param list<SvgChange> $changes those of the first cleaning
+     */
+    private function finished(string $original, array $changes, string $optimized, ?string $levelName, SvgColoring $coloring): SvgPreparationResult
+    {
         $palette = $this->paletteReader->read($optimized);
         $coloring = $coloring->forPalette($palette);
         $checked = $this->sanitizer->sanitize($this->recoloring->apply($optimized, $coloring, $palette));
@@ -81,7 +203,7 @@ final readonly class SvgPreparation
 
         return new SvgPreparationResult(
             content: $checked->content,
-            changes: $cleaned->changes,
+            changes: $changes,
             originalBytes: \strlen($original),
             resultBytes: \strlen($checked->content),
             width: $checked->width,

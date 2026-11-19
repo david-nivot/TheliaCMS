@@ -17,8 +17,8 @@ namespace TheliaCMS\Media\Svg\Optimization;
 use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 
 /**
- * An optimization the editor may offer on top of the base one. Nothing
- * implements it yet: the tag is the extension point.
+ * An optimization the editor may offer on top of the base one; each
+ * service tagged with it is offered on the screen that prepares an SVG.
  */
 #[AutoconfigureTag(SvgOptimizationLevel::TAG)]
 interface SvgOptimizationLevel

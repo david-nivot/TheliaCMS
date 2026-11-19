@@ -14,7 +14,10 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Media\Svg;
 
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\Filesystem\Exception\IOException;
 use Symfony\Component\Filesystem\Filesystem;
 
 /**
@@ -23,12 +26,22 @@ use Symfony\Component\Filesystem\Filesystem;
  * its preparation once computed, which the preview and the answer read again
  * instead of preparing the file twice more.
  *
- * Nothing here is a stored image. A file lives one hour; a token that does not
+ * Nothing here is a stored image. A file lives one hour from its last use (a
+ * read refreshes it, which is also what ranks the files for the ceiling); a token that does not
  * look like one never reaches the disk, so an address cannot name another file.
  */
 final readonly class PreparedSvgStore
 {
     public const int LIFETIME_IN_SECONDS = 3600;
+
+    /**
+     * The files waiting, their names and their results weigh no more than this
+     * together: half of the 200 MB of this cache and the stages of
+     * `SvgStageCache`, which have the same ceiling under their own directory.
+     */
+    public const int MAXIMUM_TOTAL_BYTES = 100 * 1024 * 1024;
+
+    private const string ENTRY_PATTERN = '/^[a-f0-9]{32}\z/';
 
     private const string TOKEN_PATTERN = '/^[a-f0-9]{32}\z/';
 
@@ -37,16 +50,23 @@ final readonly class PreparedSvgStore
 
     private string $directory;
 
+    private CacheCeiling $ceiling;
+
     /**
-     * @param string $directory where the files wait: under the var directory of
-     *                          the install, its own, rather than the temporary
-     *                          directory every account and shop of the server shares
+     * @param string $directory             where the files wait: under the var directory of
+     *                                      the install, its own, rather than the temporary
+     *                                      directory every account and shop of the server shares
+     * @param int    $scanIntervalInSeconds how often the directory is purged and weighed, see `CacheCeiling`
      */
     public function __construct(
         #[Autowire('%kernel.project_dir%/var/theliacms/prepared-svg')]
         string $directory,
+        private int $maximumBytes = self::MAXIMUM_TOTAL_BYTES,
+        int $scanIntervalInSeconds = 60,
+        private LoggerInterface $logger = new NullLogger(),
     ) {
         $this->directory = rtrim($directory, \DIRECTORY_SEPARATOR);
+        $this->ceiling = new CacheCeiling(self::ENTRY_PATTERN, $scanIntervalInSeconds);
     }
 
     public static function isToken(string $token): bool
@@ -61,9 +81,10 @@ final readonly class PreparedSvgStore
     {
         $filesystem = new Filesystem();
         $filesystem->mkdir($this->directory, 0o700);
-        $this->purge();
 
         $token = bin2hex(random_bytes(16));
+        // The file sent is written even past the ceiling: the screen needs it.
+        $this->makeRoom(\strlen($content) + \strlen($name), $token);
         $filesystem->dumpFile($this->contentPath($token), $content);
         $filesystem->dumpFile($this->namePath($token), $name);
 
@@ -88,7 +109,19 @@ final readonly class PreparedSvgStore
         $content = @file_get_contents($path);
         $name = @file_get_contents($this->namePath($token));
 
-        return false === $content ? null : new PreparedSvgFile($token, false === $name ? '' : $name, $content);
+        // An empty read is a miss: a waiting file is never empty, and one emptied
+        // by a concurrent removal and a late refresh must not be served.
+        if (false === $content || '' === $content) {
+            return null;
+        }
+
+        // A file in use is a file to keep: it leaves last, and lives on. Its
+        // name goes along, and first, so that a purge running meanwhile cannot
+        // take the name of a file just refreshed.
+        CacheCeiling::refresh($this->namePath($token));
+        CacheCeiling::refresh($path);
+
+        return new PreparedSvgFile($token, false === $name ? '' : $name, $content);
     }
 
     /**
@@ -100,7 +133,15 @@ final readonly class PreparedSvgStore
             return;
         }
 
-        (new Filesystem())->dumpFile($this->resultPath($token, $setting), $result);
+        // A result is only a shortcut: one that does not fit, or that the disk
+        // refuses, is prepared again.
+        try {
+            if ($this->makeRoom(\strlen($result), $token)) {
+                (new Filesystem())->dumpFile($this->resultPath($token, $setting), $result);
+            }
+        } catch (IOException $exception) {
+            $this->logger->warning('The result of a prepared SVG could not be kept on the disk.', ['setting' => $setting, 'error' => $exception->getMessage()]);
+        }
     }
 
     /**
@@ -114,7 +155,13 @@ final readonly class PreparedSvgStore
 
         $result = @file_get_contents($this->resultPath($token, $setting));
 
-        return false === $result ? null : $result;
+        if (false === $result || '' === $result) {
+            return null;
+        }
+
+        CacheCeiling::refresh($this->resultPath($token, $setting));
+
+        return $result;
     }
 
     /**
@@ -143,7 +190,7 @@ final readonly class PreparedSvgStore
     }
 
     /**
-     * Run on every write: what nobody came back for does not stay on the disk,
+     * Run by the scans: what nobody came back for does not stay on the disk,
      * a name or a result left without its file included.
      */
     private function purge(): void
@@ -157,6 +204,21 @@ final readonly class PreparedSvgStore
             // else that old is left from a write that stopped halfway.
             str_ends_with($path, '.svg') ? $this->forget(basename($path, '.svg')) : @unlink($path);
         }
+    }
+
+    /**
+     * The directory is purged and weighed once per interval only; between two
+     * scans a write is accepted unless it alone is over the ceiling.
+     */
+    private function makeRoom(int $incomingBytes, string $token): bool
+    {
+        if (!$this->ceiling->isScanDue($this->directory)) {
+            return $incomingBytes <= $this->maximumBytes;
+        }
+
+        $this->purge();
+
+        return $this->ceiling->makeRoom($this->directory, $this->maximumBytes, $incomingBytes, $token, $this->forget(...));
     }
 
     private function hasExpired(string $path): bool

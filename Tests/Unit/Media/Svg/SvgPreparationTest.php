@@ -18,14 +18,19 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use Symfony\Component\Filesystem\Filesystem;
+use TheliaCMS\Media\Svg\Color\SvgColoring;
+use TheliaCMS\Media\Svg\Color\SvgColorPreset;
 use TheliaCMS\Media\Svg\Optimization\FigmaClipRemover;
 use TheliaCMS\Media\Svg\Optimization\GeometryEnvelope;
+use TheliaCMS\Media\Svg\Optimization\Path\ShorterPathNotation;
 use TheliaCMS\Media\Svg\Optimization\SvgOptimizationLevel;
 use TheliaCMS\Media\Svg\Optimization\SvgOptimizationLevels;
 use TheliaCMS\Media\Svg\Optimization\SvgOptimizer;
 use TheliaCMS\Media\Svg\Optimization\SvgReferences;
 use TheliaCMS\Media\Svg\Optimization\UnreferencedIdRemover;
 use TheliaCMS\Media\Svg\SvgPreparation;
+use TheliaCMS\Media\Svg\SvgStageCache;
 use TheliaLibrary\Exception\UnreadableSvgException;
 use TheliaLibrary\Service\Svg\SanitizedSvg;
 use TheliaLibrary\Service\Svg\SvgChange;
@@ -35,6 +40,15 @@ use TheliaLibrary\Service\Svg\UnreadableSvgReason;
 
 final class SvgPreparationTest extends TestCase
 {
+    private string $stagesRoot = '';
+
+    protected function tearDown(): void
+    {
+        if ('' !== $this->stagesRoot) {
+            (new Filesystem())->remove($this->stagesRoot);
+        }
+    }
+
     private const string ORIGINAL = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><!-- a long comment that only an editor needs --><path d="M0 0h24v24H0z" onload="x()"/></svg>';
 
     public function testTheOriginalIsCleanedThenOptimizedThenCleanedAgainAndTheSecondCleaningIsWhatIsShown(): void
@@ -93,6 +107,125 @@ final class SvgPreparationTest extends TestCase
         self::assertStringNotContainsString('strong', $none->content);
     }
 
+    public function testEveryLevelIsAppliedOnItsOwnToTheSameBaseOptimizationComputedOnce(): void
+    {
+        $sanitizer = $this->sanitizer();
+        $preparation = $this->preparation($sanitizer, [$this->level('light', '<!--light-->'), $this->level('strong', '<!--strong-->')]);
+
+        $results = $preparation->prepareLevels(self::ORIGINAL);
+
+        self::assertSame(['light', 'strong'], array_keys($results));
+        // One cleaning of the file, then one control per level: the base is not rebuilt.
+        self::assertCount(3, $sanitizer->received);
+        self::assertSame('checked:'.$sanitizer->received[1], $results['light']->content);
+        self::assertSame('checked:'.$sanitizer->received[2], $results['strong']->content);
+        self::assertStringEndsWith('<!--light-->', $sanitizer->received[1]);
+        self::assertStringEndsWith('<!--strong-->', $sanitizer->received[2], 'Not applied on the result of the other level.');
+        self::assertStringNotContainsString('light', $sanitizer->received[2]);
+        self::assertSame(
+            $this->preparation($this->sanitizer(), [$this->level('light', '<!--light-->')])->prepare(self::ORIGINAL, 'light')->content,
+            $results['light']->content,
+            'The same result as preparing the level alone.',
+        );
+        self::assertSame(\strlen(self::ORIGINAL), $results['strong']->originalBytes, 'The gain is counted against the file sent.');
+    }
+
+    public function testAChangeOfColorsDoesNotApplyTheLevelNorCleanTheFileAgain(): void
+    {
+        $calls = new \ArrayObject();
+        $sanitizer = $this->sanitizer();
+        $preparation = $this->cachedPreparation($sanitizer, [$this->countingLevel('strong', $calls)]);
+
+        $first = $preparation->prepare(self::ORIGINAL, 'strong');
+        $second = $preparation->prepare(self::ORIGINAL, 'strong', new SvgColoring(SvgColorPreset::Monochrome));
+        $third = $preparation->prepareLevels(self::ORIGINAL, new SvgColoring(SvgColorPreset::Monochrome));
+
+        self::assertCount(1, $calls, 'The level is applied once for the bytes, whatever the colors.');
+        // The file is cleaned once; each preparation then runs its own control.
+        self::assertCount(1 + 3, $sanitizer->received);
+        self::assertSame(self::ORIGINAL, $sanitizer->received[0]);
+        self::assertSame($first->changes, $second->changes, 'The changes told are kept with the cleaning.');
+        self::assertSame($second->content, $third['strong']->content);
+    }
+
+    public function testAnotherFileDoesNotReadTheStagesOfThisOne(): void
+    {
+        $calls = new \ArrayObject();
+        $preparation = $this->cachedPreparation($this->sanitizer(), [$this->countingLevel('strong', $calls)]);
+
+        $preparation->prepare(self::ORIGINAL, 'strong');
+        $preparation->prepare(str_replace('24v24', '25v25', self::ORIGINAL), 'strong');
+
+        self::assertCount(2, $calls);
+    }
+
+    public function testTheChangesKeptWithTheCleaningAreReturnedAsTheyWere(): void
+    {
+        $preparation = $this->cachedPreparation($this->sanitizer(changes: [new SvgChange(SvgChangeKind::RemovedAttribute, 'onload')]));
+
+        $preparation->prepare(self::ORIGINAL);
+        $again = $preparation->prepare(self::ORIGINAL);
+
+        self::assertCount(1, $again->changes);
+        self::assertSame(SvgChangeKind::RemovedAttribute, $again->changes[0]->kind);
+        self::assertSame('onload', $again->changes[0]->subject);
+    }
+
+    public function testAStageThatCannotBeReadBackIsComputedAgainWithoutAnException(): void
+    {
+        $change = [new SvgChange(SvgChangeKind::RemovedAttribute, 'onload')];
+
+        foreach ([
+            'corrupted JSON' => '[[',
+            'not an array' => '"text"',
+            'unknown kind' => '[["a_kind_of_another_deploy","onload"]]',
+            'wrong shape' => '[["removed_attribute"]]',
+            'wrong types' => '[[1,2]]',
+            'not a pair' => '["removed_attribute"]',
+        ] as $case => $damaged) {
+            $sanitizer = $this->sanitizer(changes: $change);
+            $preparation = $this->cachedPreparation($sanitizer);
+            $preparation->prepare(self::ORIGINAL);
+            $files = glob($this->stagesRoot.'/*.changes') ?: [];
+            self::assertCount(1, $files, $case);
+            file_put_contents($files[0], $damaged);
+
+            $preparation->prepare(self::ORIGINAL);
+
+            self::assertSame(2 + 2, \count($sanitizer->received), $case.': the file is cleaned again, then each preparation runs its control.');
+            (new Filesystem())->remove($this->stagesRoot);
+        }
+    }
+
+    public function testAMissingBaseDoesNotRefreshTheChangesLeftBehind(): void
+    {
+        $preparation = $this->cachedPreparation($this->sanitizer());
+        $preparation->prepare(self::ORIGINAL);
+        $base = glob($this->stagesRoot.'/*.base') ?: [];
+        $changes = glob($this->stagesRoot.'/*.changes') ?: [];
+        self::assertCount(1, $base);
+        self::assertCount(1, $changes);
+        unlink($base[0]);
+        touch($changes[0], time() - 600);
+        // A cache that refuses every write: only the read of the stages can touch the file.
+        $readOnly = new SvgPreparation(
+            $this->sanitizer(),
+            new SvgOptimizer(new FigmaClipRemover(new GeometryEnvelope(), new SvgReferences()), new UnreferencedIdRemover(new SvgReferences()), new ShorterPathNotation()),
+            new SvgOptimizationLevels([]),
+            stages: new SvgStageCache($this->stagesRoot, 0),
+        );
+
+        $readOnly->prepare(self::ORIGINAL);
+
+        clearstatcache();
+        self::assertLessThan(time() - 300, filemtime($changes[0]), 'The changes of a base that is gone are not kept alive.');
+    }
+
+    public function testWithoutLevelsNothingIsPreparedByLevel(): void
+    {
+        self::assertSame([], $this->preparation($this->sanitizer())->prepareLevels(self::ORIGINAL));
+    }
+
     public function testWhatTheControlRemovesIsLoggedSinceTheEditorIsNotShownIt(): void
     {
         $logger = new class extends AbstractLogger {
@@ -135,10 +268,63 @@ final class SvgPreparationTest extends TestCase
 
         return new SvgPreparation(
             $sanitizer,
-            new SvgOptimizer(new FigmaClipRemover(new GeometryEnvelope(), $references), new UnreferencedIdRemover($references)),
+            new SvgOptimizer(new FigmaClipRemover(new GeometryEnvelope(), $references), new UnreferencedIdRemover($references), new ShorterPathNotation()),
             new SvgOptimizationLevels($levels),
             logger: $logger,
         );
+    }
+
+    /**
+     * @param list<SvgOptimizationLevel> $levels
+     */
+    private function cachedPreparation(object $sanitizer, array $levels = []): SvgPreparation
+    {
+        \assert($sanitizer instanceof SvgSanitizerInterface);
+        $references = new SvgReferences();
+
+        return new SvgPreparation(
+            $sanitizer,
+            new SvgOptimizer(new FigmaClipRemover(new GeometryEnvelope(), $references), new UnreferencedIdRemover($references), new ShorterPathNotation()),
+            new SvgOptimizationLevels($levels),
+            stages: new SvgStageCache($this->stagesRoot = sys_get_temp_dir().'/cms-stages-'.bin2hex(random_bytes(6))),
+        );
+    }
+
+    /**
+     * @param \ArrayObject<int, string> $calls
+     */
+    private function countingLevel(string $name, \ArrayObject $calls): SvgOptimizationLevel
+    {
+        return new class($name, $calls) implements SvgOptimizationLevel {
+            /**
+             * @param \ArrayObject<int, string> $calls
+             */
+            public function __construct(private readonly string $name, private readonly \ArrayObject $calls)
+            {
+            }
+
+            public function name(): string
+            {
+                return $this->name;
+            }
+
+            public function label(): string
+            {
+                return 'Level '.$this->name;
+            }
+
+            public function changesRendering(): bool
+            {
+                return true;
+            }
+
+            public function apply(string $svg): string
+            {
+                $this->calls[] = $svg;
+
+                return $svg.'<!--'.$this->name.'-->';
+            }
+        };
     }
 
     /**
