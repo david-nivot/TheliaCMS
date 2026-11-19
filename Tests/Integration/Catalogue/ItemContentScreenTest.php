@@ -238,7 +238,7 @@ final class ItemContentScreenTest extends AdminScreenTestCase
         $screen = $this->screen(\sprintf('%s?edit_language_id=%d', $this->url($content), $target->getId()));
         $token = $this->tokenOfTheForm($screen, $this->url($content).'/generate');
 
-        self::assertSame(302, $this->send('POST', \sprintf('%s/translate?edit_language_id=%d', $this->url($content), $target->getId()), ['_token' => $token, 'cms_translate' => ['source' => $this->locale()]]));
+        self::assertSame(302, $this->send('POST', \sprintf('%s/translate?edit_language_id=%d', $this->url($content), $target->getId()), ['_token' => $token, 'cms_translate' => ['source' => $this->locale()], 'draft_version' => $this->draftVersionOf($screen)]));
 
         $row = CmsItemContentQuery::create()->filterByItemType('content')->filterByItemId($id)->filterByLocale($target->getLocale())->findOne();
         self::assertStringContainsString('By the model.', (string) $row?->getDraftHtml());

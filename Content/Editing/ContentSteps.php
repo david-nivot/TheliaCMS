@@ -95,9 +95,12 @@ final readonly class ContentSteps
     /**
      * Puts back the draft as it was before the latest step.
      *
+     * @param int|null $readVersion the version of the draft the screen read
+     *
      * @throws InvalidDocumentException when the draft before no longer passes the catalogue
+     * @throws StaleDraftException      when the draft moved since the version read
      */
-    public function undo(ContentTarget $target): StepOutcome
+    public function undo(ContentTarget $target, ?int $readVersion = null): StepOutcome
     {
         $step = $this->query($target->key())->filterByUndone(0)->orderById(Criteria::DESC)->findOne();
 
@@ -111,7 +114,7 @@ final readonly class ContentSteps
 
         // The draft as stored is what Redo compares with: the writer may
         // normalise a document kept by an older version of the module.
-        $this->write($target, $step->getDocumentBefore(), $step->getProvenanceBefore(), static fn (string $stored) => $step->setDocumentBefore($stored)->setUndone(1)->save());
+        $this->write($target, $step->getDocumentBefore(), $step->getProvenanceBefore(), static fn (string $stored) => $step->setDocumentBefore($stored)->setUndone(1)->save(), $readVersion);
 
         return StepOutcome::Done;
     }
@@ -119,9 +122,12 @@ final readonly class ContentSteps
     /**
      * Plays again the step undone last.
      *
+     * @param int|null $readVersion the version of the draft the screen read
+     *
      * @throws InvalidDocumentException when the draft after no longer passes the catalogue
+     * @throws StaleDraftException      when the draft moved since the version read
      */
-    public function redo(ContentTarget $target): StepOutcome
+    public function redo(ContentTarget $target, ?int $readVersion = null): StepOutcome
     {
         $step = $this->query($target->key())->filterByUndone(1)->orderById(Criteria::ASC)->findOne();
 
@@ -133,7 +139,7 @@ final readonly class ContentSteps
             return StepOutcome::DraftChanged;
         }
 
-        $this->write($target, $step->getDocumentAfter(), $step->getProvenanceAfter(), static fn (string $stored) => $step->setDocumentAfter($stored)->setUndone(0)->save());
+        $this->write($target, $step->getDocumentAfter(), $step->getProvenanceAfter(), static fn (string $stored) => $step->setDocumentAfter($stored)->setUndone(0)->save(), $readVersion);
 
         return StepOutcome::Done;
     }
@@ -157,7 +163,7 @@ final readonly class ContentSteps
      *
      * @param \Closure(string): mixed $mark
      */
-    private function write(ContentTarget $target, ?string $document, ?string $provenance, \Closure $mark): void
+    private function write(ContentTarget $target, ?string $document, ?string $provenance, \Closure $mark, ?int $readVersion): void
     {
         $connection = Propel::getConnection('TheliaMain');
         $connection->beginTransaction();
@@ -165,7 +171,7 @@ final readonly class ContentSteps
         try {
             // A content holding nothing before its first section gets an empty
             // draft back: the screen shows it as blank, like a draft emptied by hand.
-            $this->writer->saveContent($target, (null === $document ? null : Document::fromJson($document)) ?? new Document([]));
+            $this->writer->saveContent($target, (null === $document ? null : Document::fromJson($document)) ?? new Document([]), null, $readVersion);
             $row = $target->row();
             $row->replaceDraftProvenance($provenance);
             $mark((string) $row->draftDocument());

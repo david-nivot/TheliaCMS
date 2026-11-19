@@ -1,7 +1,7 @@
 # Plan: the right to publish, then concurrent edits (F4)
 
 Status: decided (2026-11-19, by the maintainer); step S done (2.35.0), step M inventoried on
-`feat/f4-concurrent-edits`, its four open points decided ("Decided after the inventory"). Read on `main` at 758282b (2.34.0). Wave 5 of the roadmap, lot F4
+`feat/f4-concurrent-edits`, coded there (see "Done" under step M). Read on `main` at 758282b (2.34.0). Wave 5 of the roadmap, lot F4
 ("Droit de publier, concurrence"), after Q4 (one controller and one writer for the page and the
 item of the catalogue, 2.13.0) and N29 (`may_change` and `may_publish` apart in the templates,
 2.13.0). Each step updates this plan in its own commit.
@@ -275,6 +275,35 @@ writes the outcome ledger of a text, the text itself going into the field and th
    on `cms_page`: its own step if wanted.
 
 All four as written above.
+
+Decided while coding (2026-11-19, by the maintainer): the banner shows when the screen opens on a
+draft (settings: a page) someone else changed within the hour, and after a refusal; a write request of
+a screen that posts no version is refused like a stale one.
+
+Done: `draft_version` on both tables (`Config/update/2.36.0.sql`, replayable, played twice on the
+dev base; `TheliaMain.sql`, `schema.xml`; `module.xml` goes to 2.36.0 with the release, as for every
+SQL step). `DraftLock::claim()` reads the version under `SELECT … FOR UPDATE` and raises
+`StaleDraftException`; `ContentRow::claimDraft()`, every `saveDraft()` moves the version. CW:
+`saveContent()`, `restoreDraft()` (refused before it keeps anything), `publish()` take the version
+read; `keepAside()` keeps a refused answer. Undo and redo carry it. PW: `renderDraftAgain()` writes on
+the version it read (`DraftRendering::ChangedMeanwhile`), `removeProvenance()` is refused when stale;
+the import moves the version. Screens: `DraftNotice` (version posted, refusal, banner); CC answers a
+refused write with the screen and 409, refuses a stale generation before the call and keeps an answer
+refused at its end; PCC keep; PC publish, "Save and publish", remove the AI mark; the banner on both
+screens. Templates: `draft_version` in every writing form, `data-cms-draft-version` on the screen,
+synchronised after each redraw; the script keeps the section dialog open with its text on a 409 and
+never posts a 409 again natively. Documentation: editor documentation (fr, en, section
+`two-editors`, troubleshooting `change-not-saved`), drawing `documentation/_concurrent_flow.html.twig`,
+README (with a sequence diagram), CHANGELOG, traps of `.claude/CLAUDE.md`.
+Tests: `DraftVersionTest` (7), `DraftRaceTest` (2, two processes: six saves on one version let one
+through; a re-render waits for a save in flight and leaves it), `ConcurrentEditScreenTest` (8);
+28 screen tests updated to post the version they read (`draftVersionOf()`). Fourteen sabotages, each
+red (two stayed green first: the banner for one's own change and a publication that goes through from
+the settings; both tests strengthened). Browser, 1440 px, French, two administrators: banner naming
+the other, a section saved from a stale screen refused with the dialog and its text kept (first run:
+the screen was redrawn and the text lost, fixed), a stale publication refused, the settings banner,
+the publication after a reload; the drawing in both languages. Unit suite 2063 green; integration
+suite 1774 green (7 skipped, 1 incomplete), PHPStan and the code style clean.
 
 Estimate read again with the inventory: 1.25 j (design) + 0.25 j (writers outside CW) + 0.5 j
 (contingency: the four script paths above, the native fallback of the forms, the stream) = 2 j for step M.

@@ -93,9 +93,9 @@ final class PublishWarningsTest extends AdminScreenTestCase
         $this->withHeadingMode('warn', function () use ($page): void {
             $edit = \sprintf('/admin/cms/pages/%d', $page->getId());
             $action = $edit.'/publish';
-            $token = $this->tokenOfTheForm($this->screen($edit), $action);
+            $screen = $this->screen($edit);
 
-            self::assertSame(302, $this->send('POST', $action, ['_token' => $token]));
+            self::assertSame(302, $this->send('POST', $action, ['_token' => $this->tokenOfTheForm($screen, $action), 'draft_version' => $this->draftVersionOf($screen)]));
         });
 
         self::assertNotNull($this->pageContent($page)->getPublishedAt(), 'The page went online.');
@@ -113,9 +113,9 @@ final class PublishWarningsTest extends AdminScreenTestCase
 
         $this->withHeadingMode('warn', function () use ($page): void {
             $base = \sprintf('/admin/cms/pages/%d/content', $page->getId());
-            $token = $this->tokenOfTheScripts($this->screen($base));
+            $screen = $this->screen($base);
 
-            self::assertSame(302, $this->send('POST', $base.'/publish', ['_token' => $token]));
+            self::assertSame(302, $this->send('POST', $base.'/publish', ['_token' => $this->tokenOfTheScripts($screen), 'draft_version' => $this->draftVersionOf($screen)]));
         });
 
         $screen = $this->screen(\sprintf('/admin/cms/pages/%d/content', $page->getId()));

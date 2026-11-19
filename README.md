@@ -276,6 +276,46 @@ changed since by another tab, another editor, an import or a command refuses it
 and nothing is written. A new change drops what Redo could still play. Imports
 and commands keep no step.
 
+**Two editors on one draft.** A draft carries a version (`draft_version`),
+moved by every write of its content, whoever makes it: the screens, the
+generator, a restore, `thelia_cms:generate`, an import. Every form of the
+content screen that writes the draft or publishes it, and the publish and
+"Remove the AI mark" forms of the settings, post the version the screen read;
+the writer locks the row, compares, and refuses a write made on a version that
+moved since (`StaleDraftException`), so two saves of the same second cannot
+both pass. A refused write writes nothing: the content screen answers 409 with
+the draft as it is now and who changed it and when, and its script keeps what
+was typed in the open form. A request that posts no version is refused the
+same way. Publishing and removing the AI mark do not move the version (the
+text is the same); drawing a draft again (`thelia_cms:render`, a component of
+the site promoted) writes only on the version it read and leaves a draft saved
+meanwhile as it is. A generation asked on a stale screen costs no call; one
+whose draft moved while the model wrote keeps its answer among the previous
+drafts. The settings of a page (title, address, fields, SEO) are not a draft
+and carry no version: a banner says when someone else changed the page within
+the hour, on the settings and on the content screen. Nothing is locked: an
+editor is never kept out of a page. Whoever writes a draft with SQL moves
+`draft_version` with it.
+
+```mermaid
+sequenceDiagram
+    participant A as Editor A
+    participant D as Draft
+    participant B as Editor B
+    A->>D: opens the screen
+    D-->>A: version 3
+    B->>D: opens the screen
+    D-->>B: version 3
+    B->>D: saves on version 3
+    D-->>B: saved, version 4
+    A->>D: saves on version 3
+    D-->>A: refused: B changed it N minutes ago, the typed text stays in the form
+    A->>D: reloads
+    D-->>A: version 4, with the changes of B
+    A->>D: saves on version 4
+    D-->>A: saved, version 5
+```
+
 Each section is also **edited by hand**, on the same screen, in a form read
 from the schema of its component: a field per prop, rows added and removed for
 a list, a picker on the media library for an image or a video (thumbnails, search,

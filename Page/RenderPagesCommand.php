@@ -96,7 +96,7 @@ final class RenderPagesCommand extends Command
                 try {
                     match ($this->request->around(fn (): DraftRendering => $this->writer->renderDraftAgain($page, $locale), \is_string($url) ? $url : null)) {
                         DraftRendering::Rendered => ++$rendered,
-                        DraftRendering::Unchanged, DraftRendering::NoDraft => ++$unchanged,
+                        DraftRendering::Unchanged, DraftRendering::NoDraft, DraftRendering::ChangedMeanwhile => ++$unchanged,
                         DraftRendering::KeptForCustomCode => $kept[] = \sprintf('#%d %s: its custom code would be taken out; save it from the back office with the right to custom code', $page->getId(), $locale),
                     };
                 } catch (\Throwable $throwable) {

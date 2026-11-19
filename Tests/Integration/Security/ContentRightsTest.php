@@ -82,7 +82,7 @@ final class ContentRightsTest extends AdminScreenTestCase
             $token = $this->tokenOfTheScripts($this->screen($target['screen']));
 
             foreach ([...self::GENERATOR_ACTIONS, ...self::CHANGE_ACTIONS, ...$this->publishActions($family)] as $action) {
-                self::assertSame(302, $this->post($target, $action, $token), \sprintf('%s of the %s is allowed with every right.', $action, $family));
+                self::assertSame(302, $this->post($target, $action, $token, $this->shownVersion($target)), \sprintf('%s of the %s is allowed with every right.', $action, $family));
             }
         }
     }
@@ -104,7 +104,7 @@ final class ContentRightsTest extends AdminScreenTestCase
             }
 
             foreach ($this->publishActions($family) as $action) {
-                self::assertSame(302, $this->post($target, $action, $token), \sprintf('%s of the %s takes the right to publish only.', $action, $family));
+                self::assertSame(302, $this->post($target, $action, $token, $this->shownVersion($target)), \sprintf('%s of the %s takes the right to publish only.', $action, $family));
             }
         }
     }
@@ -179,8 +179,18 @@ final class ContentRightsTest extends AdminScreenTestCase
     /**
      * @param array{screen: string, base: string} $target
      */
-    private function post(array $target, string $action, string $token): int
+    private function post(array $target, string $action, string $token, ?string $version = null): int
     {
-        return $this->send('POST', $target['base'].'/'.$action, ['_token' => $token]);
+        return $this->send('POST', $target['base'].'/'.$action, ['_token' => $token] + (null === $version ? [] : ['draft_version' => $version]));
+    }
+
+    /**
+     * The version of the draft as the screen shows it now: an earlier action may have written it.
+     *
+     * @param array{screen: string, base: string} $target
+     */
+    private function shownVersion(array $target): string
+    {
+        return $this->draftVersionOf($this->screen($target['screen']));
     }
 }

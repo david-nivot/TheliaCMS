@@ -332,7 +332,7 @@ final class SectionEditScreenTest extends AdminScreenTestCase
         self::assertSame(3, $list->filter('[data-cms-grip]')->count(), 'Each section has a handle.');
 
         $action = (string) $list->attr('data-cms-reorder');
-        self::assertSame(302, $this->send('POST', $action, ['_token' => (string) $list->attr('data-cms-reorder-token'), 'section' => 'intro', 'position' => '2']));
+        self::assertSame(302, $this->send('POST', $action, ['_token' => (string) $list->attr('data-cms-reorder-token'), 'section' => 'intro', 'position' => '2', 'draft_version' => $this->draftVersionOf($screen)]));
 
         $content = CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($this->locale())->findOne();
         self::assertSame(['services', 'faq', 'intro'], array_map(static fn (Section $section): string => $section->id, Document::fromJson($content?->getDraftDocument())?->sections ?? []));
@@ -623,11 +623,11 @@ final class SectionEditScreenTest extends AdminScreenTestCase
     public function testEveryComponentOfferedCanBeAddedFromItsExample(): void
     {
         $page = $this->pageWith([new Section('intro', 'cms:richtext', ['html' => '<h1>Avant</h1>'])]);
-        $screen = $this->screen($this->url($page));
         $names = $this->getService(SectionCatalog::class)->offeredNames();
 
         foreach ($names as $name) {
-            $form = $screen->filter(\sprintf('[data-testid="cms-content-add-%s"]', $name))->form();
+            // Each addition moves the version: the next one is made from the screen as it is then.
+            $form = $this->screen($this->url($page))->filter(\sprintf('[data-testid="cms-content-add-%s"]', $name))->form();
             self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()), $name);
         }
 
@@ -929,6 +929,7 @@ final class SectionEditScreenTest extends AdminScreenTestCase
 
         // Moved in the page only, with the names left as they were, the order is the one of the indexes: hence the renaming.
         $values['cms_section_hl']['blocks'] = [1 => $second, 0 => $first, 2 => $third];
+        $values['draft_version'] = $this->draftVersionOf($this->screen($this->url($page)));
         self::assertSame(302, $this->send('POST', $form->getUri(), $values));
 
         $document = Document::fromJson(CmsPageContentQuery::create()->filterByPageId($page->getId())->findOne()?->getDraftDocument());

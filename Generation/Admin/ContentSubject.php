@@ -55,6 +55,11 @@ final readonly class ContentSubject
         public array $previousDrafts = [],
         public ?TranslationLink $translationLink = null,
         public array $notes = [],
+        // The version of the draft the screen shows, posted back by every
+        // form that writes it, and who changed it last and when.
+        public int $draftVersion = 0,
+        public ?int $draftAuthor = null,
+        public ?\DateTimeInterface $draftChangedAt = null,
     ) {
     }
 

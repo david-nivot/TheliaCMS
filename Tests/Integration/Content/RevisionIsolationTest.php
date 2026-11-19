@@ -235,9 +235,9 @@ final class RevisionIsolationTest extends AdminScreenTestCase
 
     private function restore(string $base, int $revision): void
     {
-        $token = $this->tokenOfTheScripts($this->screen($base));
+        $screen = $this->screen($base);
 
-        self::assertSame(302, $this->send('POST', $base.'/restore', ['_token' => $token, 'revision' => $revision]));
+        self::assertSame(302, $this->send('POST', $base.'/restore', ['_token' => $this->tokenOfTheScripts($screen), 'revision' => $revision, 'draft_version' => $this->draftVersionOf($screen)]));
         self::assertSame(1, $this->screen($base)->filter('[data-testid="cms-builder-flash-danger"], [data-testid="cms-builder-flash-success"]')->count());
     }
 
