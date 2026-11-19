@@ -14,8 +14,10 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Form;
 
+use Thelia\Domain\Webhook\WebhookPublisher;
 use TheliaCMS\Model\CmsForm;
 use TheliaCMS\Model\CmsFormSubmission;
+use TheliaCMS\Webhook\WebhookEvents;
 
 /**
  * What happens once a submission has been accepted: it is kept if the form says
@@ -31,6 +33,7 @@ final readonly class SubmissionStore
         private SubmissionMailer $mailer,
         private VisitorFingerprint $fingerprints,
         private SubmissionRateLimiter $rateLimiter,
+        private WebhookPublisher $webhooks,
     ) {
     }
 
@@ -53,6 +56,11 @@ final readonly class SubmissionStore
                 ->setData(SubmissionData::encode($submission->answers, $now))
                 ->setIpHash($this->fingerprints->of($ipAddress));
             $kept->save();
+
+            // Only a kept message is told: the webhook names it by its id,
+            // and a message the form does not keep has none. The publisher
+            // never throws, so a receiver that fails loses no message.
+            $this->webhooks->publish(WebhookEvents::FORM_SUBMITTED, $kept);
         }
 
         $this->mailer->notifyRecipients($record, $definition, $submission->answers, $locale, null === $kept ? null : (int) $kept->getId());

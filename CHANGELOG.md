@@ -7,6 +7,20 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **The webhooks of Thelia tell other tools when a page goes online or offline
+  and when a form message is kept.** Three events join the catalog under
+  **Configuration > Webhooks**: `cms_page.published` (every publication of a
+  page in a language, again included), `cms_page.unpublished` (a page online in
+  a language taken offline) and `cms_form.submitted` (a message kept by a form
+  that keeps its answers). The full payload of a page gives its id, language,
+  title, type, address and date of publication; that of a message its form,
+  language, address, consent and answers, which a subscriber that wants no
+  personal data replaces by the identifiers only. The contents of a kind, the
+  content of the catalogue, a change of visibility or of the publication window
+  and the import send nothing. See `docs/webhooks.md` and ADR 22.
+
 ## [2.38.0] - 2026-11-19
 
 ### Added

@@ -30,6 +30,7 @@ use TheliaCMS\Page\Field\PageFields;
 use TheliaCMS\Page\PageAuthorship;
 use TheliaCMS\Page\PageInvalidator;
 use TheliaCMS\Search\SearchTextExtractor;
+use TheliaCMS\Webhook\PageWebhooks;
 
 /**
  * A page in one language, for the shared writer: what only a page refuses
@@ -52,6 +53,7 @@ final readonly class PageContentTarget implements ContentTarget
         private PageRevisionStore $revisions,
         private CmsUrlService $urls,
         private PageAuthorship $authorship,
+        private PageWebhooks $webhooks,
     ) {
     }
 
@@ -189,6 +191,8 @@ final readonly class PageContentTarget implements ContentTarget
             // Traced: this page went online through the wider allow list.
             $withCustomCode ? ' (custom code allowed)' : '',
         ));
+
+        $this->webhooks->published($this->page, $this->locale);
     }
 
     public function afterRenderedAgain(): void
@@ -205,6 +209,11 @@ final readonly class PageContentTarget implements ContentTarget
         }
 
         $this->activityLog->record('UNPUBLISH', $this->id(), \sprintf('CMS page #%d unpublished in %s', $this->id(), $this->locale));
+
+        // Nothing went offline for a page that was not online in this language.
+        if ($wasOnline) {
+            $this->webhooks->unpublished($this->page, $this->locale);
+        }
     }
 
     /**

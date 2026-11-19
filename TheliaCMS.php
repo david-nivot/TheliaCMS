@@ -63,6 +63,7 @@ use TheliaCMS\Seo\PageCanonicalListener;
 use TheliaCMS\Seo\StandInPageCanonicalListener;
 use TheliaCMS\Settings\CmsSettings;
 use TheliaCMS\Vitrine\ShowcasePriceDisplay;
+use TheliaCMS\Webhook\WebhookEventsCompiler;
 // The class CmsPageIndex extends. Importing it costs nothing when TntSearch is
 // absent, and without the import the guard below would name TheliaCMS\BaseIndex.
 use TntSearch\Index\BaseIndex;
@@ -395,7 +396,7 @@ class TheliaCMS extends BaseModule
 
     public static function getCompilers(): array
     {
-        return [new CmsAdminResourcesCompiler()];
+        return [new CmsAdminResourcesCompiler(), new WebhookEventsCompiler()];
     }
 
     public static function configureServices(ServicesConfigurator $servicesConfigurator): void
@@ -427,6 +428,8 @@ class TheliaCMS extends BaseModule
                 __DIR__.'/Content/Editing/TranslationSource.php',
                 __DIR__.'/Content/Editing/TranslationLink.php',
                 __DIR__.'/Generation/TranslationBackfillOutcome.php',
+                // Payloads of the webhooks: built by the transformer of the core.
+                __DIR__.'/Webhook/*Payload.php',
                 // Built per call by ContentTargets, around the page or the item they serve.
                 __DIR__.'/Page/Admin/PageContentTarget.php',
                 __DIR__.'/Page/Admin/PageContentRow.php',
