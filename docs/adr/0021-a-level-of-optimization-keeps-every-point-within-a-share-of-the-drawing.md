@@ -1,4 +1,4 @@
-# 20. A level of optimization keeps every point within a share of the drawing
+# 21. A level of optimization keeps every point within a share of the drawing
 
 Date: 2026-11-17. Status: accepted.
 

@@ -732,7 +732,7 @@ for what a server with ffmpeg takes). An SVG can carry script: it is cleaned
 and optimized on its own screen, which shows the result, before it enters the
 library. The base optimization is lossless and always applied; three stronger
 levels round the points and remove the ones that lie within a share of the
-diagonal of the drawing (see [ADR 20](docs/adr/0020-a-level-of-optimization-keeps-every-point-within-a-share-of-the-drawing.md)).
+diagonal of the drawing (see [ADR 21](docs/adr/0021-a-level-of-optimization-keeps-every-point-within-a-share-of-the-drawing.md)).
 Files are dropped on the list or chosen, sent one by one, and a refused file
 is named with why without costing the others. The describe queue
 then opens on the images just added; a video has nothing to describe.

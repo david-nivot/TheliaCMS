@@ -68,7 +68,7 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   compressed. The largest illustration of Flexy goes from 375 KB to 178, 66
   and 25 KB. A level takes at most 1.1 s on the heaviest real file. Applied to
   its own result, a level can still remove points. The choice is explained in
-  [ADR 20](docs/adr/0020-a-level-of-optimization-keeps-every-point-within-a-share-of-the-drawing.md).
+  [ADR 21](docs/adr/0021-a-level-of-optimization-keeps-every-point-within-a-share-of-the-drawing.md).
 
 ### Changed
 
