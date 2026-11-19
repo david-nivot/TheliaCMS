@@ -27,6 +27,7 @@ Le formulaire d'une section, dans le tiroir de l'écran de contenu d'une page, e
 - Sans session admin pour la preuve : faire écrire le balisage rendu de l'écran par un test d'intégration (sortie de diagnostic, retirée avant commit), puis le poser dans `/admin/login`, page publique qui charge les feuilles du back-office, et mesurer là. Simuler le menu latéral (240 px) : une rangée qui tient à 1440 px sans lui peut se replier avec lui.
 - Recopier les assets dans l'hôte (`cms_asset()` le fait au premier appel) et recharger sans cache avant de juger le rendu.
 - Libellés et aides traduits (`I18n/fr_FR.php`, `I18n/en_US.php`) et contrôlés en français, la langue des éditeurs.
+- Dans un script de preuve, le premier bouton `submit` du dialogue d'une section est sa fermeture (`form method="dialog"`) : viser `[data-testid="cms-section-save"]`. Échap sur un dialogue modifié demande l'abandon puis redessine l'écran depuis le brouillon (`closeGuarded()` de `content-editor.js`) : la version et le contenu affichés changent, une preuve de refus faite ensuite ne prouve plus rien.
 
 ## Repères dans le code
 
