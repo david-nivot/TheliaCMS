@@ -7,6 +7,32 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **Two editors on one draft no longer overwrite each other**: a draft carries
+  a version (`draft_version` on `cms_page_content` and `cms_item_content`,
+  update `2.37.0`), moved by every save. The content screen and the settings
+  of a page post the version they read, and a save, a section added, removed,
+  moved or duplicated, a restore, Undo, Redo, a publication or the removal of
+  the AI mark made on a draft that moved since is refused: the screen says who
+  changed it and when, and keeps what was typed. A generation asked on a draft
+  that moved costs no call; one whose draft moved while the model wrote keeps
+  its answer among the previous drafts instead of replacing the other
+  editor's work.
+- **A banner on the content screen and the settings of a page** when someone
+  else changed the page within the hour: "Changed by X, N minutes ago".
+
+### Changed
+
+- **A request that writes a draft from the back office must post the version
+  it read** (`draft_version`): one without it is refused as stale. A tab left
+  open from before the update is refused once, then works after a reload.
+- **`thelia_cms:render` and the drafts drawn again after a component of the
+  site changed** leave a draft saved while they rendered it as it is, and count
+  it among the drafts left unchanged.
+- **A site import that replaces a draft moves its version**: a screen open on
+  the draft it replaced is refused rather than writing over the import.
+
 ## [2.36.0] - 2026-11-19
 
 ### Added

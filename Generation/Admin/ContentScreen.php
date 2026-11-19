@@ -36,6 +36,7 @@ use TheliaCMS\Generation\GenerationLog;
 use TheliaCMS\Generation\GenerationRequest;
 use TheliaCMS\Generation\HeaderOutcome;
 use TheliaCMS\Generation\WebPageRead;
+use TheliaCMS\Http\Admin\DraftNotice;
 use TheliaCMS\Model\CmsPageGeneration;
 use TheliaCMS\Preview\ComponentPreviewLink;
 use TheliaCMS\Preview\PreviewLink;
@@ -72,6 +73,7 @@ final readonly class ContentScreen
         private SitePropRows $propRows,
         private DocumentationLink $documentation,
         private ContentSteps $steps,
+        private DraftNotice $notice,
     ) {
     }
 
@@ -100,6 +102,9 @@ final readonly class ContentScreen
             'may_generate' => $mayGenerate,
             'may_change' => $mayChange,
             'may_publish' => $mayPublish,
+            // Posted back by every form that writes the draft or publishes it.
+            'draft_version' => $subject->draftVersion,
+            'draft_notice' => $this->notice->banner($subject->draftAuthor, $subject->draftChangedAt),
             'toolkit_url' => $this->toolkit->url(),
             // The screen replaces the layout the link of every other screen
             // is drawn in: it carries its own, at the top of its panel.

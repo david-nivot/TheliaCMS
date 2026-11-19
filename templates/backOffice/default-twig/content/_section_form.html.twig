@@ -289,6 +289,7 @@
    module's theme, the widgets from the back-office theme. #}
 {% form_theme form with bo_form_themes|merge(['@TheliaCMSModule/backOffice/default-twig/content/_section_form_theme.html.twig']) only %}
 {{ form_start(form, { attr: { 'data-cms-section-form': '', novalidate: 'novalidate' } }) }}
+    {{ include('@TheliaCMSModule/backOffice/default-twig/content/_draft_version.html.twig') }}
     <input type="hidden" name="_token" value="{{ assignToken() }}">
     {{ _self.fields(form) }}
     <div class="cms-content__edit-actions">

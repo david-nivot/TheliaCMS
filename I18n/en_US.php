@@ -2117,4 +2117,12 @@ return [
     'Heading 4 of the theme' => 'Heading 4 of the theme',
     'Heading 5 of the theme' => 'Heading 5 of the theme',
     'Heading 6 of the theme' => 'Heading 6 of the theme',
+    'Your change was not saved: %who% changed this content %when%. Reload the screen to see their version; what you typed is still in the form.' => 'Your change was not saved: %who% changed this content %when%. Reload the screen to see their version; what you typed is still in the form.',
+    'Changed by %who% %when%: they may still be working on it. A save made after theirs is refused rather than written over their changes.' => 'Changed by %who% %when%: they may still be working on it. A save made after theirs is refused rather than written over their changes.',
+    'someone else' => 'someone else',
+    'a moment ago' => 'a moment ago',
+    'less than a minute ago' => 'less than a minute ago',
+    '%count% minute(s) ago' => '%count% minute(s) ago',
+    'on %date%' => 'on %date%',
+    'The answer of the generator is kept among the previous drafts: put it back from there.' => 'The answer of the generator is kept among the previous drafts: put it back from there.',
 ];

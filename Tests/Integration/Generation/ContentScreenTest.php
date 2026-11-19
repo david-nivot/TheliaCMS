@@ -316,7 +316,7 @@ final class ContentScreenTest extends AdminScreenTestCase
         $screen = $this->screen(\sprintf('/admin/cms/pages/%d/content?edit_language_id=%d', $page->getId(), $target->getId()));
         $token = $this->tokenOfTheForm($screen, \sprintf('/admin/cms/pages/%d/content/generate', $page->getId()));
 
-        self::assertSame(302, $this->send('POST', \sprintf('/admin/cms/pages/%d/content/translate?edit_language_id=%d', $page->getId(), $target->getId()), ['_token' => $token, 'cms_translate' => ['source' => $this->locale()]]));
+        self::assertSame(302, $this->send('POST', \sprintf('/admin/cms/pages/%d/content/translate?edit_language_id=%d', $page->getId(), $target->getId()), ['_token' => $token, 'cms_translate' => ['source' => $this->locale()], 'draft_version' => $this->draftVersionOf($screen)]));
 
         $content = CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($target->getLocale())->findOne();
         self::assertStringContainsString('By the model.', (string) $content?->getDraftHtml());
@@ -629,7 +629,7 @@ final class ContentScreenTest extends AdminScreenTestCase
         self::assertSame(403, $this->send('POST', $this->generateUrl($page->getId()), ['_token' => $token, 'cms_brief' => ['text' => 'Try anyway.']]));
         self::assertSame([], $this->api->requests);
 
-        self::assertSame(302, $this->send('POST', $this->publishUrl($page->getId()), ['_token' => $token]), 'Publishing takes the right to publish, which this profile has.');
+        self::assertSame(302, $this->send('POST', $this->publishUrl($page->getId()), ['_token' => $token, 'draft_version' => $this->draftVersionOf($screen)]), 'Publishing takes the right to publish, which this profile has.');
     }
 
     public function testAPageInTheBinHasNoContentScreen(): void

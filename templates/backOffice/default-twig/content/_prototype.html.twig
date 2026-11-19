@@ -65,6 +65,7 @@
         <div class="cms-content__prototype-actions">
             <form method="post" action="{{ subject.url('component_keep') }}" data-cms-keep data-testid="cms-content-prototype-keep">
                 <input type="hidden" name="_token" value="{{ assignToken() }}">
+                {{ include('@TheliaCMSModule/backOffice/default-twig/content/_draft_version.html.twig') }}
                 <input type="hidden" name="candidate" value="{{ prototype.candidate.logId }}">
                 <button type="submit" class="btn btn-sm btn-success">
                     <i class="bi bi-check2" aria-hidden="true"></i> {{ 'Keep it and add it to the page'|trans({}, 'theliacms') }}

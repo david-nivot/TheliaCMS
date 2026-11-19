@@ -1,0 +1,79 @@
+{#
+    Two editors on the same page, in three lanes: editor A, the draft and
+    editor B. The geometry is drawn once here; each language of the
+    documentation gives its words: `title`, `summary` (what a screen reader
+    reads instead), three `lanes`, six `steps` (what the editor does, each a
+    list of up to three short lines), six `states` (what happens to the draft,
+    same shape) and a `caption`. The colours are those of the back office, so
+    the drawing follows its light and dark themes.
+
+    Steps, by editor lane (0 = A, 2 = B), one row each, 100 apart:
+    1 A, 2 B, 3 B, 4 A (the draft answers with a refusal), 5 A, 6 A.
+#}
+{% set editor_lanes = [0, 2, 2, 0, 0, 0] %}
+<figure class="figure d-block my-3">
+    <svg class="cms-concurrent" viewBox="0 0 800 680" width="100%" role="img" aria-labelledby="cms-concurrent-title-{{ lang }} cms-concurrent-desc-{{ lang }}" style="max-width: 800px; height: auto;">
+        <title id="cms-concurrent-title-{{ lang }}">{{ title }}</title>
+        <desc id="cms-concurrent-desc-{{ lang }}">{{ summary }}</desc>
+        <style>
+            .cms-concurrent .lane { fill: var(--bs-tertiary-bg); }
+            .cms-concurrent .lane-alt { fill: var(--bs-body-bg); }
+            .cms-concurrent .lane-name { fill: var(--bs-emphasis-color); font: 600 13px system-ui, sans-serif; text-anchor: middle; }
+            .cms-concurrent .axis { stroke: var(--bs-border-color); stroke-width: 1.5; stroke-dasharray: 2 5; }
+            .cms-concurrent .box { fill: var(--bs-body-bg); stroke: var(--bs-border-color); stroke-width: 1.5; }
+            .cms-concurrent .box-you { stroke: var(--bs-primary); }
+            .cms-concurrent .box-refused { stroke: var(--bs-danger); stroke-width: 2; }
+            .cms-concurrent .rank { fill: var(--bs-primary); }
+            .cms-concurrent .rank-text { fill: #fff; font: 600 11px system-ui, sans-serif; text-anchor: middle; }
+            .cms-concurrent .step { fill: var(--bs-body-color); font: 12px system-ui, sans-serif; }
+            .cms-concurrent .arrow { fill: none; stroke: var(--bs-secondary-color); stroke-width: 1.5; }
+            .cms-concurrent .back { stroke-dasharray: 5 4; }
+            .cms-concurrent .refusal { stroke: var(--bs-danger); }
+            .cms-concurrent .head { fill: var(--bs-secondary-color); }
+            .cms-concurrent .head-refusal { fill: var(--bs-danger); }
+        </style>
+        <defs>
+            <marker id="cms-concurrent-head-{{ lang }}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path class="head" d="M0,0 L10,5 L0,10 z"/>
+            </marker>
+            <marker id="cms-concurrent-head-refusal-{{ lang }}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path class="head-refusal" d="M0,0 L10,5 L0,10 z"/>
+            </marker>
+        </defs>
+
+        {% for lane in lanes %}
+            <rect class="{{ loop.index is odd ? 'lane' : 'lane-alt' }}" x="{{ [0, 267, 533][loop.index0] }}" y="0" width="{{ loop.index0 == 1 ? 266 : 267 }}" height="680"/>
+            <text class="lane-name" x="{{ [133, 400, 667][loop.index0] }}" y="28">{{ lane }}</text>
+        {% endfor %}
+        <line class="axis" x1="400" y1="40" x2="400" y2="660"/>
+
+        {% set head = 'url(#cms-concurrent-head-' ~ lang ~ ')' %}
+        {% set head_refusal = 'url(#cms-concurrent-head-refusal-' ~ lang ~ ')' %}
+
+        {% for lane in editor_lanes %}
+            {% set y = 50 + loop.index0 * 100 %}
+            {% set refused = loop.index == 4 %}
+            {% set editor_x = lane == 0 ? 23 : 557 %}
+            {% set from_editor = lane == 0 ? 'M243 ' ~ (y + 20) ~ ' H288' : 'M557 ' ~ (y + 20) ~ ' H512' %}
+            {% set to_editor = lane == 0 ? 'M288 ' ~ (y + 42) ~ ' H245' : 'M512 ' ~ (y + 42) ~ ' H555' %}
+
+            <path class="arrow" marker-end="{{ head }}" d="{{ from_editor }}"/>
+            <path class="arrow back{{ refused ? ' refusal' }}" marker-end="{{ refused ? head_refusal : head }}" d="{{ to_editor }}"/>
+
+            {% set lines = steps[loop.index0] %}
+            <rect class="box box-you" x="{{ editor_x }}" y="{{ y }}" width="220" height="60" rx="6"/>
+            <circle class="rank" cx="{{ editor_x }}" cy="{{ y }}" r="10"/>
+            <text class="rank-text" x="{{ editor_x }}" y="{{ y + 4 }}">{{ loop.index }}</text>
+            <text class="step" x="{{ editor_x + 14 }}" y="{{ y + 20 + (3 - lines|length) * 7.5 }}">
+                {% for line in lines %}<tspan x="{{ editor_x + 14 }}" dy="{{ loop.first ? 0 : 15 }}">{{ line }}</tspan>{% endfor %}
+            </text>
+
+            {% set state = states[loop.index0] %}
+            <rect class="box{{ refused ? ' box-refused' }}" x="290" y="{{ y }}" width="220" height="60" rx="6"/>
+            <text class="step" x="304" y="{{ y + 20 + (3 - state|length) * 7.5 }}">
+                {% for line in state %}<tspan x="304" dy="{{ loop.first ? 0 : 15 }}">{{ line }}</tspan>{% endfor %}
+            </text>
+        {% endfor %}
+    </svg>
+    <figcaption class="figure-caption">{{ caption }}</figcaption>
+</figure>

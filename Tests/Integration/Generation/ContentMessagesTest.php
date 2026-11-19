@@ -141,9 +141,9 @@ final class ContentMessagesTest extends AdminScreenTestCase
      */
     private function answer(string $base, string $action, array $fields = [], string $type = 'danger'): string
     {
-        $token = $this->tokenOfTheScripts($this->screen($base.self::FRENCH));
+        $screen = $this->screen($base.self::FRENCH);
 
-        self::assertSame(302, $this->send('POST', $base.'/'.$action, ['_token' => $token, ...$fields]));
+        self::assertSame(302, $this->send('POST', $base.'/'.$action, ['_token' => $this->tokenOfTheScripts($screen), 'draft_version' => $this->draftVersionOf($screen), ...$fields]));
 
         $flash = $this->screen($base.self::FRENCH)->filter('[data-testid="cms-builder-flash-'.$type.'"]');
         self::assertGreaterThan(0, $flash->count(), \sprintf('The screen says something of %s.', $action));

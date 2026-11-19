@@ -172,6 +172,7 @@
         <column name="published_html" type="CLOB"/>
         <column name="published_at" type="TIMESTAMP"/>
         <column name="draft_updated_by" type="INTEGER"/>
+        <column defaultValue="0" name="draft_version" required="true" type="INTEGER"/>
         <column name="draft_provenance" type="CLOB"/>
         <column name="published_provenance" type="CLOB"/>
         <column name="translated_from" size="5" type="VARCHAR"/>
@@ -250,6 +251,7 @@
         <column name="published_html" type="CLOB"/>
         <column name="published_at" type="TIMESTAMP"/>
         <column name="draft_updated_by" type="INTEGER"/>
+        <column defaultValue="0" name="draft_version" required="true" type="INTEGER"/>
         <column name="draft_provenance" type="CLOB"/>
         <column name="published_provenance" type="CLOB"/>
         <column name="translated_from" size="5" type="VARCHAR"/>

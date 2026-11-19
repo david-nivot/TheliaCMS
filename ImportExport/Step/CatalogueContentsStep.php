@@ -83,6 +83,9 @@ final readonly class CatalogueContentsStep
                     ->setDraftDocument($this->content->document($content['draft_document'] ?? null, $mediaMap, $report, 'The draft of '.$where))
                     ->setDraftHtml($this->content->html($content['draft_html'] ?? null, $mediaMap, $options, $report, 'The draft of '.$where))
                     ->setDraftProvenance(ProvenanceMark::normalize($content['draft_provenance'] ?? null))
+                    // A draft replaced moves its version: a screen open on the one it
+                    // replaces is refused rather than writing over the import.
+                    ->setDraftVersion($model->isNew() ? 0 : (int) $model->getDraftVersion() + 1)
                     ->setPublishedDocument($this->content->document($content['published_document'] ?? null, $mediaMap, $report, 'The published version of '.$where))
                     ->setPublishedHtml($this->content->html($content['published_html'] ?? null, $mediaMap, $options, $report, 'The published version of '.$where))
                     ->setPublishedProvenance(ProvenanceMark::normalize($content['published_provenance'] ?? null))

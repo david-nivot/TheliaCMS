@@ -374,6 +374,26 @@ final readonly class CmsPageAdminRepository
     }
 
     /**
+     * The last change of the page in this language, settings and content
+     * alike, for the banner of its settings: who made it (the page is signed
+     * on every write of its content), when, and the version of the draft the
+     * screen reads (0 while none was written).
+     *
+     * @return array{author: int|null, at: \DateTimeInterface|null, version: int}
+     */
+    public function lastChange(CmsPage $page, string $locale): array
+    {
+        $content = CmsPageContentQuery::create()->filterByPageId($page->getId())->filterByLocale($locale)->findOne();
+        $dates = array_filter([$page->getUpdatedAt(), $content?->getUpdatedAt()]);
+
+        return [
+            'author' => $page->getUpdatedBy(),
+            'at' => [] === $dates ? null : max($dates),
+            'version' => (int) $content?->getDraftVersion(),
+        ];
+    }
+
+    /**
      * The draft of the page in this language; null while none was written.
      */
     public function draftDocument(CmsPage $page, string $locale): ?Document

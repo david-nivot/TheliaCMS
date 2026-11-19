@@ -127,6 +127,37 @@
     }
 
     /**
+     * The draft version of the screen on show. Every form that writes the
+     * draft posts it; the server refuses a write made on an older one.
+     */
+    function draftVersion() {
+        var screen = document.querySelector("[data-cms-content]");
+
+        return screen ? screen.getAttribute("data-cms-draft-version") || "" : "";
+    }
+
+    // Forms outside the swapped region (header, undo and redo) would keep
+    // posting the version they were drawn with and be refused.
+    function syncDraftVersion(screen) {
+        var version = screen.getAttribute("data-cms-draft-version");
+
+        if (version === null) {
+            return;
+        }
+
+        document.querySelectorAll("input[name=draft_version]").forEach(function (input) {
+            input.value = version;
+        });
+    }
+
+    // The danger message of a screen the server refused a write with (409).
+    function conflictMessage(html) {
+        var flash = new DOMParser().parseFromString(html, "text/html").querySelector(".cms-toast--danger .cms-toast__message p");
+
+        return flash && flash.textContent ? flash.textContent : labels.failed.replace("%status%", "409");
+    }
+
+    /**
      * Puts the screen the server answered in place of the one on show, with
      * what the reader had: the panels they opened, the scroll of the side
      * panel. The outcome of the call takes the focus, so it is read out.
@@ -153,6 +184,7 @@
 
         applyPreviewChoices(next);
         current.replaceWith(next);
+        syncDraftVersion(next);
         running = false;
         inlineChanged = null;
         enhance(next);
@@ -1345,13 +1377,26 @@
                     redirect: "follow",
                     headers: { "X-Requested-With": "XMLHttpRequest" }
                 }).then(function (response) {
+                    if (response.status === 409) {
+                        // Someone else changed the draft: keep the dialog and what was
+                        // typed, and leave the version alone so the reload is deliberate.
+                        return response.text().then(function (html) {
+                            save.disabled = false;
+                            notify("danger", conflictMessage(html));
+
+                            return null;
+                        });
+                    }
+
                     if (!response.ok) {
                         throw new Error(String(response.status));
                     }
 
                     return response.text();
                 }).then(function (html) {
-                    swap(html, item.getAttribute("data-section"));
+                    if (html !== null) {
+                        swap(html, item.getAttribute("data-section"));
+                    }
                 }).catch(function () {
                     save.disabled = false;
                     notify("danger", labels.network);
@@ -1922,6 +1967,7 @@
                 body.append("_token", list.getAttribute("data-cms-reorder-token"));
                 body.append("section", item.getAttribute("data-section"));
                 body.append("position", String(to));
+                body.append("draft_version", draftVersion());
                 running = true;
 
                 fetch(list.getAttribute("data-cms-reorder"), {
@@ -1931,13 +1977,25 @@
                     redirect: "follow",
                     headers: { "X-Requested-With": "XMLHttpRequest" }
                 }).then(function (response) {
+                    if (response.status === 409) {
+                        // The answer holds the current order: show it, say why.
+                        return response.text().then(function (html) {
+                            // The answer carries the refusal as its own toast.
+                            swap(html, item.getAttribute("data-section"));
+
+                            return null;
+                        });
+                    }
+
                     if (!response.ok) {
                         throw new Error(String(response.status));
                     }
 
                     return response.text();
                 }).then(function (html) {
-                    swap(html, item.getAttribute("data-section"));
+                    if (html !== null) {
+                        swap(html, item.getAttribute("data-section"));
+                    }
                 }).catch(function () {
                     window.location.reload();
                 });
@@ -2015,12 +2073,40 @@
                     redirect: "follow",
                     headers: { "X-Requested-With": "XMLHttpRequest" }
                 }).then(function (response) {
+                    if (response.status === 409) {
+                        // Never fall back to form.submit(): it would post the same stale write.
+                        return response.text().then(function (html) {
+                            // A section edited in its dialog stays open with what
+                            // was typed: drawing the screen again would drop it.
+                            if (dialog && form.hasAttribute("data-cms-section-form")) {
+                                dialog.cmsSent = false;
+
+                                if (button) {
+                                    button.disabled = false;
+                                }
+
+                                notify("danger", conflictMessage(html));
+
+                                return null;
+                            }
+
+                            // The answer carries the refusal as its own toast.
+                            swap(html, null);
+
+                            return null;
+                        });
+                    }
+
                     if (!response.ok) {
                         throw new Error(String(response.status));
                     }
 
                     return response.text();
                 }).then(function (html) {
+                    if (html === null) {
+                        return;
+                    }
+
                     // The section the form is about, when it is one of the
                     // list: its edit dialog, its buttons to move, duplicate
                     // or remove it. Undo and Redo name the section of their step.
