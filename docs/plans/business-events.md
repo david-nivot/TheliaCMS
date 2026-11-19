@@ -1,6 +1,6 @@
 # Plan: business events through the webhooks of the core (F3)
 
-Status: decided (2026-11-19, by the maintainer); steps 1 to 3 done on `feat/f3-business-events`. Read on `main` at e9331e8 (2.38.0),
+Status: decided (2026-11-19, by the maintainer); steps 1 to 4 done on `feat/f3-business-events`. Read on `main` at e9331e8 (2.38.0),
 core 3.5.0 in the test host. Wave 5 of the roadmap, lot F3 ("Événements métier"), size S. The
 second step (read-only API resources) is F8-F3-bis, wave 6, and stays out of this plan. Each step
 updates this plan in its own commit.
@@ -153,6 +153,16 @@ AT = `Api/Bridge/Propel/Service/ApiResourcePropelTransformerService.php`.
    back at the locale it had.
 4. **Form event**: publication from SS; tests: full payload with the answers, `identifiers` with
    the submission id, nothing for a form that keeps no answers or a refused check.
+   **Done (2026-11-19).** `Webhook/SubmissionPayload.php` (`id`, `form` = code, `locale`,
+   `email`, `consent`, `answers` as `SubmissionData::decode()` reads them, `createdAt`); SS
+   publishes `cms_form.submitted` right after the message is saved, inside the branch that keeps
+   it, so a form that keeps no answers publishes nothing by construction. The event joined
+   `WebhookEvents` and the step 2 tests. `Tests/Integration/Webhook/SubmissionWebhooksTest.php`
+   (4 tests, through `SubmissionStore::keep()`), each seen red under a sabotage: no call, no
+   consent, no answers, no form code. The refused check was not tested again here: FC returns
+   before SS (FC:108-113), which `FormSubmissionTest` covers (nothing kept). Full suites: unit
+   2273, integration 1846 (7 skipped, 1 incomplete, as before), 4 min 19. A form holds no file
+   field (`Form/FieldType.php`): every answer is text, a choice, a date or a boolean.
 5. **Documentation**: `docs/webhooks.md` (events, payloads with an example of each, the language
    limit of `identifiers`, the transport, what publishes nothing), a section of the README,
    ADR 22, CHANGELOG under `[Unreleased]`.
@@ -174,5 +184,5 @@ no migration.
 
 ## Not checked
 
-- The fields a form can hold beyond text (a file field would send its name only, never its
-  content): to read in `Form/` at step 4.
+- A delivery to a real receiver from the test host: every delivery so far went to the mock
+  client of the tests.

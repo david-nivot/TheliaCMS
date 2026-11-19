@@ -17,6 +17,7 @@ namespace TheliaCMS\Tests\Unit\Webhook;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use TheliaCMS\Webhook\PagePayload;
+use TheliaCMS\Webhook\SubmissionPayload;
 use TheliaCMS\Webhook\WebhookEvents;
 use TheliaCMS\Webhook\WebhookEventsCompiler;
 
@@ -45,12 +46,16 @@ final class WebhookEventsCompilerTest extends TestCase
         self::assertSame(WebhookEvents::definitions(), $container->getParameter(WebhookEventsCompiler::PARAMETER));
     }
 
-    public function testBothPageEventsSendThePagePayload(): void
+    public function testEachEventNamesItsPayload(): void
     {
         $page = ['resource' => PagePayload::class, 'groups' => [PagePayload::GROUP]];
 
         self::assertSame(
-            ['cms_page.published' => $page, 'cms_page.unpublished' => $page],
+            [
+                'cms_page.published' => $page,
+                'cms_page.unpublished' => $page,
+                'cms_form.submitted' => ['resource' => SubmissionPayload::class, 'groups' => [SubmissionPayload::GROUP]],
+            ],
             WebhookEvents::definitions(),
         );
     }

@@ -23,6 +23,7 @@ final class WebhookEvents
 {
     public const string PAGE_PUBLISHED = 'cms_page.published';
     public const string PAGE_UNPUBLISHED = 'cms_page.unpublished';
+    public const string FORM_SUBMITTED = 'cms_form.submitted';
 
     /**
      * What `WebhookEventCatalog` reads from `thelia.webhook.events`: the class
@@ -37,6 +38,7 @@ final class WebhookEvents
         return [
             self::PAGE_PUBLISHED => $page,
             self::PAGE_UNPUBLISHED => $page,
+            self::FORM_SUBMITTED => ['resource' => SubmissionPayload::class, 'groups' => [SubmissionPayload::GROUP]],
         ];
     }
 

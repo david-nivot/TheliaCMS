@@ -17,6 +17,7 @@ namespace TheliaCMS\Tests\Integration\Webhook;
 use Thelia\Domain\Webhook\WebhookEventCatalog;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
 use TheliaCMS\Webhook\PagePayload;
+use TheliaCMS\Webhook\SubmissionPayload;
 
 /**
  * The catalog the back office offers subscriptions from, as the container
@@ -24,7 +25,7 @@ use TheliaCMS\Webhook\PagePayload;
  */
 final class WebhookCatalogTest extends CmsIntegrationTestCase
 {
-    public function testTheCatalogOffersThePageEventsBesideThoseOfTheCore(): void
+    public function testTheCatalogOffersTheEventsOfTheModuleBesideThoseOfTheCore(): void
     {
         /** @var WebhookEventCatalog $catalog */
         $catalog = $this->getService(WebhookEventCatalog::class);
@@ -38,5 +39,8 @@ final class WebhookCatalogTest extends CmsIntegrationTestCase
             self::assertSame(PagePayload::class, $catalog->resource($event));
             self::assertSame([PagePayload::GROUP], $catalog->groups($event));
         }
+
+        self::assertSame(SubmissionPayload::class, $catalog->resource('cms_form.submitted'));
+        self::assertSame([SubmissionPayload::GROUP], $catalog->groups('cms_form.submitted'));
     }
 }
