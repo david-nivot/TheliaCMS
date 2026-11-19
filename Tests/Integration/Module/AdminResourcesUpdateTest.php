@@ -68,8 +68,42 @@ final class AdminResourcesUpdateTest extends CmsIntegrationTestCase
         $fixtures = new FixtureFactory($this->getPropelConnection());
         $builder = $fixtures->profile();
         $fixtures->profileResource($builder, CmsResources::FORM, [AccessManager::VIEW, AccessManager::DELETE]);
+        $fixtures->profileResource($builder, CmsResources::PAGE, [AccessManager::VIEW, AccessManager::UPDATE]);
         $stranger = $fixtures->profile();
 
+        $this->updateWithoutTheSplitRights();
+
+        foreach (CmsResources::splitFrom() as $code => $origin) {
+            $before = $this->accessOf($builder, $origin);
+            self::assertGreaterThan(0, $before);
+            self::assertSame($before, $this->accessOf($builder, $code), \sprintf('A profile that had "%s" keeps "%s".', $origin, $code));
+            self::assertSame(0, $this->accessOf($stranger, $code), \sprintf('A profile that could not gets no "%s".', $code));
+        }
+    }
+
+    /**
+     * The right to publish is read on UPDATE: a profile that only read the
+     * pages gets VIEW on it at the update, and still cannot publish.
+     */
+    public function testAProfileThatOnlyReadThePagesDoesNotPublishAfterTheUpdate(): void
+    {
+        $fixtures = new FixtureFactory($this->getPropelConnection());
+        $reader = $fixtures->profile();
+        $fixtures->profileResource($reader, CmsResources::PAGE, [AccessManager::VIEW]);
+        $writer = $fixtures->profile();
+        $fixtures->profileResource($writer, CmsResources::PAGE, [AccessManager::VIEW, AccessManager::UPDATE]);
+
+        $this->updateWithoutTheSplitRights();
+
+        self::assertFalse((new AccessManager($this->accessOf($reader, CmsResources::PAGE_PUBLISH)))->can(AccessManager::UPDATE), 'A reader of the pages does not publish.');
+        self::assertTrue((new AccessManager($this->accessOf($writer, CmsResources::PAGE_PUBLISH)))->can(AccessManager::UPDATE), 'A profile that changed the pages still publishes.');
+    }
+
+    /**
+     * Plays the update on a site that has none of the split rights yet.
+     */
+    private function updateWithoutTheSplitRights(): void
+    {
         foreach (array_keys(CmsResources::splitFrom()) as $code) {
             $resource = ResourceQuery::create()->findOneByCode($code);
 
@@ -82,14 +116,6 @@ final class AdminResourcesUpdateTest extends CmsIntegrationTestCase
         $migrations = TheliaCMS::everyMigration();
         $version = basename((string) end($migrations), '.sql');
         (new TheliaCMS())->update($version, $version, $this->getPropelConnection());
-
-        $before = $this->accessOf($builder, CmsResources::FORM);
-        self::assertGreaterThan(0, $before);
-
-        foreach (array_keys(CmsResources::splitFrom()) as $code) {
-            self::assertSame($before, $this->accessOf($builder, $code), \sprintf('A profile that could open the forms keeps "%s".', $code));
-            self::assertSame(0, $this->accessOf($stranger, $code), \sprintf('A profile that could not gets no "%s".', $code));
-        }
     }
 
     private function accessOf(Profile $profile, string $code): int

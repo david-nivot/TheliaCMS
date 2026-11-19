@@ -7,6 +7,30 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **Publishing is a right of its own**: `admin.cms.page.publish` (checked on
+  update) decides what shows on the site, apart from changing the pages. An
+  editor without it writes pages, their content and their settings; someone
+  with it puts a page or the content of a catalogue item online, takes it
+  offline, shows or hides a page (one by one or in bulk), changes its
+  publication dates, brings it back from the bin or makes it the home page. The
+  screens offer none of these gestures without the right: the publish and
+  unpublish buttons, "Save and publish", the visibility and the dates of the
+  settings (shown disabled), "Show" and "Hide" on the list, the publication
+  options of the bulk menu, "Restore" in the bin, "Set as home page". A
+  reviewer may hold the right to publish without the right to change. The
+  seeded Editor profile has it. `thelia_cms:publish` and the site import run
+  from the console, outside any profile, as before.
+
+### Changed
+
+- **An update keeps what each profile could publish**: the new right is split
+  off `admin.cms.page`, so on the update each profile gets the access it had on
+  the pages. A profile that could change the pages still publishes; a profile
+  that could only read them gets read access on the new right, which publishes
+  nothing.
+
 ## [2.34.0] - 2026-11-19
 
 ### Changed

@@ -86,7 +86,9 @@
                                     {% endif %}
                                 </td>
                                 <td class="text-end datatable-sticky-actions">
-                                    {% if row.restorable %}
+                                    {# Restoring puts the published content back online. #}
+                                    {% if not may_publish %}
+                                    {% elseif row.restorable %}
                                         <form method="post" action="{{ path('admin.cms.pages.restore', { id: page.id, edit_language_id: edit_language_id }) }}">
                                             <input type="hidden" name="_token" value="{{ assignToken() }}">
                                             <button type="submit" class="btn btn-sm btn-outline-primary">{{ 'Restore'|trans({}, 'theliacms') }}</button>

@@ -617,6 +617,7 @@ final class ContentScreenTest extends AdminScreenTestCase
         $page = $this->createPage('No right', published: false);
         $this->logInAs((new FixtureFactory($this->getPropelConnection()))->restrictedAdmin([
             CmsResources::PAGE => [AccessManager::VIEW, AccessManager::UPDATE],
+            CmsResources::PAGE_PUBLISH => [AccessManager::VIEW, AccessManager::UPDATE],
         ]));
 
         $screen = $this->screen($this->url($page->getId()));
@@ -628,7 +629,7 @@ final class ContentScreenTest extends AdminScreenTestCase
         self::assertSame(403, $this->send('POST', $this->generateUrl($page->getId()), ['_token' => $token, 'cms_brief' => ['text' => 'Try anyway.']]));
         self::assertSame([], $this->api->requests);
 
-        self::assertSame(302, $this->send('POST', $this->publishUrl($page->getId()), ['_token' => $token]), 'Publishing takes the right to change pages, which this profile has.');
+        self::assertSame(302, $this->send('POST', $this->publishUrl($page->getId()), ['_token' => $token]), 'Publishing takes the right to publish, which this profile has.');
     }
 
     public function testAPageInTheBinHasNoContentScreen(): void

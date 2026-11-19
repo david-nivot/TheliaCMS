@@ -129,8 +129,10 @@ final class CmsPageType extends AbstractType
                 'choices' => ['Yes' => 1, 'No' => 0],
                 'expanded' => true,
                 // A model is a reference for new pages, never a page of the site.
-                'disabled' => $options['is_model'],
-                'help' => $options['is_model'] ? 'The model of a template is never online.' : null,
+                // Whether a page shows is a publication: a disabled field posts
+                // nothing, and the page keeps what it had.
+                'disabled' => $options['is_model'] || !$options['may_publish'],
+                'help' => $options['is_model'] ? 'The model of a template is never online.' : ($options['may_publish'] ? null : 'Only a profile allowed to publish changes this.'),
             ])
             ->add('titleBand', ChoiceType::class, [
                 'label' => 'Title band',
@@ -143,11 +145,13 @@ final class CmsPageType extends AbstractType
                 'required' => false,
                 'widget' => 'single_text',
                 'help' => 'The page stays invisible until this date.',
+                'disabled' => !$options['may_publish'],
             ])
             ->add('unpublishAt', DateTimeType::class, [
                 'label' => 'Unpublish on',
                 'required' => false,
                 'widget' => 'single_text',
+                'disabled' => !$options['may_publish'],
             ])
             ->add('metaTitle', TextType::class, ['label' => 'Meta title', 'required' => false])
             ->add('metaDescription', TextareaType::class, ['label' => 'Meta description', 'required' => false, 'attr' => ['rows' => 3]])
@@ -299,6 +303,7 @@ final class CmsPageType extends AbstractType
                 'tag_choices' => [],
                 'allow_image_upload' => false,
                 'is_model' => false,
+                'may_publish' => true,
                 'is_home' => false,
                 'field_definitions' => FieldDefinitions::none(),
                 'field_locale' => 'en_US',
@@ -313,6 +318,7 @@ final class CmsPageType extends AbstractType
             ->setAllowedTypes('page_id', 'int')
             ->setAllowedTypes('page_type_labels', 'array')
             ->setAllowedTypes('is_model', 'bool')
+            ->setAllowedTypes('may_publish', 'bool')
             ->setAllowedTypes('is_home', 'bool')
             ->setAllowedTypes('field_definitions', FieldDefinitions::class)
             ->setAllowedTypes('field_locale', 'string')

@@ -22,8 +22,10 @@ use Symfony\Component\HttpFoundation\Session\FlashBagAwareSessionInterface;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\SecurityContext;
 use TheliaCMS\Page\Admin\EditLanguage;
+use TheliaCMS\Security\CmsResources;
 use TheliaCMS\TheliaCMS;
 
 /**
@@ -100,6 +102,20 @@ final readonly class AdminControllerSupport
         if (!$this->isGranted($resource, $access)) {
             throw new AccessDeniedHttpException($this->translate($refusal));
         }
+    }
+
+    /**
+     * Whether the administrator may decide what shows on the site: publish,
+     * take offline, show, hide, restore from the bin, set the home page.
+     */
+    public function mayPublish(): bool
+    {
+        return $this->isGranted(CmsResources::PAGE_PUBLISH, AccessManager::UPDATE);
+    }
+
+    public function denyUnlessMayPublish(): void
+    {
+        $this->denyUnless(CmsResources::PAGE_PUBLISH, AccessManager::UPDATE, 'You are not allowed to publish CMS pages.');
     }
 
     /**

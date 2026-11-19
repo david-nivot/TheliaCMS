@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace TheliaCMS\Page\Admin;
 
 use Thelia\Core\Security\AccessManager;
+use TheliaCMS\Security\CmsResources;
 
 /**
  * What the list of pages does to a selection, in the order of its select.
@@ -27,6 +28,18 @@ enum PageBulkAction: string
     case Trash = 'trash';
     case Publish = 'publish';
     case Unpublish = 'unpublish';
+
+    /**
+     * The resource each one is checked on: what shows on the site is a
+     * publication, apart from changing the pages.
+     */
+    public function resource(): string
+    {
+        return match ($this) {
+            self::Show, self::Hide, self::Publish, self::Unpublish => CmsResources::PAGE_PUBLISH,
+            self::Tag, self::Trash => CmsResources::PAGE,
+        };
+    }
 
     /**
      * The right each one takes, checked for the action and not once for the

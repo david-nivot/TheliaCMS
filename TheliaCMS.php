@@ -356,6 +356,7 @@ class TheliaCMS extends BaseModule
     {
         $labels = [
             CmsResources::PAGE => ['en_US' => 'CMS: pages', 'fr_FR' => 'CMS : pages'],
+            CmsResources::PAGE_PUBLISH => ['en_US' => 'CMS: publishing pages', 'fr_FR' => 'CMS : publication des pages'],
             CmsResources::MENU => ['en_US' => 'CMS: menus', 'fr_FR' => 'CMS : menus'],
             CmsResources::FORM => ['en_US' => 'CMS: forms', 'fr_FR' => 'CMS : formulaires'],
             CmsResources::FORM_ANSWERS => ['en_US' => 'CMS: answers to the forms', 'fr_FR' => 'CMS : réponses aux formulaires'],
