@@ -7,6 +7,16 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **A form takes the check of another module, a captcha for one**: the
+  `cms.form.fields` theme hook is rendered inside every form, where the module
+  adds the field its check reads, and `SubmissionCheckEvent` is dispatched for
+  a message the trap, the stamp and the fields have let through, before the
+  rate limit, the stamp and the storage. A listener refuses it with the
+  sentence shown above the form; what was typed is kept. Nothing changes for a
+  site where no module listens.
+
 ## [2.35.0] - 2026-11-19
 
 ### Added

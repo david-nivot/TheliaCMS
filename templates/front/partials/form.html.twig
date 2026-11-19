@@ -152,6 +152,11 @@
                 </div>
                 <input type="hidden" name="{{ stamp_field }}" value="{{ stamp }}">
 
+                {# What another module adds to every form, the field a captcha
+                   fills in for one (SubmissionCheckEvent). A theme overriding
+                   this template keeps the line. #}
+                {{ theme_hook(fields_hook, {form: form.code}) }}
+
                 <button class="cms-form__submit" type="submit">{{ submit_label }}</button>
             </form>
         {% endif %}

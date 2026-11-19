@@ -901,6 +901,29 @@ There is no captcha. A captcha sends the visitor to a third party and gets in
 the way of anyone using assistive technology, and on the volume a showcase site
 sees it catches less than the three checks above.
 
+A site that has to have one anyway plugs it in from another module, without
+touching this one:
+
+- the `cms.form.fields` theme hook (`FormPartial::FIELDS_HOOK`) is rendered
+  inside every form, with the code of the form as its `form` parameter: that
+  is where the module adds the field its check reads. A theme overriding
+  `cms/partials/form.html.twig` keeps the `theme_hook(fields_hook, …)` line;
+- `TheliaCMS\Form\SubmissionCheckEvent` is dispatched once the trap and the
+  stamp have let a message through and its fields are valid, before it counts
+  against the rate limit, spends its stamp and is kept. A listener reads the
+  request and calls `refuse()` with the sentence shown above the form, which
+  keeps what was typed:
+
+```php
+#[AsEventListener(event: SubmissionCheckEvent::class)]
+public function check(SubmissionCheckEvent $event): void
+{
+    if (!$this->verifier->verify($event->request->request->getString('my-token'))) {
+        $event->refuse('We could not check that you are not a robot. Please send your message again.');
+    }
+}
+```
+
 ### Answers
 
 **CMS > Forms > Answers** lists what a form received, searchable by email
