@@ -1,6 +1,6 @@
 # Plan: business events through the webhooks of the core (F3)
 
-Status: decided (2026-11-19, by the maintainer); steps 1 to 4 done on `feat/f3-business-events`. Read on `main` at e9331e8 (2.38.0),
+Status: decided (2026-11-19, by the maintainer); done on `feat/f3-business-events`, not yet in a PR. Read on `main` at e9331e8 (2.38.0),
 core 3.5.0 in the test host. Wave 5 of the roadmap, lot F3 ("Événements métier"), size S. The
 second step (read-only API resources) is F8-F3-bis, wave 6, and stays out of this plan. Each step
 updates this plan in its own commit.
@@ -52,7 +52,8 @@ AT = `Api/Bridge/Propel/Service/ApiResourcePropelTransformerService.php`.
   (:270); `CW::unpublish()` (:295) calls `afterUnpublished($wasOnline)` (:304).
 - CT:68 hands out a PT for a page and a KT for a content of a kind (ADR 20); KT wraps a PT but its
   `afterPublished()` and `afterUnpublished()` (KT:102, :114) do not call the PT's. IT (:103, :120)
-  is the article of a product, category or brand.
+  is the content written for an item of the catalogue (product, category, content, folder,
+  dealer: `Catalogue/CatalogueItemType.php`).
 - Out of these paths, and so out of the events: the visibility of a page, its publication window
   (`publishAt`, `unpublishAt`), the bin, and the site import, which writes the published version
   itself (`ImportExport/ImportCommand.php`).
@@ -166,6 +167,11 @@ AT = `Api/Bridge/Propel/Service/ApiResourcePropelTransformerService.php`.
 5. **Documentation**: `docs/webhooks.md` (events, payloads with an example of each, the language
    limit of `identifiers`, the transport, what publishes nothing), a section of the README,
    ADR 22, CHANGELOG under `[Unreleased]`.
+   **Done (2026-11-19).** The payloads shown in `docs/webhooks.md` were captured from the suite
+   (one throwaway test, not kept), the address and the form code then put to a site's values.
+   The delivery facts are the core's: one attempt inline, a client of 5 s to connect and 10 s
+   in all (`WebhookHttpClientFactory.php:26-27`), with a queue four retries (60 s, 5 min,
+   30 min, 2 h, `WebhookRetryPolicy.php:19`) then the subscription in error.
 
 Every test is seen red by sabotaging the code it covers before it is committed. No schema change,
 no migration.

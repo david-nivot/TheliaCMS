@@ -1097,6 +1097,18 @@ proxy. See [docs/shared-cache.md](docs/shared-cache.md).
 `docs/shared-cache.md` has the VCL that does it, the same thing for Fastly and
 Cloudflare, and a complete purger to copy into a project.
 
+## Webhooks
+
+The module sends three events through the webhooks of Thelia, which a tool
+subscribes to under **Configuration > Webhooks**: `cms_page.published` when a
+page goes online in a language (again included), `cms_page.unpublished` when a
+page online in a language is taken offline, and `cms_form.submitted` when a
+message sent through a form is kept. The full payload of a message carries its
+answers; a subscriber that wants no personal data asks for the identifiers
+only. Without a queue, the request is sent while the action runs, so a busy
+site sets `MESSENGER_TRANSPORT_DSN`. Events, payloads and signature:
+[docs/webhooks.md](docs/webhooks.md).
+
 ## Security headers
 
 The pages the module renders (a page, the home page it serves, its 404 and
