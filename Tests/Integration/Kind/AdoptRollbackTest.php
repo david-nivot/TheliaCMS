@@ -78,9 +78,10 @@ final class AdoptRollbackTest extends CmsIntegrationTestCase
 
         CmsPageTableMap::clearInstancePool();
         $stored = CmsPageQuery::create()->findPk($id);
-        self::assertSame(0, $stored?->getModel(), 'Still a page.');
-        self::assertNull($stored?->getContentKind());
-        self::assertSame(1, $stored?->getVisible());
+        self::assertNotNull($stored);
+        self::assertSame(0, $stored->getModel(), 'Still a page.');
+        self::assertNull($stored->getContentKind());
+        self::assertSame(1, $stored->getVisible());
         self::assertSame($addresses, $this->addresses($id), 'With its address,');
         self::assertSame(1, CmsPageSearchQuery::create()->filterByPageId($id)->count(), 'and its line of the search.');
     }

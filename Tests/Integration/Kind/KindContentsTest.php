@@ -153,7 +153,8 @@ final class KindContentsTest extends CmsIntegrationTestCase
         $id = (int) $content->getId();
         $other = 'fr_FR' === $this->locale() ? 'en_US' : 'fr_FR';
 
-        self::assertNull($this->contents()->publishedHtml('test_guide', $id, $this->locale()), 'A draft is not published.');
+        $draft = $this->contents()->publishedHtml('test_guide', $id, $this->locale());
+        self::assertNull($draft, 'A draft is not published.');
 
         $this->writer()->publish($content, $this->locale());
         CmsPageContentTableMap::clearInstancePool();

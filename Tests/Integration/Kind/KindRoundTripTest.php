@@ -82,8 +82,9 @@ final class KindRoundTripTest extends CmsIntegrationTestCase
         $this->assertHidden($imported[0]);
         CmsPageContentTableMap::clearInstancePool();
         self::assertStringContainsString('Guide aller-retour des mesures.', (string) $this->getService(KindContents::class)->publishedHtml('test_guide', (int) $imported[0]->getId(), $this->locale()), 'Published as it was.');
-        self::assertNotNull($this->getService(HeaderZone::class)->find(), 'The zone is found by its kind.');
-        self::assertSame('header', $this->getService(HeaderZone::class)->find()?->getContentKind());
+        $zone = $this->getService(HeaderZone::class)->find();
+        self::assertNotNull($zone, 'The zone is found by its kind.');
+        self::assertSame('header', $zone->getContentKind());
     }
 
     /**
@@ -169,8 +170,9 @@ final class KindRoundTripTest extends CmsIntegrationTestCase
         self::assertSame(1, CmsPageQuery::create()->filterByModel(HeaderZone::MODEL)->count(), 'The zone is replaced in place, not made twice.');
         self::assertSame($pages, CmsPageQuery::create()->filterByModel(0)->count(), 'And not imported as one more page.');
         $stored = CmsPageQuery::create()->findPk($zoneId);
-        self::assertSame('header', $stored?->getContentKind());
-        self::assertSame(HeaderZone::MODEL, $stored?->getModel());
+        self::assertNotNull($stored);
+        self::assertSame('header', $stored->getContentKind());
+        self::assertSame(HeaderZone::MODEL, $stored->getModel());
     }
 
     private function assertHidden(CmsPage $content): void
