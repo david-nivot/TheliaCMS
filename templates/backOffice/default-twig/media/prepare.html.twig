@@ -226,7 +226,7 @@
                                 <div class="alert alert-info py-2 mb-0">{% include '@TheliaCMSModule/backOffice/default-twig/media/_icon_citations.html.twig' with { citation: icon_citation } only %}</div>
                             {% endif %}
                             {% if icon_replaced and icon_obstacles is not empty %}
-                                <div class="small alert alert-warning py-2 mb-0" data-testid="cms-svg-icon-replaced-obstacles">
+                                <div class="small alert alert-warning py-2 mb-0" id="cms-svg-icon-replaced-obstacles" data-testid="cms-svg-icon-replaced-obstacles">
                                     <p class="mb-1">{{ 'This image is the icon %name%: a page would not keep this file whole, so it cannot replace it.'|trans({ '%name%': icon_replaced }, 'theliacms') }}</p>
                                     <ul class="mb-0">
                                         {% for obstacle in icon_obstacles %}<li>{{ obstacle }}</li>{% endfor %}
@@ -514,7 +514,10 @@
                         {# The first button is the one Enter presses: it comes first in
                            the page, and is drawn last. #}
                         <div class="d-flex flex-row-reverse flex-wrap justify-content-start gap-2">
-                            <button type="submit" name="action" value="add" class="btn btn-primary" data-testid="cms-svg-add">
+                            {# A file that cannot take the place of an icon is not sent: the
+                               warning above says why, and the server refuses it anyway. #}
+                            {% set replacement_refused = icon_replaced and icon_obstacles is not empty %}
+                            <button type="submit" name="action" value="add" class="btn btn-primary" data-testid="cms-svg-add"{% if replacement_refused %} disabled aria-describedby="cms-svg-icon-replaced-obstacles"{% endif %}>
                                 {{ (replace is not null ? 'Replace the file of the image' : (picker ? 'Add and choose' : 'Add to the media library'))|trans({}, 'theliacms') }}
                             </button>
                             <button type="submit" name="action" value="skip" class="btn btn-outline-secondary" data-testid="cms-svg-skip">

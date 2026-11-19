@@ -48,7 +48,7 @@ final readonly class PublishedContentSanitizer
      * a section named by its own heading, an icon hidden from screen readers,
      * the current entry of a menu. None of them can carry script or a URL.
      */
-    private const array ACCESSIBILITY_ATTRIBUTES = [
+    public const array ACCESSIBILITY_ATTRIBUTES = [
         'role',
         'aria-label',
         'aria-labelledby',
@@ -61,27 +61,6 @@ final readonly class PublishedContentSanitizer
         'aria-roledescription',
         'lang',
         'dir',
-    ];
-
-    /**
-     * The icons a component of the theme draws inline (`ux_icon()`): shapes
-     * and the attributes that place and colour them, nothing that loads,
-     * links or runs. No `use`, `image`, `a`, `foreignObject`, `style`,
-     * `script` or `animate*`, and no event handler or `href`.
-     *
-     * The sanitizer writes attribute names in lowercase (`viewbox`); the HTML
-     * parser of a browser puts the case of `viewBox` back inside an `svg`.
-     */
-    public const array SVG_ELEMENTS = [
-        'svg' => ['xmlns', 'viewbox', 'width', 'height', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'stroke-miterlimit', 'stroke-dasharray', 'stroke-dashoffset', 'stroke-opacity', 'fill-opacity', 'fill-rule', 'clip-rule', 'opacity'],
-        'g' => ['fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'stroke-miterlimit', 'stroke-opacity', 'fill-opacity', 'fill-rule', 'clip-rule', 'opacity', 'transform'],
-        'path' => ['d', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'stroke-miterlimit', 'stroke-dasharray', 'stroke-dashoffset', 'stroke-opacity', 'fill-opacity', 'fill-rule', 'clip-rule', 'opacity', 'transform'],
-        'circle' => ['cx', 'cy', 'r', 'fill', 'stroke', 'stroke-width', 'stroke-opacity', 'fill-opacity', 'opacity', 'transform'],
-        'ellipse' => ['cx', 'cy', 'rx', 'ry', 'fill', 'stroke', 'stroke-width', 'stroke-opacity', 'fill-opacity', 'opacity', 'transform'],
-        'rect' => ['x', 'y', 'width', 'height', 'rx', 'ry', 'fill', 'stroke', 'stroke-width', 'stroke-linejoin', 'stroke-opacity', 'fill-opacity', 'opacity', 'transform'],
-        'line' => ['x1', 'y1', 'x2', 'y2', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-dasharray', 'stroke-opacity', 'opacity', 'transform'],
-        'polyline' => ['points', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'stroke-opacity', 'fill-opacity', 'opacity', 'transform'],
-        'polygon' => ['points', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'stroke-opacity', 'fill-opacity', 'fill-rule', 'opacity', 'transform'],
     ];
 
     /**
@@ -113,7 +92,7 @@ final readonly class PublishedContentSanitizer
             return $html;
         }
 
-        return $this->filterStyleAttributes($this->sanitizerFor($allowCustomCode, $html)->sanitize($html));
+        return $this->filterStyleAttributes((new InlineSvgPolicy())->clean($this->sanitizerFor($allowCustomCode, $html)->sanitize($html)));
     }
 
     /**
@@ -265,17 +244,13 @@ final readonly class PublishedContentSanitizer
             $config = $config->withAttributeSanitizer(new StimulusAttributeSanitizer($controllers));
         }
 
-        foreach (self::SVG_ELEMENTS as $element => $attributes) {
-            // An element with a list of its own loses the attributes allowed
-            // on every element: the common ones are named again.
-            $config = $config->allowElement($element, [...$attributes, 'class', 'id', 'style', ...self::ACCESSIBILITY_ATTRIBUTES]);
-        }
+        $config = (new InlineSvgPolicy())->configure($config, self::ACCESSIBILITY_ATTRIBUTES);
 
         // `<image>` is read as `<img>` by the sanitizer and would load a
         // picture from wherever it is told to.
         $config = $config->dropElement('image');
 
-        $config = $config->withAttributeSanitizer(new SvgAttributeSanitizer())->withAttributeSanitizer(new EmbedAttributeSanitizer());
+        $config = $config->withAttributeSanitizer(new EmbedAttributeSanitizer());
 
         foreach (self::EMBED_ELEMENTS as $element) {
             $config = $allowCustomCode

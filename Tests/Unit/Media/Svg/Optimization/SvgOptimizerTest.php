@@ -153,6 +153,9 @@ final class SvgOptimizerTest extends TestCase
         yield 'cut by the clip' => [str_replace('<rect width="24" height="24" fill="white"/>', '<rect x="2" y="2" width="10" height="10"/>', self::FIGMA)];
         yield 'ids and titles' => ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8"><title>A</title><g id="a"><path id="b" d="M0 0h8v8z" transform="translate(1 2)"/></g></svg>'];
         yield 'id orphaned by the library' => ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8"><defs><linearGradient id="g"/></defs><path d="M0 0h8v8z" display="none" fill="url(#g)"/><path id="k" d="M0 0h8v8z"/></svg>'];
+        yield 'illustrator export without text' => ['<svg xmlns="http://www.w3.org/2000/svg" version="1.1" x="0px" y="0px" width="24" height="24" viewBox="0 0 24 24" xml:space="preserve"><path d="M0 0h24v24H0z" fill="#e30613"/></svg>'];
+        yield 'illustrator export with text' => ['<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="40" height="24" viewBox="0 0 40 24" xml:space="preserve"><text x="2" y="16">A  B</text></svg>'];
+        yield 'illustrator export with an empty text' => ['<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="24" height="24" viewBox="0 0 24 24" xml:space="preserve"><text x="2" y="16"></text><path d="M0 0h24v24H0z"/></svg>'];
         yield 'clip around the drawing' => ['<svg width="48" height="24" viewBox="0 0 48 24" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#c)"><path d="M2 2h8v8z"/></g><clipPath id="c"><rect width="20" height="20"/></clipPath></svg>'];
     }
 
@@ -253,6 +256,37 @@ final class SvgOptimizerTest extends TestCase
         // The first user is inside the rect, the second one reaches x = 12.
         self::assertStringContainsString('clipPath', $output);
         self::assertSame(1, substr_count($output, 'clip-path="url(#c)"'));
+    }
+
+    /**
+     * An Illustrator export places its root (`x="0px" y="0px"`) and keeps
+     * its spaces (`xml:space="preserve"`): nothing reads either on the root
+     * of a drawing without text, and a page would not keep them.
+     */
+    public function testThePlacementAnIllustratorExportWritesOnTheRootGoes(): void
+    {
+        $output = $this->optimize('<svg xmlns="http://www.w3.org/2000/svg" version="1.1" x="0px" y="0px" width="24" height="24" viewBox="0 0 24 24" xml:space="preserve"><path d="M0 0h24v24H0z" fill="#e30613"/></svg>');
+
+        self::assertStringNotContainsString(' x="', $output);
+        self::assertStringNotContainsString(' y="', $output);
+        self::assertStringNotContainsString('xml:space', $output);
+        self::assertStringContainsString('viewBox="0 0 24 24"', $output);
+    }
+
+    public function testTheSpacesOfADrawingWithTextAreKept(): void
+    {
+        $output = $this->optimize('<svg xmlns="http://www.w3.org/2000/svg" x="0px" width="40" height="24" viewBox="0 0 40 24" xml:space="preserve"><text x="2" y="16">A  B</text></svg>');
+
+        self::assertStringContainsString('xml:space="preserve"', $output);
+        self::assertStringNotContainsString('<svg xmlns="http://www.w3.org/2000/svg" x=', $output);
+    }
+
+    public function testThePlacementOfAnInnerSvgStays(): void
+    {
+        $output = $this->optimize('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><svg x="4" y="4" width="16" height="16" viewBox="0 0 8 8"><path d="M0 0h8v8H0z"/></svg></svg>');
+
+        self::assertStringContainsString('x="4"', $output);
+        self::assertStringContainsString('y="4"', $output);
     }
 
     private function optimize(string $svg): string

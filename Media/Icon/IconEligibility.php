@@ -14,38 +14,30 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Media\Icon;
 
+use TheliaCMS\Content\Pipeline\InlineSvgPolicy;
+use TheliaCMS\Content\Pipeline\InlineSvgViolation;
+use TheliaCMS\Content\Pipeline\InlineSvgViolationKind;
 use TheliaCMS\Content\Pipeline\PublishedContentSanitizer;
 use TheliaCMS\Locale\TranslatableText;
 
 /**
- * Whether an SVG may become an icon: a page keeps of an inline SVG only the
- * elements, and for each of them the attributes, that
- * `PublishedContentSanitizer::SVG_ELEMENTS` lists, so an icon that holds
- * anything else would be written in a page cut. This reads that list, it does
- * not copy it.
+ * Whether an SVG may become an icon: a page keeps of an inline SVG what
+ * `InlineSvgPolicy` allows, so an icon that holds anything else would be
+ * written in a page cut. This asks the policy, with the attributes the page
+ * keeps on every element, and does not copy its rules.
  *
- * It answers with what stands in the way, in words of an editor (the
- * technical name in brackets), and an empty list when the drawing is fit.
- * Namespace declarations (`xmlns`, `xmlns:*`) are not attributes for the XML
- * reader, so they never count.
+ * It answers with everything that stands in the way, in words of an editor
+ * (the technical name in brackets), and an empty list when the drawing is fit.
  */
 final readonly class IconEligibility
 {
-    private const string SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
-
     /** Elements named in an editor's words; the others are told by their name. */
     private const array ELEMENT_WORDS = [
-        'lineargradient' => 'a gradient (%s)',
-        'radialgradient' => 'a gradient (%s)',
-        'stop' => 'a gradient (%s)',
         'pattern' => 'a pattern (%s)',
-        'mask' => 'a mask (%s)',
-        'clippath' => 'a clipping shape (%s)',
         'text' => 'some text (%s)',
         'tspan' => 'some text (%s)',
         'style' => 'CSS style (%s)',
         'use' => 'a reused shape (%s)',
-        'defs' => 'a block of definitions (%s)',
         'symbol' => 'a reusable symbol (%s)',
         'marker' => 'a line marker (%s)',
         'image' => 'an embedded image (%s)',
@@ -58,12 +50,8 @@ final readonly class IconEligibility
     ];
 
     private const array ATTRIBUTE_WORDS = [
-        'style' => 'CSS style (%s)',
-        'class' => 'CSS classes (%s)',
-        'id' => 'an identifier (%s)',
-        'clip-path' => 'a clipping (%s)',
-        'mask' => 'a mask (%s)',
         'filter' => 'a filter effect (%s)',
+        'xlink:href' => 'an old way of pointing to a shape (%s)',
     ];
 
     /**
@@ -71,22 +59,13 @@ final readonly class IconEligibility
      */
     public function obstacles(string $svg): array
     {
-        $document = new \DOMDocument();
-        $previous = libxml_use_internal_errors(true);
-
-        try {
-            $loaded = '' !== trim($svg) && $document->loadXML($svg, \LIBXML_NONET);
-        } finally {
-            libxml_clear_errors();
-            libxml_use_internal_errors($previous);
-        }
-
-        if (!$loaded || !$document->documentElement instanceof \DOMElement) {
-            return [TranslatableText::of('a file that cannot be read')];
-        }
-
         $obstacles = [];
-        $this->inspect($document->documentElement, $obstacles);
+
+        foreach ((new InlineSvgPolicy())->validate($svg, PublishedContentSanitizer::ACCESSIBILITY_ATTRIBUTES) as $violation) {
+            // Two findings an editor reads the same way (a `<style>` and a style cut) are said once.
+            $said = self::said($violation);
+            $obstacles[$said->template."\0".implode("\0", array_map(strval(...), $said->values))] ??= $said;
+        }
 
         return array_values($obstacles);
     }
@@ -96,44 +75,20 @@ final readonly class IconEligibility
         return [] === $this->obstacles($svg);
     }
 
-    /**
-     * @param array<string, TranslatableText> $obstacles
-     */
-    private function inspect(\DOMElement $element, array &$obstacles): void
+    private static function said(InlineSvgViolation $violation): TranslatableText
     {
-        $name = strtolower($element->localName ?? $element->nodeName);
-        $allowed = PublishedContentSanitizer::SVG_ELEMENTS[$name] ?? null;
+        $subject = $violation->subject;
+        $name = strtolower($subject);
 
-        // A prefixed element (`svg:path`) is not read as an SVG element by the parser of a page.
-        if (null === $allowed || '' !== $element->prefix || (self::SVG_NAMESPACE !== $element->namespaceURI && '' !== (string) $element->namespaceURI)) {
-            $subject = $element->nodeName;
-            $obstacles['element:'.strtolower($subject)] ??= TranslatableText::of(self::ELEMENT_WORDS[$name] ?? 'an element a page does not keep (%s)', $subject);
-
-            // What stands inside an element a page drops is no more to be read.
-            return;
-        }
-
-        foreach ($element->attributes ?? [] as $attribute) {
-            $attributeName = strtolower($attribute->nodeName);
-
-            if (!\in_array($attributeName, $allowed, true)) {
-                $obstacles['attribute:'.$attributeName] ??= TranslatableText::of(self::ATTRIBUTE_WORDS[$attributeName] ?? 'an attribute a page does not keep (%s)', $attribute->nodeName);
-
-                continue;
-            }
-
-            // A page keeps a paint that is a color; one that points to a gradient or a pattern is dropped.
-            if (\in_array($attributeName, ['fill', 'stroke'], true) && str_contains(strtolower($attribute->nodeValue ?? ''), 'url(')) {
-                $obstacles['paint'] ??= TranslatableText::of('a gradient or a pattern as paint (%s)', $attribute->nodeName);
-            }
-        }
-
-        foreach ($element->childNodes as $child) {
-            if ($child instanceof \DOMElement) {
-                $this->inspect($child, $obstacles);
-            } elseif ($child instanceof \DOMText && '' !== trim($child->data)) {
-                $obstacles['text'] ??= TranslatableText::of('some text (%s)', 'text');
-            }
-        }
+        return match ($violation->kind) {
+            InlineSvgViolationKind::Unreadable => TranslatableText::of('a file that cannot be read'),
+            InlineSvgViolationKind::Element => TranslatableText::of(self::ELEMENT_WORDS[$name] ?? 'an element a page does not keep (%s)', $subject),
+            InlineSvgViolationKind::Attribute => TranslatableText::of(self::ATTRIBUTE_WORDS[$name] ?? 'an attribute a page does not keep (%s)', $subject),
+            InlineSvgViolationKind::Value => TranslatableText::of(\in_array($name, ['fill', 'stroke', 'stop-color'], true) ? 'a color a page does not keep (%s)' : 'a value a page does not keep (%s)', $subject),
+            InlineSvgViolationKind::Reference => TranslatableText::of('a reference to a shape a page does not keep (%s)', $subject),
+            InlineSvgViolationKind::NestedCut => TranslatableText::of('a mask or a clipping inside another one (%s)', $subject),
+            InlineSvgViolationKind::Style => TranslatableText::of('CSS style (%s)', $subject),
+            InlineSvgViolationKind::Text => TranslatableText::of('some text (%s)', $subject),
+        };
     }
 }

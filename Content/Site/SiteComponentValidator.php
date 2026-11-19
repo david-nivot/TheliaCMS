@@ -245,7 +245,7 @@ final readonly class SiteComponentValidator
         $plain = (string) preg_replace_callback(
             self::TAG,
             static fn (array $tag): string => str_contains(strtolower($tag[1]), self::PRINTED) ? '<div>' : '<'.$tag[1].implode('', array_map(
-                static fn (array $attribute): string => ' '.$attribute[0].'="'.(str_starts_with(strtolower($attribute[0]), 'data-') ? htmlspecialchars($attribute[1], \ENT_QUOTES) : 'x').'"',
+                static fn (array $attribute): string => ' '.$attribute[0].'="'.(str_starts_with(strtolower($attribute[0]), 'data-') ? htmlspecialchars($attribute[1], \ENT_QUOTES) : self::plainValue($attribute[0], $attribute[1])).'"',
                 self::attributes($tag[2]),
             )).'>',
             $markup,
@@ -258,6 +258,26 @@ final readonly class SiteComponentValidator
             $dropped,
             static fn (string $part): bool => 1 !== preg_match('/^".*" of (<.*>)$/', $part, $match) || !\in_array($match[1], $dropped, true),
         ));
+    }
+
+    /**
+     * The value an attribute is read with: `x`, or, for an attribute of a
+     * drawing the filter holds to a form (a reference, a transform, a
+     * keyword), a value of that form, so that it is not named for what it
+     * holds. Every id is `x`, so a reference reads `#x`.
+     */
+    private static function plainValue(string $attribute, string $value): string
+    {
+        $isReference = str_contains(strtolower($value), 'url(') || str_starts_with(trim($value), '#');
+
+        return match (strtolower($attribute)) {
+            'fill', 'stroke' => $isReference ? 'url(#x)' : 'x',
+            'mask', 'clip-path' => $isReference ? 'url(#x)' : 'none',
+            'href' => $isReference ? '#x' : 'x',
+            'transform', 'gradienttransform' => 'scale(1)',
+            'shape-rendering' => 'auto',
+            default => 'x',
+        };
     }
 
     /**
@@ -276,7 +296,9 @@ final readonly class SiteComponentValidator
             $parts[] = '<'.$element.'>';
 
             foreach (self::attributes($tag[2]) as [$name]) {
-                if (!str_contains(strtolower($name), self::PRINTED)) {
+                // A namespace declaration is no attribute of the page: the parser
+                // of a page gives an inline SVG its namespace (PHP 8.3 drops it).
+                if (!str_contains(strtolower($name), self::PRINTED) && !str_starts_with(strtolower($name), 'xmlns')) {
                     $parts[] = \sprintf('"%s" of <%s>', strtolower($name), $element);
                 }
             }

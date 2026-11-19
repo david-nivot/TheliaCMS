@@ -48,7 +48,10 @@ final class SvgPreparationScreenTest extends AdminScreenTestCase
         .'<path d="M2 2h10v10H2z" fill="#1C1C1C"/><path d="M4 14h6v6H4z" fill="#1c1c1c"/><path d="M14 4h6v4h-6z" fill="#1C1C1C"/>'
         .'<circle cx="17" cy="17" r="5" fill="#22A06B"/><path d="M15 17l1.5 1.5L19 16" fill="none" stroke="#fff" stroke-width="1.5"/></svg>';
 
-    /** A gradient: the result is fit for an image, not for an icon. */
+    /** A shape drawn twice by `use`: the result is fit for an image, not for an icon. */
+    private const string REUSED = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><defs><path id="s" d="M0 0h12v12H0z"/></defs><use href="#s"/><use href="#s" x="12" y="12"/></svg>';
+
+    /** A gradient: a page keeps it, so it may be an icon. */
     private const string GRADIENT = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><defs><linearGradient id="g"><stop offset="0" stop-color="#000"/><stop offset="1" stop-color="#fff"/></linearGradient></defs><path d="M0 0h24v24H0z" fill="url(#g)"/></svg>';
 
     private const string TRAPPED = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" onload="alert(1)"><script>alert(2)</script><path d="M0 0h24v24H0z"/></svg>';
@@ -452,6 +455,15 @@ final class SvgPreparationScreenTest extends AdminScreenTestCase
         self::assertSame(0, $screen->filter('[data-testid="cms-svg-icon-obstacles"]')->count());
     }
 
+    /** A page keeps a gradient: the drawing may become an icon. */
+    public function testADrawingWithAGradientIsOfferedAsAnIcon(): void
+    {
+        $screen = $this->opened($this->svg('degrade.svg', self::GRADIENT));
+
+        self::assertNull($screen->filter('#cms-svg-usage-icon')->attr('disabled'));
+        self::assertSame(0, $screen->filter('[data-testid="cms-svg-icon-obstacles"]')->count());
+    }
+
     public function testTheUsageAndTheNameTypedFollowAPreviewOfTheSettings(): void
     {
         $this->opened($this->svg('flèche.svg', self::COLORED));
@@ -504,21 +516,20 @@ final class SvgPreparationScreenTest extends AdminScreenTestCase
 
     public function testADrawingAPageWouldNotKeepWholeIsNotOfferedAsAnIconAndSaysWhy(): void
     {
-        $screen = $this->opened($this->svg('degrade.svg', self::GRADIENT));
+        $screen = $this->opened($this->svg('motif.svg', self::REUSED));
 
         self::assertNotNull($screen->filter('#cms-svg-usage-icon')->attr('disabled'));
         self::assertSame('image', $screen->filter('[name="usage"]:checked')->attr('value'));
         $obstacles = $this->normalize($screen->filter('[data-testid="cms-svg-icon-obstacles"]')->text());
-        self::assertStringContainsString($this->saidWith('a block of definitions (%s)', 'defs'), $obstacles);
-        self::assertStringContainsString($this->saidWith('a gradient or a pattern as paint (%s)', 'fill'), $obstacles);
+        self::assertStringContainsString($this->saidWith('a reused shape (%s)', 'use'), $obstacles);
         self::assertSame(0, $screen->filter('[data-testid="cms-svg-icon-name"]')->count(), 'No name to give: the drawing cannot be an icon.');
     }
 
     public function testTheServerRefusesAnIconThatCannotBeOneEvenIfTheFormAsksForIt(): void
     {
-        $screen = $this->opened($this->svg('degrade.svg', self::GRADIENT));
+        $screen = $this->opened($this->svg('motif.svg', self::REUSED));
 
-        $answer = $this->submit($screen, 'add', ['usage' => 'icon', 'icon_name' => 'degrade']);
+        $answer = $this->submit($screen, 'add', ['usage' => 'icon', 'icon_name' => 'motif']);
 
         self::assertSame(422, $this->client->getResponse()->getStatusCode());
         self::assertSame([], $this->getService(CmsMediaLibrary::class)->images(), 'Nothing is stored.');
@@ -564,7 +575,7 @@ final class SvgPreparationScreenTest extends AdminScreenTestCase
         $screen = $this->opened(
             $this->svg('premiere.svg', self::CLEAN),
             $this->svg('Partagé.svg', self::CLEAN),
-            $this->svg('degrade.svg', self::GRADIENT),
+            $this->svg('motif.svg', self::REUSED),
         );
 
         $this->answer($screen, 'add', ['usage' => 'icon', 'icon_name' => 'partage', 'apply_to_following' => '1']);
@@ -706,7 +717,7 @@ final class SvgPreparationScreenTest extends AdminScreenTestCase
 
     public function testAnIconThatCannotBeOneKeepsItsColorsWhateverThePreselection(): void
     {
-        $screen = $this->withUsage($this->opened($this->svg('degrade.svg', self::GRADIENT)), 'icon');
+        $screen = $this->withUsage($this->opened($this->svg('motif.svg', self::REUSED)), 'icon');
 
         self::assertSame('image', $screen->filter('input[name="usage"]:checked')->attr('value'));
         self::assertSame('keep', $screen->filter('[data-testid="cms-svg-presets"] input[name="colors"]:checked')->attr('value'));
@@ -753,12 +764,18 @@ final class SvgPreparationScreenTest extends AdminScreenTestCase
         $fileName = $icon->getFileName();
         $sheet = \sprintf('/admin/cms/media/%d', $icon->getId());
         // The sheet of an icon asks no alternative text: nothing but the file is sent.
-        $this->postSheet($sheet, [], $this->svg('degrade.svg', self::GRADIENT));
+        $this->postSheet($sheet, [], $this->svg('motif.svg', self::REUSED));
         $screen = $this->screen($this->remember((string) $this->client->getResponse()->headers->get('Location')));
 
         self::assertStringContainsString('cms:marque', $this->normalize($screen->filter('[data-testid="cms-svg-icon-replaced-obstacles"]')->text()), 'It is told before the answer.');
         self::assertSame(0, $screen->filter('[data-testid="cms-svg-usage-read-only"]')->count(), 'The card does not say the file replaces the icon it cannot replace.');
+        $replace = $screen->filter('[data-testid="cms-svg-add"]');
+        self::assertNotNull($replace->attr('disabled'), 'The button that would replace the file is not offered.');
+        self::assertSame('cms-svg-icon-replaced-obstacles', $replace->attr('aria-describedby'), 'It is tied to the warning that says why.');
+        self::assertSame(1, $screen->filter('#cms-svg-icon-replaced-obstacles')->count());
+        self::assertNull($screen->filter('[data-testid="cms-svg-skip"]')->attr('disabled'), 'The file can still be left out.');
 
+        // A form sent by hand is refused by the server all the same.
         $answer = $this->submit($screen, 'add');
 
         self::assertSame(422, $this->client->getResponse()->getStatusCode());
@@ -773,6 +790,7 @@ final class SvgPreparationScreenTest extends AdminScreenTestCase
         $this->postSheet(\sprintf('/admin/cms/media/%d', $icon->getId()), [], $this->svg('neuve.svg', self::COLORED));
         $screen = $this->screen($this->remember((string) $this->client->getResponse()->headers->get('Location')));
 
+        self::assertNull($screen->filter('[data-testid="cms-svg-add"]')->attr('disabled'));
         $this->answer($screen, 'add');
 
         self::assertSame('marque', $this->getService(IconNames::class)->nameOf((int) $icon->getId()));
@@ -782,7 +800,7 @@ final class SvgPreparationScreenTest extends AdminScreenTestCase
     public function testReplacingTheFileOfAnImageThatIsNotAnIconTakesAnyDrawing(): void
     {
         $image = $this->image('Pas une icône');
-        $this->postSheet(\sprintf('/admin/cms/media/%d', $image->getId()), ['decorative' => '1'], $this->svg('degrade.svg', self::GRADIENT));
+        $this->postSheet(\sprintf('/admin/cms/media/%d', $image->getId()), ['decorative' => '1'], $this->svg('motif.svg', self::REUSED));
         $screen = $this->screen($this->remember((string) $this->client->getResponse()->headers->get('Location')));
 
         $this->answer($screen, 'add');

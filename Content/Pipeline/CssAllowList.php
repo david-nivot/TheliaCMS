@@ -30,9 +30,17 @@ namespace TheliaCMS\Content\Pipeline;
  *
  * A backslash is never kept: an escape is how a name hides from a reader, and
  * no style a page needs is written with one.
+ *
+ * Without `$urls`, a value may neither name an address nor read a custom
+ * property, which may carry one set on an element further out: the `style`
+ * of an element of an inline SVG, whose references stay inside the SVG.
  */
 final readonly class CssAllowList
 {
+    public function __construct(private bool $urls = true)
+    {
+    }
+
     /**
      * The functions a value may call, in lowercase.
      */
@@ -311,6 +319,10 @@ final readonly class CssAllowList
             }
 
             $function = strtolower($match[0]);
+
+            if (!$this->urls && ('url' === $function || 'var' === $function)) {
+                return false;
+            }
 
             if ('url' === $function) {
                 $position = self::urlEnd($value, $position + 1);

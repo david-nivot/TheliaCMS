@@ -25,9 +25,9 @@ use Psr\Log\NullLogger;
  *
  * The risky rules of the library stay off (one of them removes width and
  * height) and so do the transform rewrites, which produce values some
- * readers misparse. Two rules of ours cover what the library does not: the
- * clip of an editor export that clips nothing, and the identifiers nobody
- * references.
+ * readers misparse. Three rules of ours cover what the library does not: the
+ * clip of an editor export that clips nothing, the identifiers nobody
+ * references, and the placement an Illustrator export writes on the root.
  */
 final readonly class SvgOptimizer
 {
@@ -37,6 +37,7 @@ final readonly class SvgOptimizer
         private FigmaClipRemover $clipRemover,
         private UnreferencedIdRemover $idRemover,
         private LoggerInterface $logger = new NullLogger(),
+        private RootPlacementRemover $placementRemover = new RootPlacementRemover(),
     ) {
     }
 
@@ -56,7 +57,9 @@ final readonly class SvgOptimizer
             // (and the other way round): rounds until nothing moves, so
             // that a second pass over the output changes nothing.
             for ($round = 0; $round < self::MAX_ROUNDS; ++$round) {
-                $next = $this->library()->optimizeString($this->withoutUnreferencedIds($current))->getContent();
+                // The placement goes in each round: whether `xml:space` stays
+                // depends on a text the library may have emptied.
+                $next = $this->library()->optimizeString($this->withoutUnreferencedIds($this->withoutRootPlacement($current)))->getContent();
 
                 if ($next === $current) {
                     break;
@@ -91,6 +94,17 @@ final readonly class SvgOptimizer
         $document = SvgDocument::load($svg);
 
         if (null === $document || !$this->clipRemover->remove($document)) {
+            return $svg;
+        }
+
+        return SvgDocument::serialize($document);
+    }
+
+    private function withoutRootPlacement(string $svg): string
+    {
+        $document = SvgDocument::load($svg);
+
+        if (null === $document || !$this->placementRemover->remove($document)) {
             return $svg;
         }
 
