@@ -20,12 +20,14 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Domain\Localization\Service\LangService;
 use Thelia\Model\Lang;
 use TheliaCMS\Form\AntiSpam;
 use TheliaCMS\Form\FormCatalog;
 use TheliaCMS\Form\FormDefinition;
+use TheliaCMS\Form\SubmissionCheckEvent;
 use TheliaCMS\Form\SubmissionRateLimiter;
 use TheliaCMS\Form\SubmissionStore;
 use TheliaCMS\Form\SubmissionValidator;
@@ -56,6 +58,7 @@ final readonly class CmsFormSubmitController
         private LangService $langService,
         private TranslatorInterface $translator,
         private LoggerInterface $logger,
+        private EventDispatcherInterface $events,
     ) {
     }
 
@@ -94,6 +97,18 @@ final readonly class CmsFormSubmitController
 
         if (!$submission->isValid()) {
             $this->flash->rejected($code, $submission);
+
+            return $back;
+        }
+
+        // What another module checks, a captcha for one: asked only once the
+        // message is worth keeping, so a token is spent on nothing else, and
+        // before it counts against the rate limit. Refused, it keeps what was
+        // typed, as a mistyped field does.
+        $check = $this->events->dispatch(new SubmissionCheckEvent($code, $request));
+
+        if (null !== $check->refusal()) {
+            $this->flash->refused($code, $check->refusal(), $submission->entered);
 
             return $back;
         }
