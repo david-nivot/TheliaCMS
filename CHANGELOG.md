@@ -7,6 +7,50 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Changed
+
+- **The target of a menu entry is searched**: the page, content, folder,
+  category or product an entry points at is chosen in a list that opens with
+  the first twenty and narrows as the editor types its title (or the start of
+  the reference of a product), instead of in a select listing the whole site,
+  which the menu screen no longer reads nor sends. The list floats over the
+  form; when more match than it shows, it says how many and invites to refine
+  the search. It opens on the record held, first. A page, content, folder or
+  category with no title in the language edited is named by its title in
+  another one, marked with that language ("Démo [fr]"), and found by it. Each
+  is named in the language being edited (`?locale=`), with its parent (folder,
+  parent page or category, reference) and the list shows under each title its
+  whole path (`Salon › Armchairs`, the default category of a product: `label`
+  and `path` in the answer of a source), so two of the same title stay apart,
+  an offline one says so, and the entry reopens with the name of its target.
+  Without the script, the number is typed. The server refuses a number nothing
+  has, and a page in the bin. New sources
+  `admin.cms.partials.sources.contents` and
+  `admin.cms.partials.sources.folders.search`; the products and categories
+  ones take `?offline=1`, the pages one `?except=` (a page and the pages under
+  it). The parent of a page, the 404 and maintenance pages of the settings and
+  the privacy policy page of a form are searched the same way; a page cannot
+  go under itself nor under a page below it. The search box of the section
+  forms becomes the same list, keyboard included (arrows, Enter, Escape), in
+  place of the browser's suggestions: `assets/record-picker.js` and its own
+  `record-picker.css`, loaded by every screen that picks a record, mount it on
+  `input[data-cms-picker][data-cms-picker-searchable]`, and
+  `CmsRecordPicker.use(factory)` puts another component in its place. The
+  sources are open to whoever may open one of the screens that pick from them
+  (pages, menus, forms or settings), no longer to the editors of the pages
+  only. A source asked with no text answers its first items, a record with no
+  title in any language last, by its number; any text of one letter or more
+  searches, and `X-Total-Count` says how many matched.
+
+### Fixed
+
+- **A page sent to the bin is no longer dropped silently from the settings**:
+  while the 404 page, the maintenance page or the privacy policy page of a form
+  was in the bin, saving the settings (or the form) for any other reason
+  emptied it without a word. The page is now named "In the bin" in its field
+  and the save is refused with the reason until it is restored or another one
+  is chosen.
+
 ## [2.33.0] - 2026-11-18
 
 ### Added

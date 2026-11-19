@@ -17,13 +17,16 @@ namespace TheliaCMS\Menu\Admin;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
 use Symfony\Component\Form\FormInterface;
+use Symfony\Component\Form\FormView;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use TheliaCMS\Menu\MenuAddress;
@@ -34,11 +37,17 @@ use TheliaCMS\TheliaCMS;
 /**
  * The messages of the form errors are translated here: the form theme
  * prints them as they are.
+ *
+ * The target is a number the record picker writes once the editor found it by
+ * a few letters of its title: no list of the whole site is sent with the form.
+ * Without the script, the number is typed.
  */
 final class CmsMenuItemType extends AbstractType
 {
     public function __construct(
         private readonly MenuAddress $addresses,
+        private readonly MenuTargetCheck $targets,
+        private readonly UrlGeneratorInterface $urls,
         private readonly TranslatorInterface $translator,
     ) {
     }
@@ -59,42 +68,11 @@ final class CmsMenuItemType extends AbstractType
                 ],
                 'attr' => ['data-cms-menu-target-select' => 'true'],
             ])
-            ->add('pageId', ChoiceType::class, [
-                'label' => 'Page',
-                'required' => true,
-                'placeholder' => 'Choose a page',
-                'choices' => $options['page_choices'],
-                'row_attr' => ['data-cms-menu-target-field' => MenuTargetType::Page->value],
-            ])
-            ->add('contentId', ChoiceType::class, [
-                'label' => 'Content',
-                'required' => true,
-                'placeholder' => 'Choose a content',
-                'choices' => $options['content_choices'],
-                'row_attr' => ['data-cms-menu-target-field' => MenuTargetType::Content->value],
-            ])
-            ->add('folderId', ChoiceType::class, [
-                'label' => 'Folder',
-                'required' => true,
-                'placeholder' => 'Choose a folder',
-                'choices' => $options['folder_choices'],
-                'row_attr' => ['data-cms-menu-target-field' => MenuTargetType::Folder->value],
-            ])
-            ->add('categoryId', ChoiceType::class, [
-                'label' => 'Category',
-                'required' => true,
-                'placeholder' => 'Choose a category',
-                'choices' => $options['category_choices'],
-                'row_attr' => ['data-cms-menu-target-field' => MenuTargetType::Category->value],
-            ])
-            ->add('productId', ChoiceType::class, [
-                'label' => 'Product',
-                'required' => true,
-                'placeholder' => 'Choose a product',
-                'help' => 'Products are grouped by their default category. Type the start of a title to reach it in the list.',
-                'choices' => $options['product_choices'],
-                'row_attr' => ['data-cms-menu-target-field' => MenuTargetType::Product->value],
-            ])
+            ->add('pageId', IntegerType::class, $this->target(MenuTargetType::Page, 'Page', 'admin.cms.partials.sources.pages', $options['source_locale']))
+            ->add('contentId', IntegerType::class, $this->target(MenuTargetType::Content, 'Content', 'admin.cms.partials.sources.contents', $options['source_locale']))
+            ->add('folderId', IntegerType::class, $this->target(MenuTargetType::Folder, 'Folder', 'admin.cms.partials.sources.folders.search', $options['source_locale']))
+            ->add('categoryId', IntegerType::class, $this->target(MenuTargetType::Category, 'Category', 'admin.cms.partials.sources.categories', $options['source_locale'], ['offline' => 1]))
+            ->add('productId', IntegerType::class, $this->target(MenuTargetType::Product, 'Product', 'admin.cms.partials.sources.products', $options['source_locale'], ['offline' => 1], 'Choose in the list, or type a few letters of the title or the start of the reference to narrow it.'))
             // Not a UrlType: a menu entry legitimately points at a path of the
             // site, at an anchor, or at a mailto: address.
             ->add('url', TextType::class, [
@@ -129,6 +107,26 @@ final class CmsMenuItemType extends AbstractType
         $builder->addEventListener(FormEvents::POST_SUBMIT, $this->validateCombination(...));
     }
 
+    /**
+     * Only the field of the chosen kind of target shows from the first paint:
+     * the script that switches them runs once the page is loaded, and would
+     * show all six fields until then. Without the script, the screen shows
+     * them all again (`<noscript>` of the template), as the type is then
+     * changed with no field following it.
+     */
+    public function finishView(FormView $view, FormInterface $form, array $options): void
+    {
+        $chosen = (string) $view['targetType']->vars['value'];
+
+        foreach ($view as $child) {
+            $kind = $child->vars['row_attr']['data-cms-menu-target-field'] ?? null;
+
+            if (null !== $kind) {
+                $child->vars['row_attr']['hidden'] = $kind !== $chosen;
+            }
+        }
+    }
+
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver
@@ -139,19 +137,37 @@ final class CmsMenuItemType extends AbstractType
                 // form on the three fields that do not apply. The server
                 // decides which one is required, and says so per field.
                 'attr' => ['novalidate' => 'novalidate'],
-                'page_choices' => [],
-                'content_choices' => [],
-                'folder_choices' => [],
-                'category_choices' => [],
-                'product_choices' => [],
                 'parent_choices' => [],
+                // The language the entry is edited in: the targets are named
+                // in it, as its label is written in it.
+                'source_locale' => null,
             ])
-            ->setAllowedTypes('page_choices', 'array')
-            ->setAllowedTypes('content_choices', 'array')
-            ->setAllowedTypes('folder_choices', 'array')
-            ->setAllowedTypes('category_choices', 'array')
-            ->setAllowedTypes('product_choices', 'array')
-            ->setAllowedTypes('parent_choices', 'array');
+            ->setAllowedTypes('parent_choices', 'array')
+            ->setAllowedTypes('source_locale', ['null', 'string']);
+    }
+
+    /**
+     * The options of the field of one kind of target: a number the record
+     * picker fills from the searched source, offline records included since a
+     * menu may be prepared before its target goes online.
+     *
+     * @param array<string, int> $query
+     *
+     * @return array<string, mixed>
+     */
+    private function target(MenuTargetType $type, string $label, string $source, ?string $locale, array $query = [], string $help = 'Choose in the list, or type a few letters of the title to narrow it.'): array
+    {
+        return [
+            'label' => $label,
+            'required' => true,
+            'help' => $help,
+            'attr' => [
+                'min' => 1,
+                'data-cms-picker' => $this->urls->generate($source, $query + array_filter(['locale' => $locale])),
+                'data-cms-picker-searchable' => '1',
+            ],
+            'row_attr' => ['data-cms-menu-target-field' => $type->value],
+        ];
     }
 
     private function validateCombination(FormEvent $event): void
@@ -166,15 +182,43 @@ final class CmsMenuItemType extends AbstractType
         $type = MenuTargetType::fromStorage($data['targetType'] ?? null);
 
         match ($type) {
-            MenuTargetType::Page => $this->requireField($form, 'pageId', $data, 'Choose the page this entry points at.'),
-            MenuTargetType::Content => $this->requireField($form, 'contentId', $data, 'Choose the content this entry points at.'),
-            MenuTargetType::Folder => $this->requireField($form, 'folderId', $data, 'Choose the folder this entry points at.'),
-            MenuTargetType::Category => $this->requireField($form, 'categoryId', $data, 'Choose the category this entry points at.'),
-            MenuTargetType::Product => $this->requireField($form, 'productId', $data, 'Choose the product this entry points at.'),
+            MenuTargetType::Page => $this->requireTarget($form, $type, 'pageId', $data, 'Choose the page this entry points at.'),
+            MenuTargetType::Content => $this->requireTarget($form, $type, 'contentId', $data, 'Choose the content this entry points at.'),
+            MenuTargetType::Folder => $this->requireTarget($form, $type, 'folderId', $data, 'Choose the folder this entry points at.'),
+            MenuTargetType::Category => $this->requireTarget($form, $type, 'categoryId', $data, 'Choose the category this entry points at.'),
+            MenuTargetType::Product => $this->requireTarget($form, $type, 'productId', $data, 'Choose the product this entry points at.'),
             MenuTargetType::Url => $this->checkAddress($form, $data),
             // A heading has nothing to link to, so its label is all it has.
             MenuTargetType::None => $this->requireField($form, 'label', $data, 'An entry with no link needs a label.'),
         };
+    }
+
+    /**
+     * The field of the chosen kind holds a record that can be the target: a
+     * number not typed, or typed wrong, is refused here rather than by the
+     * select that used to list them all.
+     *
+     * @param array<string, mixed> $data
+     */
+    private function requireTarget(FormInterface $form, MenuTargetType $type, string $field, array $data, string $message): void
+    {
+        if ($form->get($field)->getErrors()->count() > 0) {
+            return;
+        }
+
+        $id = $data[$field] ?? null;
+
+        if (null === $id) {
+            $form->get($field)->addError(new FormError($this->translate($message)));
+
+            return;
+        }
+
+        $refusal = $this->targets->refusal($type, (int) $id, $this->translator->getLocale());
+
+        if (null !== $refusal) {
+            $form->get($field)->addError(new FormError($this->translate($refusal)));
+        }
     }
 
     /**

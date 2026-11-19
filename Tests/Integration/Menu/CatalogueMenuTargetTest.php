@@ -28,7 +28,6 @@ use TheliaCMS\ImportExport\SiteDocument;
 use TheliaCMS\ImportExport\SiteExporter;
 use TheliaCMS\ImportExport\SiteImporter;
 use TheliaCMS\Menu\Admin\CmsMenuItemType;
-use TheliaCMS\Menu\Admin\MenuTargetChoices;
 use TheliaCMS\Menu\CmsMenuProvider;
 use TheliaCMS\Menu\MenuCache;
 use TheliaCMS\Menu\MenuTargetIssue;
@@ -169,38 +168,39 @@ final class CatalogueMenuTargetTest extends CmsIntegrationTestCase
         }
     }
 
-    public function testTheFormOffersTheTreeOfCategoriesAndTheProductsByCategory(): void
+    public function testTheFormTakesTheNumberOfARecordThatExistsAndRefusesAnyOther(): void
     {
-        $parent = $this->category(['fr_FR' => 'Sols']);
-        $child = $this->category(['fr_FR' => 'Résines'], parent: (int) $parent->getId());
-        $product = $this->product(['fr_FR' => 'Primaire époxy'], category: $child);
-        $choices = $this->getService(MenuTargetChoices::class);
+        $category = $this->category(['fr_FR' => 'Résines']);
+        $product = $this->product(['fr_FR' => 'Primaire époxy'], category: $category);
+        $forms = $this->getService(FormFactoryInterface::class);
 
-        $categories = $choices->categories('fr_FR');
-        $products = $choices->products('fr_FR');
-
-        self::assertSame((int) $parent->getId(), $categories['Sols'] ?? null);
-        self::assertSame((int) $child->getId(), $categories['— Résines'] ?? null);
-        self::assertSame((int) $product->getId(), $products['Sols › Résines']['Primaire époxy'] ?? null);
-
-        $form = $this->getService(FormFactoryInterface::class)->create(CmsMenuItemType::class, null, [
-            'csrf_protection' => false,
-            'category_choices' => $categories,
-            'product_choices' => $products,
-        ]);
+        $form = $forms->create(CmsMenuItemType::class, null, ['csrf_protection' => false]);
         $form->submit(['targetType' => 'product', 'productId' => (string) $product->getId(), 'label' => '', 'parent' => '0']);
 
         self::assertTrue($form->isValid(), (string) $form->getErrors(true));
         self::assertSame((int) $product->getId(), $form->getData()['productId']);
 
-        $empty = $this->getService(FormFactoryInterface::class)->create(CmsMenuItemType::class, null, [
-            'csrf_protection' => false,
-            'category_choices' => $categories,
-        ]);
+        $empty = $forms->create(CmsMenuItemType::class, null, ['csrf_protection' => false]);
         $empty->submit(['targetType' => 'category', 'categoryId' => '', 'label' => '', 'parent' => '0']);
 
         self::assertFalse($empty->isValid());
         self::assertCount(1, $empty->get('categoryId')->getErrors());
+
+        $unknown = $forms->create(CmsMenuItemType::class, null, ['csrf_protection' => false]);
+        $unknown->submit(['targetType' => 'category', 'categoryId' => '999999999', 'label' => '', 'parent' => '0']);
+
+        self::assertFalse($unknown->isValid(), 'A number nothing has is refused, as the select refused an option it did not list.');
+        self::assertCount(1, $unknown->get('categoryId')->getErrors());
+
+        $typed = $forms->create(CmsMenuItemType::class, null, ['csrf_protection' => false]);
+        $typed->submit(['targetType' => 'product', 'productId' => 'Primaire', 'label' => '', 'parent' => '0']);
+
+        self::assertCount(1, $typed->get('productId')->getErrors(), 'Without the script, a word typed in the number field is refused once: '.$typed->get('productId')->getErrors());
+
+        $other = $forms->create(CmsMenuItemType::class, null, ['csrf_protection' => false]);
+        $other->submit(['targetType' => 'url', 'url' => '/contact', 'categoryId' => '999999999', 'label' => '', 'parent' => '0']);
+
+        self::assertTrue($other->isValid(), 'Only the field of the chosen kind is checked: '.$other->getErrors(true));
     }
 
     public function testTheExportKeepsTheIdOfTheItemAndTheImportReportsIt(): void

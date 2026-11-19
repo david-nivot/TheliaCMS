@@ -32,7 +32,6 @@ use TheliaCMS\Form\RetentionPolicy;
 use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Model\CmsForm;
 use TheliaCMS\Model\CmsFormField;
-use TheliaCMS\Page\Admin\CmsPageAdminRepository;
 use TheliaCMS\Page\Admin\EditLanguage;
 use TheliaCMS\Security\CmsResources;
 use Twig\Environment;
@@ -57,7 +56,6 @@ final readonly class CmsFormAdminController
         private AdminControllerSupport $support,
         private CmsFormRepository $repository,
         private CmsFormWriter $writer,
-        private CmsPageAdminRepository $pages,
         private EditLanguage $languages,
     ) {
     }
@@ -229,7 +227,7 @@ final readonly class CmsFormAdminController
             'receiptSubject' => $record?->getReceiptSubject(),
             'receiptBody' => $record?->getReceiptBody(),
         ], [
-            'page_choices' => $this->pages->parentChoices($locale),
+            'page_source' => $this->urls->generate('admin.cms.partials.sources.pages', ['locale' => $locale]),
             // Explicit: this form is also rendered on the screen editing a
             // single field, whose URL it must not post to.
             'action' => null === $record

@@ -107,6 +107,7 @@ final class SiteReferencePropTest extends AdminScreenTestCase
 
         self::assertSame($this->getService(TranslatorInterface::class)->trans('Product', [], TheliaCMS::DOMAIN_NAME), rtrim(trim($label->text()), ' *'), 'The `id` of a row reads as the kind of record, in the language of the editor.');
         self::assertSame($field->attr('id').'_picker', $form->filter('[data-cms-item-title]')->attr('data-cms-item-source'), 'The row is titled by the record its picker shows.');
+        self::assertSame($this->locale(), $this->screen($this->url($page))->filter('[data-cms-content]')->attr('data-cms-picker-locale'), 'The picker names the records in the language edited.');
     }
 
     private function url(CmsPage $page): string

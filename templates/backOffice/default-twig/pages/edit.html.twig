@@ -271,4 +271,6 @@
     {% endif %}
     <script src="{{ cms_asset('assets/page-actions.js') }}?v={{ assets_version }}" defer></script>
     {{ include('@TheliaCMSModule/backOffice/default-twig/media/_picker.html.twig', { media_picker_version: assets_version }) }}
+    {# The parent page is searched rather than listed whole. #}
+    {{ include('@TheliaCMSModule/backOffice/default-twig/_record_picker.html.twig') }}
 {% endblock %}

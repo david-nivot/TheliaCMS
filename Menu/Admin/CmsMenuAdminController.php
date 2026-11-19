@@ -66,7 +66,6 @@ final readonly class CmsMenuAdminController
         private AdminControllerSupport $support,
         private CmsMenuRepository $menus,
         private CmsMenuWriter $writer,
-        private MenuTargetChoices $choices,
         private EditLanguage $languages,
     ) {
     }
@@ -461,12 +460,8 @@ final readonly class CmsMenuAdminController
             'openNewTab' => 1 === $item?->getOpenNewTab(),
             'visible' => null === $item || 1 === (int) $item->getVisible(),
         ], [
-            'page_choices' => $this->choices->pages($locale),
-            'content_choices' => $this->choices->contents($locale),
-            'folder_choices' => $this->choices->folders($locale),
-            'category_choices' => $this->choices->categories($locale),
-            'product_choices' => $this->choices->products($locale),
             'parent_choices' => $this->menus->parentChoices($menu, $locale, null === $item ? null : (int) $item->getId()),
+            'source_locale' => $locale,
             'action' => $this->urls->generate('admin.cms.menus.entry_save', [
                 'id' => $menu->getId(),
                 'itemId' => $item?->getId() ?? 'new',

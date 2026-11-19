@@ -60,7 +60,7 @@ final class PageListSectionTest extends AdminScreenTestCase
         self::assertSame((string) $desserts->getId(), $this->queryOf($create)['parent'] ?? null);
 
         $form = $this->screen($create);
-        self::assertSame((string) $desserts->getId(), $form->filter('select[name$="[parent]"] option[selected]')->attr('value'), 'The new page starts under it.');
+        self::assertSame((string) $desserts->getId(), $form->filter('input[name$="[parent]"]')->attr('value'), 'The new page starts under it.');
     }
 
     public function testAPageThatHoldsOthersOpensTheirListFromTheTreeAndFromResults(): void
@@ -139,7 +139,7 @@ final class PageListSectionTest extends AdminScreenTestCase
         }
 
         $form = $this->screen('/admin/cms/pages/new?'.http_build_query(['edit_language_id' => Lang::getDefaultLanguage()->getId(), 'parent' => $goneId]));
-        self::assertSame('0', $form->filter('select[name$="[parent]"] option[selected]')->attr('value') ?? '0', 'A new page does not start under a page in the bin.');
+        self::assertSame('0', $form->filter('input[name$="[parent]"]')->attr('value'), 'A new page does not start under a page in the bin.');
     }
 
     private function under(CmsPage $page, CmsPage $parent, int $position): CmsPage

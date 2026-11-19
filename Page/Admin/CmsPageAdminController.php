@@ -82,6 +82,7 @@ final readonly class CmsPageAdminController
         private PageDocumentRows $documentRows,
         private PageOnlineMessage $onlineMessage,
         private PublicationRefusal $refusals,
+        private PageParentCheck $parents,
     ) {
     }
 
@@ -384,7 +385,7 @@ final readonly class CmsPageAdminController
         $form = $this->buildForm($page, $lang);
         $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
+        if ($form->isSubmitted() && $form->isValid() && $this->parentHolds($form, $page, $locale)) {
             $this->denyUnless($page->isNew() ? AccessManager::CREATE : AccessManager::UPDATE);
 
             $wasNew = $page->isNew();
@@ -553,7 +554,7 @@ final readonly class CmsPageAdminController
             'nofollow' => $page->isNew() ? 0 : $page->getNofollow(),
             'fields' => $this->fields->valuesOf($page, $locale, $definitions),
         ], [
-            'parent_choices' => $this->pages->parentChoices($locale, $page->isNew() ? null : (int) $page->getId()),
+            'parent_source' => $this->urls->generate('admin.cms.partials.sources.pages', ['locale' => $locale] + ($page->isNew() ? [] : ['except' => (int) $page->getId()])),
             'image_picker_url' => $this->urls->generate('admin.cms.media.picker'),
             'image_upload_url' => $this->urls->generate('admin.cms.media.add'),
             'page_type_choices' => array_map(strval(...), array_keys($typeLabels)),
@@ -568,6 +569,23 @@ final readonly class CmsPageAdminController
             'fixed_address_check_url' => $this->urls->generate('admin.cms.pages.fixed_address_check', [self::EDIT_LANGUAGE_PARAMETER => $lang->getId()]),
             'page_id' => $page->isNew() ? 0 : (int) $page->getId(),
         ]);
+    }
+
+    /**
+     * The parent is a number the editor typed or picked: the page has to be
+     * able to go under it, which the select of the pages used to ensure.
+     */
+    private function parentHolds(FormInterface $form, CmsPage $page, string $locale): bool
+    {
+        $refusal = $this->parents->refusal($page->isNew() ? null : (int) $page->getId(), (int) $form->get('parent')->getData(), $locale);
+
+        if (null === $refusal) {
+            return true;
+        }
+
+        $form->get('parent')->addError(new FormError($this->support->translate($refusal)));
+
+        return false;
     }
 
     private function applyTo(CmsPage $page, string $locale, FormInterface $form): void

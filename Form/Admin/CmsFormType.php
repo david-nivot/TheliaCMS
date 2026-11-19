@@ -16,7 +16,6 @@ namespace TheliaCMS\Form\Admin;
 
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
-use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -33,6 +32,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 use TheliaCMS\Form\FormCode;
 use TheliaCMS\Form\Recipients;
 use TheliaCMS\Form\RetentionPolicy;
+use TheliaCMS\Page\Admin\PageParentCheck;
 use TheliaCMS\TheliaCMS;
 
 /**
@@ -47,6 +47,7 @@ use TheliaCMS\TheliaCMS;
 final class CmsFormType extends AbstractType
 {
     public function __construct(
+        private readonly PageParentCheck $pages,
         private readonly TranslatorInterface $translator,
     ) {
     }
@@ -97,12 +98,17 @@ final class CmsFormType extends AbstractType
                 'attr' => ['rows' => 4],
                 'help' => 'Says what the answers are used for, how long they are kept and who to ask to see or delete them. Shown just above the button.',
             ])
-            ->add('privacyPolicyPageId', ChoiceType::class, [
+            // Searched by the record picker rather than listed whole; without
+            // the script, its number is typed.
+            ->add('privacyPolicyPageId', IntegerType::class, [
                 'label' => 'Privacy policy page',
                 'required' => false,
-                'placeholder' => 'No link',
-                'choices' => $options['page_choices'],
-                'help' => 'Linked from the legal notice.',
+                'help' => 'Linked from the legal notice. Leave empty for no link.',
+                'attr' => array_filter([
+                    'min' => 1,
+                    'data-cms-picker' => $options['page_source'],
+                    'data-cms-picker-searchable' => null === $options['page_source'] ? null : '1',
+                ], static fn (mixed $value): bool => null !== $value),
             ])
             ->add('recipients', TextType::class, [
                 'label' => 'Send answers to',
@@ -143,6 +149,7 @@ final class CmsFormType extends AbstractType
             ]);
 
         $builder->addEventListener(FormEvents::POST_SUBMIT, $this->checkRecipients(...));
+        $builder->addEventListener(FormEvents::POST_SUBMIT, $this->checkPrivacyPolicyPage(...));
     }
 
     public function configureOptions(OptionsResolver $resolver): void
@@ -150,9 +157,27 @@ final class CmsFormType extends AbstractType
         $resolver
             ->setDefaults([
                 'translation_domain' => 'theliacms',
-                'page_choices' => [],
+                // The searched source of the pages; none, and the privacy
+                // policy page is a plain number.
+                'page_source' => null,
             ])
-            ->setAllowedTypes('page_choices', 'array');
+            ->setAllowedTypes('page_source', ['null', 'string']);
+    }
+
+    /**
+     * The page typed or picked has to exist out of the bin: the select of the
+     * pages used to ensure it, and used to forget a page sent to the bin.
+     */
+    private function checkPrivacyPolicyPage(FormEvent $event): void
+    {
+        $field = $event->getForm()->get('privacyPolicyPageId');
+        $refusal = 0 === $field->getErrors()->count()
+            ? $this->pages->pageRefusal($field->getData(), $this->translator->getLocale())
+            : null;
+
+        if (null !== $refusal) {
+            $field->addError(new FormError($this->translator->trans($refusal, [], TheliaCMS::DOMAIN_NAME)));
+        }
     }
 
     /**
