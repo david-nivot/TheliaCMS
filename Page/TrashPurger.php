@@ -16,7 +16,6 @@ namespace TheliaCMS\Page;
 
 use Propel\Runtime\ActiveQuery\Criteria;
 use Propel\Runtime\Propel;
-use Thelia\Model\RewritingUrlQuery;
 use TheliaCMS\Content\Editing\ContentKey;
 use TheliaCMS\Model\CmsContentStepQuery;
 use TheliaCMS\Model\CmsPage;
@@ -36,6 +35,7 @@ final readonly class TrashPurger
     public function __construct(
         private CmsSettings $settings,
         private PageDocumentWriter $documents,
+        private PageAddressRemover $addresses,
     ) {
     }
 
@@ -64,17 +64,16 @@ final readonly class TrashPurger
         $files = [];
 
         try {
-            foreach ($pages as $page) {
-                // Binning a page already drops its addresses. Doing it again
-                // here costs one statement and covers a page that reached the
-                // bin by another route — a leftover address would route a
-                // visitor to a page that no longer resolves, which is a 500
-                // and not a 404.
-                RewritingUrlQuery::create()
-                    ->filterByView($page->getRewrittenUrlViewName())
-                    ->filterByViewId((string) $page->getId())
-                    ->delete($connection);
+            // Binning a page already drops its addresses. Doing it again here
+            // costs one pass and covers a page that reached the bin by another
+            // route — a leftover address would route a visitor to a page that
+            // no longer resolves, which is a 500 and not a 404.
+            $this->addresses->removeOfPages(
+                array_map(static fn (CmsPage $page): int => (int) $page->getId(), iterator_to_array($pages, false)),
+                $connection,
+            );
 
+            foreach ($pages as $page) {
                 // The rows of its documents cascade, their files do not: they
                 // are removed once the deletion is committed, so a rollback
                 // keeps a page whose documents still open.

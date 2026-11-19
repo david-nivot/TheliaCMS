@@ -17,7 +17,6 @@ namespace TheliaCMS\Page\Kind;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Propel\Runtime\Connection\ConnectionInterface;
 use Propel\Runtime\Propel;
-use Thelia\Model\RewritingUrlQuery;
 use TheliaCMS\Content\Kind\ContentKind;
 use TheliaCMS\Content\Kind\ContentKinds;
 use TheliaCMS\Content\Kind\KindContentDeletionRefusedException;
@@ -35,6 +34,7 @@ use TheliaCMS\Model\CmsPageContentQuery;
 use TheliaCMS\Model\CmsPageQuery;
 use TheliaCMS\Model\CmsPageSearchQuery;
 use TheliaCMS\Page\Admin\CmsActivityLog;
+use TheliaCMS\Page\PageAddressRemover;
 use TheliaCMS\Page\PageAuthorship;
 use TheliaCMS\Page\PageInvalidator;
 use TheliaCMS\Page\PublishedPageRepository;
@@ -61,6 +61,7 @@ final readonly class KindContents
         private CmsActivityLog $activityLog,
         private PublishedPageRepository $published,
         private CmsSettings $settings,
+        private PageAddressRemover $addresses,
     ) {
     }
 
@@ -217,7 +218,8 @@ final readonly class KindContents
      * Turns an ordinary page into a content of the kind, in place: same id,
      * same texts, drafts, versions, translations and publications. What made
      * it a page of the site goes: its place in the tree, its addresses (and
-     * the redirections of them), its lines of the search and its entries of
+     * every redirection that leads to one of them, whatever the view of the
+     * redirecting address), its lines of the search and its entries of
      * the menus; what hung under an entry of a menu is hung under the parent
      * of that entry, and its publication dates are cleared.
      *
@@ -274,10 +276,7 @@ final readonly class KindContents
                 $page->setModel(ContentKinds::MODEL)->setContentKind($kind->code())->setParent(0)->setPosition(0)->setVisible(0)->setPublishAt(null)->setUnpublishAt(null),
             )->save($connection);
 
-            RewritingUrlQuery::create()
-                ->filterByView($page->getRewrittenUrlViewName())
-                ->filterByViewId((string) $id)
-                ->delete($connection);
+            $removed = $this->addresses->removeOfPages([$id], $connection);
             CmsPageSearchQuery::create()->filterByPageId($id)->delete($connection);
             $menuEntries = $this->removeFromMenus($id, $connection);
 
@@ -296,7 +295,7 @@ final readonly class KindContents
         }
 
         $this->httpCache->purge($kind->cacheTags($page));
-        $this->activityLog->record('UPDATE', $id, \sprintf('CMS page #%d adopted as %s', $id, $kind->activityName()));
+        $this->activityLog->record('UPDATE', $id, \sprintf('CMS page #%d adopted as %s%s', $id, $kind->activityName(), $removed->logNote()));
 
         return $page;
     }

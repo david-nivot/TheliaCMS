@@ -66,7 +66,7 @@ final class AdoptPageTest extends CmsIntegrationTestCase
     }
 
     /**
-     * Sabotage: skip the `RewritingUrlQuery ... ->delete()`, the `CmsPageSearchQuery`
+     * Sabotage: skip the `removeOfPages()` call, the `CmsPageSearchQuery`
      * delete or `removeFromMenus()` in `KindContents::adopt()`: the address, the
      * search line or the entry assertion is red. Replace `->setModel(...)` by
      * nothing: the model assertion is red.

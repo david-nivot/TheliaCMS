@@ -19,7 +19,6 @@ use Propel\Runtime\Connection\ConnectionInterface;
 use Propel\Runtime\Propel;
 use Thelia\Domain\Ai\AiProvenance;
 use Thelia\Model\LangQuery;
-use Thelia\Model\RewritingUrlQuery;
 use TheliaCMS\Catalogue\Admin\ContentTargets;
 use TheliaCMS\Content\Document;
 use TheliaCMS\Content\DocumentRenderer;
@@ -45,6 +44,7 @@ use TheliaCMS\Model\Map\CmsPageTableMap;
 use TheliaCMS\Page\CmsUrlService;
 use TheliaCMS\Page\Document\PageDocumentWriter;
 use TheliaCMS\Page\Field\PageFields;
+use TheliaCMS\Page\PageAddressRemover;
 use TheliaCMS\Page\PageAuthorship;
 use TheliaCMS\Page\PageInvalidator;
 use TheliaCMS\Page\PageTypeRepository;
@@ -75,6 +75,7 @@ final readonly class CmsPageWriter
         private ContentTargets $targets,
         private PageHeaderTranslator $headers,
         private TranslationFreshness $freshness,
+        private PageAddressRemover $addresses,
     ) {
     }
 
@@ -453,7 +454,11 @@ final readonly class CmsPageWriter
      * served on the front.
      *
      * Rewritten URLs go immediately: kept, they would route visitors to a page
-     * that no longer resolves, which is a 500 and not a 404.
+     * that no longer resolves, which is a 500 and not a 404. So do the rows of
+     * `rewriting_url` that redirect to them, whatever their view (the former
+     * address of a content a page took over): they would lead nowhere, and the
+     * foreign key of `redirected` would refuse the delete. The activity log
+     * counts those of another view.
      *
      * @return list<int> the pages actually binned, deepest first
      *
@@ -475,18 +480,15 @@ final readonly class CmsPageWriter
 
             foreach ($branch as $node) {
                 $this->authorship->stamp($node->setDeletedAt($deletedAt))->save($connection);
-
-                RewritingUrlQuery::create()
-                    ->filterByView($node->getRewrittenUrlViewName())
-                    ->filterByViewId((string) $node->getId())
-                    ->delete($connection);
             }
+
+            $ids = array_map(static fn (CmsPage $node): int => (int) $node->getId(), $branch);
+            $removed = $this->addresses->removeOfPages($ids, $connection);
 
             $connection->commit();
 
-            $ids = array_map(static fn (CmsPage $node): int => (int) $node->getId(), $branch);
             $this->invalidator->presenceChanged(...$ids);
-            $this->activityLog->record('DELETE', (int) $page->getId(), \sprintf('CMS pages moved to the bin: %s', implode(', ', $ids)));
+            $this->activityLog->record('DELETE', (int) $page->getId(), \sprintf('CMS pages moved to the bin: %s%s', implode(', ', $ids), $removed->logNote()));
 
             return $ids;
         } catch (\Throwable $throwable) {

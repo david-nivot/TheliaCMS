@@ -54,7 +54,9 @@ kind, written on the content screen of the pages.**
   holds a published version and is offline on the site (hidden, or outside its
   publication window) is refused too: its version would come out published as
   a content. In one transaction it leaves the tree, loses its addresses and
-  their redirections, its lines of the search, its entries of the menus (what
+  every redirection that leads to one of them, of any view (`PageAddressRemover`:
+  the rows are detached, then deleted, so the restricting key of
+  `rewriting_url.redirected` is not hit), its lines of the search, its entries of the menus (what
   hung under an entry hangs under its parent) and its publication dates, and
   the caches of the page, the menus and the kind are dropped.
 - Carried by the export file (`kind`, format 5). The zone keeps `zone: true`,

@@ -33,7 +33,6 @@ use Thelia\Model\ProfileResource;
 use Thelia\Model\ProfileResourceQuery;
 use Thelia\Model\Resource;
 use Thelia\Model\ResourceQuery;
-use Thelia\Model\RewritingUrlQuery;
 use Thelia\Module\BaseModule;
 use TheliaCMS\Content\Kind\ContentKinds;
 use TheliaCMS\Content\Section\SectionStories;
@@ -52,6 +51,7 @@ use TheliaCMS\Model\CmsPageQuery;
 use TheliaCMS\Notice\NativeContentConsoleNotice;
 use TheliaCMS\Page\CmsUrlService;
 use TheliaCMS\Page\Kind\KindContents;
+use TheliaCMS\Page\PageAddressRemover;
 use TheliaCMS\Partial\PartialFragmentRenderer;
 use TheliaCMS\Partial\PartialFragmentRendererInterface;
 use TheliaCMS\Search\Tnt\CmsPageIndex;
@@ -377,8 +377,8 @@ class TheliaCMS extends BaseModule
     /**
      * Rewritten URLs outlive a deactivated module: left behind, they keep
      * routing visitors to a `cmspage` view nothing can render any more, which
-     * is a 500 and not a 404. They are dropped here and regenerated from the
-     * pages on the next activation.
+     * is a 500 and not a 404. They are dropped here, with the redirections that
+     * lead to them, and regenerated from the pages on the next activation.
      *
      * `markRewrittenUrlObsolete()` is deliberately not used: it points the URL
      * at an `obsolete-rewritten-url` view no shipped theme provides a template
@@ -386,9 +386,7 @@ class TheliaCMS extends BaseModule
      */
     public function preDeactivation(?ConnectionInterface $con = null): bool
     {
-        RewritingUrlQuery::create()
-            ->filterByView(self::PAGE_VIEW)
-            ->delete($con);
+        (new PageAddressRemover())->removeOfAllPages($con);
 
         return true;
     }

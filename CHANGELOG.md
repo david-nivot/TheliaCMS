@@ -7,6 +7,24 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Fixed
+
+- **A page whose address is the target of a redirection can be binned, purged,
+  adopted as a content of a kind or have its page type deleted, and the module
+  can be deactivated**: the addresses of a page were removed with one `DELETE`,
+  which MySQL and MariaDB refuse (SQLSTATE 23000, error 1451) while a row left
+  in `rewriting_url` redirects to one of them, so the whole operation was rolled
+  back. It happened when an address of another view redirected to an address of
+  the page (the former `content` address of a content a page took over), and
+  when a page went back to an earlier address, the newer row of the page
+  pointing at the older one. `TheliaCMS\Page\PageAddressRemover` now removes
+  the addresses of the pages together with every row that redirects to them,
+  of any view and from one row to the next (a redirection to an address that no
+  longer exists leads nowhere), on the connection of the caller. The rows of
+  another view that go this way are removed for good, like the addresses they
+  led to, and the activity log counts them when a page is adopted or binned or
+  a type is deleted.
+
 ## [2.38.0] - 2026-11-19
 
 ### Added
