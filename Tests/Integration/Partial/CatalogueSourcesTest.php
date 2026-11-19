@@ -80,7 +80,8 @@ final class CatalogueSourcesTest extends AdminScreenTestCase
 
         self::assertSame([(int) $online->getId(), (int) $offline->getId()], array_column($products, 'id'), 'Online and offline.');
         self::assertSame('Menu target turnip (CMSMNU-ONLINE)', $products[0]['name']);
-        self::assertSame('Offline, not shown on the page: Menu target turnip hidden (CMSMNU-OFFLINE)', $products[1]['name'], 'The offline one says so.');
+        self::assertSame('Offline, not shown on the page: Menu target turnip hidden (CMSMNU-OFFLINE)', $products[1]['name'], 'The offline one says so,');
+        self::assertSame('Menu target turnip hidden (CMSMNU-OFFLINE) (offline)', $products[1]['label'], 'after its title in a list, which reads in the order of the titles.');
         self::assertSame([(int) $category->getId()], $this->ids('categories', ['q' => 'Menu target aisle', 'offline' => 1]));
         self::assertSame([], $this->ids('categories', ['q' => 'Menu target aisle']), 'Without the parameter, a block still gets the online ones only.');
     }
@@ -198,10 +199,10 @@ final class CatalogueSourcesTest extends AdminScreenTestCase
         $content = $this->factory->content($folder, ['title' => 'Edited language here', 'locale' => $this->locale(), 'visible' => 0]);
         $content->setLocale($other)->setTitle('Langue éditée ailleurs')->save();
 
-        self::assertSame(['Langue éditée ailleurs'], array_map(
+        self::assertSame([\sprintf('Langue éditée ailleurs (Edited language folder [%s])', substr($this->locale(), 0, 2))], array_map(
             static fn (array $row): string => (string) preg_replace('/^.*: /', '', $row['name']),
             $this->answer('contents', ['q' => 'Langue éditée', 'locale' => $other]),
-        ), 'Searched and named in the language asked.');
+        ), 'Searched and named in the language asked, its folder by its title in another language, as in its path.');
         self::assertSame(['Edited language here (Edited language folder)'], array_map(
             static fn (array $row): string => (string) preg_replace('/^.*: /', '', $row['name']),
             $this->answer('contents', ['q' => 'Edited language here', 'locale' => 'xx_XX']),
@@ -216,9 +217,9 @@ final class CatalogueSourcesTest extends AdminScreenTestCase
         $product = $this->factory->product($leaf, $this->factory->taxRule(), $this->factory->currency(), ['ref' => 'CMSPATH-1', 'title' => 'Path shelved jar', 'locale' => $this->locale()]);
 
         self::assertSame(
-            ['id' => (int) $leaf->getId(), 'name' => 'Path leaf box (Path middle shelf)', 'label' => 'Path leaf box', 'path' => 'Path top aisle › Path middle shelf'],
+            ['id' => (int) $leaf->getId(), 'name' => 'Path leaf box (Path top aisle › Path middle shelf)', 'label' => 'Path leaf box', 'path' => 'Path top aisle › Path middle shelf'],
             $this->answer('categories', ['q' => 'Path leaf box'])[0],
-            'The field keeps the name with its parent; the list shows the title and the whole path above it.',
+            'The field keeps the name with the whole path above it; the list shows the title and the path under it.',
         );
         self::assertSame('Path top aisle › Path middle shelf › Path leaf box', $this->answer('products', ['q' => 'CMSPATH-1'])[0]['path'] ?? null, 'A product sits in its default category.');
         self::assertArrayNotHasKey('path', $this->answer('categories', ['q' => 'Path top aisle'])[0], 'A category at the top sits nowhere.');
@@ -242,8 +243,52 @@ final class CatalogueSourcesTest extends AdminScreenTestCase
 
         $years = $this->answer('pages', ['q' => 'Path year 2026']);
 
-        self::assertSame(['Path year 2026 (Path news)', 'Path year 2026 (Path news)'], array_column($years, 'name'), 'Same name, same parent name:');
-        self::assertEqualsCanonicalizing($paths, array_column($years, 'path'), 'the paths tell them apart.');
+        self::assertEqualsCanonicalizing($paths, array_column($years, 'path'), 'Same title, same parent title: the paths tell them apart,');
+        self::assertEqualsCanonicalizing(
+            array_map(static fn (string $path): string => 'Path year 2026 ('.$path.')', $paths),
+            array_column($years, 'name'),
+            'and so do the names a field keeps once one is chosen.',
+        );
+    }
+
+    public function testTheListReadsAsATreeAndTheNameOfAParentBringsWhatIsUnderIt(): void
+    {
+        $aisle = $this->category('Tree check aisle', 0, 1);
+        $second = $this->category('Tree check second aisle', 0, 1);
+        $shelf = $this->category('Tree check shelf', (int) $aisle->getId(), 1);
+        $box = $this->category('Tree check box', (int) $shelf->getId(), 1);
+        $other = $this->category('Tree check other', (int) $second->getId(), 1);
+
+        foreach ([[$aisle, 900001], [$second, 900002], [$shelf, 1], [$box, 1], [$other, 1]] as [$category, $position]) {
+            $category->setPosition($position)->save();
+        }
+
+        self::assertSame(
+            [(int) $aisle->getId(), (int) $shelf->getId(), (int) $box->getId(), (int) $second->getId(), (int) $other->getId()],
+            $this->ids('categories', ['q' => 'Tree check']),
+            'Each category under its parent, in the order of the back office, not by title.',
+        );
+        self::assertSame(
+            [(int) $shelf->getId(), (int) $box->getId()],
+            $this->ids('categories', ['q' => 'Tree check shelf']),
+            'The name of a category brings the categories under it.',
+        );
+
+        $jar = $this->factory->product($box, $this->factory->taxRule(), $this->factory->currency(), ['ref' => 'CMSTREE-1', 'title' => 'Unrelated jar', 'locale' => $this->locale()]);
+
+        self::assertSame([(int) $jar->getId()], $this->ids('products', ['q' => 'Tree check box']), 'A product is found by the name of its category.');
+
+        $section = $this->createPage('Tree check section', false);
+        $rubric = $this->createPage('Tree check rubric', false);
+        $rubric->setParent((int) $section->getId())->save();
+        $article = $this->createPage('Unrelated article', false);
+        $article->setParent((int) $rubric->getId())->save();
+
+        self::assertSame(
+            [(int) $section->getId(), (int) $rubric->getId(), (int) $article->getId()],
+            $this->ids('pages', ['q' => 'Tree check section']),
+            'A section brings its pages, each under its parent.',
+        );
     }
 
     public function testARecordWithNoTitleAtAllIsInTheOpenListByItsNumber(): void

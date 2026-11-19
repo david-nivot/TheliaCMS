@@ -173,6 +173,9 @@
         // The editor typed in the field since the last choice: only then does
         // an empty field mean "no record" rather than "name not read yet".
         var dirty = false;
+        // Typed since the list shown was answered: its rows answer another
+        // text, so the arrows and Enter wait for the new list.
+        var stale = false;
         // The record held as the source answered it, its title and path
         // included, for the head of the list.
         var heldRow = null;
@@ -292,6 +295,7 @@
         function render(result, query) {
             items = query === "" ? heldFirst(result.items) : result.items;
             rendered = query;
+            stale = false;
             list.replaceChildren();
 
             items.forEach(function (item, index) {
@@ -319,6 +323,12 @@
                 // first, and close the list before the choice lands.
                 option.addEventListener("mousedown", function (event) {
                     event.preventDefault();
+
+                    // The main button only: a right click opens the menu of the browser.
+                    if (event.button !== 0) {
+                        return;
+                    }
+
                     pick(item);
                 });
                 option.addEventListener("mousemove", function () {
@@ -391,8 +401,11 @@
                     list.hidden = true;
                     status.textContent = text("failed", "The list could not be read. Type the number instead.");
                     status.hidden = false;
-                    // The number field takes over, as without the script.
+                    // The number field takes over, as without the script: one
+                    // field for one value, the message kept above it.
+                    stale = false;
                     input.hidden = false;
+                    field.hidden = true;
                 });
         }
 
@@ -403,6 +416,9 @@
         }
 
         function pick(item) {
+            // A search still waiting would reopen the list over the choice.
+            window.clearTimeout(timer);
+            stale = false;
             input.value = String(item.id);
             chosen = item.name;
             heldRow = item;
@@ -481,6 +497,8 @@
 
             window.clearTimeout(timer);
             dirty = true;
+            stale = true;
+            highlight(-1);
             var typed = field.value.trim();
             timer = window.setTimeout(function () { load(typed); }, typed === "" ? 0 : 200);
         });
@@ -495,7 +513,7 @@
                     return;
                 }
 
-                if (items.length > 0) {
+                if (items.length > 0 && !stale) {
                     var step = event.key === "ArrowDown" ? 1 : -1;
                     highlight(active < 0 ? (step > 0 ? 0 : items.length - 1) : (active + step + items.length) % items.length);
                 }
@@ -507,7 +525,7 @@
                 // Enter picks; it never sends the form with a half-typed text.
                 event.preventDefault();
 
-                if (active >= 0) {
+                if (active >= 0 && !stale) {
                     pick(items[active]);
                 }
 
@@ -542,6 +560,13 @@
                         chosen = row.name;
                         heldRow = row;
                         field.value = row.name;
+
+                        // The field took the focus before the name came: it is
+                        // selected as on entering it, so typing replaces it.
+                        if (document.activeElement === field) {
+                            field.select();
+                        }
+
                         notify();
                     }
                 })

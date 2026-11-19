@@ -29,14 +29,13 @@ final readonly class PickableFolders
     /** Enough to find a folder by a few letters of its title, short enough to read. */
     public const int LIMIT = 20;
 
+    /** Read through `TreeOrder`: the title, the titles above, the place in the tree. */
     private const string SELECT = <<<'SQL'
-        SELECT f.id, f.parent, i.title, fallback.title AS fallback_title, fallback.locale AS fallback_locale, parent_i18n.title AS parent_title, f.visible
+        SELECT f.id, node.title, path.trail, f.visible
         FROM folder f
-        LEFT JOIN folder_i18n i ON i.id = f.id AND i.locale = :locale
-        LEFT JOIN folder_i18n parent_i18n ON parent_i18n.id = f.parent AND parent_i18n.locale = :locale
+        JOIN tree_node node ON node.id = f.id
+        JOIN tree_path path ON path.id = f.id
         SQL;
-
-    private const string MATCHING = ' WHERE '.TranslatedTitle::EXPRESSION.' LIKE :contains';
 
     /**
      * @return list<Folder>
@@ -50,21 +49,27 @@ final readonly class PickableFolders
     }
 
     /**
-     * Folders whose title in the language holds the text, online or not,
-     * top-level ones first. Each is named with its parent: "News" may sit
-     * under two sections of the site.
+     * Folders whose title in the language, or the title of a folder above
+     * them, holds the text, online or not, in the order of the tree. Each is
+     * named with the folders above it: "News" may sit under two sections of
+     * the site.
      *
      * @return list<PickableItem>
      */
     public function search(string $text, string $locale): array
     {
-        return $this->fetch($this->select().self::MATCHING.' ORDER BY f.parent = 0 DESC, '.TranslatedTitle::SORT.', parent_i18n.title, f.id LIMIT %d', $this->parameters($text, $locale));
+        return $this->fetch($this->select().$this->matching().' ORDER BY path.sort_key, f.id LIMIT %d', $this->parameters($text, $locale));
     }
 
     /** How many folders the search matches, of which it answers the first. */
     public function total(string $text, string $locale): int
     {
-        return $this->count($this->select().self::MATCHING, $this->parameters($text, $locale));
+        return $this->count($this->select().$this->matching(), $this->parameters($text, $locale));
+    }
+
+    private function matching(): string
+    {
+        return ' WHERE '.TreeOrder::searched('node', 'path').' LIKE :contains';
     }
 
     /**
@@ -86,7 +91,7 @@ final readonly class PickableFolders
     /** With the title in another language, so a record written in one language only stays findable. */
     private function select(): string
     {
-        return self::SELECT.TranslatedTitle::join('folder_i18n', 'f.id');
+        return TreeOrder::with('folder', 'folder_i18n').self::SELECT;
     }
 
     /**
@@ -99,24 +104,16 @@ final readonly class PickableFolders
         $statement = Propel::getReadConnection(FolderTableMap::DATABASE_NAME)->prepare(\sprintf($sql, self::LIMIT));
         $statement->execute($parameters);
 
-        $rows = $statement->fetchAll(\PDO::FETCH_ASSOC);
-        $chains = AncestorChains::of('folder', 'folder_i18n', array_map(static fn (array $row): int => (int) $row['parent'], $rows), (string) $parameters['locale']);
-
         return array_map(
-            static function (array $row) use ($chains): PickableItem {
-                $title = TranslatedTitle::of($row);
-                $parent = trim((string) $row['parent_title']);
-
-                return new PickableItem(
-                    (int) $row['id'],
-                    '' === $parent ? $title : \sprintf('%s (%s)', $title, $parent),
-                    1 === (int) $row['visible'],
-                    false,
-                    $title,
-                    $chains[(int) $row['parent']] ?? null,
-                );
-            },
-            $rows,
+            static fn (array $row): PickableItem => new PickableItem(
+                (int) $row['id'],
+                TreeOrder::name((string) $row['title'], $row['trail']),
+                1 === (int) $row['visible'],
+                false,
+                (string) $row['title'],
+                $row['trail'],
+            ),
+            $statement->fetchAll(\PDO::FETCH_ASSOC),
         );
     }
 
@@ -125,7 +122,7 @@ final readonly class PickableFolders
      */
     private function count(string $sql, array $parameters): int
     {
-        $statement = Propel::getReadConnection(FolderTableMap::DATABASE_NAME)->prepare('SELECT COUNT(*) FROM ('.$sql.') matched');
+        $statement = Propel::getReadConnection(FolderTableMap::DATABASE_NAME)->prepare(TreeOrder::countOf($sql));
         $statement->execute($parameters);
 
         return (int) $statement->fetchColumn();

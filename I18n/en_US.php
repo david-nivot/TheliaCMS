@@ -740,6 +740,8 @@ return [
     'Brand' => 'Brand',
     'Offline, not shown on the page: %name%' => 'Offline, not shown on the page: %name%',
     'In the bin: %name%' => 'In the bin: %name%',
+    '%name% (offline)' => '%name% (offline)',
+    '%name% (in the bin)' => '%name% (in the bin)',
     'Generator' => 'Generator',
     'Model' => 'Model',
     'Reasoning effort' => 'Reasoning effort',

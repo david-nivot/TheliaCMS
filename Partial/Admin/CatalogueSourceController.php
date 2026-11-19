@@ -167,7 +167,7 @@ final readonly class CatalogueSourceController
 
     /**
      * `name` is what a field shows once the item is chosen; a list shows
-     * `label` with `path` under it, where the item sits. A source that has
+     * `label` with `path` under it, where the item sits, its state after it. A source that has
      * neither leaves them out, and a reader that knows only `name` reads it.
      *
      * @return array{id: int, name: string, label?: string, path?: string}
@@ -183,10 +183,21 @@ final readonly class CatalogueSourceController
             ? $name
             : $this->translator->trans($message, ['%name%' => $name], TheliaCMS::DOMAIN_NAME, $locale);
 
+        // In a list, the state follows the title, so the list still reads in
+        // the order of the titles.
+        $after = match (true) {
+            $item->binned => '%name% (in the bin)',
+            !$item->online => '%name% (offline)',
+            default => null,
+        };
+        $listed = fn (string $label): string => null === $after
+            ? $label
+            : $this->translator->trans($after, ['%name%' => $label], TheliaCMS::DOMAIN_NAME, $locale);
+
         return array_filter([
             'id' => $item->id,
             'name' => $said($item->name),
-            'label' => null === $item->label ? null : $said($item->label),
+            'label' => null === $item->label ? null : $listed($item->label),
             'path' => $item->path,
         ], static fn (mixed $value): bool => null !== $value);
     }

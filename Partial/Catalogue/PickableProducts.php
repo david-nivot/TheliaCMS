@@ -29,17 +29,22 @@ final readonly class PickableProducts
     /** Enough to find a product by a few letters of its name, short enough to read. */
     public const int LIMIT = 20;
 
+    /** The default category tells where a product is shelved, read through `TreeOrder`. */
     private const string SELECT = <<<'SQL'
-        SELECT p.id, p.ref, i.title, p.visible,
-            (SELECT MIN(pc.category_id) FROM product_category pc WHERE pc.product_id = p.id AND pc.default_category = 1) AS category_id
+        SELECT p.id, p.ref, i.title, p.visible, shelf.title AS category_title, shelf_path.trail AS category_trail
         FROM product p
         LEFT JOIN product_i18n i ON i.id = p.id AND i.locale = :locale
+        LEFT JOIN product_category pc ON pc.product_id = p.id AND pc.category_id = (SELECT MIN(d.category_id) FROM product_category d WHERE d.product_id = p.id AND d.default_category = 1)
+        LEFT JOIN tree_node shelf ON shelf.id = pc.category_id
+        LEFT JOIN tree_path shelf_path ON shelf_path.id = pc.category_id
         SQL;
 
     /**
      * Products whose reference starts with the text, whose name holds it, or
-     * one of whose sale elements carries it as barcode. An exact reference
-     * comes first, then by name. Online ones only, unless the offline ones are
+     * one of whose sale elements carries it as barcode, or whose category
+     * (or one above it) holds it in its name. An exact reference comes
+     * first, then the products in the order of the tree of their category,
+     * each shelf by name. Online ones only, unless the offline ones are
      * asked too: a block shows a product, a menu may be prepared before it
      * goes online.
      *
@@ -48,7 +53,7 @@ final readonly class PickableProducts
     public function search(string $text, string $locale, bool $withOffline = false): array
     {
         return $this->fetch(
-            self::SELECT.$this->matching($withOffline).' ORDER BY p.ref = :text DESC, i.title, p.ref LIMIT %d',
+            $this->select().$this->matching($withOffline)." ORDER BY p.ref = :text DESC, shelf_path.sort_key IS NULL, shelf_path.sort_key, COALESCE(NULLIF(TRIM(i.title), ''), p.ref), p.ref LIMIT %d",
             $this->parameters($text, $locale),
         );
     }
@@ -56,7 +61,7 @@ final readonly class PickableProducts
     /** How many products the search matches, of which it answers the first. */
     public function total(string $text, string $locale, bool $withOffline = false): int
     {
-        return $this->count(self::SELECT.$this->matching($withOffline), $this->parameters($text, $locale));
+        return $this->count($this->select().$this->matching($withOffline), $this->parameters($text, $locale));
     }
 
     private function matching(bool $withOffline): string
@@ -66,8 +71,8 @@ final readonly class PickableProducts
                 p.ref LIKE :prefix
                 OR i.title LIKE :contains
                 OR EXISTS (SELECT 1 FROM product_sale_elements pse WHERE pse.product_id = p.id AND pse.ean_code = :text)
-            )
-            SQL;
+                OR
+            SQL.' '.TreeOrder::searched('shelf', 'shelf_path').' LIKE :contains)';
     }
 
     /**
@@ -86,7 +91,12 @@ final readonly class PickableProducts
      */
     public function find(int $id, string $locale): ?PickableItem
     {
-        return $this->fetch(self::SELECT.' WHERE p.id = :id LIMIT %d', ['locale' => $locale, 'id' => $id])[0] ?? null;
+        return $this->fetch($this->select().' WHERE p.id = :id LIMIT %d', ['locale' => $locale, 'id' => $id])[0] ?? null;
+    }
+
+    private function select(): string
+    {
+        return TreeOrder::with('category', 'category_i18n').self::SELECT;
     }
 
     /**
@@ -99,12 +109,8 @@ final readonly class PickableProducts
         $statement = Propel::getReadConnection(ProductTableMap::DATABASE_NAME)->prepare(\sprintf($sql, self::LIMIT));
         $statement->execute($parameters);
 
-        $rows = $statement->fetchAll(\PDO::FETCH_ASSOC);
-        // The default category tells where a product is shelved.
-        $chains = AncestorChains::of('category', 'category_i18n', array_map(static fn (array $row): int => (int) $row['category_id'], $rows), (string) $parameters['locale']);
-
         return array_map(
-            static function (array $row) use ($chains): PickableItem {
+            static function (array $row): PickableItem {
                 $title = trim((string) $row['title']);
                 $ref = (string) $row['ref'];
                 $name = '' === $title ? $ref : \sprintf('%s (%s)', $title, $ref);
@@ -115,10 +121,10 @@ final readonly class PickableProducts
                     1 === (int) $row['visible'],
                     false,
                     $name,
-                    $chains[(int) $row['category_id']] ?? null,
+                    TreeOrder::within($row['category_trail'], $row['category_title']),
                 );
             },
-            $rows,
+            $statement->fetchAll(\PDO::FETCH_ASSOC),
         );
     }
 
@@ -127,7 +133,7 @@ final readonly class PickableProducts
      */
     private function count(string $sql, array $parameters): int
     {
-        $statement = Propel::getReadConnection(ProductTableMap::DATABASE_NAME)->prepare('SELECT COUNT(*) FROM ('.$sql.') matched');
+        $statement = Propel::getReadConnection(ProductTableMap::DATABASE_NAME)->prepare(TreeOrder::countOf($sql));
         $statement->execute($parameters);
 
         return (int) $statement->fetchColumn();

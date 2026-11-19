@@ -740,6 +740,8 @@ return [
     'Brand' => 'Marque',
     'Offline, not shown on the page: %name%' => 'Hors ligne, absent de la page : %name%',
     'In the bin: %name%' => 'À la corbeille : %name%',
+    '%name% (offline)' => '%name% (hors ligne)',
+    '%name% (in the bin)' => '%name% (à la corbeille)',
     'Generator' => 'Générateur',
     'Model' => 'Modèle',
     'Reasoning effort' => 'Effort de réflexion',
