@@ -246,4 +246,6 @@
             })();
         </script>
     {% endif %}
+    {# The privacy policy page is searched rather than listed whole. #}
+    {{ include('@TheliaCMSModule/backOffice/default-twig/_record_picker.html.twig') }}
 {% endblock %}

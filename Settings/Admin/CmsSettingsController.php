@@ -19,6 +19,7 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Thelia\Core\Security\AccessManager;
 use TheliaCMS\Generation\GeneratorSettings;
 use TheliaCMS\Http\Admin\AdminControllerSupport;
@@ -26,7 +27,6 @@ use TheliaCMS\Http\CachePurger;
 use TheliaCMS\Http\CacheTags;
 use TheliaCMS\Http\ContentSecurityPolicyMode;
 use TheliaCMS\Http\ContentSecurityPolicySettings;
-use TheliaCMS\Menu\Admin\MenuTargetChoices;
 use TheliaCMS\Page\Admin\CmsActivityLog;
 use TheliaCMS\Page\Admin\EditLanguage;
 use TheliaCMS\Security\CmsResources;
@@ -49,7 +49,7 @@ final readonly class CmsSettingsController
         private FormFactoryInterface $forms,
         private AdminControllerSupport $support,
         private CmsSettings $settings,
-        private MenuTargetChoices $choices,
+        private UrlGeneratorInterface $urls,
         private EditorProfileSeeder $editorProfile,
         private CmsActivityLog $activityLog,
         private EditLanguage $languages,
@@ -83,7 +83,7 @@ final readonly class CmsSettingsController
             'textEffort' => $this->generator->textEffort(),
             'textMaxTokens' => $this->generator->textMaxTokens(),
         ], [
-            'page_choices' => $this->choices->pages($lang->getLocale()),
+            'page_source' => $this->urls->generate('admin.cms.partials.sources.pages', ['locale' => $lang->getLocale()]),
         ]);
 
         $form->handleRequest($request);

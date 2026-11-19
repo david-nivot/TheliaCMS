@@ -90,9 +90,18 @@ final class CmsPageType extends AbstractType
             // core content, when one is installed, a plain textarea otherwise.
             ->add('chapo', TextareaType::class, ['label' => 'Summary', 'required' => false, 'attr' => ['rows' => 4, 'class' => 'wysiwyg']])
             ->add('description', TextareaType::class, ['label' => 'Detailed description', 'required' => false, 'attr' => ['rows' => 8, 'class' => 'wysiwyg']])
-            ->add('parent', ChoiceType::class, [
+            // Searched by the record picker: a site holds too many pages for a
+            // select. Without the script, the number is typed; empty is the
+            // top level. The controller refuses a page it cannot go under.
+            ->add('parent', IntegerType::class, [
                 'label' => 'Parent page',
-                'choices' => ['None (top level)' => 0] + $options['parent_choices'],
+                'required' => false,
+                'help' => 'Leave empty for a page at the top level. Otherwise choose in the list, or type a few letters of the title to narrow it.',
+                'attr' => array_filter([
+                    'min' => 0,
+                    'data-cms-picker' => $options['parent_source'],
+                    'data-cms-picker-searchable' => null === $options['parent_source'] ? null : '1',
+                ], static fn (mixed $value): bool => null !== $value),
             ])
             // A type is a code and nothing else: shown as it is, never
             // translated. Managed under CMS > Settings > Page types.
@@ -280,7 +289,9 @@ final class CmsPageType extends AbstractType
         $resolver
             ->setDefaults([
                 'translation_domain' => 'theliacms',
-                'parent_choices' => [],
+                // The searched source of the pages it can go under; none, and the
+                // field is a plain number.
+                'parent_source' => null,
                 'image_picker_url' => null,
                 'image_upload_url' => null,
                 'page_type_choices' => [PageTypeCode::DEFAULT],
@@ -305,7 +316,7 @@ final class CmsPageType extends AbstractType
             ->setAllowedTypes('is_home', 'bool')
             ->setAllowedTypes('field_definitions', FieldDefinitions::class)
             ->setAllowedTypes('field_locale', 'string')
-            ->setAllowedTypes('parent_choices', 'array')
+            ->setAllowedTypes('parent_source', ['null', 'string'])
             ->setAllowedTypes('image_picker_url', ['null', 'string'])
             ->setAllowedTypes('image_upload_url', ['null', 'string'])
             ->setAllowedTypes('page_type_choices', 'array')

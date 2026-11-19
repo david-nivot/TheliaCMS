@@ -27,27 +27,62 @@ final readonly class PickablePages
     /** Enough to find a page by a few letters of its title, short enough to read. */
     public const int LIMIT = 20;
 
+    /** Read through `TreeOrder`: the title, the titles above, the place in the tree. */
     private const string SELECT = <<<'SQL'
-        SELECT p.id, i.title, parent_i18n.title AS parent_title, p.visible
+        SELECT p.id, node.title, path.trail, p.visible, p.deleted_at
         FROM cms_page p
-        LEFT JOIN cms_page_i18n i ON i.id = p.id AND i.locale = :locale
-        LEFT JOIN cms_page_i18n parent_i18n ON parent_i18n.id = p.parent AND parent_i18n.locale = :locale
+        JOIN tree_node node ON node.id = p.id
+        JOIN tree_path path ON path.id = p.id
         SQL;
 
     private const string KEPT = 'p.model = 0 AND p.deleted_at IS NULL';
 
     /**
-     * Pages whose title in the language holds the text, the pages at the
-     * root first: the sections of a site are what a list is set under.
+     * Pages whose title in the language, or the title of a page above them,
+     * holds the text, in the order of the tree: each page under its parent,
+     * so a section brings its pages. The pages left out are those the field cannot take, such as a page and
+     * the pages under it when its parent is chosen.
+     *
+     * @param list<int> $leftOut
      *
      * @return list<PickableItem>
      */
-    public function search(string $text, string $locale): array
+    public function search(string $text, string $locale, array $leftOut = []): array
     {
         return $this->fetch(
-            self::SELECT.' WHERE '.self::KEPT.' AND i.title LIKE :contains ORDER BY p.parent = 0 DESC, i.title, parent_i18n.title LIMIT %d',
-            ['locale' => $locale, 'contains' => '%'.addcslashes($text, '%_\\').'%'],
+            $this->select().$this->matching($leftOut).' ORDER BY path.sort_key, p.id LIMIT %d',
+            $this->parameters($text, $locale),
         );
+    }
+
+    /**
+     * How many pages the search matches, of which it answers the first.
+     *
+     * @param list<int> $leftOut
+     */
+    public function total(string $text, string $locale, array $leftOut = []): int
+    {
+        return $this->count($this->select().$this->matching($leftOut), $this->parameters($text, $locale));
+    }
+
+    /**
+     * @param list<int> $leftOut
+     */
+    private function matching(array $leftOut): string
+    {
+        $kept = [] === $leftOut
+            ? self::KEPT
+            : self::KEPT.' AND p.id NOT IN ('.implode(', ', array_map(intval(...), $leftOut)).')';
+
+        return ' WHERE '.$kept.' AND '.TreeOrder::searched('node', 'path').' LIKE :contains';
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function parameters(string $text, string $locale): array
+    {
+        return ['locale' => $locale, 'contains' => '%'.addcslashes($text, '%_\\').'%'];
     }
 
     /**
@@ -57,7 +92,13 @@ final readonly class PickablePages
      */
     public function find(int $id, string $locale): ?PickableItem
     {
-        return $this->fetch(self::SELECT.' WHERE p.model = 0 AND p.id = :id LIMIT %d', ['locale' => $locale, 'id' => $id])[0] ?? null;
+        return $this->fetch($this->select().' WHERE p.model = 0 AND p.id = :id LIMIT %d', ['locale' => $locale, 'id' => $id])[0] ?? null;
+    }
+
+    /** With the title in another language, so a record written in one language only stays findable. */
+    private function select(): string
+    {
+        return TreeOrder::with('cms_page', 'cms_page_i18n').self::SELECT;
     }
 
     /**
@@ -71,18 +112,26 @@ final readonly class PickablePages
         $statement->execute($parameters);
 
         return array_map(
-            static function (array $row): PickableItem {
-                $title = trim((string) $row['title']);
-                $title = '' === $title ? \sprintf('#%d', (int) $row['id']) : $title;
-                $parent = trim((string) $row['parent_title']);
-
-                return new PickableItem(
-                    (int) $row['id'],
-                    '' === $parent ? $title : \sprintf('%s (%s)', $title, $parent),
-                    1 === (int) $row['visible'],
-                );
-            },
+            static fn (array $row): PickableItem => new PickableItem(
+                (int) $row['id'],
+                TreeOrder::name((string) $row['title'], $row['trail']),
+                1 === (int) $row['visible'],
+                null !== $row['deleted_at'],
+                (string) $row['title'],
+                $row['trail'],
+            ),
             $statement->fetchAll(\PDO::FETCH_ASSOC),
         );
+    }
+
+    /**
+     * @param array<string, string|int> $parameters
+     */
+    private function count(string $sql, array $parameters): int
+    {
+        $statement = Propel::getReadConnection(CmsPageTableMap::DATABASE_NAME)->prepare(TreeOrder::countOf($sql));
+        $statement->execute($parameters);
+
+        return (int) $statement->fetchColumn();
     }
 }

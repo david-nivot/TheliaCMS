@@ -138,7 +138,7 @@ final readonly class CmsAdminGuard
 
         // Read access is the floor; the controller performing a write checks
         // CREATE/UPDATE/DELETE on the same resource.
-        if (!$this->securityContext->isGranted(['ADMIN'], [$this->resourceFor($path)], [], [AccessManager::VIEW])) {
+        if (!$this->mayRead($path)) {
             throw new AccessDeniedHttpException('You are not allowed to access the CMS section.');
         }
 
@@ -168,6 +168,40 @@ final readonly class CmsAdminGuard
     private function loginUrl(Request $request): string
     {
         return $this->urls->generate(self::LOGIN_ROUTE, ['_target_path' => $request->getRequestUri()]);
+    }
+
+    /**
+     * Read access to one of the resources the path answers to.
+     */
+    private function mayRead(string $path): bool
+    {
+        foreach ($this->resourcesFor($path) as $resource) {
+            if ($this->securityContext->isGranted(['ADMIN'], [$resource], [], [AccessManager::VIEW])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The sources a picker reads (`partials/sources/…`, the titles of the
+     * pages, products, categories, contents, folders, menus and forms an editor
+     * picks from) serve the screens of several sections: the targets of a
+     * menu, the parent of a page, the 404 page of the settings, the privacy
+     * page of a form. Whoever may open one of those screens may read them.
+     *
+     * @return list<string>
+     */
+    private function resourcesFor(string $path): array
+    {
+        $segments = explode('/', trim(substr($path, \strlen(self::PREFIX)), '/'));
+
+        if ('partials' === $segments[0] && 'sources' === ($segments[1] ?? null)) {
+            return [CmsResources::PAGE, CmsResources::MENU, CmsResources::FORM, CmsResources::SETTINGS];
+        }
+
+        return [$this->resourceFor($path)];
     }
 
     private function resourceFor(string $path): string

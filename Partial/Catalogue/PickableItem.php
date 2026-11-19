@@ -24,6 +24,10 @@ final readonly class PickableItem
         public int $id,
         public string $name,
         public bool $online,
+        public bool $binned = false,
+        // For a list: the title alone, and where the item sits under it.
+        public ?string $label = null,
+        public ?string $path = null,
     ) {
     }
 }

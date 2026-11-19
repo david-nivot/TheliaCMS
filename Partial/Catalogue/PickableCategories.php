@@ -21,33 +21,55 @@ use Thelia\Model\Map\CategoryTableMap;
  * The categories an editor may put in a "Category" block, searched as they
  * type.
  *
- * Each is named with its parent: a catalogue often holds several "Vegetables",
- * and only the category above them tells them apart.
+ * Each is named with the categories above it: a catalogue often holds several
+ * "Vegetables", and only the categories above them tell them apart.
  */
 final readonly class PickableCategories
 {
     /** Enough to find a category by a few letters of its name, short enough to read. */
     public const int LIMIT = 20;
 
+    /** Read through `TreeOrder`: the title, the titles above, the place in the tree. */
     private const string SELECT = <<<'SQL'
-        SELECT c.id, i.title, parent_i18n.title AS parent_title, c.visible
+        SELECT c.id, node.title, path.trail, c.visible
         FROM category c
-        LEFT JOIN category_i18n i ON i.id = c.id AND i.locale = :locale
-        LEFT JOIN category_i18n parent_i18n ON parent_i18n.id = c.parent AND parent_i18n.locale = :locale
+        JOIN tree_node node ON node.id = c.id
+        JOIN tree_path path ON path.id = c.id
         SQL;
 
     /**
-     * Categories online whose name in the language of the page holds the
-     * text, top-level ones first.
+     * Categories whose name in the language of the page, or the name of a
+     * category above them, holds the text, in the order of the tree: each
+     * under its parent, so an aisle brings its shelves. Online ones only,
+     * unless the offline ones are asked too, as a menu does.
      *
      * @return list<PickableItem>
      */
-    public function search(string $text, string $locale): array
+    public function search(string $text, string $locale, bool $withOffline = false): array
     {
         return $this->fetch(
-            self::SELECT.' WHERE c.visible = 1 AND i.title LIKE :contains ORDER BY c.parent = 0 DESC, i.title, parent_i18n.title LIMIT %d',
-            ['locale' => $locale, 'contains' => '%'.addcslashes($text, '%_\\').'%'],
+            $this->select().$this->matching($withOffline).' ORDER BY path.sort_key, c.id LIMIT %d',
+            $this->parameters($text, $locale),
         );
+    }
+
+    /** How many categories the search matches, of which it answers the first. */
+    public function total(string $text, string $locale, bool $withOffline = false): int
+    {
+        return $this->count($this->select().$this->matching($withOffline), $this->parameters($text, $locale));
+    }
+
+    private function matching(bool $withOffline): string
+    {
+        return ' WHERE '.($withOffline ? '' : 'c.visible = 1 AND ').TreeOrder::searched('node', 'path').' LIKE :contains';
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function parameters(string $text, string $locale): array
+    {
+        return ['locale' => $locale, 'contains' => '%'.addcslashes($text, '%_\\').'%'];
     }
 
     /**
@@ -56,7 +78,13 @@ final readonly class PickableCategories
      */
     public function find(int $id, string $locale): ?PickableItem
     {
-        return $this->fetch(self::SELECT.' WHERE c.id = :id LIMIT %d', ['locale' => $locale, 'id' => $id])[0] ?? null;
+        return $this->fetch($this->select().' WHERE c.id = :id LIMIT %d', ['locale' => $locale, 'id' => $id])[0] ?? null;
+    }
+
+    /** With the title in another language, so a record written in one language only stays findable. */
+    private function select(): string
+    {
+        return TreeOrder::with('category', 'category_i18n').self::SELECT;
     }
 
     /**
@@ -70,18 +98,26 @@ final readonly class PickableCategories
         $statement->execute($parameters);
 
         return array_map(
-            static function (array $row): PickableItem {
-                $title = trim((string) $row['title']);
-                $title = '' === $title ? \sprintf('#%d', (int) $row['id']) : $title;
-                $parent = trim((string) $row['parent_title']);
-
-                return new PickableItem(
-                    (int) $row['id'],
-                    '' === $parent ? $title : \sprintf('%s (%s)', $title, $parent),
-                    1 === (int) $row['visible'],
-                );
-            },
+            static fn (array $row): PickableItem => new PickableItem(
+                (int) $row['id'],
+                TreeOrder::name((string) $row['title'], $row['trail']),
+                1 === (int) $row['visible'],
+                false,
+                (string) $row['title'],
+                $row['trail'],
+            ),
             $statement->fetchAll(\PDO::FETCH_ASSOC),
         );
+    }
+
+    /**
+     * @param array<string, string|int> $parameters
+     */
+    private function count(string $sql, array $parameters): int
+    {
+        $statement = Propel::getReadConnection(CategoryTableMap::DATABASE_NAME)->prepare(TreeOrder::countOf($sql));
+        $statement->execute($parameters);
+
+        return (int) $statement->fetchColumn();
     }
 }

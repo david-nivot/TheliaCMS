@@ -1,0 +1,84 @@
+/*
+ * The combobox of record-picker.js. Its own classes, so a change of the
+ * back-office theme cannot take its look away; the colors follow the
+ * Bootstrap variables of the theme, light or dark, with a value of their own
+ * when a variable is missing.
+ *
+ * The list floats over the form, placed by the script from the field on the
+ * screen: fixed, in the top layer of the browser where it can be (a popover),
+ * so neither a card nor a dialog of the back office clips it.
+ */
+.cms-combobox {
+    position: relative;
+    min-width: 0;
+}
+
+.cms-combobox__panel {
+    position: fixed;
+    inset: auto;
+    z-index: 1080;
+    margin: 0;
+    padding: 0;
+    color: inherit;
+    border: 1px solid var(--bs-border-color, #dee2e6);
+    border-radius: var(--bs-border-radius, .375rem);
+    background-color: var(--bs-body-bg, #fff);
+    box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15);
+    overflow: hidden;
+}
+
+.cms-combobox__list {
+    margin: 0;
+    padding: .25rem;
+    overflow-y: auto;
+    list-style: none;
+}
+
+.cms-combobox__option {
+    padding: .375rem .625rem;
+    border-radius: calc(var(--bs-border-radius, .375rem) - .125rem);
+    color: var(--bs-body-color, #212529);
+    cursor: pointer;
+    overflow-wrap: anywhere;
+}
+
+.cms-combobox__title,
+.cms-combobox__path {
+    display: block;
+}
+
+/* Where the record sits, under its title: read, not clicked apart. */
+.cms-combobox__path {
+    margin-top: .0625rem;
+    color: var(--bs-secondary-color, #6c757d);
+    font-size: .8125em;
+    font-weight: 400;
+}
+
+.cms-combobox__option.is-active {
+    background-color: var(--bs-primary-bg-subtle, #cfe2ff);
+    color: var(--bs-primary-text-emphasis, #052c65);
+}
+
+.cms-combobox__option[aria-selected="true"] {
+    font-weight: 600;
+}
+
+/* A caption, not a row: nothing to click or type in. */
+.cms-combobox__status {
+    margin: 0;
+    padding: .25rem .625rem .375rem;
+    background-color: var(--bs-tertiary-bg, #f8f9fa);
+    color: var(--bs-secondary-color, #6c757d);
+    font-size: .8125em;
+    font-style: italic;
+    cursor: default;
+    user-select: none;
+}
+
+
+@media (prefers-reduced-motion: no-preference) {
+    .cms-combobox__option {
+        transition: background-color .1s ease-in-out;
+    }
+}

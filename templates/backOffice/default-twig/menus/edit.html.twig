@@ -248,6 +248,10 @@
                             {# Errors that belong to the entry as a whole rather than to one of
                                its fields — being told nothing happened is worse than the refusal. #}
                             {{ form_errors(item_form) }}
+                            {# The fields of the other kinds of target are hidden from the first
+                               paint; without the script nothing would show them when the kind
+                               changes, so they all show. #}
+                            <noscript><style>[data-cms-menu-target-field][hidden] { display: block !important; }</style></noscript>
                             {{ form_row(item_form.targetType) }}
                             {{ form_row(item_form.pageId) }}
                             {{ form_row(item_form.contentId) }}
@@ -274,5 +278,7 @@
 {% block scripts_extra %}
     {% if not is_new %}
         <script src="{{ cms_asset('assets/menu-editor.js') }}?v={{ assets_version }}" defer></script>
+        {# The target of an entry is searched rather than listed whole. #}
+        {{ include('@TheliaCMSModule/backOffice/default-twig/_record_picker.html.twig') }}
     {% endif %}
 {% endblock %}

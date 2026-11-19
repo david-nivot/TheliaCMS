@@ -9,6 +9,46 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Changed
 
+- **The target of a menu entry is searched**: the page, content, folder,
+  category or product an entry points at is chosen in a list that opens with
+  the first twenty and narrows as the editor types its title, the title of a
+  record above it (a section brings its pages, an aisle its shelves and their
+  products) or the start of the reference of a product, instead of in a select
+  listing the whole site, which the menu screen no longer reads nor sends. The
+  list reads as a tree: each record under its parent, siblings in the order of
+  the back office (position, then title), a product or a content under its
+  default category or folder. The list floats over the
+  form; when more match than it shows, it says how many and invites to refine
+  the search. It opens on the record held, first. A page, content, folder or
+  category with no title in the language edited is named by its title in
+  another one, marked with that language ("Démo [fr]"), and found by it. Each
+  is named in the language being edited (`?locale=`), with the records above
+  it (folders, parent pages or categories) or its reference, so a field tells
+  apart two of the same title under parents of the same title, and the list shows under each title its
+  whole path (`Salon › Armchairs`, the default category of a product: `label`
+  and `path` in the answer of a source), so two of the same title stay apart,
+  an offline one or one in the bin says so after its title, and the entry reopens with the name of its target.
+  Without the script, the number is typed. The server refuses a number nothing
+  has, and a page in the bin. New sources
+  `admin.cms.partials.sources.contents` and
+  `admin.cms.partials.sources.folders.search`; the products and categories
+  ones take `?offline=1`, the pages one `?except=` (a page and the pages under
+  it). The parent of a page, the 404 and maintenance pages of the settings and
+  the privacy policy page of a form are searched the same way; a page cannot
+  go under itself nor under a page below it. The search box of the section
+  forms becomes the same list, keyboard included (arrows, Enter, Escape), in
+  place of the browser's suggestions: `assets/record-picker.js` and its own
+  `record-picker.css`, loaded by every screen that picks a record, mount it on
+  `input[data-cms-picker][data-cms-picker-searchable]`, and
+  `CmsRecordPicker.use(factory)` puts another component in its place for the
+  fields bound after it. Enter and the arrows wait for the list of what was
+  just typed, so a quick Enter never picks a row of the list before it. The
+  sources are open to whoever may open one of the screens that pick from them
+  (pages, menus, forms or settings), no longer to the editors of the pages
+  only. A source asked with no text answers its first items, a record with no
+  title in any language last among its siblings, by its number; any text of one letter or more
+  searches, and `X-Total-Count` says how many matched.
+
 - **An SVG written in a page keeps its gradients, masks and clipping paths.**
   The publication filter used to keep the plain shapes of an inline SVG only:
   a round flag of the theme (`circle-flags`) came out square, an icon with a
@@ -41,7 +81,21 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   `php Thelia thelia_cms:render-published --all` (`--dry-run` counts them),
   and `php Thelia thelia_cms:render` for the drafts. See ADR 19.
 
+### Removed
+
+- `Menu\Admin\MenuTargetChoices` and `CmsPageAdminRepository::parentChoices()`,
+  which built the whole lists of pages, contents, folders, categories and
+  products the menu entry form, the settings and the forms used to send:
+  those fields now search their target (see above).
+
 ### Fixed
+
+- **A page sent to the bin is no longer dropped silently from the settings**:
+  while the 404 page, the maintenance page or the privacy policy page of a form
+  was in the bin, saving the settings (or the form) for any other reason
+  emptied it without a word. The page is now named "In the bin" in its field
+  and the save is refused with the reason until it is restored or another one
+  is chosen.
 
 - **A transform or a color written to be read for long no longer slows the
   publication of a page.** The filter read a `transform` (`scale(1)`

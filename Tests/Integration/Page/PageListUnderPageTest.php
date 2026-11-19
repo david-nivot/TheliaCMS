@@ -112,8 +112,12 @@ final class PageListUnderPageTest extends CmsIntegrationTestCase
         self::assertSame([PropType::Reference, 'page', '/admin/cms/partials/sources/pages', true, false], [$parent->type, $parent->record, $parent->picker, $parent->searchable, $parent->required]);
 
         $found = $this->getService(PickablePages::class)->search('2026', $this->locale());
-        self::assertSame([(int) $year->getId()], array_map(static fn ($item): int => $item->id, $found));
-        self::assertSame('2026 (News)', $found[0]->name, 'A page is named with the page above it.');
+        self::assertSame(
+            ['2026 (News)', 'Autumn rides (News › 2026)', 'Spring rally (News › 2026)'],
+            array_map(static fn ($item): string => $item->name, $found),
+            'A page is named with the pages above it, and brings the pages under it, each under its parent.',
+        );
+        self::assertSame((int) $year->getId(), $found[0]->id);
         self::assertSame('News', $this->getService(PickablePages::class)->find((int) $news->getId(), $this->locale())?->name);
     }
 

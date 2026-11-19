@@ -2478,120 +2478,12 @@
         bindIconPickers(root);
     }
 
-    // A reference is picked from the list its source answers: a select for a
-    // short list, a search box for a long one. The number field, which the
-    // form sends, is hidden behind it; it shows again when the list cannot be
-    // read. Bound on the form and on each row added to a list.
+    // A reference is picked by record-picker.js, which a new section form asks
+    // for too.
     function bindRecordPickers(root) {
-        root.querySelectorAll("input[data-cms-picker]").forEach(function (input) {
-            if (input.dataset.cmsPickerBound) {
-                return;
-            }
-
-            input.dataset.cmsPickerBound = "1";
-            var source = input.getAttribute("data-cms-picker");
-            var searchable = input.hasAttribute("data-cms-picker-searchable");
-            var picker = document.createElement(searchable ? "input" : "select");
-            picker.className = "form-select";
-            picker.setAttribute("aria-label", input.labels && input.labels[0] ? input.labels[0].textContent.trim() : "");
-            // The label of the field names the picker, which takes its place.
-            picker.id = input.id + "_picker";
-            Array.prototype.forEach.call(input.labels || [], function (label) { label.htmlFor = picker.id; });
-
-            function fill(rows) {
-                picker.replaceChildren();
-                var none = document.createElement("option");
-                none.value = "";
-                none.textContent = "—";
-                picker.appendChild(none);
-                rows.forEach(function (row) {
-                    var option = document.createElement("option");
-                    option.value = String(row.id);
-                    option.textContent = row.name;
-                    option.selected = String(row.id) === input.value;
-                    picker.appendChild(option);
-                });
-            }
-
-            if (searchable) {
-                var datalist = document.createElement("datalist");
-                datalist.id = input.id + "_options";
-                picker.setAttribute("list", datalist.id);
-                picker.className = "form-control";
-                picker.placeholder = labels.search || "Search…";
-                var found = {};
-                picker.addEventListener("input", function () {
-                    var chosen = found[picker.value];
-
-                    if (chosen) {
-                        input.value = String(chosen);
-
-                        return;
-                    }
-
-                    if (picker.value.length < 2) {
-                        return;
-                    }
-
-                    fetch(source + "?q=" + encodeURIComponent(picker.value), { credentials: "same-origin", headers: { "X-Requested-With": "XMLHttpRequest" } })
-                        .then(function (response) { return response.json(); })
-                        .then(function (rows) {
-                            datalist.replaceChildren();
-                            found = {};
-                            rows.forEach(function (row) {
-                                found[row.name] = row.id;
-                                var option = document.createElement("option");
-                                option.value = row.name;
-                                datalist.appendChild(option);
-                            });
-                        })
-                        .catch(function () {});
-                });
-                input.insertAdjacentElement("beforebegin", picker);
-                input.insertAdjacentElement("beforebegin", datalist);
-                input.hidden = true;
-                picker.addEventListener("change", function () {
-                    if (picker.value.trim() === "") {
-                        input.value = "";
-                    }
-                });
-
-                if (input.value && input.value !== "0") {
-                    // Until the name comes back, and if it never does, the
-                    // number held is what the field shows.
-                    picker.placeholder = "#" + input.value;
-                    fetch(source + "?id=" + encodeURIComponent(input.value), { credentials: "same-origin", headers: { "X-Requested-With": "XMLHttpRequest" } })
-                        .then(function (response) { return response.json(); })
-                        // The source answers a list, as for a search: the
-                        // record asked, or nothing when it is gone.
-                        .then(function (rows) {
-                            var row = Array.isArray(rows) ? rows[0] : rows;
-
-                            if (row && row.name) {
-                                picker.value = row.name;
-                                found[row.name] = row.id;
-                                // The title of a row named by this record.
-                                picker.dispatchEvent(new Event("input", { bubbles: true }));
-                            }
-                        })
-                        .catch(function () {});
-                }
-            } else {
-                picker.addEventListener("change", function () {
-                    input.value = picker.value;
-                });
-                input.insertAdjacentElement("beforebegin", picker);
-                input.hidden = true;
-                fetch(source, { credentials: "same-origin", headers: { "X-Requested-With": "XMLHttpRequest" } })
-                    .then(function (response) { return response.json(); })
-                    .then(function (rows) {
-                        fill(rows);
-                        // The title of a row named by this record.
-                        picker.dispatchEvent(new Event("input", { bubbles: true }));
-                    })
-                    .catch(function () { picker.remove(); input.hidden = false; });
-            }
-        });
+        if (window.CmsRecordPicker) {
+            window.CmsRecordPicker.bind(root);
+        }
     }
 
     /* ---- Icon picker ----------------------------------------------- */

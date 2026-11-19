@@ -361,35 +361,6 @@ final readonly class CmsPageAdminRepository
     }
 
     /**
-     * Pages that could become the parent of `$pageId`, i.e. everything but the
-     * page itself and its own descendants — otherwise the tree gets a cycle
-     * and every walk of it hangs.
-     *
-     * @return array<string, int>
-     */
-    public function parentChoices(string $locale, ?int $pageId = null): array
-    {
-        $excluded = null === $pageId ? [] : $this->descendantIds($pageId) + [$pageId => $pageId];
-        $byParent = $this->pagesByParent($locale, null);
-        $choices = [];
-
-        // No state and no address is read here: this builds a select, and asking
-        // for the state of every page on the site to label an option is how the
-        // edit screen came to cost one statement per page as well.
-        foreach ($this->walkAll($byParent, 0, 0) as $row) {
-            $id = (int) $row['page']->getId();
-
-            if (isset($excluded[$id])) {
-                continue;
-            }
-
-            $choices[str_repeat('— ', $row['depth']).$this->label($row['page'], $locale)] = $id;
-        }
-
-        return $choices;
-    }
-
-    /**
      * Whether the draft or what is online in this language carries the mark
      * of a generated content.
      */
@@ -648,30 +619,6 @@ final readonly class CmsPageAdminRepository
             if ($filters->isOpen($id)) {
                 $rows = array_merge($rows, $this->walk($byParent, $id, $depth + 1, $filters, $seen));
             }
-        }
-
-        return $rows;
-    }
-
-    /**
-     * @param array<int, list<CmsPage>> $byParent
-     *
-     * @return list<array{page: CmsPage, depth: int}>
-     */
-    private function walkAll(array $byParent, int $parentId, int $depth, array &$seen = []): array
-    {
-        $rows = [];
-
-        foreach ($byParent[$parentId] ?? [] as $page) {
-            $id = (int) $page->getId();
-
-            if (isset($seen[$id])) {
-                continue;
-            }
-
-            $seen[$id] = true;
-            $rows[] = ['page' => $page, 'depth' => $depth];
-            $rows = array_merge($rows, $this->walkAll($byParent, $id, $depth + 1, $seen));
         }
 
         return $rows;

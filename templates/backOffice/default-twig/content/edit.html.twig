@@ -25,6 +25,8 @@
        loaded before it. #}
     {{ include('@TheliaCMSModule/backOffice/default-twig/media/_picker.html.twig', { media_picker_version: assets_version }) }}
     {{ include('@TheliaCMSModule/backOffice/default-twig/content/_image_crop.html.twig') }}
+    {# The picker of a page, a product or a category, bound the same way. #}
+    {{ include('@TheliaCMSModule/backOffice/default-twig/_record_picker.html.twig') }}
     <script src="{{ cms_asset('assets/content-editor.js') }}?v={{ assets_version }}" defer></script>
 {% endblock %}
 
@@ -34,14 +36,14 @@
     {% set ai_page = cms_ai_available('theliacms.page_generation') %}
     {% set ai_translation = cms_ai_available('theliacms.page_translation') %}
     {% set ai_component = cms_ai_available('theliacms.component') %}
-    <div class="cms-content" data-cms-content
+    {# The records a section picks are named in the language being edited. #}
+    <div class="cms-content" data-cms-content data-cms-picker-locale="{{ subject.locale }}"
          data-cms-content-labels="{{ {
              working: 'Writing…'|trans({}, 'theliacms'),
              failed: 'The request failed (%status%). Nothing was changed.'|trans({}, 'theliacms'),
              network: 'The generator could not be reached. Check the connection and try again.'|trans({}, 'theliacms'),
              leaving: 'A generation is running. Leaving the screen does not stop it, but you will not see it finish.'|trans({}, 'theliacms'),
              close: 'Close'|trans({}, 'theliacms'),
-             search: 'Search…'|trans({}, 'theliacms'),
              remove: 'Remove this section from the draft? Its text is lost unless the draft is written again.'|trans({}, 'theliacms'),
              add: 'Add a section'|trans({}, 'theliacms'),
              edit: 'Edit'|trans({}, 'theliacms'),

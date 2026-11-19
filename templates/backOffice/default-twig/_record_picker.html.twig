@@ -1,0 +1,15 @@
+{#
+    The picker of a record (page, product, category, content, folder): its
+    look, its words, and its script, which binds every `input[data-cms-picker]`
+    of the screen. JSON_HEX_TAG keeps a "</script>" in a translation from
+    closing the tag.
+#}
+<link rel="stylesheet" href="{{ cms_asset('assets/record-picker.css') }}?v={{ cms_asset_version('assets/record-picker.css') }}">
+<script type="application/json" data-cms-record-picker-messages>{{ {
+        search: 'Search…'|trans({}, 'theliacms'),
+        loading: 'Searching…'|trans({}, 'theliacms'),
+        none: 'No result.'|trans({}, 'theliacms'),
+        partial: '%shown% of %total% results: refine the search.'|trans({}, 'theliacms'),
+        failed: 'The list could not be read. Type the number instead.'|trans({}, 'theliacms'),
+    }|json_encode(constant('JSON_HEX_TAG') b-or constant('JSON_HEX_AMP') b-or constant('JSON_UNESCAPED_UNICODE'))|raw }}</script>
+<script src="{{ cms_asset('assets/record-picker.js') }}?v={{ cms_asset_version('assets/record-picker.js') }}" defer></script>

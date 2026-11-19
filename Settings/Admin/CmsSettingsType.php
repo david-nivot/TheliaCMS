@@ -29,6 +29,7 @@ use TheliaCMS\Generation\GeneratorSettings;
 use TheliaCMS\Http\ContentSecurityPolicyMode;
 use TheliaCMS\Http\ContentSecurityPolicySettings;
 use TheliaCMS\Http\PageCachePolicy;
+use TheliaCMS\Page\Admin\PageParentCheck;
 use TheliaCMS\Page\TrashRetention;
 use TheliaCMS\Settings\IpAllowlist;
 use TheliaCMS\Settings\SiteMode;
@@ -45,6 +46,7 @@ final class CmsSettingsType extends AbstractType
 
     public function __construct(
         private readonly IpAllowlist $allowlist,
+        private readonly PageParentCheck $pages,
         private readonly TranslatorInterface $translator,
     ) {
     }
@@ -62,13 +64,11 @@ final class CmsSettingsType extends AbstractType
                 // What each mode does is spelled out under the radios by the
                 // template: as inline help it runs into the label of the group.
             ])
-            ->add('notFoundPageId', ChoiceType::class, [
-                'label' => 'Page shown when an address does not exist',
-                'required' => false,
-                'placeholder' => 'The 404 page of the theme',
-                'choices' => $options['page_choices'],
-                'help' => 'The page has to be published in the language of the visitor; otherwise the theme takes over.',
-            ])
+            ->add('notFoundPageId', IntegerType::class, $this->page(
+                'Page shown when an address does not exist',
+                'Leave empty for the 404 page of the theme. The page has to be published in the language of the visitor; otherwise the theme takes over.',
+                $options['page_source'],
+            ))
             ->add('trashRetentionDays', IntegerType::class, [
                 'label' => 'Days a deleted page waits in the bin',
                 'required' => false,
@@ -100,12 +100,11 @@ final class CmsSettingsType extends AbstractType
                 'required' => false,
                 'help' => 'Visitors get a 503 answer, which tells search engines to come back later rather than to drop the page. The back office stays open, and so do the addresses listed below.',
             ])
-            ->add('maintenancePageId', ChoiceType::class, [
-                'label' => 'Page shown during maintenance',
-                'required' => false,
-                'placeholder' => 'A plain message from the module',
-                'choices' => $options['page_choices'],
-            ])
+            ->add('maintenancePageId', IntegerType::class, $this->page(
+                'Page shown during maintenance',
+                'Leave empty for a plain message from the module.',
+                $options['page_source'],
+            ))
             ->add('maintenanceAllowlist', TextareaType::class, [
                 'label' => 'Addresses that keep seeing the site',
                 'required' => false,
@@ -162,6 +161,7 @@ final class CmsSettingsType extends AbstractType
 
         $builder->addEventListener(FormEvents::POST_SUBMIT, $this->validateAllowlist(...));
         $builder->addEventListener(FormEvents::POST_SUBMIT, $this->validateHosts(...));
+        $builder->addEventListener(FormEvents::POST_SUBMIT, $this->validatePages(...));
     }
 
     public function configureOptions(OptionsResolver $resolver): void
@@ -169,9 +169,49 @@ final class CmsSettingsType extends AbstractType
         $resolver
             ->setDefaults([
                 'translation_domain' => 'theliacms',
-                'page_choices' => [],
+                // The searched source of the pages; none, and the page
+                // fields are plain numbers.
+                'page_source' => null,
             ])
-            ->setAllowedTypes('page_choices', 'array');
+            ->setAllowedTypes('page_source', ['null', 'string']);
+    }
+
+    /**
+     * A page searched by the record picker rather than listed whole; without
+     * the script, its number is typed.
+     *
+     * @return array<string, mixed>
+     */
+    private function page(string $label, string $help, ?string $source): array
+    {
+        return [
+            'label' => $label,
+            'required' => false,
+            'help' => $help,
+            'attr' => array_filter([
+                'min' => 1,
+                'data-cms-picker' => $source,
+                'data-cms-picker-searchable' => null === $source ? null : '1',
+            ], static fn (mixed $value): bool => null !== $value),
+        ];
+    }
+
+    /**
+     * A page typed or picked has to exist out of the bin: the select of the
+     * pages used to ensure it, and used to forget a page sent to the bin.
+     */
+    private function validatePages(FormEvent $event): void
+    {
+        foreach (['notFoundPageId', 'maintenancePageId'] as $name) {
+            $field = $event->getForm()->get($name);
+            $refusal = 0 === $field->getErrors()->count()
+                ? $this->pages->pageRefusal($field->getData(), $this->translator->getLocale())
+                : null;
+
+            if (null !== $refusal) {
+                $field->addError(new FormError($this->translator->trans($refusal, [], TheliaCMS::DOMAIN_NAME)));
+            }
+        }
     }
 
     /**
