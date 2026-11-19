@@ -229,12 +229,6 @@ parameters:
 			path: Menu/Admin/CmsMenuWriter.php
 
 		-
-			message: '#^Parameter \#1 \$defaultCategory of method Thelia\\Model\\Base\\ProductCategoryQuery\:\:filterByDefaultCategory\(\) expects bool\|string\|null, int given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Menu/Admin/MenuTargetChoices.php
-
-		-
 			message: '#^Parameter \#2 \$defaultValue of static method Thelia\\Module\\BaseModule\:\:getConfigValue\(\) expects string\|null, false given\.$#'
 			identifier: argument.type
 			count: 1

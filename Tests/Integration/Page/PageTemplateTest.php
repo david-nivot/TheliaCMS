@@ -28,6 +28,7 @@ use TheliaCMS\Page\Admin\MissingPageFieldsException;
 use TheliaCMS\Page\Admin\ModelPagePublicationException;
 use TheliaCMS\Page\Admin\PageDraft;
 use TheliaCMS\Page\Admin\PageFilters;
+use TheliaCMS\Page\Admin\PageParentCheck;
 use TheliaCMS\Page\CmsPageRenderer;
 use TheliaCMS\Page\Field\InvalidFieldsException;
 use TheliaCMS\Page\Field\PageFields;
@@ -36,6 +37,7 @@ use TheliaCMS\Page\PageTemplateResolver;
 use TheliaCMS\Page\PageTypeRepository;
 use TheliaCMS\Page\PageTypeWriter;
 use TheliaCMS\Page\PublishedPageRepository;
+use TheliaCMS\Partial\Catalogue\PickablePages;
 use TheliaCMS\Partial\Definition\PageListPartial;
 use TheliaCMS\Partial\PartialRenderer;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
@@ -215,7 +217,8 @@ final class PageTemplateTest extends CmsIntegrationTestCase
         $ids = array_map(static fn ($row): int => (int) $row->page->getId(), $repository->branch($this->locale(), $filters));
 
         self::assertNotContains((int) $model->getId(), $ids);
-        self::assertArrayNotHasKey($this->titleOf($model), $repository->parentChoices($this->locale()), 'A model is never a parent.');
+        self::assertSame([], $this->getService(PickablePages::class)->search($this->titleOf($model), $this->locale()), 'A model is never offered as a parent,');
+        self::assertNotNull($this->getService(PageParentCheck::class)->refusal(null, (int) $model->getId(), $this->locale()), 'nor taken as one.');
         self::assertSame((int) $model->getId(), $this->types()->modelIds()['recipe-test'] ?? null);
     }
 

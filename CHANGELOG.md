@@ -42,6 +42,13 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   title in any language last, by its number; any text of one letter or more
   searches, and `X-Total-Count` says how many matched.
 
+### Removed
+
+- `Menu\Admin\MenuTargetChoices` and `CmsPageAdminRepository::parentChoices()`,
+  which built the whole lists of pages, contents, folders, categories and
+  products the menu entry form, the settings and the forms used to send:
+  those fields now search their target (see above).
+
 ### Fixed
 
 - **A page sent to the bin is no longer dropped silently from the settings**:
