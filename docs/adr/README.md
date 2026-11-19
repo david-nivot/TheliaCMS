@@ -27,3 +27,4 @@ decision supersedes it with a new file.
 | [19](0019-an-inline-svg-keeps-its-definitions-under-ids-of-its-own.md) | An inline SVG keeps its definitions, under ids of its own |
 | [20](0020-a-module-declares-a-kind-of-content.md) | A module declares a kind of content, written on the content screen of the pages |
 | [21](0021-a-level-of-optimization-keeps-every-point-within-a-share-of-the-drawing.md) | A level of optimization keeps every point within a share of the drawing |
+| [22](0022-the-module-tells-other-tools-through-the-webhooks-of-the-core.md) | The module tells other tools through the webhooks of the core |

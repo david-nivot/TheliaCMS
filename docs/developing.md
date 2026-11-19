@@ -459,3 +459,22 @@ that without JavaScript the link lands on the row by its anchor. Window
   union types, and a total size. With a catalogue of twenty components, only
   the envelope of the document fits (`DocumentSchema::strict()`); the props
   are validated server side and sent back for correction.
+
+## Webhooks
+
+- An event is offered to the webhooks of the core by adding it to
+  `Webhook/WebhookEvents::definitions()`, with the class serialized for its full
+  payload. `WebhookEventsCompiler` merges the list into `thelia.webhook.events`:
+  never set that parameter from the module, a parameter set by two modules
+  keeps only the last one and the events of the other leave the catalog.
+- A payload class implements `PropelResourceInterface` without `#[ApiResource]`.
+  The transformer of the core fills each property from the getter of the same
+  name on the model, before `afterModelToResource()`: a property called `url`
+  on a page would be filled by `CmsPage::getUrl()`, which throws without the
+  URL singleton and ignores the home page answering on "/". Give it another
+  name and `#[SerializedName]` (`PagePayload::$address`), and fill it in
+  `afterModelToResource()`.
+- Tests send the deliveries at once (`sync://`): replace
+  `thelia.webhook.http_client` by a `MockHttpClient`, as
+  `Tests/Integration/Webhook/PageWebhooksTest.php` does, or the suite posts to
+  the address of the subscription.
