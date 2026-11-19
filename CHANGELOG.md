@@ -7,6 +7,8 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+## [2.34.0] - 2026-11-19
+
 ### Changed
 
 - **The target of a menu entry is searched**: the page, content, folder,
@@ -3702,7 +3704,8 @@ the published pages.
 - The breadcrumb of a page filed under a draft one offered a link to that page,
   which answers 404, both to the reader and in the `BreadcrumbList`.
 
-[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.33.0...HEAD
+[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.34.0...HEAD
+[2.34.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.34.0
 [2.33.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.33.0
 [2.32.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.32.0
 [2.31.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.31.0
