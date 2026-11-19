@@ -64,7 +64,7 @@ final class ContentKindMigrationTest extends CmsIntegrationTestCase
     }
 
     /**
-     * Sabotage: delete the final `UPDATE` of `Config/update/2.36.0.sql`: the
+     * Sabotage: delete the final `UPDATE` of `Config/update/2.37.0.sql`: the
      * zone keeps a NULL kind and the first assertions after the update are
      * red. Delete the `AND content_kind IS NULL`: the zone given another kind
      * is turned back into the header, and the last assertion is red. Delete
@@ -84,8 +84,8 @@ final class ContentKindMigrationTest extends CmsIntegrationTestCase
         self::assertFalse($this->indexExists());
 
         $module = new TheliaCMS();
-        $module->update('2.35.0', '2.36.0', $this->getPropelConnection());
-        $module->update('2.35.0', '2.36.0', $this->getPropelConnection());
+        $module->update('2.36.0', '2.37.0', $this->getPropelConnection());
+        $module->update('2.36.0', '2.37.0', $this->getPropelConnection());
 
         $column = $this->rows("SHOW COLUMNS FROM cms_page LIKE 'content_kind'");
         self::assertCount(1, $column);
@@ -97,12 +97,12 @@ final class ContentKindMigrationTest extends CmsIntegrationTestCase
 
         // A zone the update meets with no kind (a dump restored from before it): the update gives it.
         $this->getPropelConnection()->exec(\sprintf('UPDATE cms_page SET content_kind = NULL WHERE id = %d', $zone));
-        $module->update('2.35.0', '2.36.0', $this->getPropelConnection());
+        $module->update('2.36.0', '2.37.0', $this->getPropelConnection());
         self::assertSame('header', $this->kindOf($zone));
 
         // A hidden page already of another kind is not turned into the zone.
         $this->getPropelConnection()->exec(\sprintf("UPDATE cms_page SET content_kind = 'test_guide' WHERE id = %d", $zone));
-        $module->update('2.35.0', '2.36.0', $this->getPropelConnection());
+        $module->update('2.36.0', '2.37.0', $this->getPropelConnection());
         self::assertSame('test_guide', $this->kindOf($zone));
 
         $this->getPropelConnection()->exec(\sprintf("UPDATE cms_page SET content_kind = 'header' WHERE id = %d", $zone));

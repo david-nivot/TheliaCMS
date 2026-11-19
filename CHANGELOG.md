@@ -7,20 +7,6 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
-## [2.36.0] - 2026-11-19
-
-### Added
-
-- **A form takes the check of another module, a captcha for one**: the
-  `cms.form.fields` theme hook is rendered inside every form, where the module
-  adds the field its check reads, and `SubmissionCheckEvent` is dispatched for
-  a message the trap, the stamp and the fields have let through, before the
-  rate limit, the stamp and the storage. A listener refuses it with the
-  sentence shown above the form; what was typed is kept. Nothing changes for a
-  site where no module listens.
-
-## [2.35.0] - 2026-11-19
-
 ### Added
 
 - **A module declares a kind of content.** A service that implements
@@ -47,6 +33,36 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   copied nor made the home page from the list; `thelia_cms:render-published --all`
   leaves out a content whose module is off, and `thelia_cms:publish` refuses it
   by name. See ADR 20.
+
+### Changed
+
+- **The header zone is the first kind of content**: its page carries
+  `cms_page.content_kind = 'header'` (the update gives it to the zone of every
+  site), and its screen, log entries and phrases are unchanged. A hidden page
+  with no declared kind is no longer treated as the zone.
+- **A hidden page gets no address back by the reactivation of the module**
+  (the header zone had one), nor by an import: a file never reads a page onto
+  a content of a kind. The count of pages published on the dashboard leaves
+  them out, and moving a page orders it among ordinary pages only.
+- **The bin of the pages and its count leave out the contents of a kind**: they
+  are binned and brought back by the module that owns them.
+
+## [2.36.0] - 2026-11-19
+
+### Added
+
+- **A form takes the check of another module, a captcha for one**: the
+  `cms.form.fields` theme hook is rendered inside every form, where the module
+  adds the field its check reads, and `SubmissionCheckEvent` is dispatched for
+  a message the trap, the stamp and the fields have let through, before the
+  rate limit, the stamp and the storage. A listener refuses it with the
+  sentence shown above the form; what was typed is kept. Nothing changes for a
+  site where no module listens.
+
+## [2.35.0] - 2026-11-19
+
+### Added
+
 - **Publishing is a right of its own**: `admin.cms.page.publish` (checked on
   update) decides what shows on the site, apart from changing the pages. An
   editor without it writes pages, their content and their settings; someone
@@ -63,16 +79,6 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ### Changed
 
-- **The header zone is the first kind of content**: its page carries
-  `cms_page.content_kind = 'header'` (the update gives it to the zone of every
-  site), and its screen, log entries and phrases are unchanged. A hidden page
-  with no declared kind is no longer treated as the zone.
-- **A hidden page gets no address back by the reactivation of the module**
-  (the header zone had one), nor by an import: a file never reads a page onto
-  a content of a kind. The count of pages published on the dashboard leaves
-  them out, and moving a page orders it among ordinary pages only.
-- **The bin of the pages and its count leave out the contents of a kind**: they
-  are binned and brought back by the module that owns them.
 - **An update keeps what each profile could publish**: the new right is split
   off `admin.cms.page`, so on the update each profile gets the access it had on
   the pages. A profile that could change the pages still publishes; a profile
