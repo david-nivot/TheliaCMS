@@ -78,7 +78,11 @@ message until somebody with the right to change pages closes it. Nothing waits
 on it: the activation goes through either way.
 
 Deactivating the module removes the rewritten URLs it owns, so the site answers
-404 rather than 500; reactivating puts them back.
+404 rather than 500; reactivating puts them back. A row of another view that
+redirected to one of those URLs (the former address of a content a page took
+over) is removed with them: it would lead nowhere. The same goes for a page sent
+to the bin, purged, taken in as a content of a kind or whose type is deleted, and
+the activity log counts those rows when there are some.
 
 ## Addresses
 
@@ -101,7 +105,9 @@ address a page already has is never rewritten by a translation.
 
 Renaming a page keeps its previous address as a 301. Those redirections are not
 restored by a deactivation and reactivation cycle: what a page stores is the
-address it answers on, not the list of the ones it used to answer on.
+address it answers on, not the list of the ones it used to answer on. A
+redirection goes with the address it leads to when that address is removed
+(page binned, purged or taken in as a content of a kind), whatever its view.
 
 Reserved first segments (`admin`, `api`, `assets`, `recherche`, `search`,
 `sitemap`, `robots.txt` and a few more) are refused as slugs. The rewriting

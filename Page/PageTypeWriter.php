@@ -16,7 +16,6 @@ namespace TheliaCMS\Page;
 
 use Propel\Runtime\Connection\ConnectionInterface;
 use Propel\Runtime\Propel;
-use Thelia\Model\RewritingUrlQuery;
 use TheliaCMS\Generation\Brief;
 use TheliaCMS\Locale\TranslatableText;
 use TheliaCMS\Model\CmsPageQuery;
@@ -37,6 +36,7 @@ final readonly class PageTypeWriter
         private PageTypeRepository $types,
         private CmsActivityLog $activityLog,
         private PageDocumentWriter $documents,
+        private PageAddressRemover $addresses,
     ) {
     }
 
@@ -80,15 +80,13 @@ final readonly class PageTypeWriter
         $connection = Propel::getConnection('TheliaMain');
         $connection->beginTransaction();
         $files = [];
+        $ofOtherViews = 0;
 
         try {
             // The model goes with its type, binned or not: it is the demo of
             // the type, and a page of a type the site no longer has.
             foreach (CmsPageQuery::create()->filterByPageType($code)->filterByModel(1)->find($connection) as $model) {
-                RewritingUrlQuery::create()
-                    ->filterByView($model->getRewrittenUrlViewName())
-                    ->filterByViewId((string) $model->getId())
-                    ->delete($connection);
+                $ofOtherViews += $this->addresses->removeOfPages([(int) $model->getId()], $connection)->ofOtherViews;
 
                 // The rows of its documents cascade, their files do not: they
                 // are removed once the deletion is committed.
@@ -108,7 +106,7 @@ final readonly class PageTypeWriter
 
         $this->documents->deleteFiles($files);
 
-        $this->activityLog->record('DELETE', 0, \sprintf('Page type "%s" deleted', $code), CmsResources::SETTINGS);
+        $this->activityLog->record('DELETE', 0, \sprintf('Page type "%s" deleted%s', $code, (new RemovedAddresses(0, $ofOtherViews))->logNote()), CmsResources::SETTINGS);
     }
 
     /**
