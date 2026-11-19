@@ -7,6 +7,8 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+## [2.38.0] - 2026-11-19
+
 ### Added
 
 - **A module declares a kind of content.** A service that implements
@@ -3865,7 +3867,8 @@ the published pages.
 - The breadcrumb of a page filed under a draft one offered a link to that page,
   which answers 404, both to the reader and in the `BreadcrumbList`.
 
-[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.37.0...HEAD
+[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.38.0...HEAD
+[2.38.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.38.0
 [2.37.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.37.0
 [2.36.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.36.0
 [2.35.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.35.0
