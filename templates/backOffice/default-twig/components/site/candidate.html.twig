@@ -1,28 +1,45 @@
 {% extends '@BackOfficeDefaultTwig/base.html.twig' %}
 
+{#
+    A version the generator proposed. When it made a component, the page takes
+    the stage of the page of a component: what was asked and what to do with
+    it on the left, the version drawn in the theme on the right, so that it is
+    judged at the width visitors will see it. When it made none (failed, or
+    the site already has it), the page of the back office says why and offers
+    to ask again.
+#}
+
 {% set title = component ? component.label : (candidate.existing ? 'Component already there'|trans({}, 'theliacms') : 'Component not made'|trans({}, 'theliacms')) %}
 {% block title %}{{ title }}{% endblock %}
 {% block body_testid %}cms-site-component-candidate{% endblock %}
 
-{% block scripts_extra %}
-    <script src="{{ cms_asset('assets/component-generator.js') }}?v={{ assets_version }}" defer></script>
+{% block head_extra %}
+    {% if component %}<link rel="stylesheet" href="{{ cms_asset('assets/content-editor.css') }}?v={{ cms_asset_version('assets/content-editor.css') }}">{% endif %}
 {% endblock %}
 
-{% block content %}
-    {% embed '@BackOfficeDefaultTwig/_page_header.html.twig' with { title: title } %}
-        {% block actions %}
-            {% if kept_code %}
-                <a class="btn btn-sm btn-outline-secondary" href="{{ path('admin.cms.components.site.show', { component: kept_code }) }}">
-                    <i class="bi bi-arrow-left" aria-hidden="true"></i> {{ 'Back to the component'|trans({}, 'theliacms') }}
-                </a>
-            {% else %}
-                <a class="btn btn-sm btn-outline-secondary" href="{{ path('admin.cms.components.list') }}">
-                    <i class="bi bi-arrow-left" aria-hidden="true"></i> {{ 'Back to components'|trans({}, 'theliacms') }}
-                </a>
-            {% endif %}
-        {% endblock %}
-    {% endembed %}
+{% block scripts_extra %}
+    <script src="{{ cms_asset('assets/component-generator.js') }}?v={{ assets_version }}" defer></script>
+    {% if component %}
+        <script src="{{ cms_asset('assets/toasts.js') }}?v={{ cms_asset_version('assets/toasts.js') }}" defer></script>
+        <script src="{{ cms_asset('assets/preview-choices.js') }}?v={{ cms_asset_version('assets/preview-choices.js') }}" defer></script>
+        <script src="{{ cms_asset('assets/component-preview.js') }}?v={{ cms_asset_version('assets/component-preview.js') }}" defer></script>
+    {% endif %}
+{% endblock %}
 
+{% macro back(kept_code) %}
+    {% if kept_code %}
+        <a class="btn btn-sm btn-outline-secondary" href="{{ path('admin.cms.components.show', { name: 'Site:' ~ kept_code }) }}">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i> {{ 'Back to the component'|trans({}, 'theliacms') }}
+        </a>
+    {% else %}
+        <a class="btn btn-sm btn-outline-secondary" href="{{ path('admin.cms.components.list') }}">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i> {{ 'Back to components'|trans({}, 'theliacms') }}
+        </a>
+    {% endif %}
+{% endmacro %}
+
+{# What was asked, what it cost, and what the version starts from. #}
+{% macro outcome(candidate, failed, based_on_code) %}
     <div class="alert {{ failed ? 'alert-warning' : 'alert-light' }} small" data-testid="cms-site-component-outcome" data-status="{{ candidate.status }}">
         <div><strong>{{ 'Asked:'|trans({}, 'theliacms') }}</strong> {{ candidate.request }}</div>
         <div class="text-muted">
@@ -34,45 +51,58 @@
         {% if candidate.basedOn %}
             <div class="mt-2" data-testid="cms-site-component-based-on">
                 {{ 'Based on'|trans({}, 'theliacms') }}
-                {% if based_on_code %}<a href="{{ path('admin.cms.components.site.show', { component: based_on_code }) }}"><code>{{ candidate.basedOn }}</code></a>{% else %}<code>{{ candidate.basedOn }}</code>{% endif %}{% if candidate.reason %}: {{ candidate.reason }}{% endif %}
+                {% if based_on_code %}<a href="{{ path('admin.cms.components.show', { name: 'Site:' ~ based_on_code }) }}"><code>{{ candidate.basedOn }}</code></a>{% else %}<code>{{ candidate.basedOn }}</code>{% endif %}{% if candidate.reason %}: {{ candidate.reason }}{% endif %}
             </div>
         {% endif %}
     </div>
+{% endmacro %}
 
-    {% if candidate.existing %}
-        <div class="alert alert-info" role="status" data-testid="cms-site-component-existing">
-            {% set existing_name %}{% if existing_code %}<a href="{{ path('admin.cms.components.site.show', { component: existing_code }) }}"><code>{{ candidate.existing }}</code></a>{% else %}<code>{{ candidate.existing }}</code>{% endif %}{% endset %}
-            {{ 'The component %name% already does what you ask:'|trans({ '%name%': existing_name }, 'theliacms')|raw }} {{ candidate.reason }}
-        </div>
-    {% endif %}
+{% block body %}
+    {% if not component %}
+        {{ parent() }}
+    {% else %}
+        <div class="cms-content" data-cms-component-screen>
+            <header class="cms-content__bar">
+                {{ _self.back(kept_code) }}
 
-    {% if component %}
-        <div class="row g-3">
-            <div class="col-xl-8">
-                {{ include('@TheliaCMSModule/backOffice/default-twig/components/site/_preview.html.twig', { url: preview_url }) }}
-            </div>
-            <div class="col-xl-4">
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <p class="mb-1"><code>Site:{{ component.code }}</code></p>
-                        <p class="text-muted small">{{ component.description }}</p>
-                        {% if may_make %}
-                            {% if kept_code and pages > 0 %}
-                                <p class="small">{{ 'Used by %count% page(s): keeping this version draws their drafts again with it; published pages change at their next publication.'|trans({ '%count%': pages }, 'theliacms') }}
-                                {% include '@TheliaCMSModule/backOffice/default-twig/linked-pages/_trigger.html.twig' with { kind: 'component', key: 'Site:' ~ kept_code, count: pages, text: 'See the pages'|trans({}, 'theliacms'), subject: 'Site:' ~ kept_code, testid: 'cms-site-candidate-pages-open' } only %}</p>
-                            {% endif %}
-                            <form method="post" action="{{ path('admin.cms.components.site.keep', { id: candidate.logId }) }}" data-testid="cms-site-component-keep">
-                                <input type="hidden" name="_token" value="{{ assignToken() }}">
-                                <button class="btn btn-success" type="submit">
-                                    <i class="bi bi-check2 me-1" aria-hidden="true"></i>{{ kept_code ? 'Keep this version'|trans({}, 'theliacms') : 'Keep the component'|trans({}, 'theliacms') }}
-                                </button>
-                            </form>
-                        {% endif %}
-                    </div>
+                <h1 class="cms-content__title">{{ title }}</h1>
+                <code class="small">Site:{{ component.code }}</code>
+
+                <div class="cms-content__actions">
+                    {{ include('@TheliaCMSModule/backOffice/default-twig/content/_preview_choices.html.twig', {
+                        page_url: preview_url,
+                        content_url: preview_url ~ '?' ~ constant('TheliaCMS\\Preview\\PreviewLink::CONTENT_ONLY') ~ '=1',
+                        widths: preview_widths,
+                        prefix: 'cms-component-preview-mode',
+                        testid: 'cms-site-component',
+                    }, with_context = false) }}
+                    {# The decision, in view whatever the panel shows. #}
+                    {% if may_make %}
+                        <form method="post" action="{{ path('admin.cms.components.site.keep', { id: candidate.logId }) }}" data-testid="cms-site-component-keep">
+                            <input type="hidden" name="_token" value="{{ assignToken() }}">
+                            <button class="btn btn-sm btn-success text-nowrap" type="submit">
+                                <i class="bi bi-check2 me-1" aria-hidden="true"></i>{{ kept_code ? 'Keep this version'|trans({}, 'theliacms') : 'Keep the component'|trans({}, 'theliacms') }}
+                            </button>
+                        </form>
+                    {% endif %}
                 </div>
-                {% if may_ask and cms_ai_available('theliacms.component') %}
-                    <div class="card mb-3">
-                        <div class="card-body">
+            </header>
+
+            {# This page replaces the whole body block, so the flash messages of
+               the layout are rendered here. #}
+            {{ include('@TheliaCMSModule/backOffice/default-twig/_toasts.html.twig', { extra: [] }) }}
+
+            <div class="cms-content__stage">
+                <aside class="cms-content__panel" aria-label="{{ 'The version proposed'|trans({}, 'theliacms') }}">
+                    {{ _self.outcome(candidate, failed, based_on_code) }}
+                    <p class="text-muted small">{{ component.description }}</p>
+                    {% if may_make and kept_code and pages > 0 %}
+                        <p class="small">{{ 'Used by %count% page(s): keeping this version draws their drafts again with it; published pages change at their next publication.'|trans({ '%count%': pages }, 'theliacms') }}
+                        {% include '@TheliaCMSModule/backOffice/default-twig/linked-pages/_trigger.html.twig' with { kind: 'component', key: 'Site:' ~ kept_code, count: pages, text: 'See the pages'|trans({}, 'theliacms'), subject: 'Site:' ~ kept_code, testid: 'cms-site-candidate-pages-open' } only %}</p>
+                    {% endif %}
+
+                    {% if may_ask and cms_ai_available('theliacms.component') %}
+                        <section class="cms-content__section">
                             {{ include('@TheliaCMSModule/backOffice/default-twig/components/site/_request_form.html.twig', {
                                 testid: 'cms-site-component-change',
                                 hidden: { candidate: candidate.logId },
@@ -81,13 +111,63 @@
                                 help: 'The generator starts from this version.'|trans({}, 'theliacms'),
                                 button: 'Change it'|trans({}, 'theliacms'),
                             }) }}
-                        </div>
-                    </div>
-                {% endif %}
+                        </section>
+                    {% endif %}
+
+                    <section class="cms-content__section">
+                        <h2 class="cms-content__heading">{{ 'Props'|trans({}, 'theliacms') }}</h2>
+                        {{ include('@TheliaCMSModule/backOffice/default-twig/components/_props.html.twig', { bare: true }) }}
+                    </section>
+
+                    {# Long, and read now and then: folded. #}
+                    <details class="cms-content__section">
+                        <summary class="cms-content__heading">{{ 'Template and stylesheet'|trans({}, 'theliacms') }}</summary>
+                        <pre class="small mt-2 mb-3" data-testid="cms-site-component-template"><code>{{ component.template }}</code></pre>
+                        {% if component.css is not empty %}
+                            <pre class="small mb-0" data-testid="cms-site-component-css"><code>{{ component.css }}</code></pre>
+                        {% else %}
+                            <p class="text-muted small mb-0">{{ 'No stylesheet.'|trans({}, 'theliacms') }}</p>
+                        {% endif %}
+                    </details>
+                </aside>
+
+                {# The version drawn with its sample. The frame runs scripts but
+                   has no origin: `allow-scripts` without `allow-same-origin`, so
+                   it reads nothing of the back office. What a model wrote is
+                   markup the page filter has cleaned, never a script. A player
+                   would inherit the sandbox and not play: the script of the
+                   videos opens the video on its platform in a new tab instead,
+                   which the popups, out of the sandbox, allow. #}
+                <div class="cms-content__preview">
+                    <iframe class="cms-content__frame" src="{{ preview_url }}" title="{{ 'Preview of the component'|trans({}, 'theliacms') }}"
+                            data-cms-frame data-testid="cms-site-component-frame"
+                            sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"></iframe>
+                </div>
             </div>
         </div>
-        {{ include('@TheliaCMSModule/backOffice/default-twig/components/site/_definition.html.twig') }}
-    {% elseif may_ask and cms_ai_available('theliacms.component') %}
+    {% endif %}
+{% endblock %}
+
+{# No component made: the page of the back office, with why, and the request again. #}
+{% block content %}
+    {# Rendered here: inside the embed, `_self` is the header, not this page. #}
+    {% set back_link = _self.back(kept_code) %}
+    {% embed '@BackOfficeDefaultTwig/_page_header.html.twig' with { title: title } %}
+        {% block actions %}
+            {{ back_link }}
+        {% endblock %}
+    {% endembed %}
+
+    {{ _self.outcome(candidate, failed, based_on_code) }}
+
+    {% if candidate.existing %}
+        <div class="alert alert-info" role="status" data-testid="cms-site-component-existing">
+            {% set existing_name %}{% if existing_code %}<a href="{{ path('admin.cms.components.show', { name: 'Site:' ~ existing_code }) }}"><code>{{ candidate.existing }}</code></a>{% else %}<code>{{ candidate.existing }}</code>{% endif %}{% endset %}
+            {{ 'The component %name% already does what you ask:'|trans({ '%name%': existing_name }, 'theliacms')|raw }} {{ candidate.reason }}
+        </div>
+    {% endif %}
+
+    {% if may_ask and cms_ai_available('theliacms.component') %}
         <div class="card">
             <div class="card-body">
                 {{ include('@TheliaCMSModule/backOffice/default-twig/components/site/_request_form.html.twig', {

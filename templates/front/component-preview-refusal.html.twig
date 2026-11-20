@@ -1,0 +1,29 @@
+{#
+    What the frame of the preview of a component shows when the props typed in
+    the controls are refused: the reasons, readable, instead of an error page.
+
+    Deliberately standalone, like the maintenance page: it extends nothing and
+    loads nothing, so that it draws whatever state the theme is in.
+#}
+<!DOCTYPE html>
+<html lang="{{ locale|split('_')|first }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex">
+    <title>{{ title }}</title>
+    <style>
+        body { margin: 0; padding: 2rem 1.5rem; font: 1rem/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; color: #1f2933; background: #fff; }
+        h1 { font-size: 1.125rem; margin: 0 0 .75rem; }
+        ul { margin: 0; padding-inline-start: 1.25rem; color: #842029; }
+    </style>
+</head>
+<body data-testid="cms-component-preview-refusal">
+    <h1>{{ title }}</h1>
+    <ul>
+        {% for problem in problems %}
+            <li>{{ problem }}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

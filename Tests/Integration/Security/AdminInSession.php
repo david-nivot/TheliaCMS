@@ -30,19 +30,31 @@ final class AdminInSession implements EventSubscriberInterface
 {
     private ?Admin $admin = null;
 
+    // Signed out after requests made signed in: the administrator they left
+    // in the session is taken out of it, as signing out does.
+    private bool $signedOut = false;
+
     public function logIn(Admin $admin): void
     {
         $admin->eraseCredentials();
         $this->admin = $admin;
+        $this->signedOut = false;
     }
 
     public function logOut(): void
     {
         $this->admin = null;
+        $this->signedOut = true;
     }
 
     public function onKernelRequest(RequestEvent $event): void
     {
+        if ($this->signedOut && $event->getRequest()->hasSession(true)) {
+            $event->getRequest()->getSession()->remove('thelia.admin_user');
+
+            return;
+        }
+
         if (null === $this->admin || !$event->getRequest()->hasSession(true)) {
             return;
         }

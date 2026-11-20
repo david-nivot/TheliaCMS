@@ -29,7 +29,7 @@ final class SectionItemType extends AbstractType
         $sectionForms = $options['builder'];
         \assert($sectionForms instanceof SectionFormBuilder);
 
-        $sectionForms->addProps($builder, $options['props']);
+        $sectionForms->addProps($builder, $options['props'], $options['files']);
     }
 
     public function configureOptions(OptionsResolver $resolver): void
@@ -41,7 +41,9 @@ final class SectionItemType extends AbstractType
             ->setDefaults([
                 'translation_domain' => 'theliacms',
                 'csrf_protection' => false,
-            ]);
+                'files' => true,
+            ])
+            ->setAllowedTypes('files', 'bool');
     }
 
     public function getBlockPrefix(): string

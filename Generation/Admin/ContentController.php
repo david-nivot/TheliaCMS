@@ -21,6 +21,7 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
@@ -33,6 +34,7 @@ use TheliaCMS\Content\Editing\StaleDraftException;
 use TheliaCMS\Content\Editing\StepOutcome;
 use TheliaCMS\Content\Editing\TranslationSource;
 use TheliaCMS\Content\InvalidDocumentException;
+use TheliaCMS\Content\SectionCatalog;
 use TheliaCMS\Generation\Alongside;
 use TheliaCMS\Generation\Brief;
 use TheliaCMS\Generation\GenerationException;
@@ -44,6 +46,7 @@ use TheliaCMS\Generation\ReferenceFileRefusal;
 use TheliaCMS\Generation\ReferenceFileRefusedException;
 use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Http\Admin\DraftNotice;
+use TheliaCMS\Page\Admin\EditLanguage;
 use TheliaCMS\Security\CmsResources;
 
 /**
@@ -81,6 +84,8 @@ final readonly class ContentController
         private ContentSteps $steps,
         private ReferenceFileJudgeSetting $judgeSetting,
         private DraftNotice $notice,
+        private SectionCatalog $catalog,
+        private TypedComponentProps $typedProps,
     ) {
     }
 
@@ -242,6 +247,64 @@ final readonly class ContentController
         }
 
         return $this->afterHand($request, $target, $problems, 'The section is added at the end of the draft, with example text: edit it by hand.');
+    }
+
+    /**
+     * A component put in a page from its own page: the props typed in its
+     * controls, a page chosen in the list and a language. The section goes at
+     * the end of the draft of that page in that language, as the one added from
+     * the content screen does, with the same right (to change pages) and the
+     * same step for Undo; nothing is published. The editor lands on the content
+     * screen of the page; a refusal brings them back to the page of the
+     * component.
+     */
+    #[Route('/admin/cms/components/{name}/add-to-page', name: 'admin.cms.components.add_to_page', methods: ['POST'], requirements: ['name' => '[A-Za-z0-9:_-]+'])]
+    public function addComponentToPage(Request $request, string $name): Response
+    {
+        $this->denyUnlessMayChange();
+
+        $definition = $this->catalog->find($name) ?? throw new NotFoundHttpException();
+
+        try {
+            $props = $this->typedProps->read($request, $definition);
+        } catch (InvalidDocumentException $exception) {
+            return $this->backToComponent($request, $name, $exception->translated($this->translator));
+        }
+
+        // The language of the edit is a parameter of the address of the content
+        // screen: the page is looked up as if the request carried it.
+        $language = $request->request->getInt('language');
+
+        try {
+            $target = $this->resolver->resolve($request->duplicate(query: $language > 0 ? [EditLanguage::PARAMETER => $language] : []), $request->request->getInt('page'));
+        } catch (NotFoundHttpException) {
+            return $this->backToComponent($request, $name, [$this->support->translate('This page does not exist: choose one in the list.')]);
+        }
+
+        if ($language > 0 && $language !== (int) $target->lang()->getId()) {
+            return $this->backToComponent($request, $name, [$this->support->translate('This language is not active on the shop.')]);
+        }
+
+        // The page of the component shows no draft: the version checked is the
+        // one read here with the draft the section is added to, so that a save
+        // made in between is refused rather than written over.
+        $subject = $target->subject();
+
+        try {
+            $problems = $this->steps->record($target->contentTarget(), 'add', null, fn (): array => $this->sectionUpdate->addComponent($name, $subject, $target->draftDocument(), $this->saver($target, $subject->draftVersion), $props));
+        } catch (StaleDraftException) {
+            // Not the refusal of the content screen: nothing typed here is
+            // kept in a form of that page, and nothing was read there.
+            return $this->backToComponent($request, $name, [$this->support->translate('The page changed while the section was being added, so nothing was added: add it again.')]);
+        }
+
+        if ([] !== $problems) {
+            return $this->backToComponent($request, $name, $problems);
+        }
+
+        $this->support->flash($request, 'success', $this->support->translate('The section is added at the end of the draft of the page, with the values typed here. Nothing is published.'));
+
+        return $this->back($target);
     }
 
     /**
@@ -594,6 +657,18 @@ final readonly class ContentController
         $this->support->flashFormErrors($request, $form);
 
         return $this->back($target);
+    }
+
+    /**
+     * @param list<string> $problems
+     */
+    private function backToComponent(Request $request, string $name, array $problems): RedirectResponse
+    {
+        foreach ($problems as $problem) {
+            $this->support->flash($request, 'danger', $problem);
+        }
+
+        return $this->support->redirect('admin.cms.components.show', ['name' => $name]);
     }
 
     private function back(ContentScreenTarget $target): RedirectResponse

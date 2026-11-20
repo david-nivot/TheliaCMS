@@ -14,9 +14,12 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Content\Site;
 
+use TheliaCMS\Content\PropSchema;
+
 /**
- * The props of a component of the site as a table of a screen: name, type,
- * label, help, required, and the props of its items.
+ * The props of a component as a table of a screen: name, type, label, help,
+ * required, and the props of its items. Any schema reads the same way, from
+ * the module, the theme, a partial or the site.
  */
 final readonly class SitePropRows
 {
@@ -36,6 +39,14 @@ final readonly class SitePropRows
             return [];
         }
 
+        return $this->fromSchema($schema);
+    }
+
+    /**
+     * @return list<array{name: string, type: string, label: string, help: string|null, required: bool, items: list<string>}>
+     */
+    public function fromSchema(PropSchema $schema): array
+    {
         $rows = [];
 
         foreach ($schema->props as $prop) {

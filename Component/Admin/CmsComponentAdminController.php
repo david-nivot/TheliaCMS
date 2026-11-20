@@ -29,7 +29,6 @@ use TheliaCMS\Content\SectionDefinitionInterface;
 use TheliaCMS\Content\Site\SiteComponentPermission;
 use TheliaCMS\Content\Site\SiteComponentSection;
 use TheliaCMS\Content\Theme\ThemeComponentSection;
-use TheliaCMS\Generation\Admin\ToolkitLink;
 use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Security\CmsResources;
 use Twig\Environment;
@@ -45,6 +44,9 @@ use Twig\Environment;
 #[Route('/admin/cms/components', name: 'admin.cms.components.')]
 final readonly class CmsComponentAdminController
 {
+    /** The origins in the order of the filter buttons and of the rows: the components made on this site first. */
+    private const array ORIGINS = ['site', 'theme', 'module', 'partial'];
+
     private const string LIST_TEMPLATE = '@TheliaCMSModule/backOffice/default-twig/components/list.html.twig';
 
     public function __construct(
@@ -54,7 +56,6 @@ final readonly class CmsComponentAdminController
         private SectionCatalog $catalog,
         private SectionAvailability $availability,
         private SectionUsageFinder $usage,
-        private ToolkitLink $toolkit,
         private SiteComponentPermission $permission,
     ) {
     }
@@ -63,7 +64,6 @@ final readonly class CmsComponentAdminController
     public function list(): Response
     {
         $pageCounts = $this->usage->pageCounts();
-        $toolkitUrl = $this->toolkit->url();
         $components = [];
 
         foreach ($this->catalog->all() as $name => $definition) {
@@ -80,18 +80,29 @@ final readonly class CmsComponentAdminController
                 'pages' => $pageCounts[$name] ?? 0,
                 'offered' => !$prototype && ($this->availability->isOffered($name) || !$this->availability->canBeDisabled($name)),
                 'may_disable' => !$prototype && $this->availability->canBeDisabled($name),
-                'toolkit_url' => null === $toolkitUrl ? null : $toolkitUrl.'#'.self::toolkitAnchor($name),
-                'site_url' => $definition instanceof SiteComponentSection ? $this->urls->generate('admin.cms.components.site.show', ['component' => $definition->component->code]) : null,
-                'promote_url' => $prototype ? $this->urls->generate('admin.cms.components.site.promote', ['component' => $definition->component->code]) : null,
+                'show_url' => $this->urls->generate('admin.cms.components.show', ['name' => $name]),
             ];
+        }
+
+        // The rows follow the order of the filter buttons, origin by origin; the
+        // sort is stable, so each origin keeps the order of the catalogue.
+        $rank = array_flip(self::ORIGINS);
+        usort($components, static fn (array $left, array $right): int => $rank[$left['origin']] <=> $rank[$right['origin']]);
+
+        $counts = array_count_values(array_column($components, 'origin'));
+        $originCounts = ['all' => \count($components)];
+
+        foreach (self::ORIGINS as $origin) {
+            $originCounts[$origin] = $counts[$origin] ?? 0;
         }
 
         return new Response($this->twig->render(self::LIST_TEMPLATE, [
             'components' => $components,
+            // A prototype counts with the components of the site.
+            'origin_counts' => $originCounts,
             'may_update' => $this->support->isGranted(CmsResources::SETTINGS, AccessManager::UPDATE),
             'may_make' => $this->permission->mayMake(),
             'may_ask' => $this->permission->mayAsk(),
-            'toolkit_url' => $toolkitUrl,
         ]));
     }
 
@@ -125,15 +136,6 @@ final readonly class CmsComponentAdminController
         ));
 
         return $this->support->redirect('admin.cms.components.list');
-    }
-
-    /**
-     * The id the toolkit page gives the section of a component, spelled the
-     * way `templates/front/sections/toolkit/all.html.twig` writes it.
-     */
-    private static function toolkitAnchor(string $name): string
-    {
-        return str_replace(':', '-', mb_strtolower($name));
     }
 
     private static function origin(SectionDefinitionInterface $definition): string

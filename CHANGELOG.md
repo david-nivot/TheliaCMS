@@ -7,8 +7,42 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Added
+
+- **A page for every component, with a preview you can change**: each row of
+  CMS > Components opens `/admin/cms/components/{name}`, whatever the origin of
+  the component (module, partial, theme or made on this site). Laid out like the
+  content screen, over the whole window, it offers the fields of its props on
+  the left (the same as on the content screen, pictures chosen in the library),
+  or their table with Documentation, and draws the component in the theme on
+  the right: the preview is drawn again as values are typed, and nothing is
+  saved. The address of a component made on this site
+  (`/admin/cms/components/site/{code}`) redirects to it.
+- **Add a component to a page from its own page**: choose a page in the list and
+  a language, and the section, filled with the values typed, goes at the end of
+  the draft of that page. Nothing is published; the step can be undone from the
+  content screen. It takes the right to change pages, and only a component the
+  site offers to pages can be added.
+- **Save the values typed as the example of a component made on this site**:
+  the preview, the generator and a new section then start from them. A
+  prototype stays a prototype. It takes the settings and custom code rights.
+
 ### Changed
 
+- **The page of a version the generator proposed is laid out like the page of
+  a component**: what was asked, the change to ask and the props on the left,
+  the version drawn in the theme on the right over the whole window, and
+  "Keep this version" in the bar. Its preview takes the breakpoints of the
+  theme in place of phone, tablet and screen, with the same choices of reading
+  and width as the content screen, kept for every preview
+  (`assets/preview-choices.js`, shared). A call that made no component keeps
+  the page of the back office.
+- **The list of components is easier to scan**: filter buttons by origin with
+  their counts, the components of the site first, an icon before each name that
+  tells its origin, the description under the name, "Offered to the generator"
+  as a switch, and a single "See" action. "Keep for the whole site" stays on the
+  page of the component.
+- **The button to the toolkit is gone from the list of components.**
 - **The fields of a row of a list take the whole width of the row**: the
   buttons up, down and remove stay at the end of its first words instead of
   keeping a column of their own down the row. The title and the close button

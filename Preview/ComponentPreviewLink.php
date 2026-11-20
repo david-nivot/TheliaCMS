@@ -18,10 +18,10 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 /**
- * Signs the address that draws a component of the site in the theme, for the
- * frame of the back office: a candidate the generator wrote
- * (`candidate-<id of the ledger row>`) or a component the site has
- * (`component-<code>`).
+ * Signs the address that draws a component in the theme, for the frame of the
+ * back office: a candidate the generator wrote (`candidate-<id of the ledger
+ * row>`) or any component of the catalogue (`section-<name>`, such as
+ * `section-Layouts:Subheader:Base` or `section-Site:PriceTable`).
  *
  * The frame is a page of the front office, which knows nothing of the session
  * of the back office: the address carries the authorisation, for an hour, and
@@ -31,7 +31,7 @@ final readonly class ComponentPreviewLink
 {
     public const int LIFETIME_IN_SECONDS = 3600;
 
-    public const string SUBJECT_PATTERN = '(?:candidate-[1-9][0-9]*|component-[A-Z][A-Za-z0-9]{1,39})';
+    public const string SUBJECT_PATTERN = '(?:candidate-[1-9][0-9]*|section-[A-Za-z0-9:_-]{1,120})';
 
     private const string ROUTE = 'cms.component.preview';
 
@@ -47,9 +47,20 @@ final readonly class ComponentPreviewLink
         return $this->urlFor('candidate-'.$logId, $locale, $now);
     }
 
+    /**
+     * A component made on this site, by its code.
+     */
     public function component(string $code, string $locale, ?\DateTimeImmutable $now = null): string
     {
-        return $this->urlFor('component-'.$code, $locale, $now);
+        return $this->section('Site:'.$code, $locale, $now);
+    }
+
+    /**
+     * Any component of the catalogue, by the name the catalogue knows it by.
+     */
+    public function section(string $name, string $locale, ?\DateTimeImmutable $now = null): string
+    {
+        return $this->urlFor('section-'.$name, $locale, $now);
     }
 
     public function isValid(string $subject, string $locale, int $expiresAt, string $signature, ?\DateTimeImmutable $now = null): bool

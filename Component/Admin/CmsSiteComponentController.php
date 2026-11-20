@@ -22,7 +22,9 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use TheliaCMS\Content\Admin\SectionUsageFinder;
+use TheliaCMS\Content\InvalidDocumentException;
 use TheliaCMS\Content\SectionAvailability;
 use TheliaCMS\Content\SectionCatalog;
 use TheliaCMS\Content\Site\InvalidSiteComponentException;
@@ -35,6 +37,8 @@ use TheliaCMS\Content\Site\SiteComponentValidator;
 use TheliaCMS\Content\Site\SitePropReader;
 use TheliaCMS\Content\Site\SitePropRows;
 use TheliaCMS\Generation\Admin\GenerationStream;
+use TheliaCMS\Generation\Admin\PreviewWidths;
+use TheliaCMS\Generation\Admin\TypedComponentProps;
 use TheliaCMS\Generation\Component\ComponentCandidate;
 use TheliaCMS\Generation\Component\ComponentCandidates;
 use TheliaCMS\Generation\Component\ComponentGenerator;
@@ -84,6 +88,9 @@ final readonly class CmsSiteComponentController
         private SitePropRows $propRows,
         private SiteComponentCallers $callers,
         private SectionCatalog $catalog,
+        private TypedComponentProps $typedProps,
+        private TranslatorInterface $translator,
+        private PreviewWidths $previewWidths,
     ) {
     }
 
@@ -199,6 +206,7 @@ final readonly class CmsSiteComponentController
             'component' => $candidate->component,
             'props' => null === $candidate->component ? [] : $this->propRows->of($candidate->component),
             'preview_url' => null === $candidate->component ? null : $this->previews->candidate($candidate->logId, $request->getLocale()),
+            'preview_widths' => $this->previewWidths->widths(),
             'kept_code' => $kept,
             'pages' => null === $kept ? 0 : ($this->usage->pageCounts()['Site:'.$kept] ?? 0),
             'may_make' => $this->mayMake(),
@@ -264,29 +272,17 @@ final readonly class CmsSiteComponentController
             }
         }
 
-        return $this->support->redirect('admin.cms.components.site.show', ['component' => $component->code]);
+        return $this->support->redirect('admin.cms.components.show', ['name' => 'Site:'.$component->code]);
     }
 
+    /**
+     * The page of a component of the site is the one of every component: this
+     * address stays for the links already given out.
+     */
     #[Route('/{component}', name: 'show', requirements: ['component' => self::CODE], methods: ['GET'])]
-    public function show(string $component, Request $request): Response
+    public function show(string $component): Response
     {
-        $kept = $this->components->find($component) ?? throw new NotFoundHttpException();
-        $id = $this->components->idOf($component);
-
-        $prototype = SiteComponentRepository::STATUS_DRAFT === $this->components->status($component);
-
-        return $this->render('component.html.twig', [
-            'component' => $kept,
-            'props' => $this->propRows->of($kept),
-            'preview_url' => $this->previews->component($component, $request->getLocale()),
-            'history' => $this->candidates->history($id),
-            'pages' => $this->usage->pageCounts()[$kept->name()] ?? 0,
-            'callers' => $this->callers->of($component),
-            'prototype' => $prototype,
-            'offered' => !$prototype && $this->availability->isOffered($kept->name()),
-            'may_make' => $this->mayMake(),
-            'may_ask' => $this->permission->mayAsk(),
-        ]);
+        return new RedirectResponse($this->urls->generate('admin.cms.components.show', ['name' => 'Site:'.$component]), Response::HTTP_MOVED_PERMANENTLY);
     }
 
     /**
@@ -306,7 +302,40 @@ final readonly class CmsSiteComponentController
             $this->support->flash($request, 'success', $this->support->translate('"%label%" is a component of the site: pages may use it, and the generator is offered it.', ['%label%' => $kept->label]));
         }
 
-        return $this->support->redirect('admin.cms.components.site.show', ['component' => $component]);
+        return $this->support->redirect('admin.cms.components.show', ['name' => 'Site:'.$component]);
+    }
+
+    /**
+     * The props typed in the controls of the page of the component become its
+     * example: what the toolkit, the preview and the generator are shown of it,
+     * and what a section starts from when it is added. The status stays what it
+     * was: a prototype stays a prototype. A component of the theme or of the
+     * module has no example to rewrite here.
+     */
+    #[Route('/{component}/sample', name: 'sample', requirements: ['component' => self::CODE], methods: ['POST'])]
+    public function sample(string $component, Request $request): Response
+    {
+        $this->denyUnlessMayMake();
+
+        $kept = $this->components->find($component) ?? throw new NotFoundHttpException();
+        $status = $this->components->status($component) ?? throw new NotFoundHttpException();
+        $definition = $this->catalog->find($kept->name()) ?? throw new NotFoundHttpException();
+
+        try {
+            $sample = $this->typedProps->read($request, $definition);
+            $changed = $this->validator->validate(new SiteComponent($kept->code, $kept->label, $kept->description, $kept->props, $sample, $kept->template, $kept->css, $kept->provenance));
+            $this->components->save($changed, $status, $kept->code);
+        } catch (InvalidDocumentException|InvalidSiteComponentException $exception) {
+            $problems = $exception instanceof InvalidDocumentException ? $exception->translated($this->translator) : $exception->problems;
+            $this->support->flash($request, 'danger', implode(' ', $problems));
+
+            return $this->support->redirect('admin.cms.components.show', ['name' => $kept->name()]);
+        }
+
+        $this->catalog->reset();
+        $this->support->flash($request, 'success', $this->support->translate('The values typed are now the example of "%label%".', ['%label%' => $kept->label]));
+
+        return $this->support->redirect('admin.cms.components.show', ['name' => $kept->name()]);
     }
 
     /**
@@ -331,7 +360,7 @@ final readonly class CmsSiteComponentController
         } catch (InvalidSiteComponentException $exception) {
             $this->support->flash($request, 'danger', implode(' ', $exception->problems));
 
-            return $this->support->redirect('admin.cms.components.site.show', ['component' => $source->code]);
+            return $this->support->redirect('admin.cms.components.show', ['name' => 'Site:'.$source->code]);
         }
 
         $this->support->flash($request, 'success', $this->support->translate(
@@ -339,7 +368,7 @@ final readonly class CmsSiteComponentController
             ['%label%' => $copy->label, '%source%' => $source->label],
         ));
 
-        return $this->support->redirect('admin.cms.components.site.show', ['component' => $copy->code]);
+        return $this->support->redirect('admin.cms.components.show', ['name' => 'Site:'.$copy->code]);
     }
 
     /**
@@ -358,14 +387,14 @@ final readonly class CmsSiteComponentController
         if ($pages > 0) {
             $this->support->flash($request, 'danger', $this->support->translate('"%label%" is used by %count% page(s): take it out of them before deleting it.', ['%label%' => $kept->label, '%count%' => $pages]));
 
-            return $this->support->redirect('admin.cms.components.site.show', ['component' => $component]);
+            return $this->support->redirect('admin.cms.components.show', ['name' => 'Site:'.$component]);
         }
 
         // A component that another draws would leave it drawing nothing there.
         if ([] !== $callers = $this->callers->of($component)) {
             $this->support->flash($request, 'danger', $this->support->translate('"%label%" is drawn by %components%: take it out of them before deleting it.', ['%label%' => $kept->label, '%components%' => implode(', ', array_map(static fn (SiteComponent $caller): string => $caller->label, $callers))]));
 
-            return $this->support->redirect('admin.cms.components.site.show', ['component' => $component]);
+            return $this->support->redirect('admin.cms.components.show', ['name' => 'Site:'.$component]);
         }
 
         $this->components->delete($component);
@@ -449,7 +478,7 @@ final readonly class CmsSiteComponentController
         $candidateId = (int) $request->request->get('candidate', 0);
 
         return match (true) {
-            1 === preg_match('/^[A-Z][A-Za-z0-9]{1,39}$/', $code) => $this->support->redirect('admin.cms.components.site.show', ['component' => $code]),
+            1 === preg_match('/^[A-Z][A-Za-z0-9]{1,39}$/', $code) => $this->support->redirect('admin.cms.components.show', ['name' => 'Site:'.$code]),
             $candidateId > 0 => $this->support->redirect('admin.cms.components.site.candidate', ['id' => $candidateId]),
             default => $this->support->redirect('admin.cms.components.site.new'),
         };

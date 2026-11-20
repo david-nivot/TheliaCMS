@@ -174,11 +174,26 @@ final readonly class SectionUpdate
      * and its text is then edited like any other. A page holding nothing yet
      * starts its draft with it. Only a component the site offers is added.
      *
+     * @param \Closure(Document): void $save
+     *
      * @return list<string> what went wrong, empty when the draft is saved
      */
     public function add(Request $request, ContentSubject $subject, ?Document $current, \Closure $save): array
     {
-        $name = (string) $request->request->get('component', '');
+        return $this->addComponent((string) $request->request->get('component', ''), $subject, $current, $save);
+    }
+
+    /**
+     * The same, for a component named: with the props typed in the controls of
+     * its page (already normalised by the component) instead of its sample.
+     *
+     * @param \Closure(Document): void  $save
+     * @param array<string, mixed>|null $props null for the sample of the component
+     *
+     * @return list<string> what went wrong, empty when the draft is saved
+     */
+    public function addComponent(string $name, ContentSubject $subject, ?Document $current, \Closure $save, ?array $props = null): array
+    {
         $definition = $this->catalog->offered()[$name] ?? null;
 
         if (null === $definition) {
@@ -188,7 +203,7 @@ final readonly class SectionUpdate
         $current ??= new Document([]);
 
         try {
-            $section = new Section($current->freeSectionId($name), $name, $definition->normalizeProps($definition->sample()));
+            $section = new Section($current->freeSectionId($name), $name, $props ?? $definition->normalizeProps($definition->sample()));
             $document = $current->withSectionAppended($section);
             $save($document);
         } catch (InvalidDocumentException $exception) {

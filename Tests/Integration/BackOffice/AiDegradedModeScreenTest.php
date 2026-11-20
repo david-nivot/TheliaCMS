@@ -250,7 +250,7 @@ final class AiDegradedModeScreenTest extends AdminScreenTestCase
     public function testAKeptComponentIsChangedByTheGeneratorOnlyWhileTheAiIsAvailable(): void
     {
         $this->getService(SiteComponentRepository::class)->save(PriceTable::component(), SiteComponentRepository::STATUS_READY);
-        $url = '/admin/cms/components/site/PriceTable';
+        $url = '/admin/cms/components/Site:PriceTable';
 
         self::assertSame(1, $this->screen($url)->filter('[data-testid="cms-site-component-change"]')->count());
 

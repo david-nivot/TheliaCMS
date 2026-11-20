@@ -103,7 +103,7 @@ final class ComponentPrototypeScreenTest extends AdminScreenTestCase
         self::assertSame(1, $existing->count());
         self::assertStringContainsString('Site:PriceTable', $existing->text());
         self::assertStringContainsString('it already shows plans with their prices.', $existing->text());
-        self::assertSame('/admin/cms/components/site/PriceTable', $existing->filter('a')->attr('href'));
+        self::assertSame('/admin/cms/components/Site:PriceTable', $existing->filter('a')->attr('href'));
         self::assertSame(0, $panel->filter('[data-testid="cms-content-prototype-keep"]')->count(), 'No candidate to keep.');
         self::assertSame(1, $panel->filter('[data-testid="cms-content-prototype-again"]')->count());
         self::assertSame(1, CmsComponentQuery::create()->count(), 'Nothing is made.');
@@ -168,17 +168,19 @@ final class ComponentPrototypeScreenTest extends AdminScreenTestCase
         self::assertStringContainsString('.cms-site--price-table .plan {padding: 1rem;}', (string) $this->client->getResponse()->getContent(), 'Its stylesheet is served: the page holds it.');
 
         $list = $this->screen('/admin/cms/components');
-        self::assertStringContainsString('Prototype', $list->filter('[data-testid="cms-component-origin-Site:PriceTable"]')->text());
+        self::assertStringContainsString('prototype', $list->filter('[data-testid="cms-component-origin-Site:PriceTable"]')->text());
         self::assertSame('0', $list->filter('[data-testid="cms-component-offered-Site:PriceTable"]')->attr('data-offered'));
         self::assertSame(0, $list->filter('[data-testid="cms-component-toggle-Site:PriceTable"]')->count(), 'A prototype is not switched on or off.');
 
-        $promote = $list->filter('[data-testid="cms-component-promote-Site:PriceTable"]')->form();
+        self::assertSame(0, $list->filter('[data-testid="cms-component-promote-Site:PriceTable"]')->count(), 'Keeping for the whole site is done from the page of the component.');
+
+        $promote = $this->screen('/admin/cms/components/Site:PriceTable')->filter('[data-testid="cms-site-component-promote"]')->form();
         self::assertSame(302, $this->send('POST', $promote->getUri(), $promote->getPhpValues()));
         self::assertSame(SiteComponentRepository::STATUS_READY, $repository->status('PriceTable'), 'Kept for the whole site.');
         $catalog->reset();
         self::assertContains('Site:PriceTable', $catalog->offeredNames());
         self::assertSame(1, $this->screen($this->url($other))->filter('[data-testid="cms-content-add-Site:PriceTable"]')->count(), 'Every page is offered it now.');
-        self::assertSame(0, $this->screen('/admin/cms/components/site/PriceTable')->filter('[data-testid="cms-site-component-promote"]')->count());
+        self::assertSame(0, $this->screen('/admin/cms/components/Site:PriceTable')->filter('[data-testid="cms-site-component-promote"]')->count());
     }
 
     public function testAChangeStartsFromTheCandidateAndTheScriptFollowsTheCallAsAStream(): void
