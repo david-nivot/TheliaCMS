@@ -17,6 +17,7 @@ namespace TheliaCMS\Page\Admin;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Thelia\Model\Lang;
 use TheliaCMS\Locale\AlternateUrls;
+use TheliaCMS\Model\CmsPage;
 use TheliaCMS\Model\CmsTag;
 use TheliaCMS\Page\PageTagColor;
 use TheliaCMS\Page\PageTagRepository;
@@ -96,6 +97,10 @@ final readonly class PageListPresenter
             'reorderable' => null === $results || null !== $siblings,
             // A changed script is fetched again, not read from the cache of the browser.
             'tree_script_version' => substr(hash('xxh3', (string) @filemtime(__DIR__.'/../../templates/backOffice/default-twig/assets/page-tree.js')), 0, 12),
+            // Where a page dragged on the tree is dropped; rows move by drag where
+            // their buttons move them.
+            'place_url' => null === $results || null !== $siblings ? $this->placeUrlTemplate($filters, $languageId) : null,
+            'drag_script_version' => substr(hash('xxh3', (string) @filemtime(__DIR__.'/../../templates/backOffice/default-twig/assets/page-drag.js')), 0, 12),
             'live_count' => $liveCount,
             'filters' => $this->filterBar->present($filters, $languageId, $trashCount, $tagNames, $typeNames, $this->pages->statusCounts($locale), $authors, $section?->title),
             'filter_query' => $filters->toQueryParams(),
@@ -276,6 +281,8 @@ final readonly class PageListPresenter
                 ),
                 'children_url' => $row->hasChildren() ? $this->filterBar->listUrl($filters->inside($id), $languageId) : null,
                 'anchor' => self::rowAnchor($id),
+                // The page a row dropped before or after this one goes under.
+                'parent_id' => $parent,
                 // The pages of the branch the tree leaves out after this one.
                 'more' => $row->moreSiblings > 0 ? [
                     'count' => $row->moreSiblings,
@@ -308,6 +315,55 @@ final readonly class PageListPresenter
         }
 
         return $presented;
+    }
+
+    /**
+     * The list a page was just moved on, loaded again where the page now is.
+     *
+     * On the tree, the branches above it are opened: dropped inside a folded
+     * page, it would otherwise vanish from the screen. A small site shows every
+     * branch until the editor folds one, and opening a few would fold the rest.
+     * On the pages of one page, a page that went inside another one is no longer
+     * on it: the list lands on the page it went into.
+     */
+    public function listShowing(CmsPage $page, PageFilters $filters, Lang $lang): string
+    {
+        $id = (int) $page->getId();
+        $languageId = (int) $lang->getId();
+
+        if ($filters->isFiltering()) {
+            $row = null === $filters->inside || $filters->inside === (int) $page->getParent() ? $id : (int) $page->getParent();
+
+            return $this->filterBar->listUrl($filters, $languageId).'#'.self::rowAnchor($row);
+        }
+
+        $folded = array_values(array_filter(
+            array_map(static fn (CmsPage $ancestor): int => (int) $ancestor->getId(), $this->pages->ancestorsOf($page, $lang->getLocale())),
+            static fn (int $ancestor): bool => !$filters->isOpen($ancestor),
+        ));
+        $everythingShown = !$filters->foldChosen && $this->pages->countLive() <= PageFilters::OPEN_EVERYTHING_UNDER;
+
+        if ([] !== $folded && !$everythingShown) {
+            $filters = $filters->opening(...$folded);
+        }
+
+        return $this->filterBar->listUrl($filters, $languageId).'#'.self::rowAnchor($id);
+    }
+
+    /**
+     * The address the drop of a drag on the tree is sent to, `{id}` standing
+     * for the page dragged: the state of the list travels with it, so the list
+     * comes back as the editor had it.
+     */
+    private function placeUrlTemplate(PageFilters $filters, int $languageId): string
+    {
+        $generated = $this->urls->generate('admin.cms.pages.place', [
+            'id' => 0,
+            EditLanguage::PARAMETER => $languageId,
+            ...$filters->toQueryParams(),
+        ]);
+
+        return str_replace('/0/place', '/{id}/place', $generated);
     }
 
     /**

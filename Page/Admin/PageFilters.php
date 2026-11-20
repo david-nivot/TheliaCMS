@@ -462,6 +462,15 @@ final readonly class PageFilters
         return $this->with(open: $open, foldChosen: true);
     }
 
+    /**
+     * These branches unfolded on top of the ones already open, the editor's
+     * choice from then on: the way down to a page the editor just moved.
+     */
+    public function opening(int ...$pageIds): self
+    {
+        return $this->with(open: array_values(array_unique([...$this->open, ...$pageIds])), foldChosen: true);
+    }
+
     public function withoutAnyBranchOpen(): self
     {
         return $this->with(open: [], foldChosen: true);

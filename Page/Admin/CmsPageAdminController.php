@@ -310,6 +310,37 @@ final readonly class CmsPageAdminController
         return $this->backToList($request, $id);
     }
 
+    /**
+     * The drop of a drag on the tree: the page goes before, after or inside the
+     * page it was dropped on. Answers the list to load again, the branch the
+     * page landed in opened, since the script cannot guess what the server made
+     * of the move.
+     */
+    #[Route('/{id}/place', name: 'place', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function place(Request $request, int $id): JsonResponse
+    {
+        $this->denyUnless(AccessManager::UPDATE);
+
+        $page = $this->ordinaryPageOrFail($id);
+        $target = $this->pages->findOrdinary($request->request->getInt('target'));
+        $where = PagePlacement::tryFrom((string) $request->request->get('where'));
+        $lang = $this->editLang($request);
+
+        if (null === $target || null === $where) {
+            return new JsonResponse(['error' => $this->support->translate('This page is not on the list any more. Load the list again.')], Response::HTTP_CONFLICT);
+        }
+
+        $refusal = $this->parents->refusal($id, $where->parentUnder($target), $lang->getLocale());
+
+        if (null !== $refusal) {
+            return new JsonResponse(['error' => $this->support->translate($refusal)], Response::HTTP_CONFLICT);
+        }
+
+        $this->writer->place($page, $target, $where);
+
+        return new JsonResponse(['url' => $this->listing->listShowing($page, PageFilters::fromRequest($request), $lang)]);
+    }
+
     #[Route('/{id}/duplicate', name: 'duplicate', requirements: ['id' => '\\d+'], methods: ['POST'])]
     public function duplicate(Request $request, int $id): Response
     {
