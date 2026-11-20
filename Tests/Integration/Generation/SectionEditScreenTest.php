@@ -503,6 +503,19 @@ final class SectionEditScreenTest extends AdminScreenTestCase
         self::assertSame('cms:image', $this->screen($this->url($page))->filter('[data-cms-section-item]')->attr('data-component'), 'The list says which component a section is, for the script to edit free text in place.');
     }
 
+    public function testTheScreenLoadsTheScriptOfTheFormOfASectionBeforeTheOneThatCallsIt(): void
+    {
+        $page = $this->pageWith([new Section('picture', 'cms:image', ['image' => null, 'alt' => '', 'caption' => '', 'width' => 'narrow'])]);
+
+        $sources = $this->screen($this->url($page))->filter('script[src]')->each(static fn (Crawler $script): string => (string) $script->attr('src'));
+        $files = array_map(static fn (string $source): string => basename(explode('?', $source)[0]), $sources);
+
+        self::assertContains('section-form.js', $files, 'The behaviours of the form of a section are loaded.');
+        self::assertContains('content-editor.js', $files);
+        self::assertLessThan(array_search('content-editor.js', $files, true), array_search('section-form.js', $files, true), 'Deferred scripts run in the order of the document: the form script must be there when the screen script binds the forms.');
+        self::assertLessThan(array_search('content-editor.js', $files, true), array_search('toasts.js', $files, true), 'The notices are shown by toasts.js, which the screen script calls when it draws itself again.');
+    }
+
     public function testABriefOnADraftThatHoldsSectionsSaysItReplacesThemAndAsksFirst(): void
     {
         $page = $this->pageWith([
