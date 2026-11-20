@@ -29,6 +29,26 @@
         .cms-page-row { scroll-margin-top: 6rem; }
         .cms-tree__more > td { background: var(--bs-tertiary-bg); }
         [data-cms-page-tree][aria-busy="true"] { opacity: .6; transition: opacity .15s; }
+        /* The handle a row is dragged by, and where it will land: a line above or
+           below the page it would go before or after, a frame round the page it
+           would go inside. */
+        .cms-page-drag {
+            cursor: grab;
+            color: var(--bs-secondary-color);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.5rem;
+            height: 1.5rem;
+            flex-shrink: 0;
+            align-self: center;
+        }
+        .cms-page-drag:hover { color: var(--bs-body-color); }
+        .cms-page-row.is-dragging { opacity: .4; }
+        .cms-page-row.is-drop-before > td { box-shadow: inset 0 2px 0 0 var(--bs-primary); }
+        .cms-page-row.is-drop-after > td { box-shadow: inset 0 -2px 0 0 var(--bs-primary); }
+        .cms-page-row.is-drop-inside > td { background: var(--bs-primary-bg-subtle); }
+        .cms-page-row.is-drop-inside > td:first-child { box-shadow: inset 3px 0 0 0 var(--bs-primary); }
         /* A page that is not shown on the site is marked, not faded: fading a row
            takes its text from 4.5 to 1 down to 2 to 1, so the rows hardest to read
            end up being the ones that need attention. */
@@ -259,9 +279,9 @@
                                 <th scope="col" class="text-end datatable-sticky-actions">{{ 'Actions'|trans({}, 'theliacms') }}</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody{% if reorderable and place_url %} data-cms-page-place="{{ place_url }}"{% endif %}>
                             {% for row in rows %}
-                                <tr data-testid="cms-page-row-{{ row.id }}" data-row-id="{{ row.id }}" id="{{ row.anchor }}"
+                                <tr data-testid="cms-page-row-{{ row.id }}" data-row-id="{{ row.id }}" data-parent="{{ row.parent_id }}" id="{{ row.anchor }}"
                                     class="cms-page-row{{ row.visible ? '' : ' cms-page-row--hidden' }}">
                                     {% if bulk %}
                                         <td class="cms-pages-select">
@@ -277,6 +297,16 @@
                                         {# The title and what follows it are one block after the indentation:
                                            a long title wraps under itself, not under the pages above. #}
                                         <div class="d-flex align-items-baseline">
+                                        {% if reorderable %}
+                                            {# Dragging is for a mouse: the arrows of the row and the parent
+                                               page of its settings do the same with a keyboard, so the handle
+                                               is left out of the order of the focus. #}
+                                            <span class="cms-page-drag me-1" draggable="true" data-cms-page-drag
+                                                  title="{{ 'Drag to move. Drop on the right of a page to put it inside. The arrows and the parent page of its settings do the same without a mouse.'|trans({}, 'theliacms') }}"
+                                                  data-testid="cms-page-drag-{{ row.id }}">
+                                                <i class="bi bi-grip-vertical" aria-hidden="true"></i>
+                                            </span>
+                                        {% endif %}
                                         {% if not is_filtering %}
                                             {# Depth is drawn and also written out: indentation alone is
                                                invisible to anybody who is not looking at the screen. #}
@@ -454,5 +484,8 @@
     {% endif %}
     {% if rows is defined and not is_filtering %}
         <script src="{{ cms_asset('assets/page-tree.js') }}?v={{ tree_script_version }}" defer></script>
+    {% endif %}
+    {% if rows is defined and reorderable and place_url %}
+        <script src="{{ cms_asset('assets/page-drag.js') }}?v={{ drag_script_version }}" defer></script>
     {% endif %}
 {% endblock %}

@@ -188,6 +188,8 @@ return [
     'Draft' => 'Draft',
     'Drag a block from the left onto the page to start. Click anything you have placed to change it.' => 'Drag a block from the left onto the page to start. Click anything you have placed to change it.',
     'Drag a block from the left to start. What you build here appears on every page using this block.' => 'Drag a block from the left to start. What you build here appears on every page using this block.',
+    'Drag to move. Drop on the right of a page to put it inside. The arrows and the parent page of its settings do the same without a mouse.' => 'Drag to move. Drop on the right of a page to put it inside. The arrows and the parent page of its settings do the same without a mouse.',
+    'This page is not on the list any more. Load the list again.' => 'This page is not on the list any more. Load the list again.',
     'Drag to move. The buttons do the same thing without a mouse.' => 'Drag to move. The buttons do the same thing without a mouse.',
     'Drop-down list' => 'Drop-down list',
     'Duplicate' => 'Duplicate',

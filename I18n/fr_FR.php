@@ -188,6 +188,8 @@ return [
     'Draft' => 'Brouillon',
     'Drag a block from the left onto the page to start. Click anything you have placed to change it.' => 'Faites glisser un bloc depuis la gauche sur la page pour commencer. Cliquez sur ce que vous avez placé pour le modifier.',
     'Drag a block from the left to start. What you build here appears on every page using this block.' => 'Faites glisser un bloc depuis la gauche pour commencer. Ce que vous composez ici apparaît sur toutes les pages qui utilisent ce bloc.',
+    'Drag to move. Drop on the right of a page to put it inside. The arrows and the parent page of its settings do the same without a mouse.' => 'Glissez pour déplacer. Déposez sur la droite d\'une page pour la ranger dedans. Les flèches et la page parente de ses réglages font la même chose sans souris.',
+    'This page is not on the list any more. Load the list again.' => 'Cette page n\'est plus dans la liste. Rechargez la liste.',
     'Drag to move. The buttons do the same thing without a mouse.' => 'Glissez pour déplacer. Les boutons font la même chose sans souris.',
     'Drop-down list' => 'Liste déroulante',
     'Duplicate' => 'Dupliquer',
