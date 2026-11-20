@@ -288,7 +288,10 @@
 {# The last theme of the list wins: the rows of this form come from the
    module's theme, the widgets from the back-office theme. #}
 {% form_theme form with bo_form_themes|merge(['@TheliaCMSModule/backOffice/default-twig/content/_section_form_theme.html.twig']) only %}
-{{ form_start(form, { attr: { 'data-cms-section-form': '', novalidate: 'novalidate' } }) }}
+{# `component` names the component of the section: the scripts bind what is
+   specific to one (the framing of the highlights) by it, not by the name of
+   the form, which carries the id of the section. #}
+{{ form_start(form, { attr: { 'data-cms-section-form': '', 'data-cms-component': component, novalidate: 'novalidate' } }) }}
     {{ include('@TheliaCMSModule/backOffice/default-twig/content/_draft_version.html.twig') }}
     <input type="hidden" name="_token" value="{{ assignToken() }}">
     {{ _self.fields(form) }}

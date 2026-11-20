@@ -7,6 +7,13 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Fixed
+
+- **A second "Highlights" section was not framed**: the picture framing of
+  Highlights was bound to the form of the first section only
+  (`cms_section_highlights`), so a second one (`highlights-2`) did not get it.
+  The form now names its component, and the framing binds to that.
+
 ## [2.39.1] - 2026-11-20
 
 ### Fixed

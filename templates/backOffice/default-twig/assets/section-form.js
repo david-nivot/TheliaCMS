@@ -351,7 +351,7 @@
             return { boxWidth: 640, boxHeight: count === 2 ? 648 : 324, shown: Math.round(SHOWN / 3), ratio: null };
         }
 
-        root.querySelectorAll('form[name="cms_section_highlights"]').forEach(function (form) {
+        root.querySelectorAll('form[data-cms-component="cms:highlights"]').forEach(function (form) {
             var items = form.querySelector("[data-cms-items]");
             var rows = items ? items.querySelector("[data-cms-items-list]") : null;
 

@@ -1012,6 +1012,26 @@ final class SectionEditScreenTest extends AdminScreenTestCase
         self::assertSame(403, $this->send('POST', \sprintf('/admin/cms/pages/%d/content/update', $page->getId()), ['_token' => $this->tokenOfTheScripts($screen), 'cms_section_intro' => ['section' => 'intro', 'html' => 'Refused']]));
     }
 
+    /**
+     * Sabotage: drop `data-cms-component` from the form_start of
+     * _section_form.html.twig: the framing of the highlights has nothing to bind to.
+     */
+    public function testTheFormOfASecondHighlightsSectionNamesItsComponentForTheFraming(): void
+    {
+        $block = static fn (string $title): array => ['title' => $title, 'text' => '', 'button_label' => '', 'button_url' => '', 'image' => null, 'image_alt' => '', 'image_mobile' => null, 'focus_x' => 50, 'focus_y' => 50];
+        $page = $this->pageWith([
+            new Section('highlights', 'cms:highlights', ['blocks' => [$block('Premier')]]),
+            new Section('highlights-2', 'cms:highlights', ['blocks' => [$block('Second')]]),
+        ]);
+
+        $screen = $this->screen($this->url($page));
+        $second = $screen->filter('[data-testid="cms-section-edit-highlights-2"] form[data-cms-section-form]');
+
+        self::assertSame('cms_section_highlights_2', $second->attr('name'), 'The name of the form carries the id of the section.');
+        self::assertSame('cms:highlights', $second->attr('data-cms-component'));
+        self::assertSame(2, $screen->filter('form[data-cms-component="cms:highlights"]')->count());
+    }
+
     private function pageWithHighlights(): CmsPage
     {
         $block = static fn (string $title): array => ['title' => $title, 'text' => '', 'button_label' => '', 'button_url' => '', 'image' => null, 'image_alt' => '', 'image_mobile' => null, 'focus_x' => 50, 'focus_y' => 50];

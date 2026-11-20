@@ -468,7 +468,7 @@
                                                     <button type="submit" class="btn-close" aria-label="{{ 'Close'|trans({}, 'theliacms') }}"></button>
                                                 </form>
                                             </div>
-                                            {{ include('@TheliaCMSModule/backOffice/default-twig/content/_section_form.html.twig', { form: section.edit }) }}
+                                            {{ include('@TheliaCMSModule/backOffice/default-twig/content/_section_form.html.twig', { form: section.edit, component: section.component }) }}
                                         </dialog>
                                     {% endif %}
                                     {% if may_generate and ai_page %}
