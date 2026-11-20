@@ -7,6 +7,8 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+## [2.39.1] - 2026-11-20
+
 ### Fixed
 
 - **A dry run of the maintenance (`php Thelia maintenance:purge --dry-run`) no
@@ -3907,7 +3909,8 @@ the published pages.
 - The breadcrumb of a page filed under a draft one offered a link to that page,
   which answers 404, both to the reader and in the `BreadcrumbList`.
 
-[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.39.0...HEAD
+[Unreleased]: https://github.com/thelia-modules/TheliaCMS/compare/2.39.1...HEAD
+[2.39.1]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.39.1
 [2.39.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.39.0
 [2.38.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.38.0
 [2.37.0]: https://github.com/thelia-modules/TheliaCMS/releases/tag/2.37.0
