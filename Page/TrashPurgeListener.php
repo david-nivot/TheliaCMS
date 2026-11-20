@@ -35,9 +35,14 @@ final readonly class TrashPurgeListener
     #[AsEventListener(event: TheliaEvents::MAINTENANCE_PURGE)]
     public function onMaintenancePurge(MaintenancePurgeEvent $event): void
     {
+        // A dry run reports and deletes nothing, as the other purges of the
+        // maintenance do.
+        $dryRun = $event->isDryRun();
+
         $event->addResult(\sprintf(
-            '<comment>CMS pages past their time in the bin:</comment> <info>%d deleted</info>',
-            $this->purger->purge(),
+            '<comment>CMS pages past their time in the bin:</comment> <info>%d %s</info>',
+            $dryRun ? \count($this->purger->due()) : $this->purger->purge(),
+            $dryRun ? 'to delete' : 'deleted',
         ));
     }
 }

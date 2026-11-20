@@ -7,6 +7,12 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Fixed
+
+- **A dry run of the maintenance (`php Thelia maintenance:purge --dry-run`) no
+  longer deletes the pages past their time in the bin**: it counts them, as it
+  already did for the answers of the forms and the generator prompts.
+
 ## [2.39.0] - 2026-11-19
 
 ### Added
