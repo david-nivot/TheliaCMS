@@ -1,4 +1,4 @@
--- 2.40.0: a component of the site says which call its version came from,
+-- 2.41.0: a component of the site says which call its version came from,
 -- written when a version is kept, so the history marks the one in place. A
 -- comfort only: a call deleted leaves the column empty, and the components
 -- kept before this update have none until their next version is kept.

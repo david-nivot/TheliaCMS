@@ -18,7 +18,7 @@ use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
 use TheliaCMS\TheliaCMS;
 
 /**
- * The update to 2.40.0 gives a component of the site the call its version
+ * The update to 2.41.0 gives a component of the site the call its version
  * came from: a column, its index and a key that empties it when the call goes.
  */
 final class ComponentGenerationMigrationTest extends CmsIntegrationTestCase
@@ -27,25 +27,25 @@ final class ComponentGenerationMigrationTest extends CmsIntegrationTestCase
 
     protected function tearDown(): void
     {
-        // A test that stopped halfway leaves the table as 2.39.0 had it.
-        (new TheliaCMS())->update('2.39.0', '2.40.0', $this->getPropelConnection());
+        // A test that stopped halfway leaves the table as 2.40.0 had it.
+        (new TheliaCMS())->update('2.40.0', '2.41.0', $this->getPropelConnection());
 
         parent::tearDown();
     }
 
     /**
      * Sabotage: delete the `information_schema` checks of
-     * `Config/update/2.40.0.sql`: the second play fails on the column. Write
+     * `Config/update/2.41.0.sql`: the second play fails on the column. Write
      * `ON DELETE CASCADE`: the rule read is not SET NULL.
      */
     public function testTheUpdateAddsTheCallOfTheVersionAndCanBePlayedTwice(): void
     {
-        $this->backTo239();
-        self::assertSame([], $this->rows("SHOW COLUMNS FROM cms_component LIKE 'generation_id'"), 'The site is as 2.39.0 left it.');
+        $this->backTo240();
+        self::assertSame([], $this->rows("SHOW COLUMNS FROM cms_component LIKE 'generation_id'"), 'The site is as 2.40.0 left it.');
 
         $module = new TheliaCMS();
-        $module->update('2.39.0', '2.40.0', $this->getPropelConnection());
-        $module->update('2.39.0', '2.40.0', $this->getPropelConnection());
+        $module->update('2.40.0', '2.41.0', $this->getPropelConnection());
+        $module->update('2.40.0', '2.41.0', $this->getPropelConnection());
 
         $column = $this->rows("SHOW COLUMNS FROM cms_component LIKE 'generation_id'");
         self::assertCount(1, $column);
@@ -59,7 +59,7 @@ final class ComponentGenerationMigrationTest extends CmsIntegrationTestCase
         self::assertSame('SET NULL', $key[0]['DELETE_RULE'], 'A call deleted empties the mark, never the component.');
     }
 
-    private function backTo239(): void
+    private function backTo240(): void
     {
         $connection = $this->getPropelConnection();
         $connection->exec('ALTER TABLE cms_component DROP FOREIGN KEY fk_cms_component_generation');

@@ -27,7 +27,7 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
   previous requests of its settings, and on the page of a version proposed,
   which also says when it was proposed and no longer offers to keep the version
   already in place. "Keep" writes the call down in the new column
-  `cms_component.generation_id` (update 2.40.0); a call deleted, or an import
+  `cms_component.generation_id` (update 2.41.0); a call deleted, or an import
   that replaces the component, empties it. The components kept before the
   update are marked from their next version kept.
 - **Save the values typed as the example of a component made on this site**:
