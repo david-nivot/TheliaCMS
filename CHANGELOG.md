@@ -7,6 +7,13 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Changed
+
+- **The fields of a row of a list take the whole width of the row**: the
+  buttons up, down and remove stay at the end of its first words instead of
+  keeping a column of their own down the row. The title and the close button
+  of a drawer are centred in its head.
+
 ### Fixed
 
 - **A second "Highlights" section was not framed**: the picture framing of
