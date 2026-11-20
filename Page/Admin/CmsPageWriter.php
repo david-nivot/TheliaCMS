@@ -1000,6 +1000,83 @@ final readonly class CmsPageWriter
         $this->invalidator->listsChanged();
     }
 
+    /**
+     * Puts a page just before or after another one, or inside it as its first
+     * page: the drop of a drag on the tree.
+     *
+     * A page that changes parent changes address, and so does every page under
+     * it, in every language they answer in; the former addresses redirect to
+     * the new ones. Written in one transaction: a branch half moved would answer
+     * on addresses its parent no longer has. Whether the page may go there at all
+     * (under itself, under a page of its own branch, under a page in the bin) is
+     * for the caller to check, as the settings screen does with the same check.
+     */
+    public function place(CmsPage $page, CmsPage $target, PagePlacement $where): void
+    {
+        if ($target->getId() === $page->getId()) {
+            return;
+        }
+
+        $parentId = $where->parentUnder($target);
+        $formerParentId = (int) $page->getParent();
+        $connection = Propel::getConnection('TheliaMain');
+        $connection->beginTransaction();
+
+        try {
+            $siblings = iterator_to_array(
+                CmsPageQuery::create()
+                    ->filterByParent($parentId)
+                    ->filterByDeletedAt(null, Criteria::ISNULL)
+                    ->filterByModel(0)
+                    ->filterById($page->getId(), Criteria::NOT_EQUAL)
+                    // The order the tree shows them in.
+                    ->orderByPosition()
+                    ->orderById()
+                    ->find($connection),
+                false,
+            );
+
+            $targetIndex = array_search((int) $target->getId(), array_map(static fn (CmsPage $sibling): int => (int) $sibling->getId(), $siblings), true);
+            $index = match ($where) {
+                PagePlacement::Inside => 0,
+                PagePlacement::Before => false === $targetIndex ? 0 : $targetIndex,
+                PagePlacement::After => false === $targetIndex ? \count($siblings) : $targetIndex + 1,
+            };
+
+            array_splice($siblings, $index, 0, [$page->setParent($parentId)]);
+
+            // Only the pages whose place changed are written, and they are the
+            // ones changed by whoever moved this one.
+            foreach ($siblings as $offset => $sibling) {
+                $sibling->setPosition($offset + 1);
+
+                if ($sibling->isModified()) {
+                    $this->authorship->stamp($sibling)->save($connection);
+                }
+            }
+
+            $rewritten = $formerParentId === $parentId ? 0 : $this->urls->rebuildSubtree($page);
+
+            $connection->commit();
+        } catch (\Throwable $throwable) {
+            $connection->rollBack();
+
+            throw $throwable;
+        }
+
+        if ($formerParentId === $parentId) {
+            // A list of pages may run in the order of the tree.
+            $this->invalidator->listsChanged();
+
+            return;
+        }
+
+        // The page and the pages under it answer elsewhere, and the breadcrumbs
+        // and menus that name them go through a new parent.
+        $this->invalidator->presenceChanged((int) $page->getId());
+        $this->activityLog->record('UPDATE', (int) $page->getId(), \sprintf('CMS page moved from under page %d to under page %d, %d address(es) rewritten', $formerParentId, $parentId, $rewritten));
+    }
+
     private function contentFor(CmsPage $page, string $locale): CmsPageContent
     {
         $content = CmsPageContentQuery::create()
