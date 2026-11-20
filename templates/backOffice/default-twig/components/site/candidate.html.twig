@@ -67,6 +67,11 @@
 
                 <h1 class="cms-content__title">{{ title }}</h1>
                 <code class="small">Site:{{ component.code }}</code>
+                {# A version proposed, when, and whether it is the one in place. #}
+                <span class="badge text-bg-light border" data-testid="cms-site-component-proposed">{{ 'Version proposed on %date%'|trans({ '%date%': candidate.createdAt ? candidate.createdAt|date('Y-m-d H:i') : '' }, 'theliacms') }}</span>
+                {% if in_place %}
+                    <span class="badge text-bg-success" data-testid="cms-site-component-in-place">{{ 'In place'|trans({}, 'theliacms') }}</span>
+                {% endif %}
 
                 <div class="cms-content__actions">
                     {{ include('@TheliaCMSModule/backOffice/default-twig/content/_preview_choices.html.twig', {
@@ -77,7 +82,7 @@
                         testid: 'cms-site-component',
                     }, with_context = false) }}
                     {# The decision, in view whatever the panel shows. #}
-                    {% if may_make %}
+                    {% if may_make and not in_place %}
                         <form method="post" action="{{ path('admin.cms.components.site.keep', { id: candidate.logId }) }}" data-testid="cms-site-component-keep">
                             <input type="hidden" name="_token" value="{{ assignToken() }}">
                             <button class="btn btn-sm btn-success text-nowrap" type="submit">

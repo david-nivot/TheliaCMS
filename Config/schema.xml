@@ -679,12 +679,22 @@
         <column name="css" type="CLOB"/>
         <column name="provenance" type="CLOB"/>
         <column defaultValue="draft" name="status" required="true" size="20" type="VARCHAR"/>
+        <!-- The call whose version is in place, written by "Keep"; shown in the history, nothing else reads it. -->
+        <column name="generation_id" type="INTEGER"/>
         <column name="created_by" type="INTEGER"/>
         <column name="updated_by" type="INTEGER"/>
 
         <unique name="unq_cms_component_code">
             <unique-column name="code"/>
         </unique>
+
+        <index name="idx_cms_component_generation">
+            <index-column name="generation_id"/>
+        </index>
+
+        <foreign-key foreignTable="cms_page_generation" name="fk_cms_component_generation" onDelete="SET NULL" onUpdate="RESTRICT">
+            <reference foreign="id" local="generation_id"/>
+        </foreign-key>
 
         <behavior name="timestampable"/>
     </table>

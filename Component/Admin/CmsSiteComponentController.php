@@ -208,6 +208,8 @@ final readonly class CmsSiteComponentController
             'preview_url' => null === $candidate->component ? null : $this->previews->candidate($candidate->logId, $request->getLocale()),
             'preview_widths' => $this->previewWidths->widths(),
             'kept_code' => $kept,
+            // Whether this version is the one the component holds now.
+            'in_place' => null !== $kept && $this->components->generationOf($kept) === $candidate->logId,
             'pages' => null === $kept ? 0 : ($this->usage->pageCounts()['Site:'.$kept] ?? 0),
             'may_make' => $this->mayMake(),
             'may_ask' => $this->permission->mayAsk(),
@@ -242,7 +244,7 @@ final readonly class CmsSiteComponentController
                 }
             }
 
-            $this->components->save($component, SiteComponentRepository::STATUS_READY, $replacing);
+            $this->components->save($component, SiteComponentRepository::STATUS_READY, $replacing, $candidate->logId);
             // The check of its calls may have built the catalogue of this
             // request: the drafts are drawn again with the version kept.
             $this->catalog->reset();
@@ -324,7 +326,8 @@ final readonly class CmsSiteComponentController
         try {
             $sample = $this->typedProps->read($request, $definition);
             $changed = $this->validator->validate(new SiteComponent($kept->code, $kept->label, $kept->description, $kept->props, $sample, $kept->template, $kept->css, $kept->provenance));
-            $this->components->save($changed, $status, $kept->code);
+            // The same version with another example: the call it came from stays marked.
+            $this->components->save($changed, $status, $kept->code, $this->components->generationOf($kept->code));
         } catch (InvalidDocumentException|InvalidSiteComponentException $exception) {
             $problems = $exception instanceof InvalidDocumentException ? $exception->translated($this->translator) : $exception->problems;
             $this->support->flash($request, 'danger', implode(' ', $problems));

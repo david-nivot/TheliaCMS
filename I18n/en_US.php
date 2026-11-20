@@ -2155,6 +2155,8 @@ return [
     'Make it change' => 'Make it change',
     'Consult' => 'Consult',
     'The version proposed' => 'The version proposed',
+    'In place' => 'In place',
+    'Version proposed on %date%' => 'Version proposed on %date%',
     'Edit the values' => 'Edit',
     'The page changed while the section was being added, so nothing was added: add it again.' => 'The page changed while the section was being added, so nothing was added: add it again.',
 ];

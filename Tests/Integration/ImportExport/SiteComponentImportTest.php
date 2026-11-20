@@ -24,6 +24,7 @@ use TheliaCMS\ImportExport\SiteDocument;
 use TheliaCMS\ImportExport\SiteExporter;
 use TheliaCMS\ImportExport\SiteImporter;
 use TheliaCMS\Model\CmsComponentQuery;
+use TheliaCMS\Model\CmsPageGeneration;
 use TheliaCMS\Tests\Integration\CmsIntegrationTestCase;
 use TheliaCMS\Tests\Support\FakeAiGateway;
 use TheliaCMS\Tests\Unit\Content\Site\PriceTable;
@@ -83,10 +84,21 @@ final class SiteComponentImportTest extends CmsIntegrationTestCase
         self::assertSame($mark, $repository->find('PriceTable')?->provenance);
     }
 
+    /**
+     * Sabotage: in SiteComponentRepository::save(), keep the call the row has
+     * when none is given: the version of the file keeps the mark of the call
+     * it replaced.
+     */
     public function testAComponentTheSiteHasDifferentlyIsKeptUnlessTheImportReplaces(): void
     {
         $repository = $this->getService(SiteComponentRepository::class);
         $repository->save((new SiteComponentValidator())->validate(PriceTable::component()), SiteComponentRepository::STATUS_READY);
+        // The version in place came from a call of the generator.
+        $call = (new CmsPageGeneration())->setTargetType('component')->setTargetId($repository->idOf('PriceTable'))->setLocale('fr_FR')->setKind('component_change');
+        $call->save();
+        $component = $repository->find('PriceTable');
+        \assert(null !== $component);
+        $repository->save($component, SiteComponentRepository::STATUS_READY, 'PriceTable', (int) $call->getId());
         $file = self::file([self::row(PriceTable::component(css: '.plan { color: var(--cms-color-text); }'))]);
 
         $kept = $this->getService(SiteImporter::class)->import($file, new ImportOptions());
@@ -96,6 +108,7 @@ final class SiteComponentImportTest extends CmsIntegrationTestCase
         $replaced = $this->getService(SiteImporter::class)->import($file, new ImportOptions(replace: true));
         self::assertSame(1, $replaced->replacedCounts()['components'] ?? 0);
         self::assertSame('.plan { color: var(--cms-color-text); }', $repository->find('PriceTable')?->css);
+        self::assertNull($repository->generationOf('PriceTable'), 'The version of the file came from no call of this site: no version of the history is in place.');
     }
 
     public function testAComponentTheSiteRefusesIsLeftOutAndAPageMadeOfAMissingOneIsSaidSo(): void

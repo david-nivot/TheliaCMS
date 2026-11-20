@@ -130,6 +130,7 @@ final class SiteComponentScreenTest extends AdminScreenTestCase
         self::assertSame(SiteComponentRepository::STATUS_READY, $this->getService(SiteComponentRepository::class)->status('PriceTable'));
         $id = (int) CmsComponentQuery::create()->findOneByCode('PriceTable')?->getId();
         self::assertSame($id, (int) CmsPageGenerationQuery::create()->findPk(self::idOf($second))?->getTargetId(), 'The call it came from starts its history.');
+        self::assertSame(self::idOf($second), $this->getService(SiteComponentRepository::class)->generationOf('PriceTable'), 'A new component kept is marked with the call it came from.');
 
         $screen = $this->screen('/admin/cms/components/Site:PriceTable');
         self::assertSame(1, $screen->filter('[data-testid="cms-site-component-history"] li a')->count());
@@ -159,6 +160,55 @@ final class SiteComponentScreenTest extends AdminScreenTestCase
         self::assertSame(302, $this->send('POST', $keep->getUri(), $keep->getPhpValues()));
         self::assertSame('.plan { color: var(--cms-color-text); }', $repository->find('PriceTable')?->css);
         self::assertSame(1, CmsComponentQuery::create()->count(), 'The component is replaced, not doubled.');
+    }
+
+    /**
+     * Sabotage: drop the call passed to save() by keep(): no mark anywhere.
+     * Drop the one passed by sample(): saving the example takes the mark away.
+     */
+    public function testTheVersionInPlaceIsMarkedInTheHistoryAndOnItsPage(): void
+    {
+        $repository = $this->getService(SiteComponentRepository::class);
+        $repository->save(PriceTable::component(), SiteComponentRepository::STATUS_READY);
+        $this->api
+            ->answer(self::answer(PriceTable::component(css: '.plan { padding: 1rem; }')))
+            ->answer(self::answer(PriceTable::component(css: '.plan { padding: 2rem; }')));
+
+        $first = $this->ask('Plus d’espace.', ['component' => 'PriceTable'], '/admin/cms/components/Site:PriceTable');
+        $second = $this->ask('Encore plus d’espace.', ['component' => 'PriceTable'], '/admin/cms/components/Site:PriceTable');
+
+        self::assertNull($repository->generationOf('PriceTable'), 'A component made before the mark has none.');
+        self::assertSame(0, $this->screen('/admin/cms/components/Site:PriceTable')->filter('[data-testid="cms-site-component-in-place"]')->count());
+
+        $keep = $this->screen($first)->filter('[data-testid="cms-site-component-keep"]')->form();
+        self::assertSame(302, $this->send('POST', $keep->getUri(), $keep->getPhpValues()));
+        self::assertSame(self::idOf($first), $repository->generationOf('PriceTable'));
+
+        $history = $this->screen('/admin/cms/components/Site:PriceTable')->filter('[data-testid="cms-site-component-in-place"]');
+        self::assertSame(1, $history->count(), 'One call is in place.');
+        self::assertStringEndsWith($first, (string) $history->filter('a')->attr('href'));
+
+        $kept = $this->screen($first);
+        self::assertSame(1, $kept->filter('.cms-content__bar [data-testid="cms-site-component-in-place"]')->count());
+        self::assertSame(0, $kept->filter('[data-testid="cms-site-component-keep"]')->count(), 'The version in place is not kept again.');
+        $other = $this->screen($second);
+        self::assertSame(1, $other->filter('[data-testid="cms-site-component-proposed"]')->count(), 'The page says it shows a version proposed.');
+        self::assertSame(0, $other->filter('[data-testid="cms-site-component-in-place"]')->count());
+
+        $keep = $other->filter('[data-testid="cms-site-component-keep"]')->form();
+        self::assertSame(302, $this->send('POST', $keep->getUri(), $keep->getPhpValues()));
+        self::assertSame(self::idOf($second), $repository->generationOf('PriceTable'), 'The mark follows the version kept.');
+
+        // An example saved leaves the version, and its call, in place.
+        $page = $this->screen('/admin/cms/components/Site:PriceTable');
+        $sample = (string) $page->filter('[data-testid="cms-component-save-sample"]')->attr('formaction');
+        self::assertSame(302, $this->send('POST', $sample, $page->filter('form#cms-component-controls')->form()->getPhpValues()));
+        self::assertSame(self::idOf($second), $repository->generationOf('PriceTable'));
+
+        // A call deleted empties the mark, and nothing else.
+        CmsPageGenerationQuery::create()->findPk(self::idOf($second))?->delete();
+        self::assertNull($repository->generationOf('PriceTable'));
+        self::assertSame('.plan { padding: 2rem; }', $repository->find('PriceTable')?->css);
     }
 
     public function testAVersionThatBreaksAPageIsNotKeptAndOneThatFitsDrawsTheDraftsAgain(): void

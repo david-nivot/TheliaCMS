@@ -267,9 +267,10 @@
                     <summary class="small fw-semibold">{{ 'Previous requests'|trans({}, 'theliacms') }} ({{ history|length }})</summary>
                     <ul class="list-unstyled small mt-2 mb-0" data-testid="cms-site-component-history">
                         {% for call in history %}
-                            <li class="mb-2">
+                            <li class="mb-2"{% if call.logId == in_place %} data-testid="cms-site-component-in-place"{% endif %}>
                                 <a href="{{ path('admin.cms.components.site.candidate', { id: call.logId }) }}">{{ call.createdAt ? call.createdAt|date('Y-m-d H:i') : '' }}</a>
                                 <span class="badge text-bg-{{ call.status == 'done' ? 'light' : 'warning' }}">{{ call.status }}</span>
+                                {% if call.logId == in_place %}<span class="badge text-bg-success">{{ 'In place'|trans({}, 'theliacms') }}</span>{% endif %}
                                 <div class="text-muted text-wrap">{{ call.request }}</div>
                             </li>
                         {% else %}

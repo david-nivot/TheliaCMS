@@ -133,11 +133,12 @@ final readonly class SiteComponentRepository implements KeptSiteComponents
     /**
      * Creates the component, or replaces what its code holds.
      *
-     * @param string|null $replacing the code of the component this one replaces; null for a new one, whose code must be free
+     * @param string|null $replacing    the code of the component this one replaces; null for a new one, whose code must be free
+     * @param int|null    $generationId the call the version comes from, when one of its versions is kept; null for a version no call gave (made by hand, imported, copied), and the mark goes
      *
      * @throws InvalidSiteComponentException when a new component takes a code already used
      */
-    public function save(SiteComponent $component, string $status, ?string $replacing = null): void
+    public function save(SiteComponent $component, string $status, ?string $replacing = null, ?int $generationId = null): void
     {
         if (!\in_array($status, [self::STATUS_DRAFT, self::STATUS_READY], true)) {
             throw new \InvalidArgumentException(\sprintf('A component is "draft" or "ready", not "%s".', $status));
@@ -169,8 +170,20 @@ final readonly class SiteComponentRepository implements KeptSiteComponents
             // A component without a mark leaves the mark it has: nothing a
             // person does to it here takes the mark of a generated one away.
             ->setProvenance($component->provenance ?? $model->getProvenance())
+            // What saves the same version again (its example) passes the call
+            // the row has; anything else is a version of its own.
+            ->setGenerationId($generationId)
             ->setUpdatedBy($adminId)
             ->save();
+    }
+
+    /**
+     * The call whose version the component holds, when it was kept from one
+     * since the module wrote it down: the mark of the history.
+     */
+    public function generationOf(string $code): ?int
+    {
+        return CmsComponentQuery::create()->findOneByCode($code)?->getGenerationId();
     }
 
     public function delete(string $code): void

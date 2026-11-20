@@ -103,6 +103,7 @@ final readonly class CmsComponentScreenController
             'preview_widths' => $this->previewWidths->widths(),
             'controls' => $controls,
             'history' => [],
+            'in_place' => null,
             'callers' => [],
             'may_make' => false,
             'may_ask' => false,
@@ -124,6 +125,8 @@ final readonly class CmsComponentScreenController
                 'prototype' => $prototype,
                 'offered' => !$prototype && $this->availability->isOffered($name),
                 'history' => $this->candidates->history($this->components->idOf($code)),
+                // The call whose version is in place, marked in the history.
+                'in_place' => $this->components->generationOf($code),
                 'callers' => $this->callers->of($code),
                 'may_make' => $this->permission->mayMake(),
                 'may_ask' => $this->permission->mayAsk(),

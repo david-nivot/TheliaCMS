@@ -585,12 +585,19 @@ CREATE TABLE `cms_component`
     `css` LONGTEXT,
     `provenance` LONGTEXT,
     `status` VARCHAR(20) DEFAULT 'draft' NOT NULL,
+    `generation_id` INTEGER,
     `created_by` INTEGER,
     `updated_by` INTEGER,
     `created_at` TIMESTAMP NULL,
     `updated_at` TIMESTAMP NULL,
     PRIMARY KEY (`id`),
-    UNIQUE INDEX `unq_cms_component_code` (`code`)
+    UNIQUE INDEX `unq_cms_component_code` (`code`),
+    INDEX `idx_cms_component_generation` (`generation_id`),
+    CONSTRAINT `fk_cms_component_generation`
+        FOREIGN KEY (`generation_id`)
+        REFERENCES `cms_page_generation` (`id`)
+        ON UPDATE RESTRICT
+        ON DELETE SET NULL
 ) ENGINE=InnoDB CHARACTER SET='utf8mb4' COLLATE='utf8mb4_general_ci' ROW_FORMAT=DYNAMIC;
 
 -- ---------------------------------------------------------------------

@@ -2155,6 +2155,8 @@ return [
     'Make it change' => 'Faire évoluer',
     'Consult' => 'Consulter',
     'The version proposed' => 'La version proposée',
+    'In place' => 'En place',
+    'Version proposed on %date%' => 'Version proposée le %date%',
     'Edit the values' => 'Éditer',
     'The page changed while the section was being added, so nothing was added: add it again.' => 'La page a été modifiée pendant l’ajout, rien n’a donc été ajouté : ajoutez la section de nouveau.',
 ];
