@@ -23,6 +23,22 @@ use Thelia\Model\LangQuery;
 final readonly class ShopLanguages
 {
     /**
+     * The languages the shop has switched on, in their order, to choose one.
+     *
+     * @return list<array{id: int, title: string, locale: string}>
+     */
+    public function choices(): array
+    {
+        $choices = [];
+
+        foreach (LangQuery::create()->filterByActive(true)->orderByPosition()->find() as $lang) {
+            $choices[] = ['id' => (int) $lang->getId(), 'title' => (string) $lang->getTitle(), 'locale' => (string) $lang->getLocale()];
+        }
+
+        return $choices;
+    }
+
+    /**
      * The shop has this language, switched on or not.
      */
     public function exists(string $locale): bool

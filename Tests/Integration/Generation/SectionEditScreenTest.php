@@ -503,6 +503,19 @@ final class SectionEditScreenTest extends AdminScreenTestCase
         self::assertSame('cms:image', $this->screen($this->url($page))->filter('[data-cms-section-item]')->attr('data-component'), 'The list says which component a section is, for the script to edit free text in place.');
     }
 
+    public function testTheScreenLoadsTheScriptOfTheFormOfASectionBeforeTheOneThatCallsIt(): void
+    {
+        $page = $this->pageWith([new Section('picture', 'cms:image', ['image' => null, 'alt' => '', 'caption' => '', 'width' => 'narrow'])]);
+
+        $sources = $this->screen($this->url($page))->filter('script[src]')->each(static fn (Crawler $script): string => (string) $script->attr('src'));
+        $files = array_map(static fn (string $source): string => basename(explode('?', $source)[0]), $sources);
+
+        self::assertContains('section-form.js', $files, 'The behaviours of the form of a section are loaded.');
+        self::assertContains('content-editor.js', $files);
+        self::assertLessThan(array_search('content-editor.js', $files, true), array_search('section-form.js', $files, true), 'Deferred scripts run in the order of the document: the form script must be there when the screen script binds the forms.');
+        self::assertLessThan(array_search('content-editor.js', $files, true), array_search('toasts.js', $files, true), 'The notices are shown by toasts.js, which the screen script calls when it draws itself again.');
+    }
+
     public function testABriefOnADraftThatHoldsSectionsSaysItReplacesThemAndAsksFirst(): void
     {
         $page = $this->pageWith([
@@ -997,6 +1010,26 @@ final class SectionEditScreenTest extends AdminScreenTestCase
         $screen = $this->screen($this->url($page));
         self::assertSame(0, $screen->filter('[data-testid="cms-section-edit-intro"]')->count(), 'Reading the screen is not the right to change a section.');
         self::assertSame(403, $this->send('POST', \sprintf('/admin/cms/pages/%d/content/update', $page->getId()), ['_token' => $this->tokenOfTheScripts($screen), 'cms_section_intro' => ['section' => 'intro', 'html' => 'Refused']]));
+    }
+
+    /**
+     * Sabotage: drop `data-cms-component` from the form_start of
+     * _section_form.html.twig: the framing of the highlights has nothing to bind to.
+     */
+    public function testTheFormOfASecondHighlightsSectionNamesItsComponentForTheFraming(): void
+    {
+        $block = static fn (string $title): array => ['title' => $title, 'text' => '', 'button_label' => '', 'button_url' => '', 'image' => null, 'image_alt' => '', 'image_mobile' => null, 'focus_x' => 50, 'focus_y' => 50];
+        $page = $this->pageWith([
+            new Section('highlights', 'cms:highlights', ['blocks' => [$block('Premier')]]),
+            new Section('highlights-2', 'cms:highlights', ['blocks' => [$block('Second')]]),
+        ]);
+
+        $screen = $this->screen($this->url($page));
+        $second = $screen->filter('[data-testid="cms-section-edit-highlights-2"] form[data-cms-section-form]');
+
+        self::assertSame('cms_section_highlights_2', $second->attr('name'), 'The name of the form carries the id of the section.');
+        self::assertSame('cms:highlights', $second->attr('data-cms-component'));
+        self::assertSame(2, $screen->filter('form[data-cms-component="cms:highlights"]')->count());
     }
 
     private function pageWithHighlights(): CmsPage

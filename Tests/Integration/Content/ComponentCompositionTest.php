@@ -45,6 +45,7 @@ final class ComponentCompositionTest extends AdminScreenTestCase
         // Asked first: once a screen of the back office was drawn, the kernel
         // of the test keeps its templates ahead of the theme's.
         $this->keepBoth();
+        $this->getService(SectionCatalog::class)->reset();
         $preview = $this->getService(ComponentPreviewLink::class)->component('ComposedRow', 'en_US');
         $this->client->request('GET', (string) parse_url($preview, \PHP_URL_PATH));
         $page = (string) $this->client->getResponse()->getContent();
@@ -110,7 +111,7 @@ final class ComponentCompositionTest extends AdminScreenTestCase
     {
         $this->keepBoth();
 
-        $screen = $this->screen('/admin/cms/components/site/ComposedQuote');
+        $screen = $this->screen('/admin/cms/components/Site:ComposedQuote');
         self::assertStringContainsString('Composed row', $screen->filter('[data-testid="cms-site-component-callers"]')->text());
         self::assertSame(1, $screen->filter('[data-testid="cms-site-component-drawn"]')->count());
         self::assertSame(0, $screen->filter('[data-testid="cms-site-component-delete"]')->count());

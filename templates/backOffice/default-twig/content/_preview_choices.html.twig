@@ -1,0 +1,35 @@
+{#
+    What a preview shows, and at which width: the controls assets/preview-choices.js
+    follows, on the content screen, the page of a component and the page of a
+    candidate.
+
+    - `page_url`, `content_url`: the two readings, the whole page or the
+      content alone; no choice without the first.
+    - `default_mode`: `page` (the default) or `content`, checked until a
+      choice is stored.
+    - `widths`: the breakpoints of the theme (PreviewWidths), after "Responsive".
+    - `prefix`: the name and ids of the radios, unique in the page.
+    - `testid`: the prefix of the test ids (`<testid>-preview-modes`,
+      `<testid>-preview-width`).
+#}
+{% set default_mode = default_mode|default('page') %}
+{% if page_url|default(null) %}
+    <div class="btn-group btn-group-sm" role="group" aria-label="{{ 'What the preview shows'|trans({}, 'theliacms') }}" data-cms-preview-modes data-testid="{{ testid }}-preview-modes">
+        <input type="radio" class="btn-check" name="{{ prefix }}" id="{{ prefix }}-page" value="page" data-url="{{ page_url }}"{{ default_mode != 'content' ? ' checked' }}>
+        <label class="btn btn-outline-secondary" for="{{ prefix }}-page">{{ 'Whole page'|trans({}, 'theliacms') }}</label>
+        <input type="radio" class="btn-check" name="{{ prefix }}" id="{{ prefix }}-content" value="content" data-url="{{ content_url }}"{{ default_mode == 'content' ? ' checked' }}>
+        <label class="btn btn-outline-secondary" for="{{ prefix }}-content">{{ 'Content only'|trans({}, 'theliacms') }}</label>
+    </div>
+{% endif %}
+{# The widths of the toolkit of the theme: the preview at the width
+   of a breakpoint, or at the width of the screen. #}
+{% if widths|default([]) is not empty %}
+    {# `w-auto` holds where content-editor.css is not loaded (the page of a candidate). #}
+    <select class="form-select form-select-sm w-auto cms-content__width" data-cms-preview-width
+            aria-label="{{ 'Width of the preview'|trans({}, 'theliacms') }}" data-testid="{{ testid }}-preview-width">
+        <option value="">{{ 'Responsive'|trans({}, 'theliacms') }}</option>
+        {% for width in widths %}
+            <option value="{{ width.px }}">{{ width.label|trans({}, 'theliacms') }} ({{ width.px }}px)</option>
+        {% endfor %}
+    </select>
+{% endif %}

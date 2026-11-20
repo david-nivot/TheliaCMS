@@ -32,7 +32,8 @@ final class ComponentPreviewFrameTest extends TestCase
      */
     public static function frames(): iterable
     {
-        yield 'the preview of a candidate or of a kept component' => ['components/site/_preview.html.twig', 'cms-site-component-frame'];
+        yield 'the preview of a candidate' => ['components/site/candidate.html.twig', 'cms-site-component-frame'];
+        yield 'the preview on the page of a component' => ['components/show.html.twig', 'cms-site-component-frame'];
         yield 'the prototype of a component on the content screen' => ['content/edit.html.twig', 'data-cms-frame-prototype'];
     }
 

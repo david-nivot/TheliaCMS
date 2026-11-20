@@ -33,6 +33,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\SecurityContext;
 use TheliaCMS\Content\EmbedAddress;
+use TheliaCMS\Content\InvalidDocumentException;
 use TheliaCMS\Content\Prop;
 use TheliaCMS\Content\PropSchema;
 use TheliaCMS\Content\PropType;
@@ -61,6 +62,9 @@ use TheliaLibrary\Model\LibraryImage;
 final readonly class SectionFormBuilder
 {
     public const string PREFIX = 'cms_section_';
+
+    /** The name of the form of the controls of a component, which the preview reads back. */
+    public const string COMPONENT_FORM = 'cms_component_props';
 
     /**
      * What the editor of the Tiptap module offers for a html prop (version 1.1.0
@@ -124,18 +128,46 @@ final readonly class SectionFormBuilder
 
     public function build(SectionDefinitionInterface $definition, Section $section, string $action): FormInterface
     {
-        $builder = $this->forms->createNamedBuilder(self::name($section->id), FormType::class, $this->dataFor($definition->schema()->props, $section->props), [
-            'action' => $action,
-            'translation_domain' => 'theliacms',
-            'csrf_protection' => false,
-            'allow_extra_fields' => true,
-        ]);
+        $builder = $this->named(self::name($section->id), $this->dataFor($definition->schema()->props, $section->props), $action);
 
         $builder->add('section', HiddenType::class, ['data' => $section->id, 'mapped' => false]);
         $this->addProps($builder, $definition->schema()->props);
         $this->addAppearance($builder, $section->appearance);
 
         return $builder->getForm();
+    }
+
+    /**
+     * The controls of a component shown alone, on its page of the catalogue:
+     * the fields of its props, filled with its sample, and nothing of a
+     * section kept in a document (no appearance). No field sends a file: a
+     * picture is chosen in the media library or given as an address, so that
+     * trying a component adds nothing to the library.
+     *
+     * What it posts is read as the content screen reads a section:
+     * `propsFrom()`, then the `normalizeProps()` of the component.
+     *
+     * @throws InvalidDocumentException when the sample of the component is not valid
+     */
+    public function forComponent(SectionDefinitionInterface $definition, string $action): FormInterface
+    {
+        $builder = $this->named(self::COMPONENT_FORM, $this->dataFor($definition->schema()->props, $definition->normalizeProps($definition->sample())), $action);
+        $this->addProps($builder, $definition->schema()->props, files: false);
+
+        return $builder->getForm();
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function named(string $name, array $data, string $action): FormBuilderInterface
+    {
+        return $this->forms->createNamedBuilder($name, FormType::class, $data, [
+            'action' => $action,
+            'translation_domain' => 'theliacms',
+            'csrf_protection' => false,
+            'allow_extra_fields' => true,
+        ]);
     }
 
     /**
@@ -375,15 +407,16 @@ final readonly class SectionFormBuilder
 
     /**
      * @param list<Prop> $props
+     * @param bool       $files whether a picture or a video may be sent as a file, for whoever may add to the library
      */
-    public function addProps(FormBuilderInterface $builder, array $props): void
+    public function addProps(FormBuilderInterface $builder, array $props, bool $files = true): void
     {
         foreach ($props as $prop) {
-            $this->addProp($builder, $prop);
+            $this->addProp($builder, $prop, $files);
         }
     }
 
-    private function addProp(FormBuilderInterface $builder, Prop $prop): void
+    private function addProp(FormBuilderInterface $builder, Prop $prop, bool $files): void
     {
         $common = [
             'label' => $prop->label,
@@ -446,8 +479,8 @@ final readonly class SectionFormBuilder
                 'choices' => array_flip(array_map(strval(...), $prop->choices)),
                 'choice_translation_domain' => false,
             ] + ([] === $prop->icons ? [] : ['placeholder' => false]) + self::asButtons($prop->icons), $prop)),
-            PropType::Image => $this->addImage($builder, $prop, $common),
-            PropType::Video => $this->addVideo($builder, $prop, $common),
+            PropType::Image => $this->addImage($builder, $prop, $common, $files),
+            PropType::Video => $this->addVideo($builder, $prop, $common, $files),
             PropType::Reference => $builder->add($prop->name, IntegerType::class, $common + [
                 'attr' => array_filter([
                     'min' => 0,
@@ -460,7 +493,7 @@ final readonly class SectionFormBuilder
             // bounds are its own, read by the script and the schema.
             PropType::Items => $builder->add($prop->name, CollectionType::class, ['required' => true] + $common + [
                 'entry_type' => SectionItemType::class,
-                'entry_options' => ['props' => $prop->items, 'builder' => $this, 'label' => false],
+                'entry_options' => ['props' => $prop->items, 'builder' => $this, 'label' => false, 'files' => $files],
                 'allow_add' => true,
                 'allow_delete' => true,
                 'prototype' => true,
@@ -547,7 +580,7 @@ final readonly class SectionFormBuilder
      *
      * @param array<string, mixed> $common
      */
-    private function addImage(FormBuilderInterface $builder, Prop $prop, array $common): void
+    private function addImage(FormBuilderInterface $builder, Prop $prop, array $common, bool $files): void
     {
         // The id of the image: the screen draws the image and opens the
         // picker of the media library on it. A list of every image cannot be
@@ -557,10 +590,10 @@ final readonly class SectionFormBuilder
             'attr' => [
                 'min' => 0,
                 'data-cms-image-picker' => $this->urls->generate('admin.cms.media.picker'),
-            ] + ($this->mayUpload() ? ['data-cms-image-upload' => $this->urls->generate('admin.cms.media.add')] : []),
+            ] + ($files && $this->mayUpload() ? ['data-cms-image-upload' => $this->urls->generate('admin.cms.media.add')] : []),
         ]);
 
-        if ($this->mayUpload()) {
+        if ($files && $this->mayUpload()) {
             $builder->add($prop->name.self::FILE_SUFFIX, FileType::class, [
                 'label' => 'Replace with a file',
                 'required' => false,
@@ -588,17 +621,17 @@ final readonly class SectionFormBuilder
      *
      * @param array<string, mixed> $common
      */
-    private function addVideo(FormBuilderInterface $builder, Prop $prop, array $common): void
+    private function addVideo(FormBuilderInterface $builder, Prop $prop, array $common, bool $files): void
     {
         $builder->add($prop->name, IntegerType::class, $common + [
             'attr' => [
                 'min' => 0,
                 'data-cms-video-picker' => $this->urls->generate('admin.cms.media.picker'),
                 'data-cms-media-kind' => MediaKind::Video->value,
-            ] + ($this->mayUpload() ? ['data-cms-image-upload' => $this->urls->generate('admin.cms.media.add')] : []),
+            ] + ($files && $this->mayUpload() ? ['data-cms-image-upload' => $this->urls->generate('admin.cms.media.add')] : []),
         ]);
 
-        if ($this->mayUpload()) {
+        if ($files && $this->mayUpload()) {
             $builder->add($prop->name.self::FILE_SUFFIX, FileType::class, [
                 'label' => 'Replace with a video file',
                 'required' => false,

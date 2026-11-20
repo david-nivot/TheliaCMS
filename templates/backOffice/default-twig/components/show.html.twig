@@ -1,0 +1,381 @@
+{% extends '@BackOfficeDefaultTwig/base.html.twig' %}
+
+{#
+    The page of a component, whatever its origin: the panel on the left (its
+    props to type, what to keep of them, and for a component of the site what
+    changes it), the component drawn in the theme on the right.
+
+    It replaces the whole body of the layout, like the content screen whose
+    stage it takes: the component has to be seen at the width visitors will
+    see it, and stay in view while its props are typed.
+#}
+
+{% block title %}{{ label }}{% endblock %}
+{% block body_testid %}{{ component ? 'cms-site-component' : 'cms-component' }}{% endblock %}
+
+{% block head_extra %}
+    {# The stage of the content screen, and the layout of the fields of a
+       section form, which the controls reuse. #}
+    <link rel="stylesheet" href="{{ cms_asset('assets/content-editor.css') }}?v={{ assets_version }}">
+{% endblock %}
+
+{% block scripts_extra %}
+    {% if component %}
+    <script src="{{ cms_asset('assets/component-generator.js') }}?v={{ assets_version }}" defer></script>
+    {% endif %}
+    {% if controls %}
+        {# As on the content screen: the rich-text editor of the back office
+           when a module answers the hook, the pickers a form binds, then the
+           behaviours of the form. #}
+        {{ safe_hook('wysiwyg.js', { location: 'cms-content-js' }) }}
+        {{ include('@TheliaCMSModule/backOffice/default-twig/media/_picker.html.twig', { media_picker_version: assets_version }) }}
+        {{ include('@TheliaCMSModule/backOffice/default-twig/content/_image_crop.html.twig') }}
+        {{ include('@TheliaCMSModule/backOffice/default-twig/_record_picker.html.twig') }}
+        <script src="{{ cms_asset('assets/section-form.js') }}?v={{ assets_version }}" defer></script>
+    {% endif %}
+    <script src="{{ cms_asset('assets/toasts.js') }}?v={{ cms_asset_version('assets/toasts.js') }}" defer></script>
+    <script src="{{ cms_asset('assets/preview-choices.js') }}?v={{ cms_asset_version('assets/preview-choices.js') }}" defer></script>
+    <script src="{{ cms_asset('assets/component-preview.js') }}?v={{ assets_version }}" defer></script>
+{% endblock %}
+
+{% block body %}
+    {% set content_url = preview_url ~ '?' ~ constant('TheliaCMS\\Preview\\PreviewLink::CONTENT_ONLY') ~ '=1' %}
+    {% set default_mode = controls ? 'content' : 'page' %}
+    {# A component of the site has a second tab, what changes it and what manages it. #}
+    {% set managed = component is not null %}
+    <div class="cms-content" data-cms-component-screen>
+        <header class="cms-content__bar">
+            <a class="btn btn-sm btn-outline-secondary" href="{{ path('admin.cms.components.list') }}" data-testid="cms-component-back">
+                <i class="bi bi-arrow-left" aria-hidden="true"></i> {{ 'Back to components'|trans({}, 'theliacms') }}
+            </a>
+
+            <h1 class="cms-content__title">{{ label }}</h1>
+            <code class="small">{{ name }}</code>
+            {# What the component is to the site, as badges: the pages that hold it
+               open their list, the state says whether pages are offered it. #}
+            <span class="badge text-bg-light border">
+                {% if pages > 0 %}{% include '@TheliaCMSModule/backOffice/default-twig/linked-pages/_trigger.html.twig' with { kind: 'component', key: name, count: pages, text: '%count% page(s)'|trans({ '%count%': pages }, 'theliacms'), subject: name, testid: 'cms-site-component-pages-open' } only %}{% else %}{{ 'Unused'|trans({}, 'theliacms') }}{% endif %}
+            </span>
+            {% if prototype %}
+                <span class="badge text-bg-warning" title="{{ 'This component is a prototype, offered to nobody yet. Keep it for the whole site to offer it to the generator and on the content screen of every page.'|trans({}, 'theliacms') }}" data-testid="cms-site-component-prototype">{{ 'Prototype'|trans({}, 'theliacms') }}</span>
+            {% elseif offered %}
+                <span class="badge text-bg-success">{{ 'Offered to the generator'|trans({}, 'theliacms') }}</span>
+            {% else %}
+                <span class="badge text-bg-secondary">{{ 'Not offered to the generator'|trans({}, 'theliacms') }}</span>
+            {% endif %}
+
+            <div class="cms-content__actions">
+                {# The component alone first when its props can be typed: what
+                   changes is in view at once. A choice made on this page or on
+                   the content screen is kept for both. #}
+                {{ include('@TheliaCMSModule/backOffice/default-twig/content/_preview_choices.html.twig', {
+                    page_url: preview_url,
+                    content_url: content_url,
+                    default_mode: default_mode,
+                    widths: preview_widths,
+                    prefix: 'cms-component-preview-mode',
+                    testid: 'cms-site-component',
+                }, with_context = false) }}
+                {% if component and prototype and may_make %}
+                    <form method="post" action="{{ path('admin.cms.components.site.promote', { component: component.code }) }}" data-testid="cms-site-component-promote">
+                        <input type="hidden" name="_token" value="{{ assignToken() }}">
+                        <button class="btn btn-sm btn-primary text-nowrap" type="submit">
+                            <i class="bi bi-check2-all me-1" aria-hidden="true"></i>{{ 'Keep for the whole site'|trans({}, 'theliacms') }}
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        </header>
+
+        {# This page replaces the whole body block, so the flash messages of
+           the layout are rendered here. #}
+        {{ include('@TheliaCMSModule/backOffice/default-twig/_toasts.html.twig', { extra: [] }) }}
+
+        <div class="cms-content__stage">
+            {# The panel holds what the props are: its head says the component,
+               the fields scroll in the room left, and what is kept of the
+               values stays at the bottom of the screen. What changes and
+               manages a component of the site is in the drawer the gear opens. #}
+            <aside class="cms-content__panel cms-content__panel--split" data-cms-props-view="edit" aria-label="{{ 'The component'|trans({}, 'theliacms') }}">
+                <div class="cms-content__panel-head">
+                    <div class="d-flex align-items-start gap-2 mb-3">
+                        <div class="me-auto">
+                            <p class="text-muted small mb-0">{{ description }}</p>
+                            {% if callers is not empty %}
+                                <p class="text-muted small mb-0 mt-1" data-testid="cms-site-component-callers">{{ 'Drawn by'|trans({}, 'theliacms') }} {% for caller in callers %}<a href="{{ path('admin.cms.components.show', { name: 'Site:' ~ caller.code }) }}">{{ caller.label }}</a>{{ not loop.last ? ', ' }}{% endfor %}</p>
+                            {% endif %}
+                        </div>
+                        {% if managed %}
+                            <button type="button" class="btn btn-sm btn-outline-secondary" command="show-modal" commandfor="cms-component-settings" data-cms-dialog-open
+                                    title="{{ 'Settings of the component'|trans({}, 'theliacms') }}" data-testid="cms-component-settings-open">
+                                <i class="bi bi-gear" aria-hidden="true"></i>
+                                <span class="visually-hidden">{{ 'Settings of the component'|trans({}, 'theliacms') }}</span>
+                            </button>
+                        {% endif %}
+                    </div>
+                    {# Two views of the same props, as the preview has two readings:
+                       the fields that draw it, and the table that says what each
+                       prop is. The choice is kept from one component to the next
+                       (component-preview.js). #}
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <h2 class="h6 text-uppercase text-muted mb-0 me-auto">{{ 'Props'|trans({}, 'theliacms') }}</h2>
+                        {% if controls %}
+                            <div class="btn-group btn-group-sm" role="group" aria-label="{{ 'View of the props'|trans({}, 'theliacms') }}" data-cms-props-views data-testid="cms-component-props-views">
+                                <input type="radio" class="btn-check" name="cms-component-props-view" id="cms-component-props-view-edit" value="edit" checked>
+                                <label class="btn btn-outline-secondary" for="cms-component-props-view-edit">{{ 'Edit the values'|trans({}, 'theliacms') }}</label>
+                                <input type="radio" class="btn-check" name="cms-component-props-view" id="cms-component-props-view-doc" value="doc">
+                                <label class="btn btn-outline-secondary" for="cms-component-props-view-doc">{{ 'Documentation'|trans({}, 'theliacms') }}</label>
+                            </div>
+                            {# The view kept is put on the panel before the views are
+                               drawn, so the other one never shows, not even for an
+                               instant; component-preview.js follows the switch after. #}
+                            <script>
+                                (function (panel) {
+                                    try {
+                                        if (window.localStorage.getItem('theliacms:component-props-view') === 'doc') {
+                                            panel.setAttribute('data-cms-props-view', 'doc');
+                                            document.getElementById('cms-component-props-view-doc').checked = true;
+                                        }
+                                    } catch (e) {}
+                                })(document.currentScript.closest('[data-cms-props-view]'));
+                            </script>
+                            <noscript><style>[data-cms-props-pane="doc"] { display: block !important; }</style></noscript>
+                        {% endif %}
+                    </div>
+                    {% if controls %}
+                        {# A plain box carries the view: `d-flex` would show it hidden. #}
+                        <div data-cms-props-pane="edit">
+                            <div class="d-flex align-items-start gap-2 mb-2">
+                                <p class="text-muted small mb-0 me-auto">{{ 'Change a value to see the component drawn with it. Nothing is saved.'|trans({}, 'theliacms') }}</p>
+                                {# The icon alone, as in a toolkit: the name is said on hover and to a screen reader. #}
+                                <button type="button" class="btn btn-link text-secondary fs-5 lh-1 px-1 py-0" data-cms-preview-reset hidden
+                                        title="{{ 'Back to the sample'|trans({}, 'theliacms') }}" data-testid="cms-component-preview-reset">
+                                    <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+                                    <span class="visually-hidden">{{ 'Back to the sample'|trans({}, 'theliacms') }}</span>
+                                </button>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="cms-content__panel-body">
+                    {% if controls %}
+                        {# The props typed here draw the frame beside and are kept nowhere. #}
+                        {% form_theme controls with bo_form_themes|merge(['@TheliaCMSModule/backOffice/default-twig/content/_section_form_theme.html.twig']) only %}
+                        {% import '@TheliaCMSModule/backOffice/default-twig/content/_section_form.html.twig' as section_form %}
+                        <div data-cms-props-pane="edit" data-cms-picker-locale="{{ app.request.locale }}"
+                             data-cms-preview-labels="{{ {
+                                 ratios: 'Proportions'|trans({}, 'theliacms'),
+                                 imageRatio: 'Ratio of the image'|trans({}, 'theliacms'),
+                                 kept: 'Centre %x% % / %y% %, zoom %zoom% %'|trans({}, 'theliacms'),
+                                 keptCentre: 'Centre %x% % / %y% %'|trans({}, 'theliacms'),
+                                 framing: 'Kept part of the picture'|trans({}, 'theliacms'),
+                                 iconChoose: 'Choose an icon'|trans({}, 'theliacms'),
+                                 iconSearch: 'Search an icon'|trans({}, 'theliacms'),
+                                 iconTheme: 'Theme'|trans({}, 'theliacms'),
+                                 iconCms: 'CMS'|trans({}, 'theliacms'),
+                                 iconNone: 'No icon'|trans({}, 'theliacms'),
+                                 iconEmpty: 'No icon matches.'|trans({}, 'theliacms'),
+                             }|json_encode|e('html_attr') }}"
+                             data-cms-component-preview data-testid="cms-component-controls">
+                            {{ form_start(controls, { attr: { id: 'cms-component-controls', 'data-cms-section-form': '', 'data-cms-component': name, 'data-cms-preview-form': '', novalidate: 'novalidate', target: 'cms-component-preview-frame' } }) }}
+                                <input type="hidden" name="_token" value="{{ assignToken() }}">
+                                {{ section_form.fields(controls) }}
+                                {# Without the script, this button draws the frame; the script draws it as the values change. #}
+                                <button type="submit" class="btn btn-sm btn-primary" data-cms-preview-show data-testid="cms-component-preview-show">
+                                    {{ 'Show'|trans({}, 'theliacms') }}
+                                </button>
+                            {{ form_end(controls, { render_rest: false }) }}
+                        </div>
+                        {# Shown under the fields without the script, which shows one view at a time. #}
+                        <div data-cms-props-pane="doc" hidden>
+                            {{ include('@TheliaCMSModule/backOffice/default-twig/components/_props.html.twig', { bare: true }) }}
+                        </div>
+                    {% else %}
+                        {# No field to type: the props are told by their table. #}
+                        {{ include('@TheliaCMSModule/backOffice/default-twig/components/_props.html.twig', { bare: true }) }}
+                    {% endif %}
+                </div>
+
+                {# What is kept of the values typed: the buttons post the form
+                   above (`form`, `formaction`) into this page, not into the frame. #}
+                {% if controls and ((component and may_make) or may_add_to_page) %}
+                    <div class="cms-content__panel-foot" data-testid="cms-component-keep">
+                        {% if component and may_make %}
+                            <button type="submit" class="btn btn-sm btn-outline-primary" form="cms-component-controls" formaction="{{ path('admin.cms.components.site.sample', { component: component.code }) }}" formtarget="_self" formnovalidate
+                                    title="{{ 'The values typed become the example of the component: what the toolkit, the preview and the generator show of it, and what a new section starts from.'|trans({}, 'theliacms') }}" data-testid="cms-component-save-sample">
+                                <i class="bi bi-bookmark-check me-1" aria-hidden="true"></i>{{ 'Save as the example'|trans({}, 'theliacms') }}
+                            </button>
+                        {% endif %}
+                        {% if may_add_to_page %}
+                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#cms-component-add-dialog" data-testid="cms-component-add-to-page-open">
+                                <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>{{ 'Add to a page…'|trans({}, 'theliacms') }}
+                            </button>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </aside>
+
+            {# The component drawn with its sample, or with the props typed, which
+               assets/component-preview.js posts into the frame. The frame runs
+               scripts but has no origin: `allow-scripts` without
+               `allow-same-origin`, so it reads nothing of the back office. A
+               player would inherit the sandbox and not play: the script of the
+               videos opens the video on its platform in a new tab instead,
+               which the popups, out of the sandbox, allow. #}
+            <div class="cms-content__preview">
+                <iframe class="cms-content__frame" src="{{ default_mode == 'content' ? content_url : preview_url }}" name="cms-component-preview-frame" title="{{ 'Preview of the component'|trans({}, 'theliacms') }}"
+                        data-cms-frame data-testid="cms-site-component-frame"
+                        sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"></iframe>
+            </div>
+        </div>
+    </div>
+
+    {# What is proper to a component of the site, in the drawer the content
+       screen edits a section in, over the panel: what changes it, its
+       history, its code, a copy, its deletion. #}
+    {% if managed %}
+        <dialog class="cms-content__edit" id="cms-component-settings" aria-labelledby="cms-component-settings-title" data-testid="cms-component-settings">
+            <div class="cms-content__add-head">
+                <div>
+                    <h2 class="cms-content__heading mb-0" id="cms-component-settings-title">{{ 'Settings of the component'|trans({}, 'theliacms') }}</h2>
+                    <div class="text-muted small">{{ label }} &middot; <code>{{ name }}</code></div>
+                </div>
+                <form method="dialog">
+                    <button type="submit" class="btn-close" aria-label="{{ 'Close'|trans({}, 'theliacms') }}"></button>
+                </form>
+            </div>
+
+            {# In the order of what one comes for: make it change, start
+               another from it, read its code; its deletion last, apart. #}
+            <section class="cms-content__section">
+                <h3 class="h6 text-uppercase text-muted">{{ 'Make it change'|trans({}, 'theliacms') }}</h3>
+                {% if may_ask and cms_ai_available('theliacms.component') %}
+                    {{ include('@TheliaCMSModule/backOffice/default-twig/components/site/_request_form.html.twig', {
+                        testid: 'cms-site-component-change',
+                        hidden: { component: component.code },
+                        label: 'What should change'|trans({}, 'theliacms'),
+                        rows: 3,
+                        help: 'You see the new version before it replaces this one.'|trans({}, 'theliacms'),
+                        button: 'Change it'|trans({}, 'theliacms'),
+                    }) }}
+                {% elseif may_ask %}
+                    <p class="text-muted small">{{ 'The generator is not available: the AI of the shop is turned off, or no model is set up for components. Turn it on in the AI settings of Thelia.'|trans({}, 'theliacms') }}</p>
+                {% endif %}
+                {# Each request opens the version it gave. #}
+                <details class="mt-3">
+                    <summary class="small fw-semibold">{{ 'Previous requests'|trans({}, 'theliacms') }} ({{ history|length }})</summary>
+                    <ul class="list-unstyled small mt-2 mb-0" data-testid="cms-site-component-history">
+                        {% for call in history %}
+                            <li class="mb-2"{% if call.logId == in_place %} data-testid="cms-site-component-in-place"{% endif %}>
+                                <a href="{{ path('admin.cms.components.site.candidate', { id: call.logId }) }}">{{ call.createdAt ? call.createdAt|date('Y-m-d H:i') : '' }}</a>
+                                <span class="badge text-bg-{{ call.status == 'done' ? 'light' : 'warning' }}">{{ call.status }}</span>
+                                {% if call.logId == in_place %}<span class="badge text-bg-success">{{ 'In place'|trans({}, 'theliacms') }}</span>{% endif %}
+                                <div class="text-muted text-wrap">{{ call.request }}</div>
+                            </li>
+                        {% else %}
+                            <li class="text-muted">{{ 'No call recorded.'|trans({}, 'theliacms') }}</li>
+                        {% endfor %}
+                    </ul>
+                </details>
+            </section>
+
+            {% if may_make %}
+                {# A new component that starts from this one, to vary from it
+                   without asking the generator for it from nothing. #}
+                <section class="cms-content__section">
+                    <h3 class="h6 text-uppercase text-muted">{{ 'Make a variant'|trans({}, 'theliacms') }}</h3>
+                    <form method="post" action="{{ path('admin.cms.components.site.copy', { component: component.code }) }}" data-testid="cms-site-component-copy">
+                        <input type="hidden" name="_token" value="{{ assignToken() }}">
+                        <p class="text-muted small">{{ 'A new component that starts from this one, with its template, styles and props. It is a prototype until you keep it for the whole site; this one does not change.'|trans({}, 'theliacms') }}</p>
+                        <div class="mb-2">
+                            <label class="form-label small" for="cms-site-component-copy-code">{{ 'Code'|trans({}, 'theliacms') }}</label>
+                            <input class="form-control form-control-sm" id="cms-site-component-copy-code" name="code" required pattern="[A-Z][A-Za-z0-9]{1,39}" maxlength="40" placeholder="{{ component.code }}Dark" aria-describedby="cms-site-component-copy-code-help">
+                            <div class="form-text" id="cms-site-component-copy-code-help">{{ 'In PascalCase, such as PriceTableDark. It cannot be changed afterwards.'|trans({}, 'theliacms') }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small" for="cms-site-component-copy-label">{{ 'Label'|trans({}, 'theliacms') }}</label>
+                            <input class="form-control form-control-sm" id="cms-site-component-copy-label" name="label" required maxlength="120" value="{{ component.label }}">
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary" type="submit">
+                            <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>{{ 'Make the variant'|trans({}, 'theliacms') }}
+                        </button>
+                    </form>
+                </section>
+            {% endif %}
+
+            {# Long, and read now and then: folded. #}
+            <section class="cms-content__section">
+                <h3 class="h6 text-uppercase text-muted">{{ 'Consult'|trans({}, 'theliacms') }}</h3>
+                <details>
+                    <summary class="small fw-semibold">{{ 'Template and stylesheet'|trans({}, 'theliacms') }}</summary>
+                    <pre class="small mt-2 mb-3" data-testid="cms-site-component-template"><code>{{ component.template }}</code></pre>
+                    {% if component.css is not empty %}
+                        <pre class="small mb-0" data-testid="cms-site-component-css"><code>{{ component.css }}</code></pre>
+                    {% else %}
+                        <p class="text-muted small mb-0">{{ 'No stylesheet.'|trans({}, 'theliacms') }}</p>
+                    {% endif %}
+                </details>
+            </section>
+
+            {% if may_make %}
+                {# Last, apart: what cannot be undone. #}
+                <section class="cms-content__section">
+                    <h3 class="h6 text-uppercase text-danger">{{ 'Delete the component'|trans({}, 'theliacms') }}</h3>
+                    {% if pages > 0 %}
+                        <p class="text-muted small mb-0" data-testid="cms-site-component-in-use">{{ 'Used by %count% page(s): it can be deleted once no page holds it.'|trans({ '%count%': pages }, 'theliacms') }}
+                            {% include '@TheliaCMSModule/backOffice/default-twig/linked-pages/_trigger.html.twig' with { kind: 'component', key: 'Site:' ~ component.code, count: pages, text: 'See the pages'|trans({}, 'theliacms'), subject: 'Site:' ~ component.code, testid: 'cms-site-component-in-use-open' } only %}</p>
+                    {% elseif callers is not empty %}
+                        <p class="text-muted small mb-0" data-testid="cms-site-component-drawn">{{ 'Drawn by %count% component(s) of the site: it can be deleted once no component draws it.'|trans({ '%count%': callers|length }, 'theliacms') }}</p>
+                    {% else %}
+                        <form method="post" action="{{ path('admin.cms.components.site.delete', { component: component.code }) }}" data-testid="cms-site-component-delete"
+                              onsubmit="return confirm('{{ 'Delete this component? It cannot be undone.'|trans({}, 'theliacms')|e('js') }}')">
+                            <input type="hidden" name="_token" value="{{ assignToken() }}">
+                            <p class="text-muted small">{{ 'No page and no component uses it. Deleting it cannot be undone.'|trans({}, 'theliacms') }}</p>
+                            <button class="btn btn-sm btn-outline-danger" type="submit">
+                                <i class="bi bi-trash me-1" aria-hidden="true"></i>{{ 'Delete the component'|trans({}, 'theliacms') }}
+                            </button>
+                        </form>
+                    {% endif %}
+                </section>
+            {% endif %}
+        </dialog>
+    {% endif %}
+
+    {# Add to a page: the page and the language join the values typed, posted
+       with the form of the controls (`form`). #}
+    {% if controls and may_add_to_page %}
+        <div class="modal fade" id="cms-component-add-dialog" tabindex="-1" aria-labelledby="cms-component-add-title" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content" data-cms-picker-locale="{{ app.request.locale }}" data-testid="cms-component-add-to-page">
+                    <div class="modal-header">
+                        <h2 class="modal-title fs-6" id="cms-component-add-title">{{ 'Add to a page'|trans({}, 'theliacms') }}</h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'Close'|trans({}, 'theliacms') }}"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label" for="cms-component-page">{{ 'Page'|trans({}, 'theliacms') }}</label>
+                            <input type="number" min="1" class="form-control" id="cms-component-page" name="page" form="cms-component-controls" aria-describedby="cms-component-page-help"
+                                   data-cms-picker="{{ path('admin.cms.partials.sources.pages', { locale: app.request.locale }) }}" data-cms-picker-searchable="1" data-testid="cms-component-page">
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label" for="cms-component-language">{{ 'Language'|trans({}, 'theliacms') }}</label>
+                            <select class="form-select" id="cms-component-language" name="language" form="cms-component-controls" data-testid="cms-component-language">
+                                {% for language in languages %}
+                                    <option value="{{ language.id }}"{{ language.id == default_language ? ' selected' }}>{{ language.title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-text" id="cms-component-page-help">{{ 'The section goes at the end of the draft of the page, in the language chosen, with the values typed here. Nothing is published.'|trans({}, 'theliacms') }}</div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">{{ 'Cancel'|trans({}, 'theliacms') }}</button>
+                        <button type="submit" class="btn btn-sm btn-primary" form="cms-component-controls" formaction="{{ path('admin.cms.components.add_to_page', { name: name }) }}" formtarget="_self" formnovalidate data-testid="cms-component-add-to-page-submit">
+                            <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>{{ 'Add to the page'|trans({}, 'theliacms') }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}

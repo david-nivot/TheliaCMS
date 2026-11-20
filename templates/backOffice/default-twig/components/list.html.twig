@@ -4,19 +4,22 @@
 {% block body_testid %}cms-components{% endblock %}
 
 {% block content %}
+    {# The colour and the icon of each origin: one place, read by the icon of a
+       row (`text`) and by the count of the button that filters on it (`class`). A prototype is
+       counted with the components of the site, but badged apart. #}
+    {% set origin_styles = {
+        all: { class: 'text-bg-light', text: 'text-body-secondary', icon: null },
+        site: { class: 'text-bg-primary', text: 'text-primary', icon: 'bi-stars', label: 'Origin: made on this site'|trans({}, 'theliacms') },
+        prototype: { class: 'text-bg-warning', text: 'text-warning', icon: 'bi-hourglass-split', label: 'Origin: prototype made on this site'|trans({}, 'theliacms') },
+        theme: { class: 'text-bg-info', text: 'text-info', icon: 'bi-palette', label: 'Origin: theme'|trans({}, 'theliacms') },
+        module: { class: 'text-bg-success', text: 'text-success', icon: 'bi-puzzle', label: 'Origin: module'|trans({}, 'theliacms') },
+        partial: { class: 'text-bg-secondary', text: 'text-secondary', icon: 'bi-layout-text-window', label: 'Origin: partial'|trans({}, 'theliacms') },
+    } %}
     {% embed '@BackOfficeDefaultTwig/_page_header.html.twig' with { title: 'Components'|trans({}, 'theliacms') } %}
         {% block actions %}
             {% if may_ask and cms_ai_available('theliacms.component') %}
                 <a class="btn btn-sm btn-primary me-1" href="{{ path('admin.cms.components.site.new') }}" data-testid="cms-components-new">
                     <i class="bi bi-stars me-1" aria-hidden="true"></i>{{ 'New component'|trans({}, 'theliacms') }}
-                </a>
-            {% endif %}
-            {# The toolkit shows the components offered to the generator: a
-               component switched off here is not on it. It answers only in
-               debug, where ToolkitLink gives an address. #}
-            {% if toolkit_url %}
-                <a class="btn btn-sm btn-outline-primary me-1" href="{{ toolkit_url }}" target="_blank" rel="noopener" data-testid="cms-components-toolkit">
-                    <i class="bi bi-grid-3x3-gap me-1" aria-hidden="true"></i>{{ 'See how they render in the toolkit'|trans({}, 'theliacms') }}
                 </a>
             {% endif %}
             <a class="btn btn-sm btn-outline-secondary" href="{{ path('admin.cms.skills.list') }}">
@@ -29,39 +32,38 @@
         {{ 'The components a page may be made of: those of the module, the partials of the site, the components the theme opens to pages and the ones made on this site. A component you disable is no longer offered to the generator; the pages that already use it keep displaying it, and its sections can still be edited.'|trans({}, 'theliacms') }}
     </p>
 
+    {# The origins as buttons with their count; the rows are shown or hidden
+       here, nothing is asked of the server. Without a script, all are shown. #}
+    <div class="btn-group btn-group-sm mb-3" role="group" aria-label="{{ 'Origin'|trans({}, 'theliacms') }}" data-testid="cms-components-filter">
+        {# In the order the controller gives the counts, which is the order of the rows. #}
+        {% set filter_labels = { all: 'All components'|trans({}, 'theliacms'), site: 'Site'|trans({}, 'theliacms'), theme: 'Theme'|trans({}, 'theliacms'), module: 'Module'|trans({}, 'theliacms'), partial: 'Partials'|trans({}, 'theliacms') } %}
+        {% for key in origin_counts|keys %}{% set text = filter_labels[key] %}
+            <button type="button" class="btn btn-outline-secondary{% if key == 'all' %} active{% endif %}" aria-pressed="{{ key == 'all' ? 'true' : 'false' }}" data-origin-filter="{{ key }}" data-testid="cms-components-filter-{{ key }}">
+                {% if origin_styles[key].icon %}<i class="bi {{ origin_styles[key].icon }} me-1" aria-hidden="true"></i>{% endif %}{{ text }} <span class="badge {{ origin_styles[key].class }}" data-testid="cms-components-filter-count-{{ key }}">{{ origin_counts[key] }}</span>
+            </button>
+        {% endfor %}
+    </div>
+
     <div class="card">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead>
                     <tr>
                         <th scope="col">{{ 'Name'|trans({}, 'theliacms') }}</th>
-                        <th scope="col">{{ 'Description'|trans({}, 'theliacms') }}</th>
-                        <th scope="col">{{ 'Origin'|trans({}, 'theliacms') }}</th>
                         <th scope="col" class="text-end">{{ 'Pages'|trans({}, 'theliacms') }}</th>
-                        <th scope="col">{{ 'Offered to the generator'|trans({}, 'theliacms') }}</th>
-                        <th scope="col" class="text-end datatable-sticky-actions">{{ 'Actions'|trans({}, 'theliacms') }}</th>
+                        <th scope="col" class="text-center">{{ 'Offered to the generator'|trans({}, 'theliacms') }}</th>
+                        <th scope="col" class="text-end datatable-sticky-actions"><span class="visually-hidden">{{ 'Actions'|trans({}, 'theliacms') }}</span></th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for component in components %}
-                        <tr data-testid="cms-component-row-{{ component.name }}"{% if not component.offered %} class="table-light"{% endif %}>
+                        {% set group = component.origin %}
+                        <tr data-testid="cms-component-row-{{ component.name }}" data-origin="{{ group }}"{% if not component.offered %} class="table-light"{% endif %}>
                             <td>
-                                <span class="fw-medium">{{ component.label }}</span>
+                                {% set style = origin_styles[component.prototype ? 'prototype' : group] %}
+                                <span data-testid="cms-component-origin-{{ component.name }}" class="me-1 {{ style.text }}" title="{{ style.label }}"><i class="bi {{ style.icon }}" aria-hidden="true"></i><span class="visually-hidden">{{ style.label }}</span></span><span class="fw-medium">{{ component.label }}</span>
                                 <div class="text-muted small"><code>{{ component.name }}</code></div>
-                            </td>
-                            <td class="text-muted small text-wrap" style="min-width: 14rem">{{ component.description }}</td>
-                            <td data-testid="cms-component-origin-{{ component.name }}">
-                                {% if component.origin == 'theme' %}
-                                    {{ 'Theme'|trans({}, 'theliacms') }}
-                                {% elseif component.origin == 'partial' %}
-                                    {{ 'Partial'|trans({}, 'theliacms') }}
-                                {% elseif component.origin == 'site' and component.prototype %}
-                                    {{ 'Prototype made on this site'|trans({}, 'theliacms') }}
-                                {% elseif component.origin == 'site' %}
-                                    {{ 'Made on this site'|trans({}, 'theliacms') }}
-                                {% else %}
-                                    {{ 'Module'|trans({}, 'theliacms') }}
-                                {% endif %}
+                                {% if component.description %}<div class="text-muted small text-wrap">{{ component.description }}</div>{% endif %}
                             </td>
                             <td class="text-end" data-testid="cms-component-pages-{{ component.name }}" data-pages="{{ component.pages }}">
                                 {% if component.pages > 0 %}
@@ -70,66 +72,64 @@
                                     <span class="text-muted">{{ 'Unused'|trans({}, 'theliacms') }}</span>
                                 {% endif %}
                             </td>
-                            <td data-testid="cms-component-offered-{{ component.name }}" data-offered="{{ component.offered ? '1' : '0' }}">
+                            <td class="text-center" data-testid="cms-component-offered-{{ component.name }}" data-offered="{{ component.offered ? '1' : '0' }}">
                                 {% if component.prototype %}
                                     {# A prototype renders on the pages that hold it and nowhere
                                        else until someone keeps it for the whole site. #}
-                                    <span class="badge text-bg-warning">{{ 'Prototype'|trans({}, 'theliacms') }}</span>
-                                    <div class="text-muted small">{{ 'Offered once kept for the whole site'|trans({}, 'theliacms') }}</div>
-                                {% elseif component.offered %}
-                                    <span class="badge text-bg-success">{{ 'Enabled'|trans({}, 'theliacms') }}</span>
+                                    <span class="text-muted" title="{{ 'Offered once kept for the whole site'|trans({}, 'theliacms') }}">&ndash;</span>
+                                {% elseif not component.may_disable %}
+                                    <div class="form-check form-switch d-inline-flex align-items-center gap-1 ps-0 mb-0" title="{{ 'Always offered'|trans({}, 'theliacms') }}">
+                                        <input class="form-check-input ms-0 mt-0" type="checkbox" role="switch" checked disabled aria-label="{{ 'Offered to the generator'|trans({}, 'theliacms') }}" data-testid="cms-component-switch-disabled-{{ component.name }}">
+                                        <i class="bi bi-lock text-muted" aria-hidden="true"></i>
+                                    </div>
+                                {% elseif not may_update %}
+                                    <div class="form-check form-switch d-inline-flex align-items-center gap-1 ps-0 mb-0">
+                                        <input class="form-check-input ms-0 mt-0" type="checkbox" role="switch"{% if component.offered %} checked{% endif %} disabled aria-label="{{ 'Offered to the generator'|trans({}, 'theliacms') }}" data-testid="cms-component-switch-disabled-{{ component.name }}">
+                                    </div>
                                 {% else %}
-                                    <span class="badge text-bg-secondary">{{ 'Disabled'|trans({}, 'theliacms') }}</span>
-                                {% endif %}
-                                {% if not component.may_disable and not component.prototype %}
-                                    <div class="text-muted small">{{ 'Always offered'|trans({}, 'theliacms') }}</div>
-                                {% endif %}
-                            </td>
-                            <td class="text-end datatable-sticky-actions">
-                                {% if component.site_url %}
-                                    <a class="btn btn-sm btn-outline-secondary" href="{{ component.site_url }}" data-testid="cms-component-open-{{ component.name }}">
-                                        <i class="bi bi-pencil me-1" aria-hidden="true"></i>{{ 'Edit'|trans({}, 'theliacms') }}
-                                    </a>
-                                {% endif %}
-                                {# A component switched off is not on the toolkit page. #}
-                                {% if component.toolkit_url and component.offered %}
-                                    <a class="btn btn-sm btn-outline-secondary" href="{{ component.toolkit_url }}" target="_blank" rel="noopener" data-testid="cms-component-see-{{ component.name }}">
-                                        <i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>{{ 'See'|trans({}, 'theliacms') }}
-                                    </a>
-                                {% endif %}
-                                {% if may_make and component.promote_url %}
-                                    <form method="post" action="{{ component.promote_url }}" class="d-inline" data-testid="cms-component-promote-{{ component.name }}">
-                                        <input type="hidden" name="_token" value="{{ assignToken() }}">
-                                        <button class="btn btn-sm btn-outline-primary" type="submit">
-                                            <i class="bi bi-check2-all me-1" aria-hidden="true"></i>{{ 'Keep for the whole site'|trans({}, 'theliacms') }}
-                                        </button>
-                                    </form>
-                                {% endif %}
-                                {% if may_update and component.may_disable %}
                                     <form method="post" action="{{ path('admin.cms.components.availability') }}" class="d-inline">
                                         <input type="hidden" name="_token" value="{{ assignToken() }}">
                                         <input type="hidden" name="component" value="{{ component.name }}">
                                         <input type="hidden" name="offered" value="{{ component.offered ? '0' : '1' }}">
-                                        {% if component.offered %}
-                                            <button class="btn btn-sm btn-outline-secondary" type="submit" data-testid="cms-component-toggle-{{ component.name }}">
-                                                <i class="bi bi-eye-slash me-1" aria-hidden="true"></i>{{ 'Disable'|trans({}, 'theliacms') }}
-                                            </button>
-                                        {% else %}
-                                            <button class="btn btn-sm btn-outline-primary" type="submit" data-testid="cms-component-toggle-{{ component.name }}">
-                                                <i class="bi bi-eye me-1" aria-hidden="true"></i>{{ 'Enable'|trans({}, 'theliacms') }}
-                                            </button>
-                                        {% endif %}
+                                        <div class="form-check form-switch d-inline-flex align-items-center gap-1 ps-0 mb-0">
+                                            <input class="form-check-input ms-0 mt-0" type="checkbox" role="switch"{% if component.offered %} checked{% endif %} aria-label="{{ 'Offered to the generator'|trans({}, 'theliacms') }}" data-testid="cms-component-toggle-{{ component.name }}" onchange="this.form.submit()">
+                                        </div>
+                                        <noscript><button class="btn btn-sm btn-outline-secondary" type="submit">{{ component.offered ? 'Disable'|trans({}, 'theliacms') : 'Enable'|trans({}, 'theliacms') }}</button></noscript>
                                     </form>
                                 {% endif %}
+                            </td>
+                            <td class="text-end datatable-sticky-actions">
+                                {# The eye alone, as the actions of the lists of the back office. #}
+                                <a class="btn btn-sm btn-outline-secondary" href="{{ component.show_url }}" title="{{ 'See'|trans({}, 'theliacms') }}" data-testid="cms-component-see-{{ component.name }}">
+                                    <i class="bi bi-eye" aria-hidden="true"></i><span class="visually-hidden">{{ 'See'|trans({}, 'theliacms') }}</span>
+                                </a>
                             </td>
                         </tr>
                     {% else %}
                         <tr>
-                            <td colspan="6" class="text-muted" data-testid="cms-components-empty">{{ 'No component is available.'|trans({}, 'theliacms') }}</td>
+                            <td colspan="4" class="text-muted" data-testid="cms-components-empty">{{ 'No component is available.'|trans({}, 'theliacms') }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
+    <script>
+        (function () {
+            var buttons = document.querySelectorAll('[data-origin-filter]');
+            buttons.forEach(function (button) {
+                button.addEventListener('click', function () {
+                    var origin = button.getAttribute('data-origin-filter');
+                    buttons.forEach(function (other) {
+                        var active = other === button;
+                        other.classList.toggle('active', active);
+                        other.setAttribute('aria-pressed', active ? 'true' : 'false');
+                    });
+                    document.querySelectorAll('[data-origin]').forEach(function (row) {
+                        row.classList.toggle('d-none', origin !== 'all' && row.getAttribute('data-origin') !== origin);
+                    });
+                });
+            });
+        })();
+    </script>
 {% endblock %}

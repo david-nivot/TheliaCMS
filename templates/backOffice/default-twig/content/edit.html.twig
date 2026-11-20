@@ -27,6 +27,11 @@
     {{ include('@TheliaCMSModule/backOffice/default-twig/content/_image_crop.html.twig') }}
     {# The picker of a page, a product or a category, bound the same way. #}
     {{ include('@TheliaCMSModule/backOffice/default-twig/_record_picker.html.twig') }}
+    {# The behaviours of the form of a section, which content-editor.js calls. #}
+    <script src="{{ cms_asset('assets/section-form.js') }}?v={{ assets_version }}" defer></script>
+    <script src="{{ cms_asset('assets/toasts.js') }}?v={{ cms_asset_version('assets/toasts.js') }}" defer></script>
+    {# What the preview shows, shared with the pages of a component. #}
+    <script src="{{ cms_asset('assets/preview-choices.js') }}?v={{ cms_asset_version('assets/preview-choices.js') }}" defer></script>
     <script src="{{ cms_asset('assets/content-editor.js') }}?v={{ assets_version }}" defer></script>
 {% endblock %}
 
@@ -139,25 +144,7 @@
                 {% set showing_prototype = prototype and prototype.preview_url %}
                 {% set frame_page_url = showing_prototype ? prototype.preview_url : draft_page_url %}
                 {% set frame_content_url = showing_prototype ? prototype.preview_content_url : subject.draftPreviewUrl %}
-                {% if frame_page_url %}
-                    <div class="btn-group btn-group-sm" role="group" aria-label="{{ 'What the preview shows'|trans({}, 'theliacms') }}" data-cms-preview-modes data-testid="cms-content-preview-modes">
-                        <input type="radio" class="btn-check" name="cms-preview-mode" id="cms-preview-mode-page" value="page" data-url="{{ frame_page_url }}" checked>
-                        <label class="btn btn-outline-secondary" for="cms-preview-mode-page">{{ 'Whole page'|trans({}, 'theliacms') }}</label>
-                        <input type="radio" class="btn-check" name="cms-preview-mode" id="cms-preview-mode-content" value="content" data-url="{{ frame_content_url }}">
-                        <label class="btn btn-outline-secondary" for="cms-preview-mode-content">{{ 'Content only'|trans({}, 'theliacms') }}</label>
-                    </div>
-                {% endif %}
-                {# The widths of the toolkit of the theme: the preview at the width
-                   of a breakpoint, or at the width of the screen. #}
-                {% if preview_widths is not empty %}
-                    <select class="form-select form-select-sm cms-content__width" data-cms-preview-width
-                            aria-label="{{ 'Width of the preview'|trans({}, 'theliacms') }}" data-testid="cms-content-preview-width">
-                        <option value="">{{ 'Responsive'|trans({}, 'theliacms') }}</option>
-                        {% for width in preview_widths %}
-                            <option value="{{ width.px }}">{{ width.label|trans({}, 'theliacms') }} ({{ width.px }}px)</option>
-                        {% endfor %}
-                    </select>
-                {% endif %}
+                {{ include('@TheliaCMSModule/backOffice/default-twig/content/_preview_choices.html.twig', { page_url: frame_page_url, content_url: frame_content_url, widths: preview_widths, prefix: 'cms-preview-mode', testid: 'cms-content' }, with_context = false) }}
                 <a class="btn btn-sm btn-outline-secondary" href="{{ draft_page_url ?: subject.draftPreviewUrl }}" target="_blank" rel="noopener" data-cms-preview-link
                    title="{{ 'Open the draft in a new tab. The link works for 72 hours and can be shared.'|trans({}, 'theliacms') }}"
                    data-testid="cms-page-draft-preview-btn">
@@ -481,7 +468,7 @@
                                                     <button type="submit" class="btn-close" aria-label="{{ 'Close'|trans({}, 'theliacms') }}"></button>
                                                 </form>
                                             </div>
-                                            {{ include('@TheliaCMSModule/backOffice/default-twig/content/_section_form.html.twig', { form: section.edit }) }}
+                                            {{ include('@TheliaCMSModule/backOffice/default-twig/content/_section_form.html.twig', { form: section.edit, component: section.component }) }}
                                         </dialog>
                                     {% endif %}
                                     {% if may_generate and ai_page %}

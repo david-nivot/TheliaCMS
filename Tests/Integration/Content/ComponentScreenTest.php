@@ -23,7 +23,7 @@ use TheliaCMS\Content\DocumentSchema;
 use TheliaCMS\Content\RichTextSection;
 use TheliaCMS\Content\Section;
 use TheliaCMS\Content\SectionCatalog;
-use TheliaCMS\Generation\Admin\ToolkitLink;
+use TheliaCMS\Content\Theme\ThemeComponentSection;
 use TheliaCMS\Generation\Brief;
 use TheliaCMS\Generation\CatalogSheet;
 use TheliaCMS\Generation\GenerationRequest;
@@ -55,7 +55,7 @@ final class ComponentScreenTest extends AdminScreenTestCase
 
         self::assertSame($before + 1, (int) $this->cell($screen, 'pages', RichTextSection::NAME)->attr('data-pages'), 'The new page is counted.');
         self::assertSame('1', $this->cell($screen, 'offered', self::COMPONENT)->attr('data-offered'));
-        self::assertStringContainsString('Partial', $this->cell($screen, 'origin', self::COMPONENT)->text());
+        self::assertStringContainsString('partial', $this->cell($screen, 'origin', self::COMPONENT)->text());
         self::assertSame(0, $this->cell($screen, 'toggle', RichTextSection::NAME)->count(), 'Free text cannot be put away.');
 
         $entry = $screen->filter('[data-testid="bo-nav-cms-components"]');
@@ -63,24 +63,126 @@ final class ComponentScreenTest extends AdminScreenTestCase
         self::assertSame(self::SCREEN, parse_url((string) $entry->attr('href'), \PHP_URL_PATH));
     }
 
-    public function testTheScreenLinksToTheToolkitWhereItAnswers(): void
+    /**
+     * Sabotage: in list.html.twig, drop the `data-origin` of the rows, or give
+     * the origin a column of its own again: the filter or the badge go red.
+     */
+    public function testTheListGivesEachComponentOneLinkToItsPageAndAFilterByOrigin(): void
     {
-        $toolkit = $this->getService(ToolkitLink::class);
-        \assert($toolkit instanceof ToolkitLink);
         $screen = $this->screen(self::SCREEN);
-        $link = $screen->filter('[data-testid="cms-components-toolkit"]');
+
         $see = $this->cell($screen, 'see', self::COMPONENT);
+        self::assertSame(1, $see->count());
+        self::assertSame('/admin/cms/components/'.self::COMPONENT, parse_url((string) $see->attr('href'), \PHP_URL_PATH), 'The only action leads to the page of the component.');
+        self::assertSame(0, $screen->filter('[data-testid="cms-components-toolkit"]')->count(), 'The toolkit is no longer linked from the list.');
+        self::assertSame(1, $screen->filter('[data-testid="cms-component-row-'.self::COMPONENT.'"] a.btn')->count(), 'One link per row.');
+        self::assertSame('partial', $screen->filter('[data-testid="cms-component-row-'.self::COMPONENT.'"]')->attr('data-origin'));
+        $origin = $this->cell($screen, 'origin', self::COMPONENT);
+        self::assertStringNotContainsString('badge', (string) $origin->attr('class'), 'The origin is a bare coloured icon, with no background.');
+        self::assertSame('Origin: partial', $origin->attr('title'), 'Its tooltip says the origin.');
+        self::assertSame('Origin: partial', $origin->filter('.visually-hidden')->text(), 'And so does its hidden text.');
+        self::assertSame(1, $origin->filter('i.bi')->count(), 'It draws an icon.');
+        $cell = $screen->filter('[data-testid="cms-component-row-'.self::COMPONENT.'"] td:first-child');
+        self::assertSame(1, $cell->filter('[data-testid="cms-component-origin-'.self::COMPONENT.'"]')->count(), 'The badge sits in the cell of the name.');
+        self::assertLessThan(
+            strpos((string) $cell->html(), 'fw-medium'),
+            strpos((string) $cell->html(), 'cms-component-origin-'),
+            'The badge comes before the name, on its line.',
+        );
+        $colour = static fn (Crawler $element, string $prefix): array => array_values(preg_grep('/^'.$prefix.'/', explode(' ', (string) $element->attr('class'))) ?: []);
+        self::assertSame(['text-secondary'], $colour($origin, 'text-'), 'The icon wears the text colour of its origin.');
+        self::assertSame(['text-bg-secondary'], $colour($screen->filter('[data-testid="cms-components-filter-count-partial"]'), 'text-bg-'), 'The count of the button wears the same colour, as a badge.');
+        self::assertSame(1, $screen->filter('[data-testid="cms-components-filter-partial"] i.bi-layout-text-window')->count(), 'The button shows the icon of its origin.');
+        self::assertStringContainsString('All components', $screen->filter('[data-testid="cms-components-filter-all"]')->text(), 'The button that shows everything has a key of its own, not the one of the other screens.');
+        self::assertSame(4, $screen->filter('thead th')->count(), 'No column of its own for the origin: name, pages, offered, actions.');
 
-        if (null === $toolkit->url()) {
-            self::assertSame(0, $link->count(), 'No link where the toolkit does not answer.');
-            self::assertSame(0, $see->count());
+        $partials = (int) $screen->filter('[data-testid="cms-components-filter-count-partial"]')->text();
+        self::assertGreaterThan(0, $partials);
+        self::assertSame($partials, $screen->filter('tr[data-origin="partial"]')->count(), 'The count of the button is the number of rows of the origin.');
+        self::assertSame($screen->filter('tbody tr[data-origin]')->count(), (int) $screen->filter('[data-testid="cms-components-filter-count-all"]')->text());
+    }
 
-            return;
+    /**
+     * Sabotage: in CmsComponentAdminController::list(), set `may_disable` to
+     * true for every component: free text gets an active switch.
+     */
+    public function testAComponentAlwaysOfferedHasADisabledSwitch(): void
+    {
+        $screen = $this->screen(self::SCREEN);
+
+        self::assertSame(0, $this->cell($screen, 'toggle', RichTextSection::NAME)->count());
+        $locked = $this->cell($screen, 'switch-disabled', RichTextSection::NAME);
+        self::assertSame(1, $locked->count());
+        self::assertNotNull($locked->attr('disabled'));
+        self::assertSame(1, $screen->filter('[data-testid="cms-component-row-'.RichTextSection::NAME.'"] .bi-lock')->count());
+        self::assertSame(1, $this->cell($screen, 'toggle', self::COMPONENT)->count(), 'A component that may be put away has a live switch.');
+    }
+
+    /**
+     * Sabotage: in the controller, answer the page of a component of the
+     * catalogue only for the components of the site: the module and the
+     * partial go red.
+     */
+    public function testEveryComponentOfTheCatalogueHasItsPage(): void
+    {
+        foreach ([RichTextSection::NAME, self::COMPONENT] as $name) {
+            $screen = $this->screen('/admin/cms/components/'.$name);
+            $definition = $this->catalog()->find($name);
+            \assert(null !== $definition);
+
+            self::assertStringContainsString($definition->label(), $screen->filter('title')->text(), $name);
+            self::assertSame($name, $screen->filter('.cms-content__bar code')->first()->text());
+            self::assertGreaterThan(0, $screen->filter('[data-testid="cms-site-component-props"] tbody tr')->count(), \sprintf('%s lists its props.', $name));
+            self::assertSame(0, $screen->filter('[data-testid="cms-site-component-copy"], [data-testid="cms-site-component-delete"], [data-testid="cms-site-component-change"]')->count(), 'No column of management for what the site did not make.');
+            self::assertSame(1, $screen->filter('[data-testid="cms-site-component-frame"]')->count(), 'Every component has its preview.');
+            self::assertSame(1, $screen->filter('script[src*="/toasts.js"]')->count(), 'Its notices are shown: the page replaces the layout, and its messages with it.');
+        }
+    }
+
+    public function testAComponentOfTheThemeHasItsPageToo(): void
+    {
+        $theme = null;
+
+        foreach ($this->catalog()->all() as $name => $definition) {
+            if ($definition instanceof ThemeComponentSection) {
+                $theme = $name;
+
+                break;
+            }
         }
 
-        self::assertSame(1, $link->count(), 'The screen links to the toolkit.');
-        self::assertSame($toolkit->url(), $link->attr('href'));
-        self::assertSame($toolkit->url().'#partial-cms-form', $see->attr('href'), 'Each component links to its section of the toolkit page.');
+        if (null === $theme) {
+            self::markTestSkipped('The theme of this host opens no component to pages.');
+        }
+
+        $screen = $this->screen('/admin/cms/components/'.$theme);
+        self::assertSame($theme, $screen->filter('.cms-content__bar code')->first()->text());
+        self::assertSame(0, $screen->filter('[data-testid="cms-site-component-copy"]')->count());
+    }
+
+    /**
+     * Sabotage: drop the 404 of the controller (`?? throw`): the unknown name
+     * is no longer refused.
+     */
+    public function testANameTheCatalogueDoesNotHoldAnswers404(): void
+    {
+        $this->client->request('GET', '/admin/cms/components/Cms:Nothing');
+        self::assertSame(404, $this->client->getResponse()->getStatusCode());
+
+        $this->client->request('GET', '/admin/cms/components/availability');
+        self::assertSame(404, $this->client->getResponse()->getStatusCode(), 'The address of the switch is not the page of a component.');
+    }
+
+    /**
+     * Sabotage: in CmsSiteComponentController::show(), answer 302 or point at
+     * another name.
+     */
+    public function testTheOldAddressOfAComponentOfTheSiteRedirectsForGood(): void
+    {
+        $this->client->request('GET', '/admin/cms/components/site/PriceTable');
+
+        self::assertSame(301, $this->client->getResponse()->getStatusCode());
+        self::assertSame('/admin/cms/components/Site:PriceTable', parse_url((string) $this->client->getResponse()->headers->get('Location'), \PHP_URL_PATH));
     }
 
     public function testADisabledComponentIsNoLongerOfferedToTheGeneratorAndComesBack(): void

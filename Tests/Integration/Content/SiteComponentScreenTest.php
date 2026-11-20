@@ -123,21 +123,22 @@ final class SiteComponentScreenTest extends AdminScreenTestCase
 
         $keep = $this->screen($second)->filter('[data-testid="cms-site-component-keep"]')->form();
         self::assertSame(302, $this->send('POST', $keep->getUri(), $keep->getPhpValues()));
-        self::assertStringEndsWith('/admin/cms/components/site/PriceTable', (string) $this->client->getResponse()->headers->get('Location'));
+        self::assertStringEndsWith('/admin/cms/components/Site:PriceTable', (string) $this->client->getResponse()->headers->get('Location'));
 
         $kept = $this->getService(SiteComponentRepository::class)->find('PriceTable');
         self::assertSame('.plan { padding: 1rem; }', $kept?->css);
         self::assertSame(SiteComponentRepository::STATUS_READY, $this->getService(SiteComponentRepository::class)->status('PriceTable'));
         $id = (int) CmsComponentQuery::create()->findOneByCode('PriceTable')?->getId();
         self::assertSame($id, (int) CmsPageGenerationQuery::create()->findPk(self::idOf($second))?->getTargetId(), 'The call it came from starts its history.');
+        self::assertSame(self::idOf($second), $this->getService(SiteComponentRepository::class)->generationOf('PriceTable'), 'A new component kept is marked with the call it came from.');
 
-        $screen = $this->screen('/admin/cms/components/site/PriceTable');
+        $screen = $this->screen('/admin/cms/components/Site:PriceTable');
         self::assertSame(1, $screen->filter('[data-testid="cms-site-component-history"] li a')->count());
-        self::assertMatchesRegularExpression('#^/cms-component-preview/component-PriceTable/#', (string) $screen->filter('[data-testid="cms-site-component-frame"]')->attr('src'));
+        self::assertMatchesRegularExpression('#^/cms-component-preview/section-Site:PriceTable/#', (string) $screen->filter('[data-testid="cms-site-component-frame"]')->attr('src'));
 
         $list = $this->screen('/admin/cms/components');
-        self::assertStringContainsString('Made on this site', $list->filter('[data-testid="cms-component-origin-Site:PriceTable"]')->text());
-        self::assertSame(1, $list->filter('[data-testid="cms-component-open-Site:PriceTable"]')->count());
+        self::assertStringContainsString('made on this site', $list->filter('[data-testid="cms-component-origin-Site:PriceTable"]')->text());
+        self::assertSame(1, $list->filter('[data-testid="cms-component-see-Site:PriceTable"]')->count());
 
         $this->client->request('GET', '/cms/site-components.css');
         self::assertStringContainsString('.cms-site--price-table .plan {padding: 1rem;}', (string) $this->client->getResponse()->getContent(), 'The site serves the stylesheet of what it kept, scoped.');
@@ -150,7 +151,7 @@ final class SiteComponentScreenTest extends AdminScreenTestCase
         $id = (int) CmsComponentQuery::create()->findOneByCode('PriceTable')?->getId();
         $this->api->answer(self::answer(PriceTable::component(css: '.plan { color: var(--cms-color-text); }')));
 
-        $candidate = $this->ask('Change la couleur du texte.', ['component' => 'PriceTable'], '/admin/cms/components/site/PriceTable');
+        $candidate = $this->ask('Change la couleur du texte.', ['component' => 'PriceTable'], '/admin/cms/components/Site:PriceTable');
 
         self::assertSame($id, (int) CmsPageGenerationQuery::create()->findPk(self::idOf($candidate))?->getTargetId());
         self::assertSame('', $repository->find('PriceTable')?->css, 'The kept version stays until the new one is kept.');
@@ -161,6 +162,55 @@ final class SiteComponentScreenTest extends AdminScreenTestCase
         self::assertSame(1, CmsComponentQuery::create()->count(), 'The component is replaced, not doubled.');
     }
 
+    /**
+     * Sabotage: drop the call passed to save() by keep(): no mark anywhere.
+     * Drop the one passed by sample(): saving the example takes the mark away.
+     */
+    public function testTheVersionInPlaceIsMarkedInTheHistoryAndOnItsPage(): void
+    {
+        $repository = $this->getService(SiteComponentRepository::class);
+        $repository->save(PriceTable::component(), SiteComponentRepository::STATUS_READY);
+        $this->api
+            ->answer(self::answer(PriceTable::component(css: '.plan { padding: 1rem; }')))
+            ->answer(self::answer(PriceTable::component(css: '.plan { padding: 2rem; }')));
+
+        $first = $this->ask('Plus d’espace.', ['component' => 'PriceTable'], '/admin/cms/components/Site:PriceTable');
+        $second = $this->ask('Encore plus d’espace.', ['component' => 'PriceTable'], '/admin/cms/components/Site:PriceTable');
+
+        self::assertNull($repository->generationOf('PriceTable'), 'A component made before the mark has none.');
+        self::assertSame(0, $this->screen('/admin/cms/components/Site:PriceTable')->filter('[data-testid="cms-site-component-in-place"]')->count());
+
+        $keep = $this->screen($first)->filter('[data-testid="cms-site-component-keep"]')->form();
+        self::assertSame(302, $this->send('POST', $keep->getUri(), $keep->getPhpValues()));
+        self::assertSame(self::idOf($first), $repository->generationOf('PriceTable'));
+
+        $history = $this->screen('/admin/cms/components/Site:PriceTable')->filter('[data-testid="cms-site-component-in-place"]');
+        self::assertSame(1, $history->count(), 'One call is in place.');
+        self::assertStringEndsWith($first, (string) $history->filter('a')->attr('href'));
+
+        $kept = $this->screen($first);
+        self::assertSame(1, $kept->filter('.cms-content__bar [data-testid="cms-site-component-in-place"]')->count());
+        self::assertSame(0, $kept->filter('[data-testid="cms-site-component-keep"]')->count(), 'The version in place is not kept again.');
+        $other = $this->screen($second);
+        self::assertSame(1, $other->filter('[data-testid="cms-site-component-proposed"]')->count(), 'The page says it shows a version proposed.');
+        self::assertSame(0, $other->filter('[data-testid="cms-site-component-in-place"]')->count());
+
+        $keep = $other->filter('[data-testid="cms-site-component-keep"]')->form();
+        self::assertSame(302, $this->send('POST', $keep->getUri(), $keep->getPhpValues()));
+        self::assertSame(self::idOf($second), $repository->generationOf('PriceTable'), 'The mark follows the version kept.');
+
+        // An example saved leaves the version, and its call, in place.
+        $page = $this->screen('/admin/cms/components/Site:PriceTable');
+        $sample = (string) $page->filter('[data-testid="cms-component-save-sample"]')->attr('formaction');
+        self::assertSame(302, $this->send('POST', $sample, $page->filter('form#cms-component-controls')->form()->getPhpValues()));
+        self::assertSame(self::idOf($second), $repository->generationOf('PriceTable'));
+
+        // A call deleted empties the mark, and nothing else.
+        CmsPageGenerationQuery::create()->findPk(self::idOf($second))?->delete();
+        self::assertNull($repository->generationOf('PriceTable'));
+        self::assertSame('.plan { padding: 2rem; }', $repository->find('PriceTable')?->css);
+    }
+
     public function testAVersionThatBreaksAPageIsNotKeptAndOneThatFitsDrawsTheDraftsAgain(): void
     {
         $repository = $this->getService(SiteComponentRepository::class);
@@ -168,8 +218,8 @@ final class SiteComponentScreenTest extends AdminScreenTestCase
         // A candidate written before a page used the component: the check
         // runs again when it is kept, on what the pages hold then.
         $this->api->answer(self::answer(PriceTable::renamingThePlanName()))->answer(self::answer(PriceTable::component(str_replace('class="price-table ', 'class="price-table price-table--v2 ', PriceTable::TEMPLATE))));
-        $breaking = $this->ask('Renomme le nom des formules en titre.', ['component' => 'PriceTable'], '/admin/cms/components/site/PriceTable');
-        $fitting = $this->ask('Ajoute un commentaire.', ['component' => 'PriceTable'], '/admin/cms/components/site/PriceTable');
+        $breaking = $this->ask('Renomme le nom des formules en titre.', ['component' => 'PriceTable'], '/admin/cms/components/Site:PriceTable');
+        $fitting = $this->ask('Ajoute un commentaire.', ['component' => 'PriceTable'], '/admin/cms/components/Site:PriceTable');
 
         $page = $this->createPage('Nos tarifs', published: false);
         $writer = $this->getService(CmsPageWriter::class);
@@ -194,7 +244,7 @@ final class SiteComponentScreenTest extends AdminScreenTestCase
         $writer = $this->getService(CmsPageWriter::class);
         $writer->saveContent($page, $this->locale(), new Document([new Section('plans', 'Site:PriceTable', ['plans' => [['name' => 'Studio', 'price' => '40 €']]])]));
 
-        $screen = $this->screen('/admin/cms/components/site/PriceTable');
+        $screen = $this->screen('/admin/cms/components/Site:PriceTable');
         self::assertSame(1, $screen->filter('[data-testid="cms-site-component-in-use"]')->count());
         self::assertSame(0, $screen->filter('[data-testid="cms-site-component-delete"]')->count());
 
@@ -203,7 +253,7 @@ final class SiteComponentScreenTest extends AdminScreenTestCase
         self::assertNotNull($repository->find('PriceTable'), 'A component a page holds stays.');
 
         $writer->saveContent($page, $this->locale(), new Document([new Section('intro', 'cms:richtext', ['html' => '<h2>Tarifs</h2>'])]));
-        $delete = $this->screen('/admin/cms/components/site/PriceTable')->filter('[data-testid="cms-site-component-delete"]')->form();
+        $delete = $this->screen('/admin/cms/components/Site:PriceTable')->filter('[data-testid="cms-site-component-delete"]')->form();
         self::assertSame(302, $this->send('POST', $delete->getUri(), $delete->getPhpValues()));
         self::assertNull($repository->find('PriceTable'));
         self::assertStringEndsWith('/admin/cms/components', (string) $this->client->getResponse()->headers->get('Location'));
@@ -217,13 +267,13 @@ final class SiteComponentScreenTest extends AdminScreenTestCase
         $source = (new SiteComponentValidator())->validate(PriceTable::component(css: '.plan { color: var(--cms-color-text); }')->withProvenance('{"generator":"thelia-ai"}'));
         $repository->save($source, SiteComponentRepository::STATUS_READY);
 
-        $form = $this->screen('/admin/cms/components/site/PriceTable')->filter('form[data-testid="cms-site-component-copy"]')->form();
+        $form = $this->screen('/admin/cms/components/Site:PriceTable')->filter('form[data-testid="cms-site-component-copy"]')->form();
         self::assertSame($source->label, $form['label']->getValue(), 'The label of the source is the one to start from.');
         $form['code'] = 'PriceTableDark';
         $form['label'] = 'Tarifs, version sombre';
 
         self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()));
-        self::assertStringEndsWith('/admin/cms/components/site/PriceTableDark', (string) $this->client->getResponse()->headers->get('Location'));
+        self::assertStringEndsWith('/admin/cms/components/Site:PriceTableDark', (string) $this->client->getResponse()->headers->get('Location'));
 
         $copy = $repository->find('PriceTableDark');
         self::assertNotNull($copy);
@@ -233,8 +283,8 @@ final class SiteComponentScreenTest extends AdminScreenTestCase
         self::assertSame(SiteComponentRepository::STATUS_DRAFT, $repository->status('PriceTableDark'), 'A prototype: the generator is not offered two identical components.');
         self::assertSame(SiteComponentRepository::STATUS_READY, $repository->status('PriceTable'), 'The source is left as it is.');
 
-        $screen = $this->screen('/admin/cms/components/site/PriceTableDark');
-        self::assertSame(1, $screen->filter('[data-testid="bo-flash-success"]')->count());
+        $screen = $this->screen('/admin/cms/components/Site:PriceTableDark');
+        self::assertSame(1, $screen->filter('[data-testid="cms-builder-flash-success"]')->count());
         self::assertSame(1, $screen->filter('[data-testid="cms-site-component-prototype"]')->count());
         self::assertArrayNotHasKey('Site:PriceTableDark', $this->getService(SectionCatalog::class)->offered(), 'Offered to nobody until it is kept for the whole site.');
     }
@@ -243,13 +293,13 @@ final class SiteComponentScreenTest extends AdminScreenTestCase
     {
         $repository = $this->getService(SiteComponentRepository::class);
         $repository->save(PriceTable::component(), SiteComponentRepository::STATUS_READY);
-        $form = $this->screen('/admin/cms/components/site/PriceTable')->filter('form[data-testid="cms-site-component-copy"]')->form();
+        $form = $this->screen('/admin/cms/components/Site:PriceTable')->filter('form[data-testid="cms-site-component-copy"]')->form();
 
         foreach (['PriceTable', 'price-table', ''] as $code) {
             $form['code'] = $code;
             self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()), $code);
-            self::assertStringEndsWith('/admin/cms/components/site/PriceTable', (string) $this->client->getResponse()->headers->get('Location'), 'Back on the source.');
-            self::assertSame(1, $this->screen('/admin/cms/components/site/PriceTable')->filter('[data-testid="bo-flash-danger"]')->count(), \sprintf('"%s" is refused, and the editor is told why.', $code));
+            self::assertStringEndsWith('/admin/cms/components/Site:PriceTable', (string) $this->client->getResponse()->headers->get('Location'), 'Back on the source.');
+            self::assertSame(1, $this->screen('/admin/cms/components/Site:PriceTable')->filter('[data-testid="cms-builder-flash-danger"]')->count(), \sprintf('"%s" is refused, and the editor is told why.', $code));
         }
 
         self::assertSame(1, CmsComponentQuery::create()->count(), 'Nothing was saved.');
@@ -258,13 +308,13 @@ final class SiteComponentScreenTest extends AdminScreenTestCase
     public function testCopyingAComponentTakesTheRightToMakeOne(): void
     {
         $this->getService(SiteComponentRepository::class)->save(PriceTable::component(), SiteComponentRepository::STATUS_READY);
-        $token = $this->tokenOfTheScripts($this->screen('/admin/cms/components/site/PriceTable'));
+        $token = $this->tokenOfTheScripts($this->screen('/admin/cms/components/Site:PriceTable'));
 
         $this->logInAs((new FixtureFactory($this->getPropelConnection()))->restrictedAdmin([
             CmsResources::SETTINGS => [AccessManager::VIEW, AccessManager::UPDATE],
         ]));
 
-        self::assertSame(0, $this->screen('/admin/cms/components/site/PriceTable')->filter('form[data-testid="cms-site-component-copy"]')->count());
+        self::assertSame(0, $this->screen('/admin/cms/components/Site:PriceTable')->filter('form[data-testid="cms-site-component-copy"]')->count());
         self::assertSame(403, $this->send('POST', '/admin/cms/components/site/PriceTable/copy', ['_token' => $token, 'code' => 'PriceTableDark', 'label' => 'Sombre']));
         self::assertSame(1, CmsComponentQuery::create()->count());
     }
@@ -281,7 +331,7 @@ final class SiteComponentScreenTest extends AdminScreenTestCase
         self::assertSame(1, $existing->count());
         self::assertStringContainsString('Site:PriceTable', $existing->text());
         self::assertStringContainsString('it already shows plans with their prices.', $existing->text());
-        self::assertSame('/admin/cms/components/site/PriceTable', $existing->filter('a')->attr('href'), 'A component of the site has its screen.');
+        self::assertSame('/admin/cms/components/Site:PriceTable', $existing->filter('a')->attr('href'), 'A component of the site has its screen.');
         self::assertSame('done', $screen->filter('[data-testid="cms-site-component-outcome"]')->attr('data-status'));
         self::assertSame(0, $screen->filter('[data-testid="cms-site-component-keep"]')->count(), 'No candidate: nothing to keep.');
         self::assertSame(0, $screen->filter('[data-testid="cms-site-component-frame"]')->count(), 'Nothing to preview.');
@@ -316,7 +366,7 @@ final class SiteComponentScreenTest extends AdminScreenTestCase
         $basedOn = $screen->filter('[data-testid="cms-site-component-based-on"]');
         self::assertStringContainsString('Site:PriceTable', $basedOn->text());
         self::assertStringContainsString('a darker look.', $basedOn->text());
-        self::assertSame('/admin/cms/components/site/PriceTable', $basedOn->filter('a')->attr('href'));
+        self::assertSame('/admin/cms/components/Site:PriceTable', $basedOn->filter('a')->attr('href'));
     }
 
     public function testTheScriptOfTheScreenIsToldTheSiteAlreadyHasTheComponent(): void
@@ -395,7 +445,7 @@ final class SiteComponentScreenTest extends AdminScreenTestCase
         self::assertSame(1, $this->screen(self::NEW)->filter('[data-testid="cms-site-component-not-allowed"]')->count());
         self::assertSame(0, $this->screen('/admin/cms/components')->filter('[data-testid="cms-components-new"]')->count());
 
-        $kept = $this->screen('/admin/cms/components/site/PriceTable');
+        $kept = $this->screen('/admin/cms/components/Site:PriceTable');
         self::assertSame(0, $kept->filter('[data-testid="cms-site-component-change"]')->count(), 'No change is asked of the generator.');
         self::assertSame(1, $kept->filter('form[data-testid="cms-site-component-copy"]')->count(), 'A copy calls no model: the right to make a component is enough.');
 
