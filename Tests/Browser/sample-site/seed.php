@@ -126,6 +126,7 @@ $container->get('request_stack')->push($request);
 // Seeded: the same site on every run.
 $random = new Random\Randomizer(new Random\Engine\Mt19937(2021));
 $connection = Propel\Runtime\Propel::getConnection('TheliaMain');
+/** @var array<string, mixed> $manifest "complete" turns true at the very end, which the shutdown function below reads */
 $manifest = ['complete' => false, 'pages' => [], 'tags' => [], 'images' => [], 'image_files' => [], 'models' => [], 'menu_items' => []];
 
 // Written whatever happens from here on: a run that stops midway (an exception,
