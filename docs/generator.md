@@ -8,7 +8,7 @@ usual pipeline.
 
 ## What it needs
 
-- Thelia 3.3.0 or later, whose AI layer the generator goes through. The
+- Thelia 3.4.0 or later, whose AI layer the generator goes through. The
   module holds no key, no provider and no model.
 - A connection and a range in the **AI settings** of Thelia: declare the
   connection to a provider once, then give each of the five usages below a
@@ -18,14 +18,19 @@ usual pipeline.
   jurisdiction (providers inside the European Union only) and the guardrails
   of the AI settings apply to every call: when one refuses, the editor reads
   which and what to change there.
-- Six settings, in the **Generator** card of CMS > Settings, each with a
-  default: `generator_effort` (`high`; `low`, `medium`, `xhigh` and `max`
-  exist; passed to the model as its reasoning effort, read by Anthropic models
-  and without effect on the others), `generator_max_tokens` (48000),
+- Four settings, in the **Generator** card of CMS > Settings, each with a
+  default: `generator_max_tokens` (48000),
   `generator_web_fetch` (off: read the web pages a brief cites, below),
   `generator_component_making` (off: let a brief make a component of the
-  site, below), and for the texts beside a field `generator_text_effort` (`low`) and
-  `generator_text_max_tokens` (2000). The card links to the AI settings.
+  site, below), and for the texts beside a field `generator_text_max_tokens`
+  (2000). The card links to the AI settings.
+- The reasoning effort (`low`, `medium`, `high`, `xhigh` or `max`) is not a
+  setting of the module: Thelia 3.4 holds it, per range of model and per usage
+  (the usage wins over its range), and the generators send none of their own.
+  Only Anthropic models read it. Before 2.42.0 the module sent `high` (`low`
+  for the texts beside a field): update 2.42.0 writes the value a site had
+  chosen as the effort of each usage, unless the usage already had one, so
+  nothing changes in cost or behaviour until a merchant changes it there.
 - The right `admin.cms.generate`, given to the editor profile the module
   seeds: asking the generator to write costs money.
 
@@ -592,7 +597,7 @@ the signed preview link of the draft.
   nothing followed.
 - **History**: the calls of the ledger for this page and language, with their
   outcome, turns, duration and cost, what each one left out of the brief, and
-  what it needed ("2 corrections, 1 retry, read_url ×2, effort high"). A call
+  what it needed ("2 corrections, 1 retry, read_url ×2", and the effort when the call asked for one with `--effort`). A call
   that runs or that died shows `Running` or `Interrupted`.
 - **Publish**: the usual pipeline, with the heading check.
 
@@ -703,7 +708,7 @@ answer said the page leaves out is kept as a JSON list of sentences
 - **Cost of a request that failed or was cut.** When a core exception names a
   usage log row (`logId`), its cost (`Thelia\Model\AiUsageLog::getCost()`, priced
   from the tokens received) is added to the cost of the call.
-- **What it needed**: `effort` (what was asked of the model), `corrections`
+- **What it needed**: `effort` (the effort a call asked for explicitly, `--effort`; empty when the AI settings of Thelia decide), `corrections`
   (documents sent back), `retries` (cut answers asked again) and `tools` (a JSON
   object `{name: count}`).
 
@@ -711,7 +716,7 @@ answer said the page leaves out is kept as a JSON list of sentences
 
 `Generation/Component/ComponentGenerator.php` makes a component of the site
 from a request (see [creating-a-component.md](creating-a-component.md#a-component-made-in-the-back-office)).
-Same gateway, effort and log as the pages, under its own usage
+Same gateway, effort (the one of the AI settings of Thelia) and log as the pages, under its own usage
 (`theliacms.component`); no tool of its own, though the generator of pages
 may call it through `make_component` (above). The system
 prompt (`ComponentPrompt`), cached, gives the JSON form of the props, the rules
@@ -794,7 +799,7 @@ nothing. `--item <type>:<id>` writes the document of a product, a category, a
 content or a folder instead of a page. `--translate-from <locale>` writes the
 language from the draft the target holds in another one, as the button of the
 back office does, and takes no brief. `--effort` sets the effort of this call
-over the one of the settings, which stay as they are. The draft is saved
+(`low`, `medium`, `high`, `xhigh` or `max`), sent over the one of the AI settings of Thelia, which stay as they are. The draft is saved
 through the writer, like a save from the back office; `thelia_cms:publish` puts
 a page online.
 

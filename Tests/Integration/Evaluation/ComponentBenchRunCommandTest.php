@@ -85,7 +85,7 @@ final class ComponentBenchRunCommandTest extends CmsIntegrationTestCase
 
         self::assertSame(['table-prices', 'round-t', 1, 'fr_FR', 'Un tableau de prix de deux à quatre formules.'], [$trial['case'], $trial['round'], $trial['run'], $trial['locale'], $trial['request']]);
         self::assertSame((string) simplexml_load_file(\dirname(__DIR__, 3).'/Config/module.xml')->version, $trial['module'], 'The version of config/module.xml.');
-        self::assertSame(['fake-model', 'high'], [$trial['model'], $trial['effort']]);
+        self::assertSame(['fake-model', null], [$trial['model'], $trial['effort']], 'No effort sent: the one of the usage in the AI settings of Thelia applies.');
         self::assertSame((string) $sent->system, $trial['system']);
         self::assertSame($sent->messages[0]->content, $trial['user']);
         self::assertSame(hash('sha256', $sent->system."\n\n".$sent->messages[0]->content), $trial['prompt_sha256'], 'The hash of the system prompt and the first message of the user.');
@@ -259,7 +259,6 @@ final class ComponentBenchRunCommandTest extends CmsIntegrationTestCase
                 new SiteComponentUsage(),
                 $this->getService(SectionCatalog::class),
             ),
-            $this->getService(GeneratorSettings::class),
             new BenchPreviews($link),
             $this->getService(BenchShopRequest::class),
         );

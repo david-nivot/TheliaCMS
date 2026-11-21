@@ -353,11 +353,59 @@ final class GenerationRunTrackingTest extends CmsIntegrationTestCase
 
         $textRow = CmsPageGenerationQuery::create()->findPk($text->logId);
         self::assertSame(['search_pages' => 1], GenerationLog::toolsOf($textRow));
-        self::assertNotEmpty($textRow->getEffort());
+        self::assertNull($textRow->getEffort(), 'No effort was sent: the one of the core applies, and the row does not claim one.');
 
         $componentRow = CmsPageGenerationQuery::create()->findPk($component->logId);
         self::assertSame(1, (int) $componentRow?->getCorrections());
-        self::assertNotEmpty($componentRow->getEffort());
+        self::assertNull($componentRow->getEffort());
+    }
+
+    /**
+     * The effort belongs to the AI settings of Thelia (per usage, else per
+     * range): a call sends none of its own, so the core applies the merchant's.
+     *
+     * Sabotage: put `['anthropic' => ['effort' => 'high']]` back in the
+     * providerOptions of PageGenerator, then of ComponentGenerator, then of
+     * TextGenerator.
+     */
+    public function testNoGeneratorSendsAnEffortOfItsOwn(): void
+    {
+        $page = $this->createPage('Nos services', published: false);
+        $target = GenerationTarget::field('product', 42, 'Bol en grès', $this->locale());
+        $this->api
+            ->streamed([], FakeAiGateway::response(self::document()))
+            ->answer(FakeAiGateway::response(json_encode(['html' => '<p>Un bol.</p>'], \JSON_THROW_ON_ERROR)))
+            ->streamed([], FakeAiGateway::response(ComponentPrompt::json(PriceTable::component())));
+
+        $pageResult = $this->pages()->generate($this->request($page));
+        $this->texts()->generate(new TextRequest(GenerationRequest::text($target, $this->locale(), new Brief('Décris le bol.')), TextField::Description, ''));
+        $this->components()->generate(new ComponentRequest('Un tableau de prix.', $this->locale()));
+
+        self::assertCount(3, $this->api->requests);
+        self::assertSame(
+            [PageGenerator::USAGE => [], TextGenerator::USAGE => [], ComponentGenerator::USAGE => []],
+            [
+                $this->api->requests[0]->usageId => $this->api->requests[0]->providerOptions,
+                $this->api->requests[1]->usageId => $this->api->requests[1]->providerOptions,
+                $this->api->requests[2]->usageId => $this->api->requests[2]->providerOptions,
+            ],
+        );
+        self::assertNull(CmsPageGenerationQuery::create()->findPk($pageResult->logId)?->getEffort(), 'The ledger does not claim an effort that was never sent.');
+    }
+
+    /**
+     * Sabotage: send `[]` whatever the request holds (the `null === $effort`
+     * test of PageGenerator).
+     */
+    public function testTheEffortAskedForOneCallIsStillSentAsTheNativeOption(): void
+    {
+        $page = $this->createPage('Nos services', published: false);
+        $this->api->streamed([], FakeAiGateway::response(self::document()));
+
+        $result = $this->pages()->generate($this->request($page, effort: 'xhigh'));
+
+        self::assertSame(['anthropic' => ['effort' => 'xhigh']], $this->api->requests[0]->providerOptions, 'An explicit choice (--effort) wins over the settings of the core.');
+        self::assertSame('xhigh', CmsPageGenerationQuery::create()->findPk($result->logId)?->getEffort());
     }
 
     public function testASaveThatFailsAfterTheCallIsLoggedAndAnsweredNotLeftToBreakTheStream(): void

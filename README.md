@@ -48,7 +48,7 @@ php Thelia cache:clear
 
 `dev-main` works too, and is what to use to follow the branch.
 
-The module needs Thelia 3.3.0 or later. Composer pulls in TheliaLibrary.
+The module needs Thelia 3.4.0 or later. Composer pulls in TheliaLibrary.
 Nothing has to be built: the module ships no compiled asset beyond its
 stylesheet. The generator goes through the AI layer of Thelia: the provider,
 the key, the model and the budget are set in the AI settings of Thelia, never
@@ -257,8 +257,8 @@ the pages and the images of the site, reads the web pages the brief cites by
 their address ([docs/generator.md](docs/generator.md)), and every call it makes is written to a
 ledger the screen shows as its history, with its outcome, its turns, its
 duration and its cost. Asking it takes the right `admin.cms.generate`; the
-effort and the length of an answer are settings of this module, the model is
-chosen in the AI settings of Thelia. How it is prompted, what it may read and
+length of an answer is a setting of this module, the model and the reasoning
+effort are chosen in the AI settings of Thelia. How it is prompted, what it may read and
 what it costs: [docs/generator.md](docs/generator.md).
 
 A page written by the generator is marked as such, for the visitor and for
@@ -1295,16 +1295,19 @@ Most of them are edited under **CMS > Settings**.
 | `accessibility_check_mode` | `warn` | `warn` reports an image with no description, a link with no text and a link that only says "click here" or "read more", and publishes anyway; `block` refuses to publish. Checked wherever a page or a catalogue content goes online through the editor, the settings screen or `thelia_cms:publish`, on the HTML that goes online. Independent of `heading_check_mode`. Pages already online with such a problem are listed on the page list and, on a showcase site, on the dashboard. Import and scheduled publication do not run the check. |
 | `heading_check_mode` | `warn` | `warn` reports heading problems and publishes anyway; `block` refuses to publish. Checked wherever a page goes online: the content screen, the settings screen, `thelia_cms:publish`. |
 | `native_content_notice_dismissed` | `0` | `1` once the notice about existing contents has been closed on the Pages screen. |
-| `generator_effort` | `high` | How hard the model thinks: `low`, `medium`, `high`, `xhigh` or `max`. Anything else falls back to the default. It is passed to the model as its reasoning effort, which only Anthropic models read: on another provider it has no effect. |
 | `generator_max_tokens` | `48000` | The longest answer the generator accepts, in tokens, thinking included. Below 1024 no page fits, so a smaller value falls back to the default. Only what is written is billed, but the AI layer of Thelia reserves the budget of the whole limit on every call, and holds it under the limit of the usage and of its model. |
 | `generator_web_fetch` | `0` | `1` lets the generator read the web pages a brief cites (see [docs/generator.md](docs/generator.md#web-pages-the-brief-cites)). Off until the site turns it on. |
-| `generator_text_effort`, `generator_text_max_tokens` | `low`, `2000` | The same two settings for the texts written beside a field, which need less than a page. |
+| `generator_text_max_tokens` | `2000` | The same limit for the texts written beside a field, which need less than a page. |
 
-The provider, the key, the model and the budget are not settings of this
-module: they live in the AI settings of Thelia, where a connection is
-declared once and each usage is given a range of models. A setting of this
+The provider, the key, the model, the budget and the reasoning effort are not
+settings of this module: they live in the AI settings of Thelia, where a
+connection is declared once and each usage is given a range of models. A setting of this
 module travels with a site export, a key must not. The files written before
-2.4.0 may still carry the model of the generator: it is ignored on import.
+2.4.0 may still carry the model of the generator, and those written before
+2.42.0 its effort: both are ignored on import. The effort is set per usage, or
+per range of model, in the AI settings of Thelia (3.4 and later); the update to
+2.42.0 carried the former `generator_effort` and `generator_text_effort`
+over to it.
 
 ### Generated content and the mark of the AI Act
 

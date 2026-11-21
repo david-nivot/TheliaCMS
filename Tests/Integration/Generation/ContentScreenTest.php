@@ -95,7 +95,7 @@ final class ContentScreenTest extends AdminScreenTestCase
     protected function tearDown(): void
     {
         $settings = $this->getService(GeneratorSettings::class);
-        $settings->save($settings->effort(), $settings->maxTokens(), webFetch: false);
+        $settings->save($settings->maxTokens(), webFetch: false);
         ModuleConfigQuery::resetConfigCache();
 
         parent::tearDown();
@@ -428,7 +428,7 @@ final class ContentScreenTest extends AdminScreenTestCase
         $line = $this->screen($this->url($page->getId()))->filter('[data-testid="cms-content-history-details"]');
 
         self::assertSame(1, $line->count());
-        self::assertMatchesRegularExpression('/^1 correction\(s\), search_pages ×2, effort \w+$/', trim($line->text()));
+        self::assertMatchesRegularExpression('/^1 correction\(s\), search_pages ×2$/', trim($line->text()));
     }
 
     public function testARunningCallAndAnInterruptedOneHaveTheirOwnLabelsInTheHistory(): void
@@ -914,7 +914,7 @@ final class ContentScreenTest extends AdminScreenTestCase
     private function readingOn(): void
     {
         $settings = $this->getService(GeneratorSettings::class);
-        $settings->save($settings->effort(), $settings->maxTokens(), webFetch: true);
+        $settings->save($settings->maxTokens(), webFetch: true);
         ModuleConfigQuery::resetConfigCache();
     }
 

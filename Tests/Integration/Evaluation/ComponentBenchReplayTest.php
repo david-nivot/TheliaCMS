@@ -25,7 +25,6 @@ use TheliaCMS\Evaluation\ComponentBench\ComponentBenchGenerators;
 use TheliaCMS\Evaluation\ComponentBench\ComponentBenchRunCommand;
 use TheliaCMS\Evaluation\ComponentBench\ComponentOracle;
 use TheliaCMS\Evaluation\ComponentBench\TrialFiles;
-use TheliaCMS\Generation\GeneratorSettings;
 use TheliaCMS\ImportExport\ImportOptions;
 use TheliaCMS\ImportExport\SiteDocument;
 use TheliaCMS\ImportExport\SiteImporter;
@@ -138,7 +137,6 @@ final class ComponentBenchReplayTest extends CmsIntegrationTestCase
         $command = new ComponentBenchRunCommand(
             $api,
             $this->getService(ComponentBenchGenerators::class),
-            $this->getService(GeneratorSettings::class),
             $this->getService(BenchPreviews::class),
             $this->getService(BenchShopRequest::class),
         );

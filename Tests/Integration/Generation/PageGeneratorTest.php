@@ -82,7 +82,7 @@ final class PageGeneratorTest extends CmsIntegrationTestCase
     protected function tearDown(): void
     {
         $settings = $this->getService(GeneratorSettings::class);
-        $settings->save($settings->effort(), $settings->maxTokens(), webFetch: false);
+        $settings->save($settings->maxTokens(), webFetch: false);
         ModuleConfigQuery::resetConfigCache();
 
         parent::tearDown();
@@ -164,7 +164,7 @@ final class PageGeneratorTest extends CmsIntegrationTestCase
         $settings = $this->getService(GeneratorSettings::class);
 
         self::assertSame(PageGenerator::USAGE, $first->usageId);
-        self::assertSame(['anthropic' => ['effort' => 'high']], $first->providerOptions);
+        self::assertSame([], $first->providerOptions, 'No effort of its own: the core applies the one of the usage, else of its range.');
         self::assertSame($settings->maxTokens(), $first->maxOutputTokens);
         self::assertSame('cms_page', $first->outputSchema?->name);
         self::assertSame(['version', 'sections', 'meta_title', 'meta_description'], $first->outputSchema?->schema['required'], 'The search fields asked for are required.');
@@ -1087,7 +1087,7 @@ final class PageGeneratorTest extends CmsIntegrationTestCase
     private function readingOn(): void
     {
         $settings = $this->getService(GeneratorSettings::class);
-        $settings->save($settings->effort(), $settings->maxTokens(), webFetch: true);
+        $settings->save($settings->maxTokens(), webFetch: true);
         ModuleConfigQuery::resetConfigCache();
     }
 

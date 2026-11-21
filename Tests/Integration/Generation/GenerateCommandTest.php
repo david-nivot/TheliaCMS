@@ -88,7 +88,7 @@ final class GenerateCommandTest extends CmsIntegrationTestCase
         $saved = $this->generate(['--item' => 'product:'.$id, '--locale' => $this->locale(), '--brief' => 'Présente le vernis.']);
 
         self::assertSame(Command::SUCCESS, $saved->getStatusCode(), $saved->getDisplay());
-        self::assertSame('high', $this->api->requests[1]->providerOptions['anthropic']['effort'] ?? null, 'Without --effort, the one of the settings.');
+        self::assertSame([], $this->api->requests[1]->providerOptions, 'Without --effort, nothing is sent: the effort of the usage in the AI settings of Thelia applies.');
         self::assertInstanceOf(Document::class, $this->getService(ItemContentRepository::class)->draftDocument(CatalogueItemType::Product, $id, $this->locale()));
     }
 

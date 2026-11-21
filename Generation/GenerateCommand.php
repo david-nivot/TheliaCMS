@@ -20,6 +20,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Thelia\Domain\Ai\AiEffort;
 use TheliaCMS\Catalogue\Admin\ContentTargets;
 use TheliaCMS\Catalogue\CatalogueItem;
 use TheliaCMS\Catalogue\CatalogueItems;
@@ -72,7 +73,7 @@ final class GenerateCommand extends Command
             ->addOption('brief', null, InputOption::VALUE_REQUIRED, 'The brief, or a path to a file holding it.')
             ->addOption('revise', null, InputOption::VALUE_NONE, 'Reads the brief as a change asked on the document the page holds.')
             ->addOption('translate-from', null, InputOption::VALUE_REQUIRED, 'Writes the language from the draft the target holds in this one, such as fr_FR. Takes no brief.')
-            ->addOption('effort', null, InputOption::VALUE_REQUIRED, \sprintf('The effort of this call (%s), over the one of the settings.', implode(', ', GeneratorSettings::EFFORTS)))
+            ->addOption('effort', null, InputOption::VALUE_REQUIRED, \sprintf('The effort of this call (%s), sent over the one of the AI settings of Thelia.', implode(', ', array_column(AiEffort::cases(), 'value'))))
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Prints the document and saves nothing.')
             ->addOption('url', null, InputOption::VALUE_REQUIRED, 'The address of the shop the links of the page point at, over the url_site setting.');
     }
@@ -95,8 +96,8 @@ final class GenerateCommand extends Command
             return Command::INVALID;
         }
 
-        if (null !== $effort && !\in_array($effort, GeneratorSettings::EFFORTS, true)) {
-            $io->error(\sprintf('The effort is one of: %s.', implode(', ', GeneratorSettings::EFFORTS)));
+        if (null !== $effort && null === AiEffort::tryFrom((string) $effort)) {
+            $io->error(\sprintf('The effort is one of: %s.', implode(', ', array_column(AiEffort::cases(), 'value'))));
 
             return Command::INVALID;
         }

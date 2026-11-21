@@ -140,9 +140,6 @@
                         {% endif %}
                         <div class="row g-3">
                             <div class="col-lg-6">
-                                {{ form_row(form.generatorEffort) }}
-                            </div>
-                            <div class="col-lg-6">
                                 {{ form_row(form.generatorMaxTokens) }}
                             </div>
                             <div class="col-12">
@@ -164,10 +161,14 @@
                             <h3 class="h6">{{ 'Texts written from a brief'|trans({}, 'theliacms') }}</h3>
                             <p class="text-muted small">{{ 'The summary, description and conclusion of a page or of an item of the catalogue, written from a brief beside the field.'|trans({}, 'theliacms') }}</p>
                             <div class="row g-3">
-                                <div class="col-lg-6">{{ form_row(form.textEffort) }}</div>
                                 <div class="col-lg-6">{{ form_row(form.textMaxTokens) }}</div>
                             </div>
                         </div>
+
+                        <p class="text-muted small" data-testid="cms-settings-effort-help">
+                            {{ 'The reasoning effort is set per usage, or per range of model, in the AI settings of Thelia.'|trans({}, 'theliacms') }}
+                            <a href="{{ path('admin.configuration.ai.usages.default') }}">{{ 'Open the AI settings of Thelia'|trans({}, 'theliacms') }}</a>
+                        </p>
 
                         <p class="text-muted small mb-0">
                             {{ 'The AI provider, its key, the model, the budget and the limits of the generator are set in the AI settings of Thelia, not here. This card only holds how the generator asks.'|trans({}, 'theliacms') }}

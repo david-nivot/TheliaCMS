@@ -22,7 +22,6 @@ use TheliaCMS\Content\RichTextSection;
 use TheliaCMS\Content\Section;
 use TheliaCMS\Content\SectionAppearance;
 use TheliaCMS\Generation\Brief;
-use TheliaCMS\Generation\GeneratorSettings;
 use TheliaCMS\ImportExport\ExportFormat;
 use TheliaCMS\ImportExport\ImportOptions;
 use TheliaCMS\ImportExport\SiteDocument;
@@ -136,7 +135,7 @@ final class SiteRoundTripTest extends CmsIntegrationTestCase
         self::assertSame([], $report->warnings(), 'The keys of a setting that no longer exists are no reason to warn.');
         self::assertNull(TheliaCMS::getConfigValue('generator_model', null), 'The model is chosen in the AI settings of the core, never read from a file.');
         self::assertNull(TheliaCMS::getConfigValue('generator_text_model', null));
-        self::assertSame('high', $this->getService(GeneratorSettings::class)->effort(), 'The generator settings were never part of an export.');
+        self::assertNull(TheliaCMS::getConfigValue('generator_effort', null), 'The effort is set per usage in the AI settings of the core, never read from a file.');
     }
 
     public function testASecondImportChangesNothing(): void

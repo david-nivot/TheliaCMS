@@ -5,7 +5,7 @@
     "description": "All-in-one CMS for Thelia 3: page tree, pages written from a brief through the AI layer of Thelia, menus, forms and media.",
     "require": {
         "php": ">=8.3",
-        "thelia/core": "^3.3",
+        "thelia/core": "^3.4",
         "thelia/installer": "~1.6",
         "smalot/pdfparser": "^2.13",
         "symfony/clock": "^7.4|^8.0",
