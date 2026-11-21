@@ -7,6 +7,26 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Changed
+
+- **Thelia 3.4 is required, and it sets the reasoning effort of the generator**:
+  `thelia/core` is `^3.4` (the test run on the lowest release moves from Thelia
+  3.3.0 to 3.4.0). The effort is set per usage, or per range of model, in the
+  AI settings of Thelia, and the generators send none of their own. The
+  `--effort` option of `thelia_cms:generate` stays as an explicit choice for
+  one call. Update 2.42.0 writes the value a site had chosen (`high`, and `low`
+  for the texts beside a field, when it had chosen none) as the effort of each
+  usage that has none yet, so cost and behaviour do not change; an effort
+  already set in the core is kept. The history of a call shows an effort only
+  when the call asked for one.
+
+### Removed
+
+- **The settings `generator_effort` and `generator_text_effort`**: the two
+  fields of the Generator card are replaced by a link to the AI settings of
+  Thelia, and update 2.42.0 deletes the two settings after carrying their
+  values over.
+
 ## [2.41.0] - 2026-11-20
 
 ### Added

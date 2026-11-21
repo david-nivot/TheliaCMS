@@ -41,9 +41,6 @@ use TheliaCMS\TheliaCMS;
  */
 final class CmsSettingsType extends AbstractType
 {
-    /** Only the adapter of Anthropic in the core reads the effort; the models think freely at the two highest only. */
-    private const string EFFORT_HELP = 'Read by Anthropic models only; other providers ignore it. From low to high, it sets the care the answer gets; very high and maximum also let the model think before it writes. More effort costs more and takes longer.';
-
     public function __construct(
         private readonly IpAllowlist $allowlist,
         private readonly PageParentCheck $pages,
@@ -111,32 +108,10 @@ final class CmsSettingsType extends AbstractType
                 'attr' => ['rows' => 4, 'placeholder' => "203.0.113.42\n2001:db8::/32"],
                 'help' => 'One IP address or range per line. Yours is shown below.',
             ])
-            ->add('generatorEffort', ChoiceType::class, [
-                'label' => 'Reasoning effort',
-                'choices' => [
-                    'Low: fast, for a short page' => 'low',
-                    'Medium' => 'medium',
-                    'High: the default' => 'high',
-                    'Very high' => 'xhigh',
-                    'Maximum: slow, for a demanding brief' => 'max',
-                ],
-                'help' => self::EFFORT_HELP,
-            ])
             ->add('generatorMaxTokens', IntegerType::class, [
                 'label' => 'Longest answer, in tokens',
                 'attr' => ['min' => GeneratorSettings::MIN_MAX_TOKENS],
                 'help' => 'An answer cut at this length loses the end of the page. A long page needs about four tokens a word.',
-            ])
-            ->add('textEffort', ChoiceType::class, [
-                'label' => 'Reasoning effort',
-                'choices' => [
-                    'Low: the default' => 'low',
-                    'Medium' => 'medium',
-                    'High' => 'high',
-                    'Very high' => 'xhigh',
-                    'Maximum' => 'max',
-                ],
-                'help' => self::EFFORT_HELP,
             ])
             ->add('textMaxTokens', IntegerType::class, [
                 'label' => 'Longest answer, in tokens',

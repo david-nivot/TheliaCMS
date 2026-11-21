@@ -64,9 +64,9 @@ jobs:
         php: [ '8.3', '8.4', '8.5' ]
         thelia: [ 'main' ]
         include:
-          # The floor of "thelia/core": "^3.3" in composer.json.
+          # The floor of "thelia/core": "^3.4" in composer.json.
           - php: '8.3'
-            thelia: '3.3.0'
+            thelia: '3.4.0'
           # The newest release line: its newest tag once it has one, else its
           # maintenance branch, else main, which carries it until it is cut.
           # Move it to the next line when main moves on.

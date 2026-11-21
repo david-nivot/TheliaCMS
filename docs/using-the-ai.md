@@ -60,9 +60,10 @@ the CMS. Ask whoever looks after the site if it is not done yet.
    there, a brief or a change with a file is refused and says so, one without a
    file is written as before.
 
-The **Generator** card of CMS > Settings keeps three choices: how hard the AI
-thinks (more effort, better but slower and dearer; read by Anthropic models only),
-how long an answer may be, and whether it may read the web pages a brief cites.
+The **Generator** card of CMS > Settings keeps two choices: how long an answer
+may be, and whether it may read the web pages a brief cites. How hard the AI
+thinks (more effort, better but slower and dearer; read by Anthropic models
+only) is set per usage in the AI settings of Thelia, which the card links to.
 
 When the AI is turned off, or has no model, the buttons that use it are not shown
 on the screens of the CMS: the brief, the changes, the translations, the

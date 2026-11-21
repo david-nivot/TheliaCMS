@@ -41,7 +41,8 @@ final readonly class GenerationRequest
         public ?Document $current = null,
         public ?string $sectionId = null,
         public ?string $sourceLocale = null,
-        // Over the effort of the settings, for one call: what an evaluation
+        // An effort sent for this call alone, over the one of the AI settings of
+        // Thelia (none is sent otherwise): what an evaluation
         // compares, with the site left as it is.
         public ?string $effort = null,
         // Whether whoever asks may make a component of the site: the

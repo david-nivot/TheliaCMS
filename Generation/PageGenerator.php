@@ -181,7 +181,9 @@ final readonly class PageGenerator
         // The fields of the page travel in the envelope, as a string like the
         // props: the grammar stays the same size whatever the type defines.
         $fieldsAsked = $request->fieldsAsked();
-        $effort = $request->effort ?? $this->settings->effort();
+        // No effort of its own unless the call asked for one: the core applies the
+        // one the merchant set for the usage, else for its tier.
+        $effort = $request->effort;
         $conversation = new AiRequest(
             GenerationRequest::KIND_TRANSLATION === $request->kind ? self::TRANSLATION_USAGE : self::USAGE,
             [AiMessage::user($prompt)],
@@ -193,7 +195,7 @@ final readonly class PageGenerator
             outputSchema: $this->outputSchema($request, $request->keptComponents(), !$fieldsAsked->isEmpty()),
             tools: $tools,
             maxOutputTokens: $this->settings->maxTokens(),
-            providerOptions: ['anthropic' => ['effort' => $effort]],
+            providerOptions: null === $effort ? [] : ['anthropic' => ['effort' => $effort]],
             correlationId: CorrelationId::new('theliacms', $request->target->type, $request->target->id),
         );
         $usage = new Usage();

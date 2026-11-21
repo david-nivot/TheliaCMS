@@ -211,8 +211,7 @@ shows how to test an update, outside a transaction.
   `MediaSheetScreenTest`).
 - The theme of the back office prints the help of a form field inside its
   label (`label[for="<id>"] .bo-form-label__help`), not in a `#<id>_help`
-  element: a test that looks for the latter reads an empty string
-  (`GeneratorSettingsScreenTest::testTheEffortSaysWhichModelsReadIt`).
+  element: a test that looks for the latter reads an empty string.
 - The French guillemets of `I18n/fr_FR.php` take a plain space (`« %s »`), not
   a no-break space: an expectation typed with one fails on every message.
 - A provider that cuts an answer at the output limit reports that limit as the
@@ -231,10 +230,10 @@ shows how to test an update, outside a transaction.
   (`layout.body.bottom`). A test that checks what the theme adds asks for that
   page first (`SiteComponentScreenTest::testThePreviewLinksTheScriptOfTheVideosAsTheSiteDoes`).
 - The master switch of the AI layer (`ai_enabled`) reads on when the setting is
-  missing, but the test database of Thelia 3.3.0 holds it off: a test that
+  missing, but the test database of an older Thelia held it off: a test that
   expects an AI usage to be judged on its connection or its model writes the
-  switch on first (`AiAvailabilityTest::setUp()`), or the CI on 3.3.0 sees
-  every usage disabled.
+  switch on first (`AiAvailabilityTest::setUp()`), or a database that holds it
+  off sees every usage disabled.
 
 ### The conversion of a video
 
@@ -437,7 +436,13 @@ that without JavaScript the link lands on the row by its anchor. Window
   a file joined to a brief). The
   provider, the key, the model and the budget are the core's: nothing here
   knows a provider SDK, and the options a provider reads travel in
-  `providerOptions` (`effort`, read by Anthropic models, ignored by the others).
+  `providerOptions`. The reasoning effort is not one of them by default: the
+  module sends none, so the effort the merchant set for the usage (else for its
+  range) in the AI settings of Thelia applies (`AiEffort`, core 3.4). Only an
+  explicit choice for one call (`thelia_cms:generate --effort`) travels as
+  `providerOptions['anthropic']['effort']`, and wins. Update 2.42.0 carried the
+  former `generator_effort` and `generator_text_effort` settings over to the
+  effort of each usage.
 - The messages an editor reads when the layer refuses a call come from
   `Generation\Ai\GatewayFailures`, translated: never put the text of a provider
   in front of an editor. The cost of a call is the sum of the usage log of the

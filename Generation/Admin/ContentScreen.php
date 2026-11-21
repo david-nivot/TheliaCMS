@@ -582,7 +582,7 @@ final readonly class ContentScreen
 
     /**
      * What a call needed, on one line: "2 corrections, 1 retry, read_url ×2,
-     * effort high". Empty for a call that needed nothing of the kind.
+     * effort high" (the effort only when the call asked for one). Empty for a call that needed nothing of the kind.
      */
     private function detailsLabel(CmsPageGeneration $row): string
     {

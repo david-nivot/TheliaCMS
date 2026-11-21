@@ -114,7 +114,6 @@ final readonly class ComponentGenerator
     {
         $started = hrtime(true);
         $model = '';
-        $effort = $this->settings->effort();
         $conversation = new AiRequest(
             self::USAGE,
             [AiMessage::user($this->prompts->userMessage($request))],
@@ -124,7 +123,6 @@ final readonly class ComponentGenerator
             untrustedContents: null === $request->reference ? [] : [new UntrustedContent(UntrustedSource::Document, $request->reference->text, $request->reference->name)],
             outputSchema: new AiOutputSchema('site_component', ComponentPrompt::schema()),
             maxOutputTokens: $this->settings->maxTokens(),
-            providerOptions: ['anthropic' => ['effort' => $effort]],
             correlationId: CorrelationId::new('theliacms', 'component', $request->componentId ?? 0),
         );
         $usage = new Usage();
@@ -138,7 +136,7 @@ final readonly class ComponentGenerator
         $copying = null;
         $rowId = $this->log->beginComponent($request->componentId ?? 0, $request->locale, $request->kind(), $request->text, $request->reference);
 
-        $record = function (string $status, ?string $error = null, ?string $component = null) use ($request, $rowId, $effort, &$model, $started, &$usage, &$costUsd, &$coreLogId, &$provenance, &$turns, &$finishReason, &$corrections, &$retries): int {
+        $record = function (string $status, ?string $error = null, ?string $component = null) use ($request, $rowId, &$model, $started, &$usage, &$costUsd, &$coreLogId, &$provenance, &$turns, &$finishReason, &$corrections, &$retries): int {
             return $this->log->recordComponent(
                 $request->componentId ?? 0,
                 $request->locale,
@@ -158,7 +156,7 @@ final readonly class ComponentGenerator
                 $component,
                 GenerationLog::STATUS_DONE === $status ? $provenance : null,
                 $rowId,
-                new RunDetails($effort, $corrections, $retries),
+                new RunDetails(null, $corrections, $retries),
                 $request->reference,
             );
         };

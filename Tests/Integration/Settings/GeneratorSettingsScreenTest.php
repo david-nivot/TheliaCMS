@@ -18,11 +18,12 @@ use Symfony\Component\DomCrawler\Form;
 use Thelia\Model\ModuleConfigQuery;
 use TheliaCMS\Generation\GeneratorSettings;
 use TheliaCMS\Tests\Integration\Security\AdminScreenTestCase;
+use TheliaCMS\TheliaCMS;
 
 /**
- * The "Generator" card of CMS > Settings: the effort and the length of an
- * answer are saved from the screen. The provider, the key, the model and the
- * budget belong to the AI settings of the core: the card sends there.
+ * The "Generator" card of CMS > Settings: the length of an answer is saved
+ * from the screen. The provider, the key, the model, the budget and the
+ * reasoning effort belong to the AI settings of the core: the card sends there.
  */
 final class GeneratorSettingsScreenTest extends AdminScreenTestCase
 {
@@ -34,7 +35,7 @@ final class GeneratorSettingsScreenTest extends AdminScreenTestCase
 
         self::assertSame(1, $card->count(), 'The card is rendered.');
         self::assertSame(0, $card->filter('input[name="cms_settings[generatorModel]"], input[name="cms_settings[textModel]"]')->count(), 'The model is chosen in the AI settings of the core.');
-        self::assertSame(1, $card->filter('select[name="cms_settings[generatorEffort]"]')->count());
+        self::assertSame(0, $card->filter('select[name*="ffort"]')->count(), 'The reasoning effort is set in the AI settings of the core.');
         self::assertSame(1, $card->filter('input[name="cms_settings[generatorMaxTokens]"]')->count());
         self::assertSame(1, $card->filter('input[type="checkbox"][name="cms_settings[generatorWebFetch]"]')->count());
         self::assertStringContainsString('Off by default', $card->filter('[data-testid="cms-settings-web-fetch-help"]')->text(''), 'The box says where a page read goes, which the theme of the back office leaves out of a checkbox.');
@@ -46,37 +47,31 @@ final class GeneratorSettingsScreenTest extends AdminScreenTestCase
     }
 
     /**
-     * Only the adapter of Anthropic reads the effort: the help says so on
-     * both fields, rather than promise a time spent thinking that the models
-     * only take at the two highest efforts.
+     * Sabotage: delete the paragraph `cms-settings-effort-help` of the
+     * template, or point its link at another route.
      */
-    public function testTheEffortSaysWhichModelsReadIt(): void
+    public function testTheCardSendsTheEffortToTheAiSettingsOfTheCore(): void
     {
-        foreach (['en_US' => 'Anthropic models only', 'fr_FR' => 'modèles Anthropic'] as $locale => $expected) {
-            $screen = $this->screen(self::SCREEN.'?lang='.$locale);
+        foreach (['en_US' => 'reasoning effort', 'fr_FR' => 'effort de réflexion'] as $locale => $expected) {
+            $help = $this->screen(self::SCREEN.'?lang='.$locale)->filter('[data-testid="cms-settings-effort-help"]');
 
-            foreach (['generatorEffort', 'textEffort'] as $field) {
-                // The theme of the back office prints the help inside the label.
-                $help = $screen->filter('label[for="cms_settings_'.$field.'"] .bo-form-label__help')->text('');
-
-                self::assertStringContainsString($expected, $help, $field.' in '.$locale);
-                self::assertStringNotContainsString('How long the model thinks', $help);
-            }
+            self::assertSame(1, $help->count(), $locale);
+            self::assertStringContainsString($expected, $help->text(''), $locale);
+            self::assertSame('/admin/configuration/ai/usages', $help->filter('a')->attr('href'), 'The link opens the usages of the AI settings of Thelia.');
         }
     }
 
     public function testPostingTheFormChangesWhatTheGeneratorReads(): void
     {
         $form = $this->settingsForm();
-        $form['cms_settings[generatorEffort]'] = 'low';
         $form['cms_settings[generatorMaxTokens]'] = '4096';
 
         self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()));
 
         ModuleConfigQuery::resetConfigCache();
-        $settings = $this->settings();
-        self::assertSame('low', $settings->effort());
-        self::assertSame(4096, $settings->maxTokens());
+        self::assertSame(4096, $this->settings()->maxTokens());
+        self::assertNull(TheliaCMS::getConfigValue('generator_effort', null), 'The effort is no longer written by the module.');
+        self::assertNull(TheliaCMS::getConfigValue('generator_text_effort', null));
     }
 
     public function testLettingABriefMakeAComponentIsOffUntilTheSiteTurnsItOn(): void
@@ -117,29 +112,26 @@ final class GeneratorSettingsScreenTest extends AdminScreenTestCase
     }
 
     /**
-     * A short text written from a brief has settings of its own: a paragraph
-     * does not need the effort, nor the length, of a whole page.
+     * A short text written from a brief has a length of its own: a paragraph
+     * does not need the length of a whole page.
      */
     public function testTheTextsWrittenFromABriefHaveTheirOwnSettings(): void
     {
         $card = $this->screen(self::SCREEN)->filter('[data-testid="cms-settings-generator-text"]');
 
-        self::assertSame(1, $card->filter('select[name="cms_settings[textEffort]"]')->count());
+        self::assertSame(0, $card->filter('select')->count(), 'No effort to choose here.');
         self::assertSame(1, $card->filter('input[name="cms_settings[textMaxTokens]"]')->count());
 
         $settings = $this->settings();
-        self::assertSame('low', $settings->textEffort());
         self::assertSame(GeneratorSettings::DEFAULT_TEXT_MAX_TOKENS, $settings->textMaxTokens());
 
         $form = $this->settingsForm();
-        $form['cms_settings[textEffort]'] = 'medium';
         $form['cms_settings[textMaxTokens]'] = '3000';
 
         self::assertSame(302, $this->send('POST', $form->getUri(), $form->getPhpValues()));
 
         ModuleConfigQuery::resetConfigCache();
         $settings = $this->settings();
-        self::assertSame('medium', $settings->textEffort());
         self::assertSame(3000, $settings->textMaxTokens());
 
         $form = $this->settingsForm();
@@ -149,20 +141,6 @@ final class GeneratorSettingsScreenTest extends AdminScreenTestCase
         ModuleConfigQuery::resetConfigCache();
         $settings = $this->settings();
         self::assertSame(GeneratorSettings::DEFAULT_TEXT_MAX_TOKENS, $settings->textMaxTokens(), 'A length too short for a paragraph comes back to the default.');
-    }
-
-    public function testAnEffortTheApiDoesNotKnowIsRefused(): void
-    {
-        $before = $this->settings()->effort();
-        $form = $this->settingsForm();
-        $values = $form->getPhpValues();
-        $values['cms_settings']['generatorEffort'] = 'infinite';
-
-        self::assertSame(200, $this->send('POST', $form->getUri(), $values));
-
-        self::assertGreaterThan(0, $this->client->getCrawler()->filter('.invalid-feedback, .form-error-message')->count(), 'The refusal is shown.');
-        ModuleConfigQuery::resetConfigCache();
-        self::assertSame($before, $this->settings()->effort());
     }
 
     private function settingsForm(): Form

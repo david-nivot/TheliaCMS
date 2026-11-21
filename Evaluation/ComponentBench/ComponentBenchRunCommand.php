@@ -21,7 +21,6 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Thelia\Domain\Ai\AiGatewayInterface;
 use TheliaCMS\Generation\Component\ComponentRequest;
-use TheliaCMS\Generation\GeneratorSettings;
 use TheliaCMS\Model\CmsPageGenerationQuery;
 
 /**
@@ -43,7 +42,6 @@ final class ComponentBenchRunCommand extends Command
     public function __construct(
         private readonly AiGatewayInterface $gateway,
         private readonly ComponentBenchGenerators $generators,
-        private readonly GeneratorSettings $settings,
         private readonly BenchPreviews $previews,
         private readonly BenchShopRequest $shop,
     ) {
@@ -222,7 +220,7 @@ final class ComponentBenchRunCommand extends Command
             'run' => $run,
             'module' => $this->moduleVersion(),
             'model' => null === $result ? $recorder->model() : $result->model,
-            'effort' => $this->settings->effort(),
+            'effort' => null,
             'locale' => $case->locale,
             'request' => $case->request,
             'prompt_sha256' => $recorder->promptSha256(),

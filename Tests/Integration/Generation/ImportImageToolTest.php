@@ -185,7 +185,7 @@ final class ImportImageToolTest extends CmsIntegrationTestCase
     private function readingOn(bool $on): void
     {
         $settings = $this->getService(GeneratorSettings::class);
-        $settings->save($settings->effort(), $settings->maxTokens(), webFetch: $on);
+        $settings->save($settings->maxTokens(), webFetch: $on);
         ModuleConfigQuery::resetConfigCache();
     }
 

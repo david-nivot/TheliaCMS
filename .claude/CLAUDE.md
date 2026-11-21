@@ -6,11 +6,11 @@ Dépôt public `thelia-modules/TheliaCMS` (GitHub). Ce dépôt EST le module : p
 
 | Composant | Version |
 |-----------|---------|
-| Framework | Thelia 3 (`thelia/core ^3.3`, `<thelia>3.3.0</thelia>` dans `Config/module.xml`) |
+| Framework | Thelia 3 (`thelia/core ^3.4`, `<thelia>3.4.0</thelia>` dans `Config/module.xml`) |
 | PHP | ≥ 8.3 (CI : 8.3, 8.4, 8.5) |
 | ORM / front | Propel (`Config/schema.xml`) ; front Flexy/Twig (`templates/frontOffice/flexy`, `templates/front`) ; back-office Twig (`templates/backOffice/default-twig`) |
 | Environnement | Aucun dans le dépôt : testé dans un hôte Thelia 3 sous DDEV, module cloné (pas lié) dans `local/modules/TheliaCMS` |
-| CI | GitHub Actions : `ci.yml` au push de toute branche (style, `composer validate`, audit, tests sur `thelia/thelia@main` en PHP 8.3 à 8.5 et sur Thelia 3.3.0, PHPStan), `release.yml` (release auto au push sur `main`, workflow partagé épinglé) |
+| CI | GitHub Actions : `ci.yml` au push de toute branche (style, `composer validate`, audit, tests sur `thelia/thelia@main` en PHP 8.3 à 8.5, sur Thelia 3.4.0 (plancher) et sur la ligne 3.4, PHPStan), `release.yml` (release auto au push sur `main`, workflow partagé épinglé) |
 
 ## Namespace et fichiers clés
 

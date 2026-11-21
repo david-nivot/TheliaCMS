@@ -90,7 +90,6 @@ final readonly class TextGenerator
     public function generate(TextRequest $text): TextResult
     {
         $request = $text->request;
-        $effort = $this->settings->textEffort();
         $started = hrtime(true);
         $model = '';
         $prompt = $this->prompts->userMessage($text);
@@ -101,7 +100,6 @@ final readonly class TextGenerator
             outputSchema: new AiOutputSchema('text', TextPrompt::schema()),
             tools: $this->definitions->of(self::TOOLS),
             maxOutputTokens: $this->settings->textMaxTokens(),
-            providerOptions: ['anthropic' => ['effort' => $effort]],
             correlationId: CorrelationId::new('theliacms', 'text', $request->target->type, $request->target->id),
         );
         $usage = new Usage();
@@ -114,7 +112,7 @@ final readonly class TextGenerator
         $finishReason = null;
         $rowId = $this->log->begin($request, $prompt);
 
-        $record = function (string $status, ?string $error = null, ?string $html = null) use ($request, $prompt, $rowId, $effort, &$model, $started, &$usage, &$costUsd, &$coreLogId, &$turns, &$finishReason, &$corrections, &$toolCounts): int {
+        $record = function (string $status, ?string $error = null, ?string $html = null) use ($request, $prompt, $rowId, &$model, $started, &$usage, &$costUsd, &$coreLogId, &$turns, &$finishReason, &$corrections, &$toolCounts): int {
             return $this->log->record(
                 $request,
                 $status,
@@ -131,7 +129,7 @@ final readonly class TextGenerator
                 $error,
                 $html,
                 rowId: $rowId,
-                details: new RunDetails($effort, $corrections, 0, $toolCounts),
+                details: new RunDetails(null, $corrections, 0, $toolCounts),
             );
         };
 

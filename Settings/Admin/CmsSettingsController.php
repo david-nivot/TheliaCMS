@@ -75,12 +75,10 @@ final readonly class CmsSettingsController
             'httpCacheTtl' => $this->settings->httpCacheTtl(),
             'cspMode' => $this->contentSecurityPolicy->mode()->value,
             'cspHosts' => implode("\n", $this->contentSecurityPolicy->hosts()),
-            'generatorEffort' => $this->generator->effort(),
             'generatorMaxTokens' => $this->generator->maxTokens(),
             'generatorWebFetch' => $this->generator->webFetch(),
             'generatorComponentMaking' => $this->generator->componentMaking(),
             'aiLabel' => $this->generator->showsAiLabel(),
-            'textEffort' => $this->generator->textEffort(),
             'textMaxTokens' => $this->generator->textMaxTokens(),
         ], [
             'page_source' => $this->urls->generate('admin.cms.partials.sources.pages', ['locale' => $lang->getLocale()]),
@@ -127,16 +125,12 @@ final readonly class CmsSettingsController
         $this->contentSecurityPolicy->save(ContentSecurityPolicyMode::fromStorage($data['cspMode']), (string) $data['cspHosts']);
 
         $this->generator->save(
-            effort: (string) $data['generatorEffort'],
             maxTokens: (int) $data['generatorMaxTokens'],
             webFetch: (bool) $data['generatorWebFetch'],
             componentMaking: (bool) $data['generatorComponentMaking'],
         );
         $this->generator->saveAiLabel((bool) $data['aiLabel']);
-        $this->generator->saveText(
-            effort: (string) $data['textEffort'],
-            maxTokens: (int) $data['textMaxTokens'],
-        );
+        $this->generator->saveText(maxTokens: (int) $data['textMaxTokens']);
 
         // A showcase site is handed to someone who is not an administrator of
         // the shop, so the profile they work under comes with the mode.

@@ -72,7 +72,7 @@ final class TextGeneratorTest extends CmsIntegrationTestCase
         self::assertSame(TextGenerator::USAGE, $sent->usageId);
         self::assertSame('fake-model', $result->model, 'The model is the one the gateway used.');
         self::assertSame($settings->textMaxTokens(), $sent->maxOutputTokens);
-        self::assertSame(['anthropic' => ['effort' => $settings->textEffort()]], $sent->providerOptions);
+        self::assertSame([], $sent->providerOptions, 'No effort of its own: the core applies the one of the usage, else of its range.');
         self::assertSame(TextPrompt::schema(), $sent->outputSchema?->schema, 'The answer is constrained to the envelope of a text.');
         self::assertSame(TextGenerator::TOOLS, array_column($sent->tools, 'name'), 'The catalogue, the pages and the skills: no picture, no section.');
         self::assertNotContains('web_fetch', array_column($sent->tools, 'name'), 'No page of the web is read for a text.');

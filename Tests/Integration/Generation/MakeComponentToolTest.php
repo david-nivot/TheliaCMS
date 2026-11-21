@@ -69,7 +69,7 @@ final class MakeComponentToolTest extends CmsIntegrationTestCase
     protected function tearDown(): void
     {
         $settings = $this->getService(GeneratorSettings::class);
-        $settings->save($settings->effort(), $settings->maxTokens(), webFetch: false, componentMaking: false);
+        $settings->save($settings->maxTokens(), webFetch: false, componentMaking: false);
         ModuleConfigQuery::resetConfigCache();
 
         parent::tearDown();
@@ -230,7 +230,7 @@ final class MakeComponentToolTest extends CmsIntegrationTestCase
     private function makingOn(): void
     {
         $settings = $this->getService(GeneratorSettings::class);
-        $settings->save($settings->effort(), $settings->maxTokens(), webFetch: false, componentMaking: true);
+        $settings->save($settings->maxTokens(), webFetch: false, componentMaking: true);
         ModuleConfigQuery::resetConfigCache();
     }
 
