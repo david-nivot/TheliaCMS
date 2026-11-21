@@ -10,6 +10,7 @@
 set -euo pipefail
 directory="${1:-var/theliacms-sample-site}"
 [ -f "$directory/manifest.json" ] || { echo "No $directory/manifest.json: run seed.php first." >&2; exit 1; }
+python3 -c "import json,sys;sys.exit(0 if json.load(open(sys.argv[1])).get('complete', True) else 1)" "$directory/manifest.json" || { echo "$directory/manifest.json says the seed stopped midway: nothing to keep." >&2; exit 1; }
 ddev exec "mysqldump db | gzip > $directory/db.sql.gz"
 python3 -c "import json,sys;print('\n'.join('local/library/images/'+f for f in json.load(open(sys.argv[1]))['image_files']))" "$directory/manifest.json" > "$directory/images.list"
 tar czf "$directory/images.tar.gz" -T "$directory/images.list"

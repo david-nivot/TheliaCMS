@@ -38,6 +38,9 @@ declare(strict_types=1);
  *
  * The directory (var/theliacms-sample-site by default) receives manifest.json,
  * the ids of what was made; save.sh and restore.sh keep and put back the site.
+ * A run that stops midway writes it too, marked "complete": false, with the ids
+ * made so far: the database then holds part of the site, and is to be put back
+ * from the one before the seed.
  * See "Browser checks" in docs/developing.md.
  */
 
@@ -85,7 +88,11 @@ $directory = rtrim($argv[1] ?? 'var/theliacms-sample-site', '/');
 $manifestPath = $directory.'/manifest.json';
 
 if (is_file($manifestPath)) {
-    fwrite(\STDERR, $manifestPath." exists: the site is already in the database. Put it back with restore.sh rather than run this again.\n");
+    $previous = json_decode((string) file_get_contents($manifestPath), true);
+
+    fwrite(\STDERR, false === ($previous['complete'] ?? true)
+        ? $manifestPath." says a run stopped midway: the database holds part of the site. Put back the database from before the seed, then run this with another directory.\n"
+        : $manifestPath." exists: the site is already in the database. Put it back with restore.sh rather than run this again.\n");
     exit(1);
 }
 
@@ -119,7 +126,20 @@ $container->get('request_stack')->push($request);
 // Seeded: the same site on every run.
 $random = new Random\Randomizer(new Random\Engine\Mt19937(2021));
 $connection = Propel\Runtime\Propel::getConnection('TheliaMain');
-$manifest = ['pages' => [], 'tags' => [], 'images' => [], 'image_files' => [], 'models' => [], 'menu_items' => []];
+/** @var array<string, mixed> $manifest "complete" turns true at the very end, which the shutdown function below reads */
+$manifest = ['complete' => false, 'pages' => [], 'tags' => [], 'images' => [], 'image_files' => [], 'models' => [], 'menu_items' => []];
+
+// Written whatever happens from here on: a run that stops midway (an exception,
+// a fatal error) leaves the ids it made, and a manifest that refuses a second
+// run on the half-seeded database.
+register_shutdown_function(static function () use (&$manifest, $manifestPath): void {
+    if ($manifest['complete']) {
+        return;
+    }
+
+    file_put_contents($manifestPath, json_encode($manifest, \JSON_PRETTY_PRINT));
+    fwrite(\STDERR, 'The seed stopped before its end: the ids made so far are in '.$manifestPath.". Put back the database from before the seed.\n");
+});
 
 // --- The site ----------------------------------------------------------------
 
@@ -367,6 +387,16 @@ $questions = [
     [[['À quelle fréquence recommencer ?', 'How often should I do it again?'], ['Tous les deux à trois mois pour un usage régulier, avant chaque saison sinon.', 'Every two to three months for regular use, before each season otherwise.']], [['Peut-on le faire sous la pluie ?', 'Can it be done in the rain?'], ['Oui, mais à l’abri : l’humidité gêne les produits et les colles.', 'Yes, but under cover: damp gets in the way of products and glues.']], [['Cela change-t-il la durée de vie du matériel ?', 'Does it change how long the equipment lasts?'], ['Nettement : c’est le geste le plus rentable de l’année.', 'Markedly: it is the most profitable job of the year.']]],
 ];
 $people = [['Camille Aubry', ['mécanicienne d’atelier', 'workshop mechanic']], ['Hugo Lemaire', ['cadreur', 'frame builder']], ['Sonia Benali', ['ultra-cycliste', 'ultra-cyclist']], ['Jean-Paul Garnier', ['marchand de cycles', 'bike shop owner']], ['Inès Rolland', ['coursière à vélo', 'bike courier']], ['Marc Dufour', ['randonneur', 'touring cyclist']]];
+/** The person a portrait is about, read from its (French) title: the frame builder for "Le cadreur…". */
+$personOf = static fn (string $title): ?array => match (true) {
+    str_contains($title, 'mécanicienne') => $people[0],
+    str_contains($title, 'cadreur') => $people[1],
+    str_contains($title, 'ultra-cycliste') => $people[2],
+    str_contains($title, 'marchands de cycles') => $people[3],
+    str_contains($title, 'coursière') => $people[4],
+    str_contains($title, 'randonneur') => $people[5],
+    default => null,
+};
 $quotes = [
     ['On ne répare pas un vélo, on apprend à l’écouter : le reste vient tout seul.', 'You do not repair a bike, you learn to listen to it: the rest follows.'],
     ['Le plus beau cadeau qu’on m’ait fait, c’est une première sortie de trente kilomètres.', 'The best present I ever got was a first thirty-kilometre ride.'],
@@ -384,7 +414,7 @@ $routeFacts = [
  *
  * @param list<string> $paragraphs the paragraphs the page was going to hold
  */
-$recipe = static function (string $kind, string $locale, string $title, ?int $cardImage, array $paragraphs, array $fields) use ($pickFor, $bikeOf, $libraryImage, $say, $inWords, $html, $text, $photo, $chapos, $bikes, $stepSets, $questions, $people, $quotes, $routeFacts): array {
+$recipe = static function (string $kind, string $locale, string $title, ?int $cardImage, array $paragraphs, array $fields) use ($pickFor, $bikeOf, $personOf, $libraryImage, $say, $inWords, $html, $text, $photo, $chapos, $bikes, $stepSets, $questions, $people, $quotes, $routeFacts): array {
     $image = $cardImage ?? $libraryImage($title);
     $body = '';
     // The picks are read from the French title in both languages.
@@ -404,11 +434,14 @@ $recipe = static function (string $kind, string $locale, string $title, ?int $ca
             if (str_starts_with($key, 'Essai')) {
                 [$name, $weight, $frame, $drivetrain, $brakes, $tyres] = $bikes[$bikeOf($key)];
                 $english = 'en_US' === $locale;
+                // A picture of its own: the article photo is right above.
+                $sheetImage = $libraryImage($key, 'sheet');
+                $sheetImage = $sheetImage === $image ? $libraryImage($key, 'sheet again') : $sheetImage;
                 $sections[] = new Section('sheet', 'Site:BikeSpecSheet', [
                     'title' => $name,
                     'title_level' => 'h2',
                     'title_style' => 'level',
-                    'image' => $image,
+                    'image' => $sheetImage,
                     'image_alt' => $english ? $name.', side view' : $name.' vu de profil',
                     'weight_label' => $english ? 'Weight' : 'Poids',
                     'weight' => $english ? str_replace(',', '.', $weight) : $weight,
@@ -435,7 +468,7 @@ $recipe = static function (string $kind, string $locale, string $title, ?int $ca
             ];
 
         case 'portrait':
-            [$name, $role] = $pickFor($people, $key);
+            [$name, $role] = $personOf($key) ?? $pickFor($people, $key);
             $english = 'en_US' === $locale;
             $roleText = $say($role, $locale);
 
@@ -562,9 +595,13 @@ $page = static function (string $title, array $options = []) use ($pages, $image
     // What the page holds: a recipe by kind of article, an introduction and the
     // list of its pages for a listing page, else the text above.
     $document = Document::richText($body);
+    // A recipe opens on the first paragraph: a pick that repeats it is left out,
+    // in both languages (the English paragraphs pair with the French ones).
+    $recipeParagraphs = array_values(array_unique([$options['intro'] ?? $paragraphs[0], ...$picked]));
+    $recipeParagraphsEnglish = array_values(array_unique([$paragraphsEn[0], ...$pickedEnglish]));
 
     if (isset($options['recipe'])) {
-        $document = new Document($recipe($options['recipe'], 'fr_FR', $title, $imageId, [$options['intro'] ?? $paragraphs[0], ...$picked], $options['fields'] ?? []));
+        $document = new Document($recipe($options['recipe'], 'fr_FR', $title, $imageId, $recipeParagraphs, $options['fields'] ?? []));
     } elseif (isset($options['listing'])) {
         $document = new Document([
             $text('intro', '<p>'.$html($options['intro'] ?? '').'</p>'),
@@ -593,7 +630,7 @@ $page = static function (string $title, array $options = []) use ($pages, $image
 
         // The structure of the French version, in English.
         $englishDocument = match (true) {
-            isset($options['recipe']) => new Document($recipe($options['recipe'], 'en_US', $englishTitle, $imageId, [$paragraphsEn[0], ...$pickedEnglish], $options['fields'] ?? [])),
+            isset($options['recipe']) => new Document($recipe($options['recipe'], 'en_US', $englishTitle, $imageId, $recipeParagraphsEnglish, $options['fields'] ?? [])),
             isset($options['listing']) => new Document([
                 $text('intro', '<p>'.$html($options['intro_en'] ?? '').'</p>'),
                 new Section('pages', 'Partial:cms-page-list', ['parent' => (int) $row->getId(), 'limit' => 48] + $options['listing']),
@@ -653,7 +690,9 @@ $articles = static function (CmsPage $parent, array $titles, string $tag, DateTi
 
     foreach ($dated as $rank => [$title, $created]) {
         // The draws in the same order as before: the type and the fields draw nothing.
-        $options = ['parent' => $parent, 'tag' => 0 === $random->getInt(0, 5) ? 'Dossier' : $tag, 'image' => 0 !== $random->getInt(0, 4), 'created' => $created, 'english' => 0 === $random->getInt(0, 3), 'status' => $someStatus(), 'position' => $rank + 1];
+        // A bike test ("Essai…") is always translated, after its draw: the English
+        // spec sheet shows on the site.
+        $options = ['parent' => $parent, 'tag' => 0 === $random->getInt(0, 5) ? 'Dossier' : $tag, 'image' => 0 !== $random->getInt(0, 4), 'created' => $created, 'english' => 0 === $random->getInt(0, 3) || str_starts_with($title, 'Essai'), 'status' => $someStatus(), 'position' => $rank + 1];
 
         if (isset($extra['type'])) {
             $options['type'] = $extra['type'];
@@ -873,5 +912,6 @@ foreach (['Page', 'TheliaBlocks'] as $moduleCode) {
     }
 }
 
+$manifest['complete'] = true;
 file_put_contents($manifestPath, json_encode($manifest, \JSON_PRETTY_PRINT));
 printf("%d pages, %d tags, %d images, %d components imported, a news template, %d menu entries; %d contents and %d folders of the shop removed; showcase site, French by default, magazine home page. Ids in %s\n", count($manifest['pages']), count($manifest['tags']), count($manifest['images']), $manifest['components'], count($manifest['menu_items']), $manifest['removed']['contents'], $manifest['removed']['folders'], $manifestPath);
