@@ -201,17 +201,28 @@ Hours of development, review and tests included.
 
 ### Still open
 
-- The maintainer's look at 1440 and 375 px of the seeded site (Actualités with
-  its images, a gear test with its spec sheet, a route with card and carousel,
-  the home page, the front in French). Lot 3 was proved by HTTP codes, the
-  markup of the pages and screenshots of four pages.
 - The cache of the block: whether `PartialCache` is emptied by a page
   publication, or only by its TTL. An integration test settles it.
-- BikeSpecSheet offers a `price` prop to the editor of a showcase site; the
-  seed leaves it empty. Hide it on `on_request`, or drop it.
-- No English version of an "Essai" article comes out of the draws: the English
-  spec sheet shows nowhere on the sample site.
-- `seed.php` writes `manifest.json` last: a run that fails late leaves a
-  seeded database without a manifest, to be put back from a fresh one.
 - Flexy 1.3.3 keeps a hidden "View my cart" link to `/checkout/cart` on the
   product page, an address that answers 404 on a showcase site.
+- Flexy prints the top-level categories of the shop before the links of the
+  `main` menu (`Layouts/Header/Base.php`): the magazine shows "Salon" and
+  "Salle à manger" in its header. The seed keeps the catalogue, which the
+  showcase checks of lot 2 read.
+
+### Settled after the close (2026-11-21)
+
+- Every "Essai" is translated (after its draw, which stays): the English spec
+  sheet shows on six tests.
+- BikeSpecSheet has no `price` prop any more (a showcase site shows none).
+- A run of `seed.php` that stops midway writes `manifest.json` with
+  `"complete": false` and the ids made so far; a second run and `save.sh`
+  refuse it.
+- A look at 1440 and 375 px of fifteen pages (home in French and English,
+  Actualités, a year, a news item, the autumn programme, Brèves, two tests in
+  English and one in French, a route and Itinéraires, advice, a portrait,
+  Magazine): no horizontal overflow, no broken image, no console error. It
+  found three defects of the seed, fixed: a recipe repeated its first paragraph
+  when the draw picked it again, the spec sheet repeated the photo of the
+  article, and a portrait showed a person drawn from the list instead of the
+  one its title names. Tree, dates and statuses are those of the run before.

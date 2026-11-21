@@ -313,7 +313,8 @@ English. It is the same on every run (fixed seed), and it is worth reading:
   a type" block with `parent` set to the page (48 at most). Actualités lists
   the news of every year (`type` news, `scope` branch).
 - Every article is made from a recipe by kind: a gear test (chapo, picture,
-  text, spec sheet for the "Essai" ones, verdict), advice (text,
+  text, spec sheet for the "Essai" ones, verdict; every "Essai" also has its
+  English version, so the English spec sheet shows), advice (text,
   steps, FAQ), a portrait (picture and text, quote), a route (route card,
   carousel, text), news (chapo with the date and place, picture, text; the
   autumn programme also carries the ride calendar) and short news (a
@@ -356,7 +357,10 @@ ddev exec php Thelia cache:pool:clear --all                              # after
   the whole development database after the seed, `images.tar.gz` the files of
   its images. `seed.php` refuses to run while `manifest.json` exists: a new
   directory for each try. Its last line counts the pages, tags, images and
-  components imported.
+  components imported. A run that stops midway still writes `manifest.json`,
+  with `"complete": false` and the ids made so far: the database holds part of
+  the site, `save.sh` refuses to keep it, and the database from before the seed
+  is to be put back.
 - The seed expects a database of the shop before it (the demo data) at the
   schema of the core in use: a dump taken on an older core needs the
   `setup/update/sql/<version>.sql` files replayed and `php Thelia module:refresh`.
