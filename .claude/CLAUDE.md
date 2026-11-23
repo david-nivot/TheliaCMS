@@ -72,6 +72,7 @@ Liste complète et parades dans `docs/developing.md`.
 |-------|--------|
 | Lien symbolique de l'hôte vers ce clone : non résolu dans le conteneur DDEV | Cloner dans `local/modules/TheliaCMS` de l'hôte |
 | SQL ajouté à un `update/<version>.sql` déjà déployé : jamais rejoué | Nouveau fichier de version + `module.xml` + `TheliaMain.sql`, rejouable (`information_schema`) |
+| Colonne du core en utf8mb3 sur une base venue de Thelia 2 (`module_config_i18n.value`) : `COLLATE utf8mb4_bin` refusé (1253), et la version déjà enregistrée si un `ALTER` du même passage a commité | `CONVERT(col USING utf8mb4) COLLATE utf8mb4_bin` ; tester sur la colonne en utf8mb3 (`EffortFromCoreMigrationTest::valueColumnIn()`) ; rattrapage par une nouvelle version (`2.42.1.sql`) |
 | Modèles Propel gardés tant que le hash correspond | Après `schema.xml` modifié : supprimer `var/propel/dev` et `var/propel/test` de l'hôte |
 | `DATABASE_NAME=db` de DDEV branche les tests d'intégration sur la base de dev | `env -u DATABASE_NAME`, et reconstruire `var/cache/test` / `var/propel/test` bâtis sans |
 | Twig de test non rechargé : un test passe sur l'ancien gabarit | Écarter `var/cache/test/twig` (ou `touch` + `var/cache/test`) avant les tests |

@@ -25,6 +25,18 @@ replayable (an `information_schema` check before an `ALTER`): a fresh install
 plays it after `TheliaMain.sql`. `Tests/Integration/Module/PageTypeMigrationTest.php`
 shows how to test an update, outside a transaction.
 
+A table of the core may not be in the character set of a fresh install: a base
+that came from Thelia 2 keeps `module_config_i18n.value` (and other columns) in
+utf8mb3, which refuses `COLLATE utf8mb4_bin` (error 1253). Convert the column
+before choosing a collation (`CONVERT(col USING utf8mb4) COLLATE utf8mb4_bin`),
+and test the update on the column in utf8mb3
+(`EffortFromCoreMigrationTest::valueColumnIn()`). An update that fails after an
+`ALTER` of an earlier file of the same run is not undone: the `ALTER` commits on
+its own, the version of the module with it, and the failed file is never
+played again. The fix then goes in the file itself, for the sites still below
+it, and in a new version that plays it again for the sites already past it
+(`2.42.1.sql`).
+
 ## Caches that outlive a change
 
 - **Propel models** (`var/propel/<env>/model`) are built once and kept while
