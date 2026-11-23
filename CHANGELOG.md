@@ -7,6 +7,16 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Fixed
+
+- **The update to 2.42.0 failed on a base that came from Thelia 2**: it read
+  the effort settings of the module with a utf8mb4 collation, which the utf8mb3
+  column `module_config_i18n.value` of such a base refuses (error 1253). The
+  column is now converted before it is compared. A site coming from before
+  2.41.0 still recorded 2.42.0, the carry-over not done: update 2.42.1 plays it
+  again when a setting of the module is left or no usage of the module has an
+  effort, and leaves alone a site it went through.
+
 ## [2.42.0] - 2026-11-21
 
 ### Changed

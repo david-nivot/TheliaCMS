@@ -27,12 +27,14 @@ SET @cms_effort_ready := (
 
 -- The value read by the module is the one of the default locale of the row,
 -- and only an exact level counts (a plain comparison is not case sensitive).
+-- The column is converted before it is compared: a base that came from
+-- Thelia 2 keeps it in utf8mb3, which refuses a utf8mb4 collation (1253).
 SET @cms_effort_page := COALESCE((
     SELECT `value`.`value` FROM `module_config_i18n` AS `value`
         INNER JOIN `module_config` AS `setting` ON `setting`.`id` = `value`.`id`
         INNER JOIN `module` ON `module`.`id` = `setting`.`module_id`
     WHERE `module`.`code` = 'TheliaCMS' AND `setting`.`name` = 'generator_effort' AND `value`.`locale` = 'en_US'
-      AND `value`.`value` COLLATE utf8mb4_bin IN ('low', 'medium', 'high', 'xhigh', 'max')
+      AND CONVERT(`value`.`value` USING utf8mb4) COLLATE utf8mb4_bin IN ('low', 'medium', 'high', 'xhigh', 'max')
     LIMIT 1
 ), 'high');
 
@@ -41,7 +43,7 @@ SET @cms_effort_text := COALESCE((
         INNER JOIN `module_config` AS `setting` ON `setting`.`id` = `value`.`id`
         INNER JOIN `module` ON `module`.`id` = `setting`.`module_id`
     WHERE `module`.`code` = 'TheliaCMS' AND `setting`.`name` = 'generator_text_effort' AND `value`.`locale` = 'en_US'
-      AND `value`.`value` COLLATE utf8mb4_bin IN ('low', 'medium', 'high', 'xhigh', 'max')
+      AND CONVERT(`value`.`value` USING utf8mb4) COLLATE utf8mb4_bin IN ('low', 'medium', 'high', 'xhigh', 'max')
     LIMIT 1
 ), 'low');
 

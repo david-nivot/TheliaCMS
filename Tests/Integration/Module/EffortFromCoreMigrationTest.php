@@ -22,6 +22,8 @@ use TheliaCMS\TheliaCMS;
 /**
  * The update to 2.42.0 hands the reasoning effort to the core: the two
  * settings of the module become the effort of each usage it calls, and go.
+ * The update to 2.42.1 does it again for a site the update to 2.42.0 failed on
+ * after its version was recorded, and leaves alone a site it went through.
  */
 final class EffortFromCoreMigrationTest extends CmsIntegrationTestCase
 {
@@ -35,6 +37,9 @@ final class EffortFromCoreMigrationTest extends CmsIntegrationTestCase
 
     /** @var array<string, string|null> */
     private array $settingsBefore = [];
+
+    /** @var array<string, string|null>|null */
+    private ?array $valueColumn = null;
 
     protected function setUp(): void
     {
@@ -53,6 +58,8 @@ final class EffortFromCoreMigrationTest extends CmsIntegrationTestCase
 
     protected function tearDown(): void
     {
+        $this->putTheValueColumnBack();
+
         $connection = $this->connection();
         $connection->exec('DELETE FROM ai_usage_setting WHERE usage_id IN '.self::inList(self::USAGES));
 
@@ -192,10 +199,124 @@ final class EffortFromCoreMigrationTest extends CmsIntegrationTestCase
         self::assertSame([], $this->settingKeys());
     }
 
-    private function migrate(): void
+    /**
+     * A base that came from Thelia 2 keeps `module_config_i18n.value` in
+     * utf8mb3: `COLLATE utf8mb4_bin` on that column is refused (error 1253)
+     * and the whole update failed.
+     *
+     * Sabotage: put `COLLATE utf8mb4_bin` back on the bare column.
+     */
+    public function testTheValuesOfTheModuleAreReadFromAColumnInUtf8mb3(): void
     {
-        (new TheliaCMS())->update('2.41.0', '2.42.0', $this->getPropelConnection());
+        $this->valueColumnIn('utf8mb3', 'utf8mb3_general_ci');
+        TheliaCMS::setConfigValue('generator_effort', 'max');
+        TheliaCMS::setConfigValue('generator_text_effort', 'medium');
+
+        $this->migrate();
+
+        self::assertSame(
+            ['theliacms.component' => 'max', 'theliacms.page_generation' => 'max', 'theliacms.page_translation' => 'max', 'theliacms.text' => 'medium'],
+            $this->efforts(),
+        );
+        self::assertSame([], $this->settingKeys());
+    }
+
+    /**
+     * A site coming from before 2.41.0 had its version recorded although the
+     * update to 2.42.0 failed: the ALTER of 2.41.0 commits on its own, the
+     * version with it. Its settings are still there and no usage has an
+     * effort: 2.42.1 carries them over.
+     *
+     * Sabotage: empty 2.42.1.sql.
+     */
+    public function testASiteLeftAt2420BeforeTheCarryOverGetsItFrom2421(): void
+    {
+        $this->valueColumnIn('utf8mb3', 'utf8mb3_general_ci');
+        TheliaCMS::setConfigValue('generator_effort', 'max');
+        TheliaCMS::setConfigValue('generator_text_effort', 'medium');
+
+        $this->migrate('2.42.0', '2.42.1');
+
+        self::assertSame(
+            ['theliacms.component' => 'max', 'theliacms.page_generation' => 'max', 'theliacms.page_translation' => 'max', 'theliacms.text' => 'medium'],
+            $this->efforts(),
+        );
+        self::assertSame([], $this->settingKeys());
+    }
+
+    /**
+     * Sabotage: make the replay of 2.42.1 depend on a setting of the module
+     * left over only.
+     */
+    public function testASiteLeftAt2420WithNoSettingGetsTheFormerDefaultsFrom2421(): void
+    {
+        $this->migrate('2.42.0', '2.42.1');
+
+        self::assertSame(
+            ['theliacms.component' => 'high', 'theliacms.page_generation' => 'high', 'theliacms.page_translation' => 'high', 'theliacms.text' => 'low'],
+            $this->efforts(),
+        );
+    }
+
+    /**
+     * Once the carry-over went through, what the merchant changes in the core
+     * afterwards is theirs: an effort emptied, a row removed.
+     *
+     * Sabotage: drop the condition `@cms_effort_pending` of 2.42.1.sql.
+     */
+    public function testASiteTheCarryOverWentThroughIsLeftAloneBy2421(): void
+    {
+        TheliaCMS::setConfigValue('generator_effort', 'max');
+        $this->migrate();
+        $connection = $this->connection();
+        $connection->exec("UPDATE ai_usage_setting SET effort = 'low' WHERE usage_id = 'theliacms.component'");
+        $connection->exec("UPDATE ai_usage_setting SET effort = '' WHERE usage_id = 'theliacms.text'");
+        $connection->exec("DELETE FROM ai_usage_setting WHERE usage_id = 'theliacms.page_translation'");
+        $before = $this->rows('SELECT * FROM ai_usage_setting WHERE usage_id IN '.self::inList(self::USAGES).' ORDER BY usage_id');
+
+        $this->migrate('2.42.0', '2.42.1');
+
+        self::assertSame($before, $this->rows('SELECT * FROM ai_usage_setting WHERE usage_id IN '.self::inList(self::USAGES).' ORDER BY usage_id'));
+    }
+
+    private function migrate(string $from = '2.41.0', string $to = '2.42.0'): void
+    {
+        (new TheliaCMS())->update($from, $to, $this->getPropelConnection());
         ModuleConfigQuery::resetConfigCache();
+    }
+
+    /**
+     * Puts the column of the values of the settings in another character set,
+     * as a base that came from Thelia 2 has it. An ALTER commits on its own:
+     * the test runs outside a transaction, and tearDown() puts it back.
+     */
+    private function valueColumnIn(string $characterSet, string $collation): void
+    {
+        $this->valueColumn = $this->rows("SELECT COLUMN_TYPE, CHARACTER_SET_NAME, COLLATION_NAME, IS_NULLABLE FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'module_config_i18n' AND column_name = 'value'")[0];
+        $this->connection()->exec(\sprintf(
+            'ALTER TABLE module_config_i18n MODIFY `value` %s CHARACTER SET %s COLLATE %s %s',
+            $this->valueColumn['COLUMN_TYPE'],
+            $characterSet,
+            $collation,
+            'YES' === $this->valueColumn['IS_NULLABLE'] ? 'NULL' : 'NOT NULL',
+        ));
+    }
+
+    private function putTheValueColumnBack(): void
+    {
+        if (null === $this->valueColumn) {
+            return;
+        }
+
+        $column = $this->valueColumn;
+        $this->valueColumn = null;
+        $this->connection()->exec(\sprintf(
+            'ALTER TABLE module_config_i18n MODIFY `value` %s CHARACTER SET %s COLLATE %s %s',
+            $column['COLUMN_TYPE'],
+            $column['CHARACTER_SET_NAME'],
+            $column['COLLATION_NAME'],
+            'YES' === $column['IS_NULLABLE'] ? 'NULL' : 'NOT NULL',
+        ));
     }
 
     private function forgetSettings(): void
