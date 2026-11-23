@@ -584,7 +584,9 @@ the answer is held to, `read_section` and the toolkit. Nothing else changes:
 the pages using it keep rendering it, its sections stay editable by hand, and
 a revision or a translation of such a page may keep it. Free text cannot be
 switched off. The screen takes the settings right; the choice is stored in
-`module_config` under `disabled_sections`.
+`module_config` under `disabled_sections`. Where the toolkit answers (debug
+mode or `THEME_TOOLKIT`, Flexy theme), a button opens it on the page that renders every
+component offered.
 
 Every row of the list opens the page of its component, whatever its origin
 (`/admin/cms/components/{name}`, such as `cms:richtext` or `Site:PriceTable`):
@@ -594,7 +596,8 @@ page, **Add to a page** puts a section filled with the values typed at the end
 of the draft of a page and a language chosen there (the right to change pages,
 the same undo as on the content screen, nothing published), and, for a
 component made on this site, **Save as the example** keeps those values as its
-example (the settings and custom code rights).
+example (the settings and custom code rights). Where the toolkit answers, the
+page of a component offered links to its section of the toolkit page.
 
 ## Contents of a kind, for module authors
 

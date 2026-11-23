@@ -14,7 +14,9 @@ declare(strict_types=1);
 
 namespace TheliaCMS\Tests\Integration\Content;
 
+use FlexyBundle\Toolkit\StoryProviderInterface;
 use Symfony\Component\DomCrawler\Crawler;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Test\FixtureFactory;
 use TheliaCMS\Content\Document;
@@ -22,8 +24,10 @@ use TheliaCMS\Content\DocumentRenderer;
 use TheliaCMS\Content\DocumentSchema;
 use TheliaCMS\Content\RichTextSection;
 use TheliaCMS\Content\Section;
+use TheliaCMS\Content\SectionAvailability;
 use TheliaCMS\Content\SectionCatalog;
 use TheliaCMS\Content\Theme\ThemeComponentSection;
+use TheliaCMS\Generation\Admin\ToolkitLink;
 use TheliaCMS\Generation\Brief;
 use TheliaCMS\Generation\CatalogSheet;
 use TheliaCMS\Generation\GenerationRequest;
@@ -74,7 +78,6 @@ final class ComponentScreenTest extends AdminScreenTestCase
         $see = $this->cell($screen, 'see', self::COMPONENT);
         self::assertSame(1, $see->count());
         self::assertSame('/admin/cms/components/'.self::COMPONENT, parse_url((string) $see->attr('href'), \PHP_URL_PATH), 'The only action leads to the page of the component.');
-        self::assertSame(0, $screen->filter('[data-testid="cms-components-toolkit"]')->count(), 'The toolkit is no longer linked from the list.');
         self::assertSame(1, $screen->filter('[data-testid="cms-component-row-'.self::COMPONENT.'"] a.btn')->count(), 'One link per row.');
         self::assertSame('partial', $screen->filter('[data-testid="cms-component-row-'.self::COMPONENT.'"]')->attr('data-origin'));
         $origin = $this->cell($screen, 'origin', self::COMPONENT);
@@ -106,6 +109,46 @@ final class ComponentScreenTest extends AdminScreenTestCase
      * Sabotage: in CmsComponentAdminController::list(), set `may_disable` to
      * true for every component: free text gets an active switch.
      */
+    public function testTheListLinksToTheToolkitWhereItAnswers(): void
+    {
+        $toolkit = $this->toolkitThatAnswers();
+
+        $link = $this->screen(self::SCREEN)->filter('[data-testid="cms-components-toolkit"]');
+
+        self::assertSame(1, $link->count(), 'The list links to the toolkit where it answers.');
+        self::assertSame($toolkit->url(), $link->attr('href'), 'It opens the page that draws every component offered.');
+        self::assertSame('_blank', $link->attr('target'));
+    }
+
+    public function testNeitherTheListNorAComponentLinksToAToolkitThatDoesNotAnswer(): void
+    {
+        $this->setToolkit(new ToolkitLink($this->urls(), false, storiesAvailable: true, themeToolkit: false));
+
+        self::assertSame(0, $this->screen(self::SCREEN)->filter('[data-testid="cms-components-toolkit"]')->count(), 'No link outside debug unless the theme opens its toolkit.');
+        self::assertSame(0, $this->screen('/admin/cms/components/'.self::COMPONENT)->filter('[data-testid="cms-component-toolkit"]')->count());
+    }
+
+    public function testThePageOfAComponentLinksToItsSectionOfTheToolkit(): void
+    {
+        $toolkit = $this->toolkitThatAnswers();
+
+        $link = $this->screen('/admin/cms/components/'.self::COMPONENT)->filter('[data-testid="cms-component-toolkit"]');
+
+        self::assertSame(1, $link->count(), 'The page of a component offered links to the toolkit.');
+        self::assertSame($toolkit->url().'#partial-cms-form', $link->attr('href'), 'It opens the section of the component, by the id the toolkit page gives it.');
+        self::assertSame('_blank', $link->attr('target'));
+    }
+
+    public function testThePageOfAComponentSwitchedOffDoesNotLinkToTheToolkit(): void
+    {
+        $this->toolkitThatAnswers();
+        $this->getService(SectionAvailability::class)->setOffered(self::COMPONENT, false);
+
+        $screen = $this->screen('/admin/cms/components/'.self::COMPONENT);
+
+        self::assertSame(0, $screen->filter('[data-testid="cms-component-toolkit"]')->count(), 'The toolkit page draws the components offered only: no link to a section it does not have.');
+    }
+
     public function testAComponentAlwaysOfferedHasADisabledSwitch(): void
     {
         $screen = $this->screen(self::SCREEN);
@@ -253,6 +296,33 @@ final class ComponentScreenTest extends AdminScreenTestCase
 
         self::assertSame(403, $this->send('POST', self::ACTION, ['_token' => $token, 'component' => self::COMPONENT, 'offered' => '0']));
         self::assertContains(self::COMPONENT, $this->catalog()->offeredNames());
+    }
+
+    /**
+     * The toolkit as where the kernel runs in debug: the tests run without it,
+     * where the toolkit answers 404 and nothing links to it.
+     */
+    private function toolkitThatAnswers(): ToolkitLink
+    {
+        if (!interface_exists(StoryProviderInterface::class)) {
+            self::markTestSkipped('The theme has no toolkit: the section stories cannot load.');
+        }
+
+        $toolkit = new ToolkitLink($this->urls(), true, storiesAvailable: true);
+        self::assertNotNull($toolkit->url(), 'The toolkit of the theme has its route.');
+        $this->setToolkit($toolkit);
+
+        return $toolkit;
+    }
+
+    private function setToolkit(ToolkitLink $toolkit): void
+    {
+        static::getContainer()->set(ToolkitLink::class, $toolkit);
+    }
+
+    private function urls(): UrlGeneratorInterface
+    {
+        return $this->getService(UrlGeneratorInterface::class);
     }
 
     private function toggle(string $component, bool $offered): int

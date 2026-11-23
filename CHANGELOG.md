@@ -7,6 +7,15 @@ this module adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+### Fixed
+
+- **The components screen links to the toolkit again**, lost in 2.41.0: where
+  the toolkit answers (debug mode or `THEME_TOOLKIT`, Flexy theme), the list
+  opens the page of the toolkit that renders every component offered, and the
+  page of a component offered opens its section of that page, both in a new
+  tab. A component switched off, which the toolkit page does not render, has
+  no link.
+
 ## [2.42.1] - 2026-11-23
 
 ### Fixed

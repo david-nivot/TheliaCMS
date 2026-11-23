@@ -30,6 +30,7 @@ use TheliaCMS\Content\Site\SiteComponentSection;
 use TheliaCMS\Content\Site\SitePropRows;
 use TheliaCMS\Generation\Admin\PreviewWidths;
 use TheliaCMS\Generation\Admin\SectionFormBuilder;
+use TheliaCMS\Generation\Admin\ToolkitLink;
 use TheliaCMS\Generation\Component\ComponentCandidates;
 use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Locale\ShopLanguages;
@@ -65,6 +66,7 @@ final readonly class CmsComponentScreenController
         private AdminControllerSupport $support,
         private ShopLanguages $languages,
         private PreviewWidths $previewWidths,
+        private ToolkitLink $toolkit,
     ) {
     }
 
@@ -86,6 +88,7 @@ final readonly class CmsComponentScreenController
             $controls = null;
         }
 
+        $offeredToPages = isset($this->catalog->offered()[$name]);
         $languages = $this->languages->choices();
         // The language of the screen when the site has it, else the first.
         $default = array_values(array_filter($languages, static fn (array $language): bool => $language['locale'] === $locale))[0] ?? $languages[0] ?? null;
@@ -109,7 +112,9 @@ final readonly class CmsComponentScreenController
             'may_ask' => false,
             // A page takes the component when the site offers it to the pages and
             // the administrator may change pages, as on the content screen.
-            'may_add_to_page' => null !== $controls && isset($this->catalog->offered()[$name]) && $this->support->isGranted(CmsResources::PAGE, AccessManager::UPDATE),
+            'may_add_to_page' => null !== $controls && $offeredToPages && $this->support->isGranted(CmsResources::PAGE, AccessManager::UPDATE),
+            // Its section on the page of the toolkit, which draws the components offered to pages only.
+            'toolkit_url' => $offeredToPages ? $this->toolkit->component($name) : null,
             'languages' => $languages,
             'default_language' => $default['id'] ?? null,
             'assets_version' => substr(hash('xxh3', (string) @filemtime($script).@filemtime($scripts.'component-preview.js').@filemtime($scripts.'section-form.js').@filemtime($scripts.'content-editor.css')), 0, 12),

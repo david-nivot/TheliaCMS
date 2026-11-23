@@ -914,6 +914,8 @@ return [
     '"%label%" is offered to the generator again.' => '« %label% » est de nouveau proposé au générateur.',
     '"%label%" is no longer offered to the generator. The pages that use it are left as they are.' => '« %label% » n’est plus proposé au générateur. Les pages qui l’utilisent restent telles quelles.',
     'See' => 'Voir',
+    'See how they render in the toolkit' => 'Voir leur rendu dans le toolkit',
+    'See it in the toolkit' => 'Le voir dans le toolkit',
     'Move this section up' => 'Monter cette section',
     'Move this section down' => 'Descendre cette section',
     'Move section %rank% up' => 'Monter la section %rank%',

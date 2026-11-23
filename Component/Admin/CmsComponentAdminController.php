@@ -29,6 +29,7 @@ use TheliaCMS\Content\SectionDefinitionInterface;
 use TheliaCMS\Content\Site\SiteComponentPermission;
 use TheliaCMS\Content\Site\SiteComponentSection;
 use TheliaCMS\Content\Theme\ThemeComponentSection;
+use TheliaCMS\Generation\Admin\ToolkitLink;
 use TheliaCMS\Http\Admin\AdminControllerSupport;
 use TheliaCMS\Security\CmsResources;
 use Twig\Environment;
@@ -57,6 +58,7 @@ final readonly class CmsComponentAdminController
         private SectionAvailability $availability,
         private SectionUsageFinder $usage,
         private SiteComponentPermission $permission,
+        private ToolkitLink $toolkit,
     ) {
     }
 
@@ -103,6 +105,8 @@ final readonly class CmsComponentAdminController
             'may_update' => $this->support->isGranted(CmsResources::SETTINGS, AccessManager::UPDATE),
             'may_make' => $this->permission->mayMake(),
             'may_ask' => $this->permission->mayAsk(),
+            // The page of the toolkit that draws every component offered, where the toolkit answers.
+            'toolkit_url' => $this->toolkit->url(),
         ]));
     }
 

@@ -63,6 +63,17 @@ final class ToolkitLinkTest extends TestCase
         );
     }
 
+    public function testLinksAComponentToItsSectionOfThePage(): void
+    {
+        $urls = $this->createStub(UrlGeneratorInterface::class);
+        $urls->method('generate')->willReturn('/toolkit/cms-all-sections');
+        $toolkit = new ToolkitLink($urls, true, storiesAvailable: true);
+
+        self::assertSame('/toolkit/cms-all-sections#partial-cms-form', $toolkit->component('Partial:cms-form'), 'The id the toolkit page gives the section: lower case, a colon made a dash.');
+        self::assertSame('/toolkit/cms-all-sections#layouts-crossselling-base', $toolkit->component('Layouts:CrossSelling:Base'));
+        self::assertNull((new ToolkitLink($urls, false, storiesAvailable: true, themeToolkit: false))->component('Partial:cms-form'), 'No section where the toolkit does not answer.');
+    }
+
     public function testLinksNowhereWithoutTheToolkit(): void
     {
         $urls = $this->createStub(UrlGeneratorInterface::class);

@@ -76,6 +76,15 @@
                     prefix: 'cms-component-preview-mode',
                     testid: 'cms-site-component',
                 }, with_context = false) }}
+                {# Its section of the toolkit, in a new tab: there only when the
+                   toolkit answers and draws the component (offered to pages). #}
+                {% if toolkit_url %}
+                    <a class="btn btn-sm btn-outline-secondary" href="{{ toolkit_url }}" target="_blank" rel="noopener"
+                       title="{{ 'See it in the toolkit'|trans({}, 'theliacms') }}" data-testid="cms-component-toolkit">
+                        <i class="bi bi-grid-3x3-gap" aria-hidden="true"></i>
+                        <span class="visually-hidden">{{ 'See it in the toolkit'|trans({}, 'theliacms') }}</span>
+                    </a>
+                {% endif %}
                 {% if component and prototype and may_make %}
                     <form method="post" action="{{ path('admin.cms.components.site.promote', { component: component.code }) }}" data-testid="cms-site-component-promote">
                         <input type="hidden" name="_token" value="{{ assignToken() }}">

@@ -60,4 +60,17 @@ final readonly class ToolkitLink
             return null;
         }
     }
+
+    /**
+     * The section of one component on that page. The page draws the
+     * components offered to pages only: the caller links to it for those.
+     * The anchor is the id `templates/front/sections/toolkit/all.html.twig`
+     * gives the section.
+     */
+    public function component(string $name): ?string
+    {
+        $url = $this->url();
+
+        return null === $url ? null : $url.'#'.str_replace(':', '-', mb_strtolower($name));
+    }
 }
